@@ -155,20 +155,14 @@ We are long-term committed to building and making it useful for the community.
 
 The product roadmap is open for the community's feedback.
 We shall evolve a prioritization process that is open and community-driven.
-We welcome contributions from the community. Please read through our
-[contributing guidelines](/docs/CONTRIBUTING.md).
+We welcome contributions from the community.
+Please read through our [contributing guidelines][contributing-guidelines].
 Included are directions for opening issues, coding standards, and notes on
 development.
+We appreciate all types of contributions: code, documentation, demo creation, or
+some new way you want to contribute to us.
 
-- We appreciate all types of contributions: code, documentation, demo creation,
-  or some new way you want to contribute to us.
-  We will reward every contribution with a Hyperswitch branded t-shirt.
-- 🦀 **Important note for Rust developers**: We aim for contributions from the
-  community across a broad range of tracks.
-  Hence, we have prioritized simplicity and code readability over purely
-  idiomatic code.
-  For example, some of the code in core functions (e.g., `payments_core`) is
-  written to be more readable than pure-idiomatic.
+[contributing-guidelines]: https://github.com/juspay/hyperswitch/docs/CONTRIBUTING.md
 
 ## Community
 
