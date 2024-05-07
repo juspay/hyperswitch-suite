@@ -2,6 +2,510 @@
 
 All notable changes to Hyperswitch will be documented here.
 
+## Hyperswitch Suite v1.2
+
+### [Hyperswitch App Server v1.108.0 (2024-05-03)](https://github.com/juspay/hyperswitch/releases/tag/v1.108.0)
+
+### Docker Release
+
+[v1.108.0](https://hub.docker.com/layers/juspaydotin/hyperswitch-router/v1.108.0/images/sha256-11923fd610d89982c25a37f4de22b822e24dd80e052e348a7a23a2d7fb44166f?context=explore) (with KMS)
+
+[v1.108.0-standalone](https://hub.docker.com/layers/juspaydotin/hyperswitch-router/v1.108.0-standalone/images/sha256-32eeb924045e0d686d0eb048de4d7190b705fa6f6bdfc6dd83f030cbbd8f5007?context=explore) (without KMS)
+
+### Features
+
+- **connector:**
+  - [3dsecure.io] Add threedsecureio three_ds authentication connector ([#4004](https://github.com/juspay/hyperswitch/pull/4004))
+  - [Checkout] add support for external authentication for checkout connector ([#4006](https://github.com/juspay/hyperswitch/pull/4006))
+  - [AUTHORIZEDOTNET] Audit Connector ([#4035](https://github.com/juspay/hyperswitch/pull/4035))
+  - [billwerk] implement payment and refund flows ([#4245](https://github.com/juspay/hyperswitch/pull/4245))
+  - [Netcetera] Integrate netcetera connector with pre authentication flow ([#4293](https://github.com/juspay/hyperswitch/pull/4293))
+  - [NMI] External 3DS flow for Cards ([#4385](https://github.com/juspay/hyperswitch/pull/4385))
+  - [Netcetera] Implement authentication flow for netcetera ([#4334](https://github.com/juspay/hyperswitch/pull/4334))
+  - [Netcetera] Add webhook support for netcetera ([#4382](https://github.com/juspay/hyperswitch/pull/4382))
+  - [BOA] implement mandates for cards and wallets ([#4232](https://github.com/juspay/hyperswitch/pull/4232))
+  - [Ebanx] Add payout flows ([#4146](https://github.com/juspay/hyperswitch/pull/4146))
+  - [Paypal] Add payout flow for wallet(Paypal and Venmo) ([#4406](https://github.com/juspay/hyperswitch/pull/4406))
+  - [BOA/Cybersource] add avs_response and cvv validation result in the response ([#4376](https://github.com/juspay/hyperswitch/pull/4376))
+  - [Cybersource] Add NTID flow for cybersource ([#4193](https://github.com/juspay/hyperswitch/pull/4193))
+- Add api_models for external 3ds authentication flow ([#3858](https://github.com/juspay/hyperswitch/pull/3858))
+- Add core functions for external authentication ([#3969](https://github.com/juspay/hyperswitch/pull/3969))
+- Confirm flow and authorization api changes for external authentication ([#4015](https://github.com/juspay/hyperswitch/pull/4015))
+- Add incoming header request logs ([#3939](https://github.com/juspay/hyperswitch/pull/3939))
+- Add payments authentication api flow ([#3996](https://github.com/juspay/hyperswitch/pull/3996))
+- Add routing support for token-based mit payments ([#4012](https://github.com/juspay/hyperswitch/pull/4012))
+- Add local bank transfer payment method ([#4294](https://github.com/juspay/hyperswitch/pull/4294))
+- Add external authentication webhooks flow ([#4339](https://github.com/juspay/hyperswitch/pull/4339))
+- Add retrieve poll status api ([#4358](https://github.com/juspay/hyperswitch/pull/4358))
+- Handle authorization for frictionless flow in external 3ds flow ([#4471](https://github.com/juspay/hyperswitch/pull/4471))
+- Customer kv impl ([#4267](https://github.com/juspay/hyperswitch/pull/4267))
+- Add cypress test cases ([#4271](https://github.com/juspay/hyperswitch/pull/4271))
+- Add audit events scaffolding ([#3863](https://github.com/juspay/hyperswitch/pull/3863))
+- Add APIs to list webhook events and webhook delivery attempts ([#4131](https://github.com/juspay/hyperswitch/pull/4131))
+- Add events framework for registering events ([#4115](https://github.com/juspay/hyperswitch/pull/4115))
+- Add payment cancel events ([#4166](https://github.com/juspay/hyperswitch/pull/4166))
+- Dashboard globalsearch apis ([#3831](https://github.com/juspay/hyperswitch/pull/3831))
+- Add kv support for mandate ([#4275](https://github.com/juspay/hyperswitch/pull/4275))
+- Allow off-session payments using `payment_method_id` ([#4132](https://github.com/juspay/hyperswitch/pull/4132))
+- Added display_sdk_only option for displaying only sdk without payment details ([#4363](https://github.com/juspay/hyperswitch/pull/4363))
+- Add support for saved payment method option for payment link ([#4373](https://github.com/juspay/hyperswitch/pull/4373))
+- API to list countries and currencies supported by a country and payment method type ([#4126](https://github.com/juspay/hyperswitch/pull/4126))
+- Added kv support for payment_methods table ([#4311](https://github.com/juspay/hyperswitch/pull/4311))
+- Implement Single Connector Retry for Payouts ([#3908](https://github.com/juspay/hyperswitch/pull/3908))
+- Implement KVRouterStore ([#3889](https://github.com/juspay/hyperswitch/pull/3889))
+- Implement list and filter APIs ([#3651](https://github.com/juspay/hyperswitch/pull/3651))
+- Support different pm types in PM auth ([#3114](https://github.com/juspay/hyperswitch/pull/3114))
+- Add new API get the user and role details of specific user ([#3988](https://github.com/juspay/hyperswitch/pull/3988))
+- Implement automatic retries for failed webhook deliveries using scheduler ([#3842](https://github.com/juspay/hyperswitch/pull/3842))
+- Allow manually retrying delivery of outgoing webhooks ([#4176](https://github.com/juspay/hyperswitch/pull/4176))
+- Store payment check codes and authentication data from processors ([#3958](https://github.com/juspay/hyperswitch/pull/3958))
+- Stripe connect integration for payouts ([#2041](https://github.com/juspay/hyperswitch/pull/2041))
+- Add support for merchant to pass public key and ttl for encrypting payload ([#4456](https://github.com/juspay/hyperswitch/pull/4456))
+- Add an api for retrieving the extended card info from redis ([#4484](https://github.com/juspay/hyperswitch/pull/4484))
+
+### Refactors/Bug Fixes
+
+- Use fallback to `connector_name` if `merchant_connector_id` is not present ([#4503](https://github.com/juspay/hyperswitch/pull/4503))
+- Use first_name if last_name is not passed ([#4360](https://github.com/juspay/hyperswitch/pull/4360))
+- Generate payment_id if not sent ([#4125](https://github.com/juspay/hyperswitch/pull/4125))
+- Send valid sdk information in authentication flow netcetera ([#4474](https://github.com/juspay/hyperswitch/pull/4474))
+- Fix wallet token deserialization error ([#4133](https://github.com/juspay/hyperswitch/pull/4133))
+- Amount received should be zero for `pending` and `failed` status ([#4331](https://github.com/juspay/hyperswitch/pull/4331))
+- Amount capturable remain same for `processing` status in capture ([#4229](https://github.com/juspay/hyperswitch/pull/4229))
+- Fix 3DS mandates, for the connector \_mandate_details to be stored in the payment_methods table ([#4323](https://github.com/juspay/hyperswitch/pull/4323))
+- Handle card duplication in payouts flow ([#4013](https://github.com/juspay/hyperswitch/pull/4013))
+- Give higher precedence to connector mandate id over network txn id in mandates ([#4073](https://github.com/juspay/hyperswitch/pull/4073))
+- Store network transaction id only when `pg_agnostic` config is enabled in the `authorize_flow` ([#4318](https://github.com/juspay/hyperswitch/pull/4318))
+- Insert `locker_id` as null in case of payment method not getting stored in locker ([#3919](https://github.com/juspay/hyperswitch/pull/3919))
+- Update payment method status only if existing status is not active ([#4149](https://github.com/juspay/hyperswitch/pull/4149))
+- Fix token fetch logic in complete authorize flow for three ds payments ([#4052](https://github.com/juspay/hyperswitch/pull/4052))
+- Handle redirection to return_url from nested iframe in separate 3ds flow ([#4164](https://github.com/juspay/hyperswitch/pull/4164))
+- Capture billing country in payments request ([#4347](https://github.com/juspay/hyperswitch/pull/4347))
+- Make payment_instrument optional ([#4389](https://github.com/juspay/hyperswitch/pull/4389))
+- Remove enabled payment methods for payouts processor ([#3913](https://github.com/juspay/hyperswitch/pull/3913))
+- Pass payment method billing to the connector module ([#3828](https://github.com/juspay/hyperswitch/pull/3828))
+- Use `billing.first_name` instead of `card_holder_name` ([#4239](https://github.com/juspay/hyperswitch/pull/4239))
+- Updated payments response with payment_method_id & payment_method_status ([#3883](https://github.com/juspay/hyperswitch/pull/3883))
+- Log the appropriate error message if the card fails to get saved in locker ([#4296](https://github.com/juspay/hyperswitch/pull/4296))
+- Make performance optimisation for payment_link ([#4092](https://github.com/juspay/hyperswitch/pull/4092))
+- Decouple shimmer css from main payment_link css for better performance ([#4286](https://github.com/juspay/hyperswitch/pull/4286))
+- Add a trait to retrieve billing from payment method data ([#4095](https://github.com/juspay/hyperswitch/pull/4095))
+- Filter applepay payment method from mca based on customer pm ([#3953](https://github.com/juspay/hyperswitch/pull/3953))
+- Enable country currency filter for cards ([#4056](https://github.com/juspay/hyperswitch/pull/4056))
+- Add `network_transaction_id` column in the `payment_methods` table ([#4005](https://github.com/juspay/hyperswitch/pull/4005))
+- Revamp payment methods update endpoint ([#4305](https://github.com/juspay/hyperswitch/pull/4305))
+- Store `card_network` in locker ([#4425](https://github.com/juspay/hyperswitch/pull/4425))
+- Deprecate Signin, Verify email and Invite v1 APIs ([#4465](https://github.com/juspay/hyperswitch/pull/4465))
+- Use single purpose token and auth to accept invite ([#4498](https://github.com/juspay/hyperswitch/pull/4498))
+- [Checkout] change payment and webhooks API contract ([#4023](https://github.com/juspay/hyperswitch/pull/4023))
+
+### Compatibility
+
+This version of the Hyperswitch App server is compatible with the following versions of other components:
+
+- Control Center Version: [v1.30.0](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.30.0)
+- Web Client Version: [v0.35.4](https://github.com/juspay/hyperswitch-web/releases/tag/v0.35.4)
+- WooCommerce Plugin Version: [v1.5.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.5.1)
+- Card Vault Version: [v0.4.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.4.0)
+
+### Database Migrations
+
+<details><summary>Click to view database migrations</summary>
+<pre>
+-- DB Difference BETWEEN v1.107.0 AND v1.108.0
+CREATE TABLE IF NOT EXISTS authentication (
+    authentication_id VARCHAR(64) NOT NULL,
+    merchant_id VARCHAR(64) NOT NULL,
+    authentication_connector VARCHAR(64) NOT NULL,
+    connector_authentication_id VARCHAR(64),
+    authentication_data JSONB,
+    payment_method_id VARCHAR(64) NOT NULL,
+    authentication_type VARCHAR(64),
+    authentication_status VARCHAR(64) NOT NULL,
+    authentication_lifecycle_status VARCHAR(64) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT now()::TIMESTAMP,
+    modified_at TIMESTAMP NOT NULL DEFAULT now()::TIMESTAMP,
+    error_message VARCHAR(64),
+    error_code VARCHAR(64),
+    PRIMARY KEY (authentication_id)
+);
+
+-- Your SQL goes here
+ALTER TABLE payment_attempt
+ADD COLUMN IF NOT EXISTS external_three_ds_authentication_attempted BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS authentication_connector VARCHAR(64),
+ADD COLUMN IF NOT EXISTS authentication_id VARCHAR(64);
+
+-- Your SQL goes here
+ALTER TABLE payment_intent
+ADD COLUMN IF NOT EXISTS request_external_three_ds_authentication BOOLEAN;
+
+-- Your SQL goes here
+ALTER TYPE "ConnectorType"
+ADD VALUE IF NOT EXISTS 'authentication_processor';
+
+-- Your SQL goes here
+ALTER TABLE authentication
+ADD COLUMN IF NOT EXISTS connector_metadata JSONB DEFAULT NULL;
+
+-- Your SQL goes here
+ALTER TABLE payment_attempt
+ADD COLUMN IF NOT EXISTS payment_method_billing_address_id VARCHAR(64);
+
+-- Your SQL goes here
+ALTER TYPE "PaymentSource"
+ADD VALUE 'webhook';
+
+ALTER TYPE "PaymentSource"
+ADD VALUE 'external_authenticator';
+
+ALTER TABLE PAYOUTS
+ADD COLUMN profile_id VARCHAR(64);
+
+UPDATE PAYOUTS AS PO
+SET profile_id = POA.profile_id
+FROM PAYOUT_ATTEMPT AS POA
+WHERE PO.payout_id = POA.payout_id;
+
+ALTER TABLE PAYOUTS
+ALTER COLUMN profile_id
+SET NOT NULL;
+
+ALTER TABLE PAYOUTS
+ADD COLUMN status "PayoutStatus";
+
+UPDATE PAYOUTS AS PO
+SET status = POA.status
+FROM PAYOUT_ATTEMPT AS POA
+WHERE PO.payout_id = POA.payout_id;
+
+ALTER TABLE PAYOUTS
+ALTER COLUMN status
+SET NOT NULL;
+
+-- Your SQL goes here
+ALTER TABLE business_profile
+ADD COLUMN IF NOT EXISTS authentication_connector_details JSONB NULL;
+
+-- The following queries must be run before the newer version of the application is deployed.
+ALTER TABLE events
+ADD COLUMN merchant_id VARCHAR(64) DEFAULT NULL,
+ADD COLUMN business_profile_id VARCHAR(64) DEFAULT NULL,
+ADD COLUMN primary_object_created_at TIMESTAMP DEFAULT NULL,
+ADD COLUMN idempotent_event_id VARCHAR(64) DEFAULT NULL,
+ADD COLUMN initial_attempt_id VARCHAR(64) DEFAULT NULL,
+ADD COLUMN request BYTEA DEFAULT NULL,
+ADD COLUMN response BYTEA DEFAULT NULL;
+
+UPDATE events
+SET idempotent_event_id = event_id
+WHERE idempotent_event_id IS NULL;
+
+UPDATE events
+SET initial_attempt_id = event_id
+WHERE initial_attempt_id IS NULL;
+
+ALTER TABLE events
+ADD CONSTRAINT idempotent_event_id_unique UNIQUE (idempotent_event_id);
+
+-- Your SQL goes here
+ALTER TABLE payment_methods
+ADD COLUMN network_transaction_id VARCHAR(255) DEFAULT NULL;
+
+-- Your SQL goes here
+ALTER TABLE authentication
+ADD COLUMN IF NOT EXISTS maximum_supported_version JSONB,
+ADD COLUMN IF NOT EXISTS threeds_server_transaction_id VARCHAR(64),
+ADD COLUMN IF NOT EXISTS cavv VARCHAR(64),
+ADD COLUMN IF NOT EXISTS authentication_flow_type VARCHAR(64),
+ADD COLUMN IF NOT EXISTS message_version JSONB,
+ADD COLUMN IF NOT EXISTS eci VARCHAR(64),
+ADD COLUMN IF NOT EXISTS trans_status VARCHAR(64),
+ADD COLUMN IF NOT EXISTS acquirer_bin VARCHAR(64),
+ADD COLUMN IF NOT EXISTS acquirer_merchant_id VARCHAR(64),
+ADD COLUMN IF NOT EXISTS three_ds_method_data VARCHAR,
+ADD COLUMN IF NOT EXISTS three_ds_method_url VARCHAR,
+ADD COLUMN IF NOT EXISTS acs_url VARCHAR,
+ADD COLUMN IF NOT EXISTS challenge_request VARCHAR,
+ADD COLUMN IF NOT EXISTS acs_reference_number VARCHAR,
+ADD COLUMN IF NOT EXISTS acs_trans_id VARCHAR,
+ADD COLUMN IF NOT EXISTS three_dsserver_trans_id VARCHAR,
+ADD COLUMN IF NOT EXISTS acs_signed_content VARCHAR,
+ADD COLUMN IF NOT EXISTS connector_metadata JSONB;
+
+-- Your SQL goes here
+ALTER TABLE payment_methods
+ADD COLUMN IF NOT EXISTS client_secret VARCHAR(128) DEFAULT NULL;
+
+ALTER TABLE payment_methods
+ALTER COLUMN payment_method DROP NOT NULL;
+
+CREATE UNIQUE INDEX events_merchant_id_event_id_index ON events (merchant_id, event_id);
+
+CREATE INDEX events_merchant_id_initial_attempt_id_index ON events (merchant_id, initial_attempt_id);
+
+CREATE INDEX events_merchant_id_initial_events_index ON events (merchant_id, (event_id = initial_attempt_id));
+
+CREATE INDEX events_business_profile_id_initial_attempt_id_index ON events (business_profile_id, initial_attempt_id);
+
+CREATE INDEX events_business_profile_id_initial_events_index ON events (
+business_profile_id,
+(event_id = initial_attempt_id)
+);
+
+CREATE TYPE "WebhookDeliveryAttempt" AS ENUM (
+'initial_attempt',
+'automatic_retry',
+'manual_retry'
+);
+
+ALTER TABLE events
+ADD COLUMN delivery_attempt "WebhookDeliveryAttempt" DEFAULT NULL;
+
+-- Your SQL goes here
+ALTER TABLE authentication
+ADD COLUMN profile_id VARCHAR(64) NOT NULL;
+
+-- Your SQL goes here
+ALTER TABLE authentication
+ADD COLUMN payment_id VARCHAR(255);
+
+-- Your SQL goes here
+ALTER TYPE "DashboardMetadata"
+ADD VALUE IF NOT EXISTS 'onboarding_survey';
+
+-- Your SQL goes here
+ALTER TABLE authentication
+ADD COLUMN merchant_connector_id VARCHAR(128) NOT NULL;
+
+</pre>
+</details>
+
+> [!CAUTION]
+> Proceed with caution when running the following migrations as they are destructive.
+
+<details><summary>Click here to view database migrations to be run after the newer version is deployed</summary>
+<pre>
+-- Running these queries can even be deferred for some time (a couple of weeks or even a month) until the
+-- new version being deployed is considered stable.
+-- Make `event_id` primary key instead of `id`
+ALTER TABLE events DROP CONSTRAINT events_pkey;
+
+ALTER TABLE events ADD PRIMARY KEY (event_id);
+
+ALTER TABLE events DROP CONSTRAINT event_id_unique;
+
+-- Dropping unused columns
+ALTER TABLE events
+DROP COLUMN id,
+DROP COLUMN intent_reference_id;
+
+</pre>
+</details>
+
+### Configuration Changes
+
+Diff of configuration changes between <code>v1.107.0</code> and <code>v1.108.0</code>
+
+```patch
+diff --git a/config/deployments/production.toml b/config/deployments/production.toml
+index 4be067dade24..1bc4319b2d37 100644
+--- a/config/deployments/production.toml
++++ b/config/deployments/production.toml
+@@ -17,13 +17,15 @@ payout_connector_list = "wise"
+
+ [connectors]
+ aci.base_url = "https://eu-test.oppwa.com/"
+-adyen.base_url = "https://{{merchant_endpoint_prefix}}-checkout-live.adyenpayments.com/"
++adyen.base_url = "https://{{merchant_endpoint_prefix}}-checkout-live.adyenpayments.com/checkout/"
+ adyen.secondary_base_url = "https://{{merchant_endpoint_prefix}}-pal-live.adyenpayments.com/"
+ airwallex.base_url = "https://api-demo.airwallex.com/"
+ applepay.base_url = "https://apple-pay-gateway.apple.com/"
+-authorizedotnet.base_url = "https://apitest.authorize.net/xml/v1/request.api"
++authorizedotnet.base_url = "https://api.authorize.net/xml/v1/request.api"
+ bambora.base_url = "https://api.na.bambora.com"
+ bankofamerica.base_url = "https://api.merchant-services.bankofamerica.com/"
++billwerk.base_url = "https://api.reepay.com/"
++billwerk.secondary_base_url = "https://card.reepay.com/"
+ bitpay.base_url = "https://bitpay.com"
+ bluesnap.base_url = "https://ws.bluesnap.com/"
+ bluesnap.secondary_base_url = "https://pay.bluesnap.com/"
+@@ -37,6 +39,7 @@ cryptopay.base_url = "https://business.cryptopay.me/"
+ cybersource.base_url = "https://api.cybersource.com/"
+ dlocal.base_url = "https://sandbox.dlocal.com/"
+ dummyconnector.base_url = "http://localhost:8080/dummy-connector"
++ebanx.base_url = "https://sandbox.ebanxpay.com/"
+ fiserv.base_url = "https://cert.api.fiservapps.com/"
+ forte.base_url = "https://sandbox.forte.net/api/v3"
+ globalpay.base_url = "https://apis.sandbox.globalpay.com/ucp/"
+@@ -80,6 +83,9 @@ worldline.base_url = "https://eu.sandbox.api-ingenico.com/"
+ worldpay.base_url = "https://try.access.worldpay.com/"
+ zen.base_url = "https://api.zen.com/"
+ zen.secondary_base_url = "https://secure.zen.com/"
++zsl.base_url = "https://api.sitoffalb.net/"
++threedsecureio.base_url = "https://service.3dsecure.io"
++netcetera.base_url = "https://{{merchant_endpoint_prefix}}.3ds-server.prev.netcetera-cloud-payment.ch"
+
+ [delayed_session_response]
+ connectors_with_delayed_session_response = "trustpay,payme"
+@@ -102,7 +108,7 @@ refund_retrieve_duration = 500
+ refund_retrieve_tolerance = 100
+ refund_tolerance = 100
+ refund_ttl = 172800
+-slack_invite_url = "https://join.slack.com/t/hyperswitch-io/shared_invite/zt-1k6cz4lee-SAJzhz6bjmpp4jZCDOtOIg"
++slack_invite_url = "https://join.slack.com/t/hyperswitch-io/shared_invite/zt-2awm23agh-p_G5xNpziv6yAiedTkkqLg"
+
+ [frm]
+ enabled = false
+@@ -111,11 +117,11 @@ enabled = false
+ bank_debit.ach.connector_list = "gocardless"
+ bank_debit.becs.connector_list = "gocardless"
+ bank_debit.sepa.connector_list = "gocardless"
+-card.credit.connector_list = "stripe,adyen,authorizedotnet,cybersource,globalpay,worldpay,multisafepay,nmi,nexinets,noon"
+-card.debit.connector_list = "stripe,adyen,authorizedotnet,cybersource,globalpay,worldpay,multisafepay,nmi,nexinets,noon"
++card.credit.connector_list = "stripe,adyen,authorizedotnet,cybersource,globalpay,worldpay,multisafepay,nmi,nexinets,noon,bankofamerica"
++card.debit.connector_list = "stripe,adyen,authorizedotnet,cybersource,globalpay,worldpay,multisafepay,nmi,nexinets,noon,bankofamerica"
+ pay_later.klarna.connector_list = "adyen"
+-wallet.apple_pay.connector_list = "stripe,adyen,cybersource,noon"
+-wallet.google_pay.connector_list = "stripe,adyen,cybersource"
++wallet.apple_pay.connector_list = "stripe,adyen,cybersource,noon,bankofamerica"
++wallet.google_pay.connector_list = "stripe,adyen,cybersource,bankofamerica"
+ wallet.paypal.connector_list = "adyen"
+ bank_redirect.ideal.connector_list = "stripe,adyen,globalpay"
+ bank_redirect.sofort.connector_list = "stripe,adyen,globalpay"
+@@ -285,6 +291,9 @@ pse = { country = "CO", currency = "COP" }
+ red_compra = { country = "CL", currency = "CLP" }
+ red_pagos = { country = "UY", currency = "UYU" }
+
++[pm_filters.zsl]
++local_bank_transfer = { country = "CN", currency = "CNY" }
++
+ [temp_locker_enable_config]
+ bluesnap.payment_method = "card"
+ nuvei.payment_method = "card"
+@@ -304,9 +313,13 @@ payme = { long_lived_token = false, payment_method = "card" }
+ square = { long_lived_token = false, payment_method = "card" }
+ stax = { long_lived_token = true, payment_method = "card,bank_debit" }
+ stripe = { long_lived_token = false, payment_method = "wallet", payment_method_type = { list = "google_pay", type = "disable_only" } }
++billwerk = {long_lived_token = false, payment_method = "card"}
+
+ [webhooks]
+ outgoing_enabled = true
+
+ [webhook_source_verification_call]
+ connectors_with_webhook_source_verification_call = "paypal"
++
++[unmasked_headers]
++keys = "user-agent"
+```
+
+**Full Changelog:** [`v1.107.0...v1.108.0`](https://github.com/juspay/hyperswitch/compare/v1.107.0...v1.108.0)
+
+### [Hyperswitch Control Center v1.30.0 (2024-05-06)](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.30.0)
+
+**Product Name**: [Hyperswitch-control-center](https://github.com/juspay/hyperswitch-control-center)  
+**Version**: [v1.30.0](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.30.0)
+**Release Date**: 03-05-2024
+We are excited to release the latest version of the Hyperswitch control center! This release represents yet another achievement in our ongoing efforts to deliver a flexible, cutting-edge, and community-focused payment solution.
+
+## New Features:
+
+- Global search using identifiers is now available in the control center!([#523](https://github.com/juspay/hyperswitch-control-center/pull/523))
+- Configure whether to show payment methods based on country and currency ([#495](https://github.com/juspay/hyperswitch-control-center/pull/495))
+- Configure 3DS authenticators directly from the control center([#444](https://github.com/juspay/hyperswitch-control-center/pull/444), [#491](https://github.com/juspay/hyperswitch-control-center/pull/491))
+- Audit logs are now available for all the connectors ([#538](https://github.com/juspay/hyperswitch-control-center/pull/538))
+- Added dispute analytics module ([#470](https://github.com/juspay/hyperswitch-control-center/pull/470))
+
+## Improvements:
+
+- Added ability to update profile name and made UX improvements ([#610](https://github.com/juspay/hyperswitch-control-center/pull/610), [#566](https://github.com/juspay/hyperswitch-control-center/pull/566))
+- Added more connectors in the control center ([#578](https://github.com/juspay/hyperswitch-control-center/pull/578), [#561](https://github.com/juspay/hyperswitch-control-center/pull/561))
+
+## Bugs:
+
+- Added delete 3DS rule ([#534](https://github.com/juspay/hyperswitch-control-center/pull/534))
+- Minor UI fixes ([#582](https://github.com/juspay/hyperswitch-control-center/pull/582), [#584](https://github.com/juspay/hyperswitch-control-center/pull/584), [#582](https://github.com/juspay/hyperswitch-control-center/pull/582))
+
+## Compatibility:
+
+- **App server Version**: [v1.108.0](https://github.com/juspay/hyperswitch/releases/tag/v1.108.0)
+- **Web Version**: [v0.35.4](https://github.com/juspay/hyperswitch-web/releases/tag/v0.35.4)
+
+### [Hyperswitch Web Client v0.35.4 (2024-05-06)](https://github.com/juspay/hyperswitch-web/releases/tag/v0.35.4)
+
+## What's Changed
+
+- fix(boleto): boleto Icon fill color and size fix by @vsrivatsa-juspay in https://github.com/juspay/hyperswitch-web/pull/210
+- refactor: start using @rescript/core package by @seekshiva in https://github.com/juspay/hyperswitch-web/pull/205
+- feat(PaymentElement): moved SavedCards component outside card form by @prafulkoppalkar in https://github.com/juspay/hyperswitch-web/pull/197
+- feat: props divide disableSave cards to checkbox and api by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/206
+- fix: added Wallets to Saved Payment Methods by @ArushKapoorJuspay in https://github.com/juspay/hyperswitch-web/pull/213
+- feat: Support to handle confirm button (E2E) by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/198
+- feat: Added Payment Session Headless by @ArushKapoorJuspay in https://github.com/juspay/hyperswitch-web/pull/209
+- fix: card payment customer_acceptance by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/220
+- refactor: refactor masking logic by @seekshiva in https://github.com/juspay/hyperswitch-web/pull/219
+- refactor: library update by @seekshiva in https://github.com/juspay/hyperswitch-web/pull/216
+- fix: added ordering for saved payment methods by @ArushKapoorJuspay in https://github.com/juspay/hyperswitch-web/pull/222
+- fix: disable and enable Pay now button by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/221
+- fix: pay now button text & theme based changes by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/223
+- feat: cvc nickname gpay by @ArushKapoorJuspay in https://github.com/juspay/hyperswitch-web/pull/224
+- feat: added prop for PaymentHeader Text by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/226
+- fix(ideal): bank name not being populated by @vsrivatsa-juspay in https://github.com/juspay/hyperswitch-web/pull/227
+- fix: added paymentType to be passed in the confirm body by @ArushKapoorJuspay in https://github.com/juspay/hyperswitch-web/pull/228
+- fix(PayNowButton): update loader and disable states of pay now button after confirm by @vsrivatsa-juspay in https://github.com/juspay/hyperswitch-web/pull/229
+- fix: not require_cvc disable the pay now button by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/230
+- fix: react hook errors by @seekshiva in https://github.com/juspay/hyperswitch-web/pull/225
+- refactor: rescript core changes json, dict, string, nullable & array by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/212
+- refactor: Update rescript v11 by @seekshiva in https://github.com/juspay/hyperswitch-web/pull/232
+- chore: formatting rescript code by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/234
+- fix(applepay): added logger instance for ApplePay intent calls by @vsrivatsa-juspay in https://github.com/juspay/hyperswitch-web/pull/218
+- chore: react useeffect changes for useeffect0 by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/237
+- fix: saved Payment Method stuck in loading state and Card Holder Name for every saved card by @ArushKapoorJuspay in https://github.com/juspay/hyperswitch-web/pull/241
+- fix: hotfix changes for postal code by @prafulkoppalkar in https://github.com/juspay/hyperswitch-web/pull/245
+- fix(savedcarditem): fixed Dynamic Fields not rendering for some saved… by @ArushKapoorJuspay in https://github.com/juspay/hyperswitch-web/pull/246
+- feat: 3DS without redirection by @prafulkoppalkar in https://github.com/juspay/hyperswitch-web/pull/249
+- fix: applePay Dynamic Fields Error Handling and Dynamic Fields PostalCode Error by @ArushKapoorJuspay in https://github.com/juspay/hyperswitch-web/pull/250
+- fix(3ds method iframe): 3ds failing with no cors and color depth … by @prafulkoppalkar in https://github.com/juspay/hyperswitch-web/pull/253
+- fix: add saved payment methods throughout checkout by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/254
+- feat(logger): calculate loading latency from iframe init to render by @vsrivatsa-juspay in https://github.com/juspay/hyperswitch-web/pull/248
+- fix: pk_dev added for development purpose by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/259
+- chore: promise core changes by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/236
+- chore: useCallback changes from 0-7 to useCallback by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/240
+- chore: useMemo changes from 0-7 to useMemo by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/239
+
+**Full Changelog**: https://github.com/juspay/hyperswitch-web/compare/v0.27.2...v0.35.4
+
+### [Hyperswitch WooCommerce Plugin v1.5.1 (2024-03-12)](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.5.1)
+
+#### What's Changed
+
+- Fix wordpress compatibility ([#3](https://github.com/juspay/hyperswitch-woocommerce-plugin/pull/3))
+- HPOS compatibility+ ([#5](https://github.com/juspay/hyperswitch-woocommerce-plugin/pull/5))
+- One click payment methods ([#6](https://github.com/juspay/hyperswitch-woocommerce-plugin/pull/6))
+- Fixes for text internationalization ([#7](https://github.com/juspay/hyperswitch-woocommerce-plugin/pull/7))
+- Internationalization fixes ([#8](https://github.com/juspay/hyperswitch-woocommerce-plugin/pull/8))
+
+**Full Changelog:** [`v1.2.0...v1.5.1`](https://github.com/juspay/hyperswitch-woocommerce-plugin/compare/v1.2.0...v1.5.1)
+
+### [Hyperswitch Card Vault v0.4.0 (2024-02-08)](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.4.0)
+
+#### Features
+
+- **benches:** Introduce benchmarks for internal components ([#53](https://github.com/juspay/hyperswitch-card-vault/pull/53))
+- **caching:** Implement hash_table and merchant table caching ([#55](https://github.com/juspay/hyperswitch-card-vault/pull/55))
+- **hashicorp-kv:** Add feature to extend key management service at runtime ([#65](https://github.com/juspay/hyperswitch-card-vault/pull/65))
+- Add `duplication_check` field in stored card response([#59](https://github.com/juspay/hyperswitch-card-vault/pull/59))
+- **hmac:** Add implementation for `hmac-sha512` ([#74](https://github.com/juspay/hyperswitch-card-vault/pull/74))
+- **fingerprint:** Add fingerprint table and db interface ([#75](https://github.com/juspay/hyperswitch-card-vault/pull/75))
+- **fingerprint:** Add api for fingerprint ([#76](https://github.com/juspay/hyperswitch-card-vault/pull/76))
+
+#### Miscellaneous Tasks
+
+- **deps:** Update axum `0.6.20` to `0.7.3` ([#66](https://github.com/juspay/hyperswitch-card-vault/pull/66))
+- Fix caching issue for conditional merchant creation ([#68](https://github.com/juspay/hyperswitch-card-vault/pull/68))
+
+**Full Changelog:** [`v0.2.0...v0.4.0`](https://github.com/juspay/hyperswitch-card-vault/compare/v0.2.0...v0.4.0)
+
 ## Hyperswitch Suite v1.1
 
 ### [Hyperswitch App Server v1.107.0 (2024-03-12)](https://github.com/juspay/hyperswitch/releases/tag/v1.107.0)
