@@ -6,12 +6,12 @@ All notable changes to Hyperswitch will be documented here.
 
 ### [Hyperswitch App Server v1.109.0 (2024-07-05)](https://github.com/juspay/hyperswitch/releases/tag/v1.109.0)
 
-### Docker Release
+#### Docker Release
 
 - [v1.109.0](https://hub.docker.com/layers/juspaydotin/hyperswitch-router/v1.109.0/images/sha256-d34751c7c2adad87b3c2f858899f3394f6c92ec9c7216ae5d984ecfdb5df83d7) (with AWS SES support)
 - [v1.109.0-standalone](https://hub.docker.com/layers/juspaydotin/hyperswitch-router/v1.109.0-standalone/images/sha256-b768c3b4ec1742d88aa23a2fa315e4515d8c7320fec1be295a357c561a49955b) (without AWS SES support)
 
-### Features
+#### Features
 
 - **connector:**
   - [Stripe] - Stripe connect integration for payouts ([#2041](https://github.com/juspay/hyperswitch/pull/2041))
@@ -58,7 +58,7 @@ All notable changes to Hyperswitch will be documented here.
 - Add audit events payment confirm ([#4763](https://github.com/juspay/hyperswitch/pull/4763))
 - Add audit events payment capture ([#4913](https://github.com/juspay/hyperswitch/pull/4913))
 
-### Refactors/Bug Fixes
+#### Refactors/Bug Fixes
 
 - Add web client and control center services to docker compose setup ([#4197](https://github.com/juspay/hyperswitch/pull/4197))
 - Fix stack overflow for docker images ([#4660](https://github.com/juspay/hyperswitch/pull/4660))
@@ -94,7 +94,7 @@ All notable changes to Hyperswitch will be documented here.
 - Deprecate Signin, Verify email and Invite v1 APIs ([#4465](https://github.com/juspay/hyperswitch/pull/4465))
 - Add password validations ([#4555](https://github.com/juspay/hyperswitch/pull/4555))
 
-### Compatibility
+#### Compatibility
 
 This version of the Hyperswitch App server is compatible with the following versions of other components:
 
@@ -103,7 +103,7 @@ This version of the Hyperswitch App server is compatible with the following vers
 - WooCommerce Plugin Version: [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)
 - Card Vault Version: [v0.4.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.4.0)
 
-### Database Migrations
+#### Database Migrations
 
 ```sql
 -- DB Difference BETWEEN v1.108.0 AND v1.109.0
@@ -284,7 +284,7 @@ ALTER TABLE payouts ALTER COLUMN payout_type DROP NOT NULL;
 ALTER TABLE events ADD COLUMN metadata JSONB DEFAULT NULL;
 ```
 
-### Configuration Changes
+#### Configuration Changes
 
 Diff of configuration changes between <code>v1.108.0</code> and <code>v1.109.0</code>
 
@@ -533,7 +533,7 @@ We are excited to release the latest version of the Hyperswitch control center! 
 
 - Payment and Refund Filter Enhancement ([#683](https://github.com/juspay/hyperswitch-control-center/pull/683)) ([#620](https://github.com/juspay/hyperswitch-control-center/pull/620)) ([#690](https://github.com/juspay/hyperswitch-control-center/pull/690)) ([#699](https://github.com/juspay/hyperswitch-control-center/pull/699))
 
-- Payment Details Page Enhancement ([#703](https://github.com/juspay/hyperswitch-control-center/pull/703) ([#736]https://github.com/juspay/hyperswitch-control-center/pull/736))
+- Payment Details Page Enhancement ([#703](https://github.com/juspay/hyperswitch-control-center/pull/703)) ([#736](https://github.com/juspay/hyperswitch-control-center/pull/736))
 - Events and Logs UI Enhancement ([#735](https://github.com/juspay/hyperswitch-control-center/pull/735))
 - Select Different Payment Methods for PayPal Wallet ([#785](https://github.com/juspay/hyperswitch-control-center/pull/785))
 
@@ -542,7 +542,7 @@ We are excited to release the latest version of the Hyperswitch control center! 
 - Intermittent Black Screen in Payments Order Page ([#725](https://github.com/juspay/hyperswitch-control-center/pull/725))
 - Minor UI Fixes ([#699](https://github.com/juspay/hyperswitch-control-center/pull/699)) ([#686](https://github.com/juspay/hyperswitch-control-center/pull/686)) ([#670](https://github.com/juspay/hyperswitch-control-center/pull/670)) ([#673](https://github.com/juspay/hyperswitch-control-center/pull/673)) ([#692](https://github.com/juspay/hyperswitch-control-center/pull/692)) ([#697](https://github.com/juspay/hyperswitch-control-center/pull/697)) ([726](https://github.com/juspay/hyperswitch-control-center/pull/726)) ([#752](https://github.com/juspay/hyperswitch-control-center/pull/752)) ([#803](https://github.com/juspay/hyperswitch-control-center/pull/803)) ([#834](https://github.com/juspay/hyperswitch-control-center/pull/834)) ([#839](https://github.com/juspay/hyperswitch-control-center/pull/839))
 
-### Compatibility
+#### Compatibility
 
 This version of the Hyperswitch App server is compatible with the following versions of other components:
 
@@ -554,8 +554,6 @@ This version of the Hyperswitch App server is compatible with the following vers
 **Full Changelog**: https://github.com/juspay/hyperswitch-control-center/compare/v1.30.1...v1.31.0
 
 ### [Hyperswitch Web Client v0.71.11 (2024-06-08)](https://github.com/juspay/hyperswitch-web/releases/tag/v0.71.11)
-
-## What's Changed
 
 - fix: customer payment methods promise ([#266](https://github.com/juspay/hyperswitch-web/pull/266))
 - feat(3ds): three DS SDK - adding logs to track milestone events ([#265](https://github.com/juspay/hyperswitch-web/pull/265))
@@ -623,7 +621,7 @@ This version of the Hyperswitch App server is compatible with the following vers
 
 **Full Changelog**: https://github.com/juspay/hyperswitch-web/compare/v0.35.4...v0.71.11
 
-### Compatibility
+#### Compatibility
 
 This version of the Hyperswitch App server is compatible with the following versions of other components:
 
@@ -634,7 +632,6 @@ This version of the Hyperswitch App server is compatible with the following vers
 
 ### [Hyperswitch WooCommerce Plugin v1.6.1 (2024-05-13)](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)
 
-## What's Changed
 * Update stable version (1.5.1) in docs ([#9](https://github.com/juspay/hyperswitch-woocommerce-plugin/pull/9))
 * Code Formatting, Nonce verification with sanitization first ([#11](https://github.com/juspay/hyperswitch-woocommerce-plugin/pull/11))
 * Feat/v1.6.0 wordpress release ([#13](https://github.com/juspay/hyperswitch-woocommerce-plugin/pull/13))
@@ -665,13 +662,13 @@ This version of the Hyperswitch App server is compatible with the following vers
 
 ### [Hyperswitch App Server v1.108.0 (2024-05-03)](https://github.com/juspay/hyperswitch/releases/tag/v1.108.0)
 
-### Docker Release
+#### Docker Release
 
 [v1.108.0](https://hub.docker.com/layers/juspaydotin/hyperswitch-router/v1.108.0/images/sha256-11923fd610d89982c25a37f4de22b822e24dd80e052e348a7a23a2d7fb44166f?context=explore) (with KMS)
 
 [v1.108.0-standalone](https://hub.docker.com/layers/juspaydotin/hyperswitch-router/v1.108.0-standalone/images/sha256-32eeb924045e0d686d0eb048de4d7190b705fa6f6bdfc6dd83f030cbbd8f5007?context=explore) (without KMS)
 
-### Features
+#### Features
 
 - **connector:**
   - [3dsecure.io] Add threedsecureio three_ds authentication connector ([#4004](https://github.com/juspay/hyperswitch/pull/4004))
@@ -722,7 +719,7 @@ This version of the Hyperswitch App server is compatible with the following vers
 - Add support for merchant to pass public key and ttl for encrypting payload ([#4456](https://github.com/juspay/hyperswitch/pull/4456))
 - Add an api for retrieving the extended card info from redis ([#4484](https://github.com/juspay/hyperswitch/pull/4484))
 
-### Refactors/Bug Fixes
+#### Refactors/Bug Fixes
 
 - Use fallback to `connector_name` if `merchant_connector_id` is not present ([#4503](https://github.com/juspay/hyperswitch/pull/4503))
 - Use first_name if last_name is not passed ([#4360](https://github.com/juspay/hyperswitch/pull/4360))
@@ -758,7 +755,7 @@ This version of the Hyperswitch App server is compatible with the following vers
 - Use single purpose token and auth to accept invite ([#4498](https://github.com/juspay/hyperswitch/pull/4498))
 - [Checkout] change payment and webhooks API contract ([#4023](https://github.com/juspay/hyperswitch/pull/4023))
 
-### Compatibility
+#### Compatibility
 
 This version of the Hyperswitch App server is compatible with the following versions of other components:
 
@@ -767,7 +764,7 @@ This version of the Hyperswitch App server is compatible with the following vers
 - WooCommerce Plugin Version: [v1.5.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.5.1)
 - Card Vault Version: [v0.4.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.4.0)
 
-### Database Migrations
+#### Database Migrations
 
 <details><summary>Click to view database migrations</summary>
 <pre>
@@ -962,7 +959,7 @@ DROP COLUMN intent_reference_id;
 </pre>
 </details>
 
-### Configuration Changes
+#### Configuration Changes
 
 Diff of configuration changes between <code>v1.107.0</code> and <code>v1.108.0</code>
 
@@ -1067,7 +1064,7 @@ index 4be067dade24..1bc4319b2d37 100644
 **Release Date**: 03-05-2024
 We are excited to release the latest version of the Hyperswitch control center! This release represents yet another achievement in our ongoing efforts to deliver a flexible, cutting-edge, and community-focused payment solution.
 
-## New Features:
+#### New Features:
 
 - Global search using identifiers is now available in the control center!([#523](https://github.com/juspay/hyperswitch-control-center/pull/523))
 - Configure whether to show payment methods based on country and currency ([#495](https://github.com/juspay/hyperswitch-control-center/pull/495))
@@ -1075,62 +1072,60 @@ We are excited to release the latest version of the Hyperswitch control center! 
 - Audit logs are now available for all the connectors ([#538](https://github.com/juspay/hyperswitch-control-center/pull/538))
 - Added dispute analytics module ([#470](https://github.com/juspay/hyperswitch-control-center/pull/470))
 
-## Improvements:
+#### Improvements:
 
 - Added ability to update profile name and made UX improvements ([#610](https://github.com/juspay/hyperswitch-control-center/pull/610), [#566](https://github.com/juspay/hyperswitch-control-center/pull/566))
 - Added more connectors in the control center ([#578](https://github.com/juspay/hyperswitch-control-center/pull/578), [#561](https://github.com/juspay/hyperswitch-control-center/pull/561))
 
-## Bugs:
+#### Bugs:
 
 - Added delete 3DS rule ([#534](https://github.com/juspay/hyperswitch-control-center/pull/534))
 - Minor UI fixes ([#582](https://github.com/juspay/hyperswitch-control-center/pull/582), [#584](https://github.com/juspay/hyperswitch-control-center/pull/584), [#582](https://github.com/juspay/hyperswitch-control-center/pull/582))
 
-## Compatibility:
+#### Compatibility:
 
 - **App server Version**: [v1.108.0](https://github.com/juspay/hyperswitch/releases/tag/v1.108.0)
 - **Web Version**: [v0.35.4](https://github.com/juspay/hyperswitch-web/releases/tag/v0.35.4)
 
 ### [Hyperswitch Web Client v0.35.4 (2024-05-06)](https://github.com/juspay/hyperswitch-web/releases/tag/v0.35.4)
 
-## What's Changed
-
-- fix(boleto): boleto Icon fill color and size fix by @vsrivatsa-juspay in https://github.com/juspay/hyperswitch-web/pull/210
-- refactor: start using @rescript/core package by @seekshiva in https://github.com/juspay/hyperswitch-web/pull/205
-- feat(PaymentElement): moved SavedCards component outside card form by @prafulkoppalkar in https://github.com/juspay/hyperswitch-web/pull/197
-- feat: props divide disableSave cards to checkbox and api by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/206
-- fix: added Wallets to Saved Payment Methods by @ArushKapoorJuspay in https://github.com/juspay/hyperswitch-web/pull/213
-- feat: Support to handle confirm button (E2E) by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/198
-- feat: Added Payment Session Headless by @ArushKapoorJuspay in https://github.com/juspay/hyperswitch-web/pull/209
-- fix: card payment customer_acceptance by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/220
-- refactor: refactor masking logic by @seekshiva in https://github.com/juspay/hyperswitch-web/pull/219
-- refactor: library update by @seekshiva in https://github.com/juspay/hyperswitch-web/pull/216
-- fix: added ordering for saved payment methods by @ArushKapoorJuspay in https://github.com/juspay/hyperswitch-web/pull/222
-- fix: disable and enable Pay now button by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/221
-- fix: pay now button text & theme based changes by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/223
-- feat: cvc nickname gpay by @ArushKapoorJuspay in https://github.com/juspay/hyperswitch-web/pull/224
-- feat: added prop for PaymentHeader Text by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/226
-- fix(ideal): bank name not being populated by @vsrivatsa-juspay in https://github.com/juspay/hyperswitch-web/pull/227
-- fix: added paymentType to be passed in the confirm body by @ArushKapoorJuspay in https://github.com/juspay/hyperswitch-web/pull/228
-- fix(PayNowButton): update loader and disable states of pay now button after confirm by @vsrivatsa-juspay in https://github.com/juspay/hyperswitch-web/pull/229
-- fix: not require_cvc disable the pay now button by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/230
-- fix: react hook errors by @seekshiva in https://github.com/juspay/hyperswitch-web/pull/225
-- refactor: rescript core changes json, dict, string, nullable & array by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/212
-- refactor: Update rescript v11 by @seekshiva in https://github.com/juspay/hyperswitch-web/pull/232
-- chore: formatting rescript code by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/234
-- fix(applepay): added logger instance for ApplePay intent calls by @vsrivatsa-juspay in https://github.com/juspay/hyperswitch-web/pull/218
-- chore: react useeffect changes for useeffect0 by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/237
-- fix: saved Payment Method stuck in loading state and Card Holder Name for every saved card by @ArushKapoorJuspay in https://github.com/juspay/hyperswitch-web/pull/241
-- fix: hotfix changes for postal code by @prafulkoppalkar in https://github.com/juspay/hyperswitch-web/pull/245
-- fix(savedcarditem): fixed Dynamic Fields not rendering for some saved… by @ArushKapoorJuspay in https://github.com/juspay/hyperswitch-web/pull/246
-- feat: 3DS without redirection by @prafulkoppalkar in https://github.com/juspay/hyperswitch-web/pull/249
-- fix: applePay Dynamic Fields Error Handling and Dynamic Fields PostalCode Error by @ArushKapoorJuspay in https://github.com/juspay/hyperswitch-web/pull/250
-- fix(3ds method iframe): 3ds failing with no cors and color depth … by @prafulkoppalkar in https://github.com/juspay/hyperswitch-web/pull/253
-- fix: add saved payment methods throughout checkout by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/254
-- feat(logger): calculate loading latency from iframe init to render by @vsrivatsa-juspay in https://github.com/juspay/hyperswitch-web/pull/248
-- fix: pk_dev added for development purpose by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/259
-- chore: promise core changes by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/236
-- chore: useCallback changes from 0-7 to useCallback by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/240
-- chore: useMemo changes from 0-7 to useMemo by @PritishBudhiraja in https://github.com/juspay/hyperswitch-web/pull/239
+- fix(boleto): boleto Icon fill color and size fix ([#210](https://github.com/juspay/hyperswitch-web/pull/210))
+- refactor: start using @rescript/core package ([#205](https://github.com/juspay/hyperswitch-web/pull/205))
+- feat(PaymentElement): moved SavedCards component outside card form ([#197](https://github.com/juspay/hyperswitch-web/pull/197))
+- feat: props divide disableSave cards to checkbox and api ([#206](https://github.com/juspay/hyperswitch-web/pull/206))
+- fix: added Wallets to Saved Payment Methods ([#213](https://github.com/juspay/hyperswitch-web/pull/213))
+- feat: Support to handle confirm button (E2E) ([#198](https://github.com/juspay/hyperswitch-web/pull/198))
+- feat: Added Payment Session Headless ([#209](https://github.com/juspay/hyperswitch-web/pull/209))
+- fix: card payment customer_acceptance ([#220](https://github.com/juspay/hyperswitch-web/pull/220))
+- refactor: refactor masking logic ([#219](https://github.com/juspay/hyperswitch-web/pull/219))
+- refactor: library update ([#216](https://github.com/juspay/hyperswitch-web/pull/216))
+- fix: added ordering for saved payment methods ([#222](https://github.com/juspay/hyperswitch-web/pull/222))
+- fix: disable and enable Pay now button ([#221](https://github.com/juspay/hyperswitch-web/pull/221))
+- fix: pay now button text & theme based changes ([#223](https://github.com/juspay/hyperswitch-web/pull/223))
+- feat: cvc nickname gpay ([#224](https://github.com/juspay/hyperswitch-web/pull/224))
+- feat: added prop for PaymentHeader Text ([#226](https://github.com/juspay/hyperswitch-web/pull/226))
+- fix(ideal): bank name not being populated ([#227](https://github.com/juspay/hyperswitch-web/pull/227))
+- fix: added paymentType to be passed in the confirm body ([#228](https://github.com/juspay/hyperswitch-web/pull/228))
+- fix(PayNowButton): update loader and disable states of pay now button after confirm ([#229](https://github.com/juspay/hyperswitch-web/pull/229))
+- fix: not require_cvc disable the pay now button ([#230](https://github.com/juspay/hyperswitch-web/pull/230))
+- fix: react hook errors ([#225](https://github.com/juspay/hyperswitch-web/pull/225))
+- refactor: rescript core changes json, dict, string, nullable & array ([#212](https://github.com/juspay/hyperswitch-web/pull/212))
+- refactor: Update rescript v11 ([#232](https://github.com/juspay/hyperswitch-web/pull/232))
+- chore: formatting rescript code ([#234](https://github.com/juspay/hyperswitch-web/pull/234))
+- fix(applepay): added logger instance for ApplePay intent calls ([#218](https://github.com/juspay/hyperswitch-web/pull/218))
+- chore: react useeffect changes for useeffect0 ([#237](https://github.com/juspay/hyperswitch-web/pull/237))
+- fix: saved Payment Method stuck in loading state and Card Holder Name for every saved card ([#241](https://github.com/juspay/hyperswitch-web/pull/241))
+- fix: hotfix changes for postal code ([#245](https://github.com/juspay/hyperswitch-web/pull/245))
+- fix(savedcarditem): fixed Dynamic Fields not rendering for some saved… ([#246](https://github.com/juspay/hyperswitch-web/pull/246))
+- feat: 3DS without redirection ([#249](https://github.com/juspay/hyperswitch-web/pull/249))
+- fix: applePay Dynamic Fields Error Handling and Dynamic Fields PostalCode Error ([#250](https://github.com/juspay/hyperswitch-web/pull/250))
+- fix(3ds method iframe): 3ds failing with no cors and color depth … ([#253](https://github.com/juspay/hyperswitch-web/pull/253))
+- fix: add saved payment methods throughout checkout ([#254](https://github.com/juspay/hyperswitch-web/pull/254))
+- feat(logger): calculate loading latency from iframe init to render ([#248](https://github.com/juspay/hyperswitch-web/pull/248))
+- fix: pk_dev added for development purpose ([#259](https://github.com/juspay/hyperswitch-web/pull/259))
+- chore: promise core changes ([#236](https://github.com/juspay/hyperswitch-web/pull/236))
+- chore: useCallback changes from 0-7 to useCallback ([#240](https://github.com/juspay/hyperswitch-web/pull/240))
+- chore: useMemo changes from 0-7 to useMemo ([#239](https://github.com/juspay/hyperswitch-web/pull/239))
 
 **Full Changelog**: https://github.com/juspay/hyperswitch-web/compare/v0.27.2...v0.35.4
 
@@ -1992,11 +1987,11 @@ We're excited to invite the community to collaborate, contribute, and build upon
 
 ### [Hyperswitch Card Vault v0.2.0 (2023-12-26)](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.2.0)
 
-### Features
+#### Features
 
 - **router:** Use only card number for card duplication check ([#57](https://github.com/juspay/hyperswitch-card-vault/pull/57))
 
-### Miscellaneous Tasks
+#### Miscellaneous Tasks
 
 - **deps:** Update version of aws dependencies ([#54](https://github.com/juspay/hyperswitch-card-vault/pull/54))
 - **utils:**
