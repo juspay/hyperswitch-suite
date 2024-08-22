@@ -499,7 +499,7 @@ This version of the Hyperswitch App server is compatible with the following vers
 
 ### [Hyperswitch Web Client v0.80.00 (2024-07-02)](https://github.com/juspay/hyperswitch-web/releases/tag/v0.80.0)
 
-## What's Changed
+#### What's Changed
 
 - feat: pm auth connector integration - Plaid by @PritishBudhiraja in ([#461](https://github.com/juspay/hyperswitch-web/pull/461))
 - fix: fixed netcetra 3ds not opening and added fallback log by @ArushKapoorJuspay in ([#470](https://github.com/juspay/hyperswitch-web/pull/470))
@@ -522,7 +522,7 @@ This version of the Hyperswitch App server is compatible with the following vers
 
 **Full Changelog**: https://github.com/juspay/hyperswitch-web/compare/v0.71.11...v0.80.0
 
-## Compatibility
+#### Compatibility
 
 This version of the Hyperswitch App server is compatible with the following versions of other components:
 
@@ -530,6 +530,14 @@ This version of the Hyperswitch App server is compatible with the following vers
 - Control Center Version: [v1.32.0](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.32.0)
 - WooCommerce Plugin Version: [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)
 - Card Vault Version: [v0.4.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.4.0)
+
+### [Hyperswitch Encryption Client v0.1.3 (2024-07-02)](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.3)
+
+#### What's Changed
+
+- fix: add proper messages to internal server error by @draca ([#20](https://github.com/juspay/hyperswitch-encryption-service/pull/20)
+
+**Full Changelog**: https://github.com/juspay/hyperswitch-encryption-service/compare/v0.1.0...v0.1.3
 
 ## Hyperswitch Suite v1.3
 
