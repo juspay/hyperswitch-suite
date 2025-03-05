@@ -6,13 +6,13 @@ All notable changes to Hyperswitch will be documented here.
 
 ### [Hyperswitch App Server 1.112.0 (2024-11-25)](https://github.com/juspay/hyperswitch/releases/tag/v1.112.0)
 
-### Docker Release
+#### Docker Release
 
 [v1.112.0](https://hub.docker.com/layers/juspaydotin/hyperswitch-router/v1.112.0/images/sha256-56e39ccfd67c3ae531ac2c7f72a385ffeff0a8128e14ed2f8b713093e845d03a) (with AWS SES support)
 
 [v1.112.0-standalone](https://hub.docker.com/layers/juspaydotin/hyperswitch-router/v1.112.0-standalone/images/sha256-1128a54c5b6921dc4b9b752a10bd0fe33e07e85685a07ebc55130957f97b7619) (without AWS SES support)
 
-### Features
+#### Features
 
 - **Connector:** Plaid connector configs ([#5545](https://github.com/juspay/hyperswitch/pull/5545))
 - **analytics:**
@@ -65,7 +65,7 @@ All notable changes to Hyperswitch will be documented here.
   - Add support for profile user delete ([#5541](https://github.com/juspay/hyperswitch/pull/5541))
   - Add profile level invites ([#5793](https://github.com/juspay/hyperswitch/pull/5793))
 
-### Bug Fixes
+#### Bug Fixes
 
 - **analytics:**
   - Fix refund status filter on dashboard ([#6431](https://github.com/juspay/hyperswitch/pull/6431))
@@ -93,7 +93,7 @@ All notable changes to Hyperswitch will be documented here.
   - Fix routing routes to deserialise correctly ([#5724](https://github.com/juspay/hyperswitch/pull/5724))
   - Fix `status_code` being logged as string instead of number in logs ([#5850](https://github.com/juspay/hyperswitch/pull/5850))
 
-### Refactors
+#### Refactors
 
 - **auth:** Pass `profile_id` from the auth to core functions ([#5520](https://github.com/juspay/hyperswitch/pull/5520))
 - **business_profile:**
@@ -119,7 +119,7 @@ All notable changes to Hyperswitch will be documented here.
     ([#5877](https://github.com/juspay/hyperswitch/pull/5877))
   - Refactor(router): modify `net_amount` to be a struct in the domain model of payment_attempt and handle amount changes across all flows ([#6252](https://github.com/juspay/hyperswitch/pull/6252))
 
-### Build System / Dependencies
+#### Build System / Dependencies
 
 - **deps:**
   - Bump `diesel` to `2.2.3` and `sqlx` to `0.8.1` ([#5688](https://github.com/juspay/hyperswitch/pull/5688))
@@ -127,7 +127,7 @@ All notable changes to Hyperswitch will be documented here.
 - **docker-compose-development:** Address build failure of `hyperswitch-server` service ([#6217](https://github.com/juspay/hyperswitch/pull/6217))
 - Bump MSRV to 1.76.0 ([#5586](https://github.com/juspay/hyperswitch/pull/5586))
 
-### Compatibility
+#### Compatibility
 
 This version of the Hyperswitch App server is compatible with the following versions of other components:
 
@@ -137,7 +137,7 @@ This version of the Hyperswitch App server is compatible with the following vers
 - Card Vault Version: [v0.4.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.4.0)
 - Key Manager: [V0.1.3](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.3)
 
-### Database Migrations
+#### Database Migrations
 
 ```sql
 -- DB Difference between v1.111.0 and v1.112.0
@@ -307,7 +307,7 @@ ALTER TABLE roles ALTER COLUMN entity_type SET DEFAULT 'merchant';
 ALTER TABLE roles ALTER COLUMN entity_type SET NOT NULL;
 ```
 
-### Configuration Changes
+#### Configuration Changes
 
 Diff of configuration changes between <code>v1.111.0</code> and <code>v1.112.0</code>
 
@@ -516,10 +516,10 @@ index 730f782919..88f215678d 100644
 
 **Full Changelog:** [`v1.111.0...v1.112.0`](https://github.com/juspay/hyperswitch/compare/v1.111.0...v1.112.0)
 
-### [Hyperswitch-control-center v1.36.0 (2024-08-22)](https://github.com/juspay/hyperswitch-control-center)
+### [Hyperswitch Control Center v1.36.0 (2024-12-10)](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.36.0)
 
 **Version**: [v1.36.0](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.36.0)
-**Release Date**: 22-08-2024
+**Release Date**: 10-12-2024
 
 We are excited to release the latest version of the Hyperswitch control center! This release represents yet another achievement in our ongoing efforts to deliver a flexible, cutting-edge, and community-focused payment solution.
 
@@ -542,7 +542,7 @@ We are excited to release the latest version of the Hyperswitch control center! 
 - Resolved the permission issues
 - Resolved the UI issues related to OMP
 
-### Compatibility
+#### Compatibility
 
 This version of the Hyperswitch App server is compatible with the following versions of other components:
 
@@ -554,7 +554,7 @@ This version of the Hyperswitch App server is compatible with the following vers
 
 ### [Hyperswitch Web Client v0.103.1 (2024-12-10)](https://github.com/juspay/hyperswitch-web/releases/tag/v0.103.1)
 
-## What's Changed
+#### What's Changed
 
 - fix: removal of unnecessary package ([#532](https://github.com/juspay/hyperswitch-web/pull/532))
 - refactor(payout): remove error code and error message from status page ([#535](https://github.com/juspay/hyperswitch-web/pull/535))
@@ -676,9 +676,9 @@ This version of the Hyperswitch App server is compatible with the following vers
 - feat: added paypal tabs flow support for billing details ([#792](https://github.com/juspay/hyperswitch-web/pull/792))
 - fix: crypto currency payment method ([#810](https://github.com/juspay/hyperswitch-web/pull/810))
 
-## Compatibility
+#### Compatibility
 
-This version of the Hyperswitch App server is compatible with the following versions of other components:
+This version of the Hyperswitch Web Client is compatible with the following versions of other components:
 
 - Control Center Version: [v1.33.0](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.33.0)
 - App server Version: [v1.112.0](https://github.com/juspay/hyperswitch/releases/tag/v1.112.0)
@@ -1368,7 +1368,7 @@ This version of the Hyperswitch App server is compatible with the following vers
 - WooCommerce Plugin Version: [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)
 - Card Vault Version: [v0.4.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.4.0)
 
-### [Hyperswitch Encryption Client v0.1.3 (2024-07-02)](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.3)
+### [Hyperswitch Encryption Service v0.1.3 (2024-07-02)](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.3)
 
 #### What's Changed
 
@@ -2433,7 +2433,7 @@ index 4be067dade24..1bc4319b2d37 100644
 
 ### [Hyperswitch Control Center v1.30.0 (2024-05-06)](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.30.0)
 
-**Product Name**: [Hyperswitch-control-center](https://github.com/juspay/hyperswitch-control-center)  
+**Product Name**: [Hyperswitch-control-center](https://github.com/juspay/hyperswitch-control-center)
 **Version**: [v1.30.0](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.30.0)
 **Release Date**: 03-05-2024
 We are excited to release the latest version of the Hyperswitch control center! This release represents yet another achievement in our ongoing efforts to deliver a flexible, cutting-edge, and community-focused payment solution.
