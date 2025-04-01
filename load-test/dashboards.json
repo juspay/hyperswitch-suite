@@ -1,0 +1,6212 @@
+[{
+    "dashboard": {
+"annotations": {
+"list": [
+  {
+    "builtIn": 1,
+    "datasource": {
+      "type": "grafana",
+      "uid": "-- Grafana --"
+    },
+    "enable": true,
+    "hide": true,
+    "iconColor": "rgba(0, 211, 255, 1)",
+    "name": "Annotations & Alerts",
+    "target": {
+      "limit": 100,
+      "matchAny": false,
+      "tags": [],
+      "type": "dashboard"
+    },
+    "type": "dashboard"
+  }
+]
+},
+"editable": true,
+"fiscalYearStartMonth": 0,
+"graphTooltip": 0,
+"id": 7,
+"links": [],
+"liveNow": false,
+"panels": [
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "palette-classic"
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "percentage",
+        "steps": [
+          {
+            "color": "dark-red",
+            "value": null
+          },
+          {
+            "color": "dark-green",
+            "value": 75
+          }
+        ]
+      },
+      "unit": "percent"
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 6,
+    "w": 8,
+    "x": 0,
+    "y": 0
+  },
+  "id": 7,
+  "options": {
+    "minVizHeight": 75,
+    "minVizWidth": 75,
+    "orientation": "auto",
+    "reduceOptions": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "fields": "",
+      "values": false
+    },
+    "showThresholdLabels": false,
+    "showThresholdMarkers": true,
+    "sizing": "auto"
+  },
+  "pluginVersion": "10.0.1",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "hide": true,
+      "rawQuery": true,
+      "rawSql": "SELECT COUNT(payment_id) \nFROM payment_intent \nWHERE created_at BETWEEN $__timeFrom() AND $__timeTo() \n  AND status IN ('succeeded', 'failed', 'processing') \n\n",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "hide": true,
+      "rawQuery": true,
+      "rawSql": "SELECT COUNT(payment_id) FROM payment_intent WHERE status = 'succeeded' AND created_at >= $__timeFrom() AND created_at <= $__timeTo()",
+      "refId": "B",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    },
+    {
+      "datasource": {
+        "name": "Expression",
+        "type": "__expr__",
+        "uid": "__expr__"
+      },
+      "expression": "$B/$A * 100",
+      "hide": false,
+      "refId": "C",
+      "type": "math"
+    }
+  ],
+  "title": "Payment Success Rate",
+  "type": "gauge"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "percentage",
+        "steps": [
+          {
+            "color": "green",
+            "value": null
+          }
+        ]
+      },
+      "unit": "short"
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 6,
+    "w": 7,
+    "x": 8,
+    "y": 0
+  },
+  "id": 15,
+  "options": {
+    "colorMode": "value",
+    "graphMode": "area",
+    "justifyMode": "auto",
+    "orientation": "auto",
+    "percentChangeColorMode": "standard",
+    "reduceOptions": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "fields": "",
+      "values": false
+    },
+    "showPercentChange": false,
+    "textMode": "auto",
+    "wideLayout": true
+  },
+  "pluginVersion": "10.0.1",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT SUM(amount) / 100 AS total_amount\nFROM payment_intent\nWHERE status = 'succeeded'\n  AND created_at BETWEEN $__timeFrom() AND $__timeTo()\n",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "name": "COUNT",
+            "parameters": [
+              {
+                "name": "payment_id",
+                "type": "functionParameter"
+              }
+            ],
+            "type": "function"
+          }
+        ],
+        "groupBy": [],
+        "limit": 50,
+        "whereJsonTree": {
+          "children1": [
+            {
+              "id": "aa989b88-cdef-4012-b456-7188ba3ae241",
+              "properties": {
+                "field": "status",
+                "operator": "equal",
+                "value": [
+                  "succeeded"
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "text"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "89ab9ab8-0123-4456-b89a-b188ba49bf9e",
+              "properties": {
+                "field": "created_at",
+                "operator": "greater_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "a998baba-cdef-4012-b456-7188ba4a1f04",
+              "properties": {
+                "field": "created_at",
+                "operator": "less_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            }
+          ],
+          "id": "aa88988b-89ab-4cde-b012-3188ba35735b",
+          "properties": {
+            "conjunction": "AND"
+          },
+          "type": "group"
+        },
+        "whereString": "status = 'succeeded'"
+      },
+      "table": "payment_intent"
+    }
+  ],
+  "title": "Total Amount Processed (in multiple currencies)",
+  "type": "stat"
+},
+{
+  "datasource": {
+    "type": "grafana-postgresql-datasource",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "inspect": false
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green",
+            "value": null
+          }
+        ]
+      }
+    },
+    "overrides": [
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "error_message"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 596
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "currency"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 75
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "merchant_id"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 139
+          }
+        ]
+      }
+    ]
+  },
+  "gridPos": {
+    "h": 13,
+    "w": 5,
+    "x": 15,
+    "y": 0
+  },
+  "id": 57,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true,
+    "sortBy": [
+      {
+        "desc": true,
+        "displayName": "amount_processed"
+      }
+    ]
+  },
+  "pluginVersion": "10.0.1",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT merchant_id, count(attempt_id) as txns\nFROM payment_attempt\nWHERE created_at >= $__timeFrom() AND created_at <= $__timeTo() and status = 'charged' \nGROUP BY merchant_id\nORDER BY txns DESC",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    }
+  ],
+  "title": "Successful Transactions",
+  "type": "table"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "inspect": false
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green",
+            "value": null
+          }
+        ]
+      }
+    },
+    "overrides": [
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "error_message"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 596
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "currency"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 81
+          }
+        ]
+      }
+    ]
+  },
+  "gridPos": {
+    "h": 13,
+    "w": 4,
+    "x": 20,
+    "y": 0
+  },
+  "id": 17,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true,
+    "sortBy": [
+      {
+        "desc": true,
+        "displayName": "amount_processed"
+      }
+    ]
+  },
+  "pluginVersion": "10.0.1",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT currency, sum(amount)/100 as amount_processed\nFROM payment_attempt \nWHERE created_at >= $__timeFrom() AND created_at <= $__timeTo() and status = 'charged' \nGROUP BY currency LIMIT 20",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    }
+  ],
+  "title": "Payments - Amount processed",
+  "type": "table"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "palette-classic"
+      },
+      "custom": {
+        "axisCenteredZero": false,
+        "axisColorMode": "text",
+        "axisLabel": "",
+        "axisPlacement": "auto",
+        "barAlignment": 0,
+        "drawStyle": "bars",
+        "fillOpacity": 100,
+        "gradientMode": "none",
+        "hideFrom": {
+          "legend": false,
+          "tooltip": false,
+          "viz": false
+        },
+        "lineInterpolation": "linear",
+        "lineWidth": 1,
+        "pointSize": 5,
+        "scaleDistribution": {
+          "type": "linear"
+        },
+        "showPoints": "auto",
+        "spanNulls": false,
+        "stacking": {
+          "group": "A",
+          "mode": "none"
+        },
+        "thresholdsStyle": {
+          "mode": "off"
+        }
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green",
+            "value": null
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 7,
+    "w": 8,
+    "x": 0,
+    "y": 6
+  },
+  "id": 31,
+  "options": {
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    },
+    "tooltip": {
+      "mode": "single",
+      "sort": "none"
+    }
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT\n$__timeGroupAlias(created_at, 24h),\ncount(distinct case when status NOT IN ('succeeded', 'requires_payment_method','failed','requires_capture', 'requires_customer_action' ) then payment_id end) AS payments_stuck_in_processing\nFROM payment_intent\nWHERE\n$__timeFilter(created_at) \nGROUP BY 1\nORDER BY $__timeGroup(created_at, 24h)",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    }
+  ],
+  "title": "Daily Trend of Payments - Not reching terminal status",
+  "type": "timeseries"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "percentage",
+        "steps": [
+          {
+            "color": "green",
+            "value": null
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 7,
+    "w": 7,
+    "x": 8,
+    "y": 6
+  },
+  "id": 5,
+  "options": {
+    "colorMode": "value",
+    "graphMode": "area",
+    "justifyMode": "auto",
+    "orientation": "auto",
+    "percentChangeColorMode": "standard",
+    "reduceOptions": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "fields": "",
+      "values": false
+    },
+    "showPercentChange": false,
+    "textMode": "auto",
+    "wideLayout": true
+  },
+  "pluginVersion": "10.0.1",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT count(payment_id) FROM payment_intent WHERE created_at >= $__timeFrom() AND created_at <= $__timeTo()  ",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "name": "COUNT",
+            "parameters": [
+              {
+                "name": "payment_id",
+                "type": "functionParameter"
+              }
+            ],
+            "type": "function"
+          }
+        ],
+        "groupBy": [],
+        "limit": 50,
+        "whereJsonTree": {
+          "children1": [
+            {
+              "id": "aa989b88-cdef-4012-b456-7188ba3ae241",
+              "properties": {
+                "field": "status",
+                "operator": "equal",
+                "value": [
+                  "succeeded"
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "text"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "89ab9ab8-0123-4456-b89a-b188ba49bf9e",
+              "properties": {
+                "field": "created_at",
+                "operator": "greater_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "a998baba-cdef-4012-b456-7188ba4a1f04",
+              "properties": {
+                "field": "created_at",
+                "operator": "less_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            }
+          ],
+          "id": "aa88988b-89ab-4cde-b012-3188ba35735b",
+          "properties": {
+            "conjunction": "AND"
+          },
+          "type": "group"
+        },
+        "whereString": "status = 'succeeded'"
+      },
+      "table": "payment_intent"
+    }
+  ],
+  "title": "Total Payments",
+  "type": "stat"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "percentage",
+        "steps": [
+          {
+            "color": "green",
+            "value": null
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 6,
+    "w": 3,
+    "x": 0,
+    "y": 13
+  },
+  "id": 29,
+  "options": {
+    "colorMode": "value",
+    "graphMode": "area",
+    "justifyMode": "auto",
+    "orientation": "auto",
+    "percentChangeColorMode": "standard",
+    "reduceOptions": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "fields": "",
+      "values": false
+    },
+    "showPercentChange": false,
+    "textMode": "auto",
+    "wideLayout": true
+  },
+  "pluginVersion": "10.0.1",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT count(refund_id) FROM refund WHERE created_at >= $__timeFrom() AND created_at <= $__timeTo() ",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "name": "COUNT",
+            "parameters": [
+              {
+                "name": "payment_id",
+                "type": "functionParameter"
+              }
+            ],
+            "type": "function"
+          }
+        ],
+        "groupBy": [],
+        "limit": 50,
+        "whereJsonTree": {
+          "children1": [
+            {
+              "id": "aa989b88-cdef-4012-b456-7188ba3ae241",
+              "properties": {
+                "field": "status",
+                "operator": "equal",
+                "value": [
+                  "succeeded"
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "text"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "89ab9ab8-0123-4456-b89a-b188ba49bf9e",
+              "properties": {
+                "field": "created_at",
+                "operator": "greater_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "a998baba-cdef-4012-b456-7188ba4a1f04",
+              "properties": {
+                "field": "created_at",
+                "operator": "less_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            }
+          ],
+          "id": "aa88988b-89ab-4cde-b012-3188ba35735b",
+          "properties": {
+            "conjunction": "AND"
+          },
+          "type": "group"
+        },
+        "whereString": "status = 'succeeded'"
+      },
+      "table": "payment_intent"
+    }
+  ],
+  "title": "Total Refunds",
+  "type": "stat"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "percentage",
+        "steps": [
+          {
+            "color": "red",
+            "value": null
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 6,
+    "w": 4,
+    "x": 3,
+    "y": 13
+  },
+  "id": 34,
+  "options": {
+    "colorMode": "value",
+    "graphMode": "area",
+    "justifyMode": "auto",
+    "orientation": "auto",
+    "percentChangeColorMode": "standard",
+    "reduceOptions": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "fields": "",
+      "values": false
+    },
+    "showPercentChange": false,
+    "textMode": "auto",
+    "wideLayout": true
+  },
+  "pluginVersion": "10.0.1",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT count(refund_id) FROM refund WHERE created_at >= $__timeFrom() AND created_at <= $__timeTo() \nand refund_status = 'failure'",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "name": "COUNT",
+            "parameters": [
+              {
+                "name": "payment_id",
+                "type": "functionParameter"
+              }
+            ],
+            "type": "function"
+          }
+        ],
+        "groupBy": [],
+        "limit": 50,
+        "whereJsonTree": {
+          "children1": [
+            {
+              "id": "aa989b88-cdef-4012-b456-7188ba3ae241",
+              "properties": {
+                "field": "status",
+                "operator": "equal",
+                "value": [
+                  "succeeded"
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "text"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "89ab9ab8-0123-4456-b89a-b188ba49bf9e",
+              "properties": {
+                "field": "created_at",
+                "operator": "greater_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "a998baba-cdef-4012-b456-7188ba4a1f04",
+              "properties": {
+                "field": "created_at",
+                "operator": "less_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            }
+          ],
+          "id": "aa88988b-89ab-4cde-b012-3188ba35735b",
+          "properties": {
+            "conjunction": "AND"
+          },
+          "type": "group"
+        },
+        "whereString": "status = 'succeeded'"
+      },
+      "table": "payment_intent"
+    }
+  ],
+  "title": "Total Refund Failures",
+  "type": "stat"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "percentage",
+        "steps": [
+          {
+            "color": "red",
+            "value": null
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 6,
+    "w": 5,
+    "x": 7,
+    "y": 13
+  },
+  "id": 28,
+  "options": {
+    "colorMode": "value",
+    "graphMode": "area",
+    "justifyMode": "auto",
+    "orientation": "auto",
+    "percentChangeColorMode": "standard",
+    "reduceOptions": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "fields": "",
+      "values": false
+    },
+    "showPercentChange": false,
+    "textMode": "auto",
+    "wideLayout": true
+  },
+  "pluginVersion": "10.0.1",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT count(payment_id) \n\nFROM payment_intent WHERE created_at >= $__timeFrom() AND created_at <= $__timeTo()  and status NOT IN ('succeeded', 'requires_payment_method','failed','requires_capture','requires_customer_action')",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "name": "COUNT",
+            "parameters": [
+              {
+                "name": "payment_id",
+                "type": "functionParameter"
+              }
+            ],
+            "type": "function"
+          }
+        ],
+        "groupBy": [],
+        "limit": 50,
+        "whereJsonTree": {
+          "children1": [
+            {
+              "id": "aa989b88-cdef-4012-b456-7188ba3ae241",
+              "properties": {
+                "field": "status",
+                "operator": "equal",
+                "value": [
+                  "succeeded"
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "text"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "89ab9ab8-0123-4456-b89a-b188ba49bf9e",
+              "properties": {
+                "field": "created_at",
+                "operator": "greater_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "a998baba-cdef-4012-b456-7188ba4a1f04",
+              "properties": {
+                "field": "created_at",
+                "operator": "less_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            }
+          ],
+          "id": "aa88988b-89ab-4cde-b012-3188ba35735b",
+          "properties": {
+            "conjunction": "AND"
+          },
+          "type": "group"
+        },
+        "whereString": "status = 'succeeded'"
+      },
+      "table": "payment_intent"
+    }
+  ],
+  "title": "Payments (not reaching terminal status)",
+  "type": "stat"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "percentage",
+        "steps": [
+          {
+            "color": "red",
+            "value": null
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 6,
+    "w": 4,
+    "x": 12,
+    "y": 13
+  },
+  "id": 19,
+  "options": {
+    "colorMode": "value",
+    "graphMode": "area",
+    "justifyMode": "auto",
+    "orientation": "auto",
+    "percentChangeColorMode": "standard",
+    "reduceOptions": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "fields": "",
+      "values": false
+    },
+    "showPercentChange": false,
+    "textMode": "auto",
+    "wideLayout": true
+  },
+  "pluginVersion": "10.0.1",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT count(refund_id) FROM refund WHERE created_at >= $__timeFrom() AND created_at <= $__timeTo() \n\nand refund_status NOT IN ('success','failure')",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "name": "COUNT",
+            "parameters": [
+              {
+                "name": "payment_id",
+                "type": "functionParameter"
+              }
+            ],
+            "type": "function"
+          }
+        ],
+        "groupBy": [],
+        "limit": 50,
+        "whereJsonTree": {
+          "children1": [
+            {
+              "id": "aa989b88-cdef-4012-b456-7188ba3ae241",
+              "properties": {
+                "field": "status",
+                "operator": "equal",
+                "value": [
+                  "succeeded"
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "text"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "89ab9ab8-0123-4456-b89a-b188ba49bf9e",
+              "properties": {
+                "field": "created_at",
+                "operator": "greater_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "a998baba-cdef-4012-b456-7188ba4a1f04",
+              "properties": {
+                "field": "created_at",
+                "operator": "less_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            }
+          ],
+          "id": "aa88988b-89ab-4cde-b012-3188ba35735b",
+          "properties": {
+            "conjunction": "AND"
+          },
+          "type": "group"
+        },
+        "whereString": "status = 'succeeded'"
+      },
+      "table": "payment_intent"
+    }
+  ],
+  "title": "Total Refunds (not reaching terminal status)",
+  "type": "stat"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "inspect": false
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green",
+            "value": null
+          }
+        ]
+      }
+    },
+    "overrides": [
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "error_message"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 596
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "currency"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 75
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "merchant_id"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 139
+          }
+        ]
+      }
+    ]
+  },
+  "gridPos": {
+    "h": 6,
+    "w": 8,
+    "x": 16,
+    "y": 13
+  },
+  "id": 25,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true,
+    "sortBy": [
+      {
+        "desc": true,
+        "displayName": "amount_processed"
+      }
+    ]
+  },
+  "pluginVersion": "10.0.1",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT merchant_id, currency, sum(amount)/100 as amount_processed\nFROM payment_attempt \nWHERE created_at >= $__timeFrom() AND created_at <= $__timeTo() and status = 'charged' \nGROUP BY merchant_id, currency LIMIT 20",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    }
+  ],
+  "title": "Payments - Amount processed",
+  "type": "table"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "filterable": true,
+        "inspect": false
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green",
+            "value": null
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": [
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "connector"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 146
+          }
+        ]
+      }
+    ]
+  },
+  "gridPos": {
+    "h": 13,
+    "w": 19,
+    "x": 0,
+    "y": 19
+  },
+  "id": 12,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true,
+    "sortBy": [
+      {
+        "desc": true,
+        "displayName": "total_payments"
+      }
+    ]
+  },
+  "pluginVersion": "10.0.1",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT merchant_id, payment_method, payment_method_type, connector, status,error_code, error_message,\ncount(payment_id) as total_payments\n-- count(CASE WHEN status = 'success' payment_id) as success_payments\nFROM payment_attempt \nWHERE created_at >= $__timeFrom() AND created_at <= $__timeTo() \nGROUP BY merchant_id, payment_method, payment_method_type, connector, status,error_code, error_message",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    }
+  ],
+  "title": "Merchant-wise Payment Volume",
+  "type": "table"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "inspect": false
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green",
+            "value": null
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": [
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "error_message"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 596
+          }
+        ]
+      }
+    ]
+  },
+  "gridPos": {
+    "h": 13,
+    "w": 5,
+    "x": 19,
+    "y": 19
+  },
+  "id": 18,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true,
+    "sortBy": [
+      {
+        "desc": true,
+        "displayName": "total_payments"
+      }
+    ]
+  },
+  "pluginVersion": "10.0.1",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT connector, count(payment_id) as total_payments\nFROM payment_attempt \nWHERE created_at >= $__timeFrom() AND created_at <= $__timeTo() \nGROUP BY connector LIMIT 10",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    }
+  ],
+  "title": "Connector-wise Payment Volume",
+  "type": "table"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "filterable": true,
+        "inspect": false
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green"
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": [
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "connector"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 146
+          }
+        ]
+      }
+    ]
+  },
+  "gridPos": {
+    "h": 13,
+    "w": 19,
+    "x": 0,
+    "y": 32
+  },
+  "id": 56,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true,
+    "sortBy": [
+      {
+        "desc": true,
+        "displayName": "total_payments"
+      }
+    ]
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT payment_id,merchant_id, payment_method, payment_method_type, connector, status,error_code, error_message\n-- count(CASE WHEN status = 'success' payment_id) as success_payments\nFROM payment_attempt \nWHERE created_at >= $__timeFrom() AND created_at <= $__timeTo()  and status NOT IN ('charged')\nGROUP BY error_code, error_message,payment_id, merchant_id, payment_method, payment_method_type, connector, status",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    }
+  ],
+  "title": "Failed Payments",
+  "type": "table"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "description": "",
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "links": [
+        {
+          "targetBlank": true,
+          "title": "",
+          "url": "/d/a2ba9921-ecb6-43f0-9178-a35ef1262604/auto-retries-metrics?orgId=1&from=${__from}&to=${__to}"
+        }
+      ],
+      "mappings": [],
+      "thresholds": {
+        "mode": "percentage",
+        "steps": [
+          {
+            "color": "green"
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 5,
+    "w": 5,
+    "x": 19,
+    "y": 32
+  },
+  "id": 30,
+  "options": {
+    "colorMode": "value",
+    "graphMode": "area",
+    "justifyMode": "auto",
+    "orientation": "auto",
+    "percentChangeColorMode": "standard",
+    "reduceOptions": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "fields": "",
+      "values": false
+    },
+    "showPercentChange": false,
+    "textMode": "auto",
+    "wideLayout": true
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT count(payment_id) FROM payment_intent\nWHERE created_at >= $__timeFrom() AND created_at <= $__timeTo() \n \nand status = 'succeeded'\nand attempt_count > 1;",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "name": "COUNT",
+            "parameters": [
+              {
+                "name": "payment_id",
+                "type": "functionParameter"
+              }
+            ],
+            "type": "function"
+          }
+        ],
+        "groupBy": [],
+        "limit": 50,
+        "whereJsonTree": {
+          "children1": [
+            {
+              "id": "aa989b88-cdef-4012-b456-7188ba3ae241",
+              "properties": {
+                "field": "status",
+                "operator": "equal",
+                "value": [
+                  "succeeded"
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "text"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "89ab9ab8-0123-4456-b89a-b188ba49bf9e",
+              "properties": {
+                "field": "created_at",
+                "operator": "greater_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "a998baba-cdef-4012-b456-7188ba4a1f04",
+              "properties": {
+                "field": "created_at",
+                "operator": "less_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            }
+          ],
+          "id": "aa88988b-89ab-4cde-b012-3188ba35735b",
+          "properties": {
+            "conjunction": "AND"
+          },
+          "type": "group"
+        },
+        "whereString": "status = 'succeeded'"
+      },
+      "table": "payment_intent"
+    }
+  ],
+  "title": "Smart Retry (No. of transactions saved)",
+  "type": "stat"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "description": "",
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "percentage",
+        "steps": [
+          {
+            "color": "green"
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 8,
+    "w": 5,
+    "x": 19,
+    "y": 37
+  },
+  "id": 51,
+  "options": {
+    "colorMode": "value",
+    "graphMode": "area",
+    "justifyMode": "auto",
+    "orientation": "auto",
+    "percentChangeColorMode": "standard",
+    "reduceOptions": {
+      "calcs": [
+        "lastNotNull"
+      ],
+      "fields": "",
+      "values": false
+    },
+    "showPercentChange": false,
+    "textMode": "auto",
+    "wideLayout": true
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT count(payment_id) FROM payment_intent\nWHERE created_at >= $__timeFrom() AND created_at <= $__timeTo() \n \nand status = 'succeeded'\nand attempt_count > 1;",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "name": "COUNT",
+            "parameters": [
+              {
+                "name": "payment_id",
+                "type": "functionParameter"
+              }
+            ],
+            "type": "function"
+          }
+        ],
+        "groupBy": [],
+        "limit": 50,
+        "whereJsonTree": {
+          "children1": [
+            {
+              "id": "aa989b88-cdef-4012-b456-7188ba3ae241",
+              "properties": {
+                "field": "status",
+                "operator": "equal",
+                "value": [
+                  "succeeded"
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "text"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "89ab9ab8-0123-4456-b89a-b188ba49bf9e",
+              "properties": {
+                "field": "created_at",
+                "operator": "greater_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "a998baba-cdef-4012-b456-7188ba4a1f04",
+              "properties": {
+                "field": "created_at",
+                "operator": "less_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            }
+          ],
+          "id": "aa88988b-89ab-4cde-b012-3188ba35735b",
+          "properties": {
+            "conjunction": "AND"
+          },
+          "type": "group"
+        },
+        "whereString": "status = 'succeeded'"
+      },
+      "table": "payment_intent"
+    }
+  ],
+  "title": "Disputes (not working)",
+  "type": "stat"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "filterable": true,
+        "inspect": false,
+        "minWidth": 50
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "percentage",
+        "steps": [
+          {
+            "color": "red"
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 9,
+    "w": 24,
+    "x": 0,
+    "y": 45
+  },
+  "id": 43,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT payment_intent.merchant_id,payment_attempt.connector, payment_intent.status as intent_status, payment_attempt.status as attempt_status, payment_attempt.payment_method,payment_attempt.payment_method_type,count(payment_intent.payment_id) as PaymentsCount\nFROM payment_attempt\n\nINNER JOIN payment_intent\nON payment_attempt.payment_id=payment_intent.payment_id\n\nand payment_attempt.created_at >= $__timeFrom() AND payment_attempt.created_at <= $__timeTo() \nand payment_intent.status NOT IN ('succeeded','failed')\n\nGROUP BY payment_intent.merchant_id,payment_attempt.status,payment_attempt.connector,payment_attempt.payment_method,payment_attempt.payment_method_type,intent_status\nORDER BY PaymentsCount DESC,payment_attempt.status",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "name": "COUNT",
+            "parameters": [
+              {
+                "name": "payment_id",
+                "type": "functionParameter"
+              }
+            ],
+            "type": "function"
+          }
+        ],
+        "groupBy": [],
+        "limit": 50,
+        "whereJsonTree": {
+          "children1": [
+            {
+              "id": "aa989b88-cdef-4012-b456-7188ba3ae241",
+              "properties": {
+                "field": "status",
+                "operator": "equal",
+                "value": [
+                  "succeeded"
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "text"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "89ab9ab8-0123-4456-b89a-b188ba49bf9e",
+              "properties": {
+                "field": "created_at",
+                "operator": "greater_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "a998baba-cdef-4012-b456-7188ba4a1f04",
+              "properties": {
+                "field": "created_at",
+                "operator": "less_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            }
+          ],
+          "id": "aa88988b-89ab-4cde-b012-3188ba35735b",
+          "properties": {
+            "conjunction": "AND"
+          },
+          "type": "group"
+        },
+        "whereString": "status = 'succeeded'"
+      },
+      "table": "payment_intent"
+    }
+  ],
+  "title": "Payment Intent not reaching terminal status",
+  "type": "table"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "filterable": true,
+        "inspect": false,
+        "minWidth": 50
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "percentage",
+        "steps": [
+          {
+            "color": "red"
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 19,
+    "w": 7,
+    "x": 0,
+    "y": 54
+  },
+  "id": 54,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT payment_intent.merchant_id,payment_attempt.payment_id,payment_attempt.connector,payment_intent.status as intent_status,payment_attempt.status as attempt_status,payment_intent.created_at, payment_attempt.payment_method,payment_attempt.payment_method_type\nFROM payment_attempt\n\nINNER JOIN payment_intent\nON payment_attempt.payment_id=payment_intent.payment_id\n\nand payment_attempt.created_at >= $__timeFrom() AND payment_attempt.created_at <= $__timeTo() \nand payment_attempt.status NOT IN ('confirmation_awaited', 'failure','payment_method_awaited','charged', 'authentication_pending','authorized')\n\nGROUP BY payment_intent.merchant_id,payment_intent.status,payment_attempt.status,payment_attempt.payment_id,payment_attempt.connector,payment_intent.created_at,payment_attempt.payment_method,payment_attempt.payment_method_type\nORDER BY payment_attempt.status,payment_intent.created_at DESC",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "name": "COUNT",
+            "parameters": [
+              {
+                "name": "payment_id",
+                "type": "functionParameter"
+              }
+            ],
+            "type": "function"
+          }
+        ],
+        "groupBy": [],
+        "limit": 50,
+        "whereJsonTree": {
+          "children1": [
+            {
+              "id": "aa989b88-cdef-4012-b456-7188ba3ae241",
+              "properties": {
+                "field": "status",
+                "operator": "equal",
+                "value": [
+                  "succeeded"
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "text"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "89ab9ab8-0123-4456-b89a-b188ba49bf9e",
+              "properties": {
+                "field": "created_at",
+                "operator": "greater_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "a998baba-cdef-4012-b456-7188ba4a1f04",
+              "properties": {
+                "field": "created_at",
+                "operator": "less_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            }
+          ],
+          "id": "aa88988b-89ab-4cde-b012-3188ba35735b",
+          "properties": {
+            "conjunction": "AND"
+          },
+          "type": "group"
+        },
+        "whereString": "status = 'succeeded'"
+      },
+      "table": "payment_intent"
+    }
+  ],
+  "title": "Payment attempt not reaching terminal status - Payment ID level",
+  "type": "table"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "inspect": false,
+        "minWidth": 50
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "percentage",
+        "steps": [
+          {
+            "color": "red"
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 9,
+    "w": 6,
+    "x": 7,
+    "y": 54
+  },
+  "id": 32,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT payment_intent.merchant_id,payment_attempt.connector,payment_intent.status as intent_status,payment_attempt.status as attempt_status, payment_attempt.payment_method,payment_attempt.payment_method_type,count(payment_intent.payment_id) as PaymentsCount\nFROM payment_attempt\n\nINNER JOIN payment_intent\nON payment_attempt.payment_id=payment_intent.payment_id\n\nand payment_attempt.created_at >= $__timeFrom() AND payment_attempt.created_at <= $__timeTo() \nand payment_attempt.status NOT IN ('confirmation_awaited', 'failure','payment_method_awaited','charged', 'authentication_pending','authorized')\n\nGROUP BY payment_intent.merchant_id,payment_attempt.status,payment_attempt.connector,payment_attempt.payment_method,payment_attempt.payment_method_type,intent_status\nORDER BY PaymentsCount DESC,payment_attempt.status",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "name": "COUNT",
+            "parameters": [
+              {
+                "name": "payment_id",
+                "type": "functionParameter"
+              }
+            ],
+            "type": "function"
+          }
+        ],
+        "groupBy": [],
+        "limit": 50,
+        "whereJsonTree": {
+          "children1": [
+            {
+              "id": "aa989b88-cdef-4012-b456-7188ba3ae241",
+              "properties": {
+                "field": "status",
+                "operator": "equal",
+                "value": [
+                  "succeeded"
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "text"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "89ab9ab8-0123-4456-b89a-b188ba49bf9e",
+              "properties": {
+                "field": "created_at",
+                "operator": "greater_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "a998baba-cdef-4012-b456-7188ba4a1f04",
+              "properties": {
+                "field": "created_at",
+                "operator": "less_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            }
+          ],
+          "id": "aa88988b-89ab-4cde-b012-3188ba35735b",
+          "properties": {
+            "conjunction": "AND"
+          },
+          "type": "group"
+        },
+        "whereString": "status = 'succeeded'"
+      },
+      "table": "payment_intent"
+    }
+  ],
+  "title": "Payment Attempts not reaching terminal status",
+  "type": "table"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "filterable": true,
+        "inspect": false,
+        "minWidth": 50
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "percentage",
+        "steps": [
+          {
+            "color": "red"
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 9,
+    "w": 11,
+    "x": 13,
+    "y": 54
+  },
+  "id": 52,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT payment_intent.merchant_id,payment_attempt.payment_id,payment_attempt.connector,payment_intent.status as intent_status,payment_attempt.status as attempt_status,payment_intent.created_at, payment_attempt.payment_method,payment_attempt.payment_method_type\nFROM payment_attempt\n\nINNER JOIN payment_intent\nON payment_attempt.payment_id=payment_intent.payment_id\n\nand payment_attempt.created_at >= $__timeFrom() AND payment_attempt.created_at <= $__timeTo() \nand payment_intent.status NOT IN ('succeeded', 'requires_payment_method','failed')\n\nGROUP BY payment_intent.merchant_id,payment_intent.status,payment_attempt.status,payment_attempt.payment_id,payment_attempt.connector,payment_intent.created_at,payment_attempt.payment_method,payment_attempt.payment_method_type\nORDER BY payment_attempt.status,payment_intent.created_at DESC",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "name": "COUNT",
+            "parameters": [
+              {
+                "name": "payment_id",
+                "type": "functionParameter"
+              }
+            ],
+            "type": "function"
+          }
+        ],
+        "groupBy": [],
+        "limit": 50,
+        "whereJsonTree": {
+          "children1": [
+            {
+              "id": "aa989b88-cdef-4012-b456-7188ba3ae241",
+              "properties": {
+                "field": "status",
+                "operator": "equal",
+                "value": [
+                  "succeeded"
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "text"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "89ab9ab8-0123-4456-b89a-b188ba49bf9e",
+              "properties": {
+                "field": "created_at",
+                "operator": "greater_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "a998baba-cdef-4012-b456-7188ba4a1f04",
+              "properties": {
+                "field": "created_at",
+                "operator": "less_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            }
+          ],
+          "id": "aa88988b-89ab-4cde-b012-3188ba35735b",
+          "properties": {
+            "conjunction": "AND"
+          },
+          "type": "group"
+        },
+        "whereString": "status = 'succeeded'"
+      },
+      "table": "payment_intent"
+    }
+  ],
+  "title": "Payment Intent not reaching terminal status - Payment ID level",
+  "type": "table"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "filterable": true,
+        "inspect": false,
+        "minWidth": 50
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green"
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 10,
+    "w": 17,
+    "x": 7,
+    "y": 63
+  },
+  "id": 22,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true,
+    "sortBy": [
+      {
+        "desc": true,
+        "displayName": "merchant_id"
+      }
+    ]
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT connector, merchant_id, status, error_code, error_message, count(payment_id) as total_occurences\nFROM payment_attempt\nWHERE created_at >= $__timeFrom() AND created_at <= $__timeTo() and status <> 'charged' \nGROUP BY connector, error_message, error_code, merchant_id, status\nORDER BY total_occurences DESC\nLIMIT 40",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    }
+  ],
+  "title": "Most Frequent - Payment Failure reasons",
+  "type": "table"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "description": "",
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "inspect": false
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green"
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 5,
+    "w": 10,
+    "x": 0,
+    "y": 73
+  },
+  "id": 46,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true,
+    "sortBy": [
+      {
+        "desc": true,
+        "displayName": "total_payments"
+      }
+    ]
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "-- SELECT payment_method, connector, payment_method_type, save_to_locker,\n-- count(payment_id) as total_payments\n-- -- count(CASE WHEN status = 'success' payment_id) as success_payments\n-- FROM payment_attempt \n-- WHERE created_at >= $__timeFrom() AND created_at <= $__timeTo() \n-- GROUP BY payment_method, connector, payment_method_type, save_to_locker LIMIT 10\n\n\nSELECT\npayment_intent.merchant_id, \npayment_attempt.capture_method,\npayment_intent.status,\npayment_attempt.error_message,\ncount(payment_intent.payment_id) as paymentscount\nFROM payment_intent\n\nINNER JOIN payment_attempt ON payment_intent.payment_id=payment_attempt.payment_id\n\nWHERE payment_intent.created_at >= $__timeFrom() AND payment_intent.created_at <= $__timeTo() and payment_attempt.capture_method IN ( 'manual','manual_multiple' ) and payment_intent.status NOT IN ('succeeded')\n\nGROUP BY payment_intent.merchant_id,payment_attempt.capture_method,payment_intent.status,payment_attempt.error_message",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    }
+  ],
+  "title": "Manual capture payments - Failure reasons",
+  "type": "table"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "inspect": false
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green"
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 5,
+    "w": 7,
+    "x": 10,
+    "y": 73
+  },
+  "id": 37,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true,
+    "sortBy": [
+      {
+        "desc": true,
+        "displayName": "total_payments"
+      }
+    ]
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "-- SELECT payment_method, connector, payment_method_type, save_to_locker,\n-- count(payment_id) as total_payments\n-- -- count(CASE WHEN status = 'success' payment_id) as success_payments\n-- FROM payment_attempt \n-- WHERE created_at >= $__timeFrom() AND created_at <= $__timeTo() \n-- GROUP BY payment_method, connector, payment_method_type, save_to_locker LIMIT 10\n\n\nSELECT\npayment_intent.merchant_id, \npayment_intent.setup_future_usage, \ncount(payment_intent.payment_id) as total_payments, \ncount(distinct case when payment_intent.status = 'succeeded' then payment_intent.payment_id end) AS success_payments\nFROM payment_intent\n\nINNER JOIN payment_attempt ON payment_intent.payment_id=payment_attempt.payment_id\n\nWHERE payment_intent.created_at >= $__timeFrom() AND payment_intent.created_at <= $__timeTo() and payment_intent.setup_future_usage IN ('on_session','off_session') and payment_attempt.payment_method IN ('card')\n\nGROUP BY payment_intent.merchant_id, payment_intent.setup_future_usage",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    }
+  ],
+  "title": "First time saved card payments",
+  "type": "table"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "inspect": false,
+        "minWidth": 50
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green"
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 5,
+    "w": 7,
+    "x": 17,
+    "y": 73
+  },
+  "id": 39,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true,
+    "sortBy": [
+      {
+        "desc": true,
+        "displayName": "total_payments"
+      }
+    ]
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "-- SELECT payment_method, connector, payment_method_type, save_to_locker,\n-- count(payment_id) as total_payments\n-- -- count(CASE WHEN status = 'success' payment_id) as success_payments\n-- FROM payment_attempt \n-- WHERE created_at >= $__timeFrom() AND created_at <= $__timeTo() \n-- GROUP BY payment_method, connector, payment_method_type, save_to_locker LIMIT 10\n\n\nSELECT\npayment_intent.merchant_id, \npayment_intent.status,\npayment_attempt.error_message,\ncount(payment_intent.payment_id) AS unsuccessful_payments\n\nFROM payment_intent\n\nINNER JOIN payment_attempt ON payment_intent.payment_id=payment_attempt.payment_id\n\nWHERE payment_intent.created_at >= $__timeFrom() AND payment_intent.created_at <= $__timeTo() and payment_attempt.payment_token LIKE ('token_%') and payment_attempt.payment_method IN ('card') and payment_intent.status NOT IN ('succeeded')\n\nGROUP BY payment_intent.merchant_id,payment_intent.status,payment_attempt.error_message\nORDER BY unsuccessful_payments DESC",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    }
+  ],
+  "title": "Returning user saved card payments - Failure reasons",
+  "type": "table"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "description": "",
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "inspect": false
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green"
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 5,
+    "w": 10,
+    "x": 0,
+    "y": 78
+  },
+  "id": 45,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true,
+    "sortBy": [
+      {
+        "desc": true,
+        "displayName": "total_payments"
+      }
+    ]
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "-- SELECT payment_method, connector, payment_method_type, save_to_locker,\n-- count(payment_id) as total_payments\n-- -- count(CASE WHEN status = 'success' payment_id) as success_payments\n-- FROM payment_attempt \n-- WHERE created_at >= $__timeFrom() AND created_at <= $__timeTo() \n-- GROUP BY payment_method, connector, payment_method_type, save_to_locker LIMIT 10\n\n\nSELECT\npayment_intent.merchant_id, \npayment_attempt.capture_method,\ncount(payment_intent.payment_id) as total_payments, \ncount(distinct case when payment_intent.status = 'succeeded' then payment_intent.payment_id end) AS success_payments\nFROM payment_intent\n\nINNER JOIN payment_attempt ON payment_intent.payment_id=payment_attempt.payment_id\n\nWHERE payment_intent.created_at >= $__timeFrom() AND payment_intent.created_at <= $__timeTo() and payment_attempt.capture_method IN ( 'manual','manual_multiple' )\n\nGROUP BY payment_intent.merchant_id,payment_attempt.capture_method",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    }
+  ],
+  "title": "Manual capture payments",
+  "type": "table"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "inspect": false
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green"
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 5,
+    "w": 7,
+    "x": 10,
+    "y": 78
+  },
+  "id": 38,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true,
+    "sortBy": [
+      {
+        "desc": true,
+        "displayName": "total_payments"
+      }
+    ]
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "-- SELECT payment_method, connector, payment_method_type, save_to_locker,\n-- count(payment_id) as total_payments\n-- -- count(CASE WHEN status = 'success' payment_id) as success_payments\n-- FROM payment_attempt \n-- WHERE created_at >= $__timeFrom() AND created_at <= $__timeTo() \n-- GROUP BY payment_method, connector, payment_method_type, save_to_locker LIMIT 10\n\n\nSELECT\npayment_intent.merchant_id, \ncount(payment_intent.payment_id) as total_payments, \ncount(distinct case when payment_intent.status = 'succeeded' then payment_intent.payment_id end) AS success_payments\nFROM payment_intent\n\nINNER JOIN payment_attempt ON payment_intent.payment_id=payment_attempt.payment_id\n\nWHERE payment_intent.created_at >= $__timeFrom() AND payment_intent.created_at <= $__timeTo() and payment_attempt.payment_token LIKE ('token_%') and payment_attempt.payment_method IN ('card')\n\nGROUP BY payment_intent.merchant_id",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    }
+  ],
+  "title": "Returning user saved card payments",
+  "type": "table"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "inspect": false,
+        "minWidth": 50
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green"
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 5,
+    "w": 7,
+    "x": 17,
+    "y": 78
+  },
+  "id": 40,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true,
+    "sortBy": [
+      {
+        "desc": true,
+        "displayName": "total_payments"
+      }
+    ]
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "-- SELECT payment_method, connector, payment_method_type, save_to_locker,\n-- count(payment_id) as total_payments\n-- -- count(CASE WHEN status = 'success' payment_id) as success_payments\n-- FROM payment_attempt \n-- WHERE created_at >= $__timeFrom() AND created_at <= $__timeTo() \n-- GROUP BY payment_method, connector, payment_method_type, save_to_locker LIMIT 10\n\n\nSELECT\npayment_intent.merchant_id, \npayment_intent.status,\npayment_attempt.error_message,\ncount(payment_intent.payment_id) AS unsuccessful_payments\n\nFROM payment_intent\n\nINNER JOIN payment_attempt ON payment_intent.payment_id=payment_attempt.payment_id\n\nWHERE payment_intent.created_at >= $__timeFrom() AND payment_intent.created_at <= $__timeTo() and payment_intent.setup_future_usage IS NOT NULL and payment_attempt.payment_method IN ('card') and payment_intent.status NOT IN ('succeeded')\n\nGROUP BY payment_intent.merchant_id,payment_intent.status,payment_attempt.error_message\nORDER BY unsuccessful_payments DESC",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    }
+  ],
+  "title": "First time saved card payments - Failure reasons",
+  "type": "table"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "description": "",
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "inspect": false
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green"
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 6,
+    "w": 11,
+    "x": 0,
+    "y": 83
+  },
+  "id": 47,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true,
+    "sortBy": [
+      {
+        "desc": true,
+        "displayName": "total_payments"
+      }
+    ]
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "-- SELECT payment_method, connector, payment_method_type, save_to_locker,\n-- count(payment_id) as total_payments\n-- -- count(CASE WHEN status = 'success' payment_id) as success_payments\n-- FROM payment_attempt \n-- WHERE created_at >= $__timeFrom() AND created_at <= $__timeTo() \n-- GROUP BY payment_method, connector, payment_method_type, save_to_locker LIMIT 10\n\n\nSELECT\npayment_intent.merchant_id, \npayment_attempt.capture_method,\ncount(payment_intent.payment_id) as total_payments, \ncount(distinct case when payment_intent.status = 'succeeded' then payment_intent.payment_id end) AS success_payments\nFROM payment_intent\n\nINNER JOIN payment_attempt ON payment_intent.payment_id=payment_attempt.payment_id\n\nWHERE payment_intent.created_at >= $__timeFrom() AND payment_intent.created_at <= $__timeTo() and payment_attempt.mandate_details IS NOT NULL\n\nGROUP BY payment_intent.merchant_id,payment_attempt.capture_method",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    }
+  ],
+  "title": "Mandate create payments",
+  "type": "table"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "description": "",
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "inspect": false
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green"
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 6,
+    "w": 13,
+    "x": 11,
+    "y": 83
+  },
+  "id": 49,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true,
+    "sortBy": [
+      {
+        "desc": true,
+        "displayName": "total_payments"
+      }
+    ]
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "-- SELECT payment_method, connector, payment_method_type, save_to_locker,\n-- count(payment_id) as total_payments\n-- -- count(CASE WHEN status = 'success' payment_id) as success_payments\n-- FROM payment_attempt \n-- WHERE created_at >= $__timeFrom() AND created_at <= $__timeTo() \n-- GROUP BY payment_method, connector, payment_method_type, save_to_locker LIMIT 10\n\n\nSELECT\npayment_intent.merchant_id, \npayment_attempt.capture_method,\npayment_intent.status,\npayment_attempt.error_message,\ncount(payment_intent.payment_id) as paymentscount\nFROM payment_intent\n\nINNER JOIN payment_attempt ON payment_intent.payment_id=payment_attempt.payment_id\n\nWHERE payment_intent.created_at >= $__timeFrom() AND payment_intent.created_at <= $__timeTo() and payment_attempt.mandate_details IS NOT NULL and payment_intent.status NOT IN ('succeeded')\n\nGROUP BY payment_intent.merchant_id,payment_attempt.capture_method,payment_intent.status,payment_attempt.error_message",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    }
+  ],
+  "title": "Mandate create payments - Failure reasons",
+  "type": "table"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "description": "",
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "inspect": false
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green"
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 6,
+    "w": 11,
+    "x": 0,
+    "y": 89
+  },
+  "id": 48,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true,
+    "sortBy": [
+      {
+        "desc": true,
+        "displayName": "total_payments"
+      }
+    ]
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "-- SELECT payment_method, connector, payment_method_type, save_to_locker,\n-- count(payment_id) as total_payments\n-- -- count(CASE WHEN status = 'success' payment_id) as success_payments\n-- FROM payment_attempt \n-- WHERE created_at >= $__timeFrom() AND created_at <= $__timeTo() \n-- GROUP BY payment_method, connector, payment_method_type, save_to_locker LIMIT 10\n\n\nSELECT\npayment_intent.merchant_id, \npayment_attempt.capture_method,\ncount(payment_intent.payment_id) as total_payments, \ncount(distinct case when payment_intent.status = 'succeeded' then payment_intent.payment_id end) AS success_payments\nFROM payment_intent\n\nINNER JOIN payment_attempt ON payment_intent.payment_id=payment_attempt.payment_id\n\nWHERE payment_intent.created_at >= $__timeFrom() AND payment_intent.created_at <= $__timeTo() and payment_attempt.mandate_id IS NOT NULL\n\nGROUP BY payment_intent.merchant_id,payment_attempt.capture_method",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    }
+  ],
+  "title": "Recurring payments",
+  "type": "table"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "description": "",
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "inspect": false
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green"
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 6,
+    "w": 13,
+    "x": 11,
+    "y": 89
+  },
+  "id": 50,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true,
+    "sortBy": [
+      {
+        "desc": true,
+        "displayName": "total_payments"
+      }
+    ]
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "-- SELECT payment_method, connector, payment_method_type, save_to_locker,\n-- count(payment_id) as total_payments\n-- -- count(CASE WHEN status = 'success' payment_id) as success_payments\n-- FROM payment_attempt \n-- WHERE created_at >= $__timeFrom() AND created_at <= $__timeTo() \n-- GROUP BY payment_method, connector, payment_method_type, save_to_locker LIMIT 10\n\n\nSELECT\npayment_intent.merchant_id, \npayment_attempt.capture_method,\npayment_intent.status,\npayment_attempt.error_message,\ncount(payment_intent.payment_id) as paymentscount\nFROM payment_intent\n\nINNER JOIN payment_attempt ON payment_intent.payment_id=payment_attempt.payment_id\n\nWHERE payment_intent.created_at >= $__timeFrom() AND payment_intent.created_at <= $__timeTo() and payment_attempt.mandate_id IS NOT NULL and payment_intent.status NOT IN ('succeeded')\n\nGROUP BY payment_intent.merchant_id,payment_attempt.capture_method,payment_intent.status,payment_attempt.error_message",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    }
+  ],
+  "title": "Recurring payments - Failure reasons",
+  "type": "table"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "filterable": true,
+        "inspect": false
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "percentage",
+        "steps": [
+          {
+            "color": "red"
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 9,
+    "w": 12,
+    "x": 0,
+    "y": 95
+  },
+  "id": 41,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT payment_intent.merchant_id,payment_attempt.connector,payment_intent.status as intent_status,payment_attempt.status as attempt_status, payment_attempt.payment_method,payment_attempt.payment_method_type, count(payment_attempt.payment_id) as paymentsCount\nFROM payment_attempt\n\nINNER JOIN payment_intent\nON payment_attempt.payment_id=payment_intent.payment_id\n\nand payment_attempt.created_at >'2023-08-15'\nand ((payment_intent.status IN ('succeeded') and payment_attempt.status NOT IN ('charged','auto_refunded')) or (payment_intent.status IN ('requires_confirmation') and payment_attempt.status NOT IN ('confirmation_awaited'))  or (payment_intent.status IN ('requires_payment_method') and payment_attempt.status NOT IN ('payment_method_awaited'))  or (payment_intent.status IN ('requires_capture') and payment_attempt.status NOT IN ('authorized')) or (payment_intent.status IN ('requires_customer_action') and payment_attempt.status NOT IN ('authentication_pending','device_data_collection_pending')) or (payment_intent.status IN ('requires_merchant_action') and payment_attempt.status NOT IN ('unresolved')) or (payment_intent.status IN ('partially_captured') and payment_attempt.status NOT IN ('partial_charged')) or (payment_intent.status IN ('processing') and payment_attempt.status NOT IN ('started','authentication_successful','authorizing','cod_initiated','void_initiated','capture_initiated','pending')) or (payment_intent.status IN ('failed') and payment_attempt.status NOT IN ('authentication_failed','authorization_failed','void_failed','router_declined','capture_failed','failure')) or (payment_intent.status IN ('cancelled') and payment_attempt.status NOT IN ('voided')))\nGROUP BY payment_intent.merchant_id,payment_intent.status,payment_attempt.status,payment_attempt.connector,payment_attempt.payment_method,payment_attempt.payment_method_type\nORDER BY paymentscount DESC,payment_intent.status,payment_attempt.status",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "name": "COUNT",
+            "parameters": [
+              {
+                "name": "payment_id",
+                "type": "functionParameter"
+              }
+            ],
+            "type": "function"
+          }
+        ],
+        "groupBy": [],
+        "limit": 50,
+        "whereJsonTree": {
+          "children1": [
+            {
+              "id": "aa989b88-cdef-4012-b456-7188ba3ae241",
+              "properties": {
+                "field": "status",
+                "operator": "equal",
+                "value": [
+                  "succeeded"
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "text"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "89ab9ab8-0123-4456-b89a-b188ba49bf9e",
+              "properties": {
+                "field": "created_at",
+                "operator": "greater_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "a998baba-cdef-4012-b456-7188ba4a1f04",
+              "properties": {
+                "field": "created_at",
+                "operator": "less_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            }
+          ],
+          "id": "aa88988b-89ab-4cde-b012-3188ba35735b",
+          "properties": {
+            "conjunction": "AND"
+          },
+          "type": "group"
+        },
+        "whereString": "status = 'succeeded'"
+      },
+      "table": "payment_intent"
+    }
+  ],
+  "title": "Summary of Payment Intent vs attempt status mismatch",
+  "type": "table"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "filterable": true,
+        "inspect": false
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "percentage",
+        "steps": [
+          {
+            "color": "red"
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 9,
+    "w": 12,
+    "x": 12,
+    "y": 95
+  },
+  "id": 44,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT payment_intent.merchant_id,payment_attempt.payment_id,payment_attempt.connector,payment_intent.status as intent_status,payment_attempt.status as attempt_status,payment_intent.created_at, payment_attempt.payment_method,payment_attempt.payment_method_type\nFROM payment_attempt\n\nINNER JOIN payment_intent\nON payment_attempt.payment_id=payment_intent.payment_id\n\nand payment_attempt.created_at >'2023-08-15'\nand ((payment_intent.status IN ('succeeded') and payment_attempt.status NOT IN ('charged','auto_refunded')) or (payment_intent.status IN ('requires_confirmation') and payment_attempt.status NOT IN ('confirmation_awaited'))  or (payment_intent.status IN ('requires_payment_method') and payment_attempt.status NOT IN ('payment_method_awaited'))  or (payment_intent.status IN ('requires_capture') and payment_attempt.status NOT IN ('authorized')) or (payment_intent.status IN ('requires_customer_action') and payment_attempt.status NOT IN ('authentication_pending','device_data_collection_pending')) or (payment_intent.status IN ('requires_merchant_action') and payment_attempt.status NOT IN ('unresolved')) or (payment_intent.status IN ('partially_captured') and payment_attempt.status NOT IN ('partial_charged')) or (payment_intent.status IN ('processing') and payment_attempt.status NOT IN ('started','authentication_successful','authorizing','cod_initiated','void_initiated','capture_initiated','pending')) or (payment_intent.status IN ('failed') and payment_attempt.status NOT IN ('authentication_failed','authorization_failed','void_failed','router_declined','capture_failed','failure')) or (payment_intent.status IN ('cancelled') and payment_attempt.status NOT IN ('voided')))\nGROUP BY payment_intent.merchant_id,payment_intent.status,payment_attempt.status,payment_attempt.payment_id,payment_attempt.connector,payment_intent.created_at,payment_attempt.payment_method,payment_attempt.payment_method_type\nORDER BY payment_intent.status,payment_attempt.status,payment_intent.created_at DESC",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "name": "COUNT",
+            "parameters": [
+              {
+                "name": "payment_id",
+                "type": "functionParameter"
+              }
+            ],
+            "type": "function"
+          }
+        ],
+        "groupBy": [],
+        "limit": 50,
+        "whereJsonTree": {
+          "children1": [
+            {
+              "id": "aa989b88-cdef-4012-b456-7188ba3ae241",
+              "properties": {
+                "field": "status",
+                "operator": "equal",
+                "value": [
+                  "succeeded"
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "text"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "89ab9ab8-0123-4456-b89a-b188ba49bf9e",
+              "properties": {
+                "field": "created_at",
+                "operator": "greater_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            },
+            {
+              "id": "a998baba-cdef-4012-b456-7188ba4a1f04",
+              "properties": {
+                "field": "created_at",
+                "operator": "less_or_equal",
+                "value": [
+                  null
+                ],
+                "valueSrc": [
+                  "value"
+                ],
+                "valueType": [
+                  "datetime"
+                ]
+              },
+              "type": "rule"
+            }
+          ],
+          "id": "aa88988b-89ab-4cde-b012-3188ba35735b",
+          "properties": {
+            "conjunction": "AND"
+          },
+          "type": "group"
+        },
+        "whereString": "status = 'succeeded'"
+      },
+      "table": "payment_intent"
+    }
+  ],
+  "title": "Payment Intent vs attempt status mismatch - Payment ID level",
+  "type": "table"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "fixedColor": "light-green",
+        "mode": "fixed"
+      },
+      "custom": {
+        "axisBorderShow": false,
+        "axisCenteredZero": false,
+        "axisColorMode": "text",
+        "axisLabel": "",
+        "axisPlacement": "auto",
+        "barAlignment": 0,
+        "barWidthFactor": 0.6,
+        "drawStyle": "line",
+        "fillOpacity": 49,
+        "gradientMode": "none",
+        "hideFrom": {
+          "legend": false,
+          "tooltip": false,
+          "viz": false
+        },
+        "insertNulls": false,
+        "lineInterpolation": "linear",
+        "lineWidth": 1,
+        "pointSize": 1,
+        "scaleDistribution": {
+          "type": "linear"
+        },
+        "showPoints": "auto",
+        "spanNulls": false,
+        "stacking": {
+          "group": "A",
+          "mode": "none"
+        },
+        "thresholdsStyle": {
+          "mode": "off"
+        }
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green"
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": [
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "success_payments"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "light-green",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "total_payments"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "light-blue",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "failed_payments"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "light-red",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "user_dropouts"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "light-orange",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "processing"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "light-purple",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "__systemRef": "hideSeriesFrom",
+        "matcher": {
+          "id": "byNames",
+          "options": {
+            "mode": "exclude",
+            "names": [
+              "success_payments"
+            ],
+            "prefix": "All except:",
+            "readOnly": true
+          }
+        },
+        "properties": [
+          {
+            "id": "custom.hideFrom",
+            "value": {
+              "legend": false,
+              "tooltip": false,
+              "viz": true
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "gridPos": {
+    "h": 10,
+    "w": 12,
+    "x": 0,
+    "y": 104
+  },
+  "id": 23,
+  "options": {
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    },
+    "tooltip": {
+      "mode": "single",
+      "sort": "none"
+    }
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT\n$__timeGroupAlias(created_at, 1h),\ncount(payment_id) AS total_payments,\ncount(distinct case when status = 'succeeded' then payment_id end) AS success_payments,\ncount(distinct case when status = 'failed' then payment_id end) AS failed_payments,\ncount(distinct case when status = 'requires_payment_method' then payment_id end) AS user_dropouts,\ncount(distinct case when status = 'processing' then payment_id end) AS processing\nFROM payment_intent\nWHERE\n$__timeFilter(created_at) AND merchant_id NOT LIKE ('%hyperswitch%')\nGROUP BY 1\nORDER BY $__timeGroup(created_at, 1h)",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    }
+  ],
+  "title": "Payment status wise - Hourly Trend of Payments volume",
+  "type": "timeseries"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "fixedColor": "light-green",
+        "mode": "fixed"
+      },
+      "custom": {
+        "axisBorderShow": false,
+        "axisCenteredZero": false,
+        "axisColorMode": "text",
+        "axisLabel": "",
+        "axisPlacement": "auto",
+        "barAlignment": 0,
+        "barWidthFactor": 0.6,
+        "drawStyle": "line",
+        "fillOpacity": 49,
+        "gradientMode": "none",
+        "hideFrom": {
+          "legend": false,
+          "tooltip": false,
+          "viz": false
+        },
+        "insertNulls": false,
+        "lineInterpolation": "linear",
+        "lineWidth": 1,
+        "pointSize": 1,
+        "scaleDistribution": {
+          "type": "linear"
+        },
+        "showPoints": "auto",
+        "spanNulls": false,
+        "stacking": {
+          "group": "A",
+          "mode": "none"
+        },
+        "thresholdsStyle": {
+          "mode": "off"
+        }
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green"
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": [
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "success_payments"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "light-green",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "total_payments"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "light-blue",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "failed_payments"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "light-red",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "user_dropouts"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "light-orange",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "getin"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "semi-dark-orange",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "reloadhero"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "super-light-blue",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "stripe"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "dark-purple",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "bluesnap"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "light-blue",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "paypal"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "dark-blue",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "trustpay"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "super-light-blue",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "payme"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "#0167ff",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "zen"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "#000000",
+              "mode": "fixed"
+            }
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "checkout"
+        },
+        "properties": [
+          {
+            "id": "color",
+            "value": {
+              "fixedColor": "#ffffff",
+              "mode": "fixed"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "gridPos": {
+    "h": 10,
+    "w": 12,
+    "x": 12,
+    "y": 104
+  },
+  "id": 53,
+  "options": {
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    },
+    "tooltip": {
+      "mode": "single",
+      "sort": "none"
+    }
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT\n$__timeGroupAlias(created_at, 1h),\ncount(distinct case when connector = 'stripe' then payment_id end) AS stripe,\ncount(distinct case when connector = 'bluesnap' then payment_id end) AS bluesnap,\ncount(distinct case when connector = 'paypal' then payment_id end) AS paypal,\ncount(distinct case when connector = 'trustpay' then payment_id end) AS trustpay,\ncount(distinct case when connector = 'payme' then payment_id end) AS payme,\ncount(distinct case when connector = 'adyen' then payment_id end) AS adyen,\ncount(distinct case when connector = 'zen' then payment_id end) AS zen,\ncount(distinct case when connector = 'checkout' then payment_id end) AS checkout\nFROM payment_attempt\nWHERE\n$__timeFilter(created_at) AND merchant_id NOT LIKE ('%hyperswitch%')\nGROUP BY 1\nORDER BY $__timeGroup(created_at, 1h)",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    }
+  ],
+  "title": "Connectors - Hourly Trend of Payments volume",
+  "type": "timeseries"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "inspect": false
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green"
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": [
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "error_message"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 427
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "payment_id"
+        },
+        "properties": [
+          {
+            "id": "custom.width"
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "connector"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 125
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "status"
+        },
+        "properties": [
+          {
+            "id": "custom.width"
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "currency"
+        },
+        "properties": [
+          {
+            "id": "custom.width"
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "created_at"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 189
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "amount"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 161
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "merchant_id"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 126
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "customer_id"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 250
+          }
+        ]
+      }
+    ]
+  },
+  "gridPos": {
+    "h": 11,
+    "w": 12,
+    "x": 0,
+    "y": 114
+  },
+  "id": 55,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true,
+    "sortBy": [
+      {
+        "desc": true,
+        "displayName": "created_at"
+      }
+    ]
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT pin.merchant_id, pin.created_at, pin.payment_id, pin.customer_id, pin.status, pin.currency, pin.amount/100.00 as amount, pa.connector, pa.error_message, pa.error_code, pa.error_reason, pa.authentication_type, pa.payment_method, pa.payment_method_type\nFROM payment_intent as pin\nINNER JOIN payment_attempt as pa on pin.payment_id=pa.payment_id\nINNER JOIN customers as cu on pin.customer_id=cu.customer_id\nWHERE pin.created_at >= '2023-07-01' and pin.merchant_id = 'getin984'\nGROUP BY pin.merchant_id, pin.created_at, pin.payment_id, pin.customer_id, pin.currency, pin.status, pin.amount, pa.connector, pa.error_message,pa.error_code,pa.error_reason, pa.authentication_type, pa.payment_method, pa.payment_method_type",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    }
+  ],
+  "title": "Payment data",
+  "type": "table"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "inspect": false
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green"
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": [
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "error_message"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 427
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "payment_id"
+        },
+        "properties": [
+          {
+            "id": "custom.width"
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "connector"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 125
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "status"
+        },
+        "properties": [
+          {
+            "id": "custom.width"
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "currency"
+        },
+        "properties": [
+          {
+            "id": "custom.width"
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "created_at"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 189
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "amount"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 161
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "merchant_id"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 126
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "customer_id"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 250
+          }
+        ]
+      }
+    ]
+  },
+  "gridPos": {
+    "h": 11,
+    "w": 12,
+    "x": 12,
+    "y": 114
+  },
+  "id": 9,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true,
+    "sortBy": [
+      {
+        "desc": true,
+        "displayName": "created_at"
+      }
+    ]
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT merchant_id, created_at, payment_id, customer_id, status, currency, amount/100.00 as amount\nFROM payment_intent\nWHERE created_at >= $__timeFrom() AND created_at <= $__timeTo()\nGROUP BY merchant_id, created_at, payment_id, customer_id, currency, status, amount LIMIT 20",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    }
+  ],
+  "title": "Most recent payments",
+  "type": "table"
+},
+{
+  "datasource": {
+    "type": "postgres",
+    "uid": "${psql_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "thresholds"
+      },
+      "custom": {
+        "align": "auto",
+        "cellOptions": {
+          "type": "auto"
+        },
+        "inspect": false
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green"
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": [
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "error_message"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 427
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "payment_id"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 247
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "connector"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 125
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "status"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 235
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "currency"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 83
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "created_at"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 189
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "refund_id"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 228
+          }
+        ]
+      },
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "amount"
+        },
+        "properties": [
+          {
+            "id": "custom.width",
+            "value": 134
+          }
+        ]
+      }
+    ]
+  },
+  "gridPos": {
+    "h": 9,
+    "w": 24,
+    "x": 0,
+    "y": 125
+  },
+  "id": 21,
+  "options": {
+    "cellHeight": "sm",
+    "footer": {
+      "countRows": false,
+      "fields": "",
+      "reducer": [
+        "sum"
+      ],
+      "show": false
+    },
+    "showHeader": true,
+    "sortBy": [
+      {
+        "desc": false,
+        "displayName": "merchant_id"
+      }
+    ]
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${psql_data_source}"
+      },
+      "editorMode": "code",
+      "format": "table",
+      "rawQuery": true,
+      "rawSql": "SELECT merchant_id, created_at, refund_id, refund_status, connector, currency, refund_amount/100.00 as amount, refund_error_message\nFROM refund\nWHERE created_at >= $__timeFrom() AND created_at <= $__timeTo()\nGROUP BY merchant_id, created_at, refund_id, refund_status, connector, currency, refund_amount, refund_error_message LIMIT 20",
+      "refId": "A",
+      "sql": {
+        "columns": [
+          {
+            "parameters": [],
+            "type": "function"
+          }
+        ],
+        "groupBy": [
+          {
+            "property": {
+              "type": "string"
+            },
+            "type": "groupBy"
+          }
+        ],
+        "limit": 50
+      }
+    }
+  ],
+  "title": "Most recent refunds",
+  "type": "table"
+}
+],
+"refresh": "",
+"schemaVersion": 38,
+"style": "dark",
+"tags": [],
+"templating": {
+"list": [
+  {
+    "current": {
+      "selected": false,
+      "text": "PostgreSQL",
+      "value": "PostgreSQL"
+    },
+    "hide": 0,
+    "includeAll": false,
+    "label": "PostgreSQL",
+    "multi": false,
+    "name": "psql_data_source",
+    "options": [],
+    "query": "postgres",
+    "refresh": 1,
+    "regex": "",
+    "skipUrlSync": false,
+    "type": "datasource"
+  }
+]
+},
+"time": {
+"from": "now-24h",
+"to": "now"
+},
+"timepicker": {},
+"timezone": "",
+"title": "Test check Business Metrics v2",
+"version": 2,
+"weekStart": ""
+}
+  },
+  {
+    "dashboard": {
+"annotations": {
+"list": [
+  {
+    "builtIn": 1,
+    "datasource": {
+      "type": "grafana",
+      "uid": "-- Grafana --"
+    },
+    "enable": true,
+    "hide": true,
+    "iconColor": "rgba(0, 211, 255, 1)",
+    "name": "Annotations & Alerts",
+    "type": "dashboard"
+  }
+]
+},
+"editable": true,
+"fiscalYearStartMonth": 0,
+"graphTooltip": 0,
+"id": 186,
+"links": [],
+"panels": [
+{
+  "datasource": {
+    "type": "prometheus",
+    "uid": "${prometheus_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "palette-classic"
+      },
+      "custom": {
+        "axisBorderShow": false,
+        "axisCenteredZero": false,
+        "axisColorMode": "text",
+        "axisLabel": "",
+        "axisPlacement": "auto",
+        "barAlignment": 0,
+        "barWidthFactor": 0.6,
+        "drawStyle": "line",
+        "fillOpacity": 0,
+        "gradientMode": "none",
+        "hideFrom": {
+          "legend": false,
+          "tooltip": false,
+          "viz": false
+        },
+        "insertNulls": false,
+        "lineInterpolation": "linear",
+        "lineWidth": 1,
+        "pointSize": 5,
+        "scaleDistribution": {
+          "type": "linear"
+        },
+        "showPoints": "auto",
+        "spanNulls": false,
+        "stacking": {
+          "group": "A",
+          "mode": "none"
+        },
+        "thresholdsStyle": {
+          "mode": "off"
+        }
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green",
+            "value": null
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 16,
+    "w": 12,
+    "x": 0,
+    "y": 0
+  },
+  "id": 2,
+  "options": {
+    "legend": {
+      "calcs": [
+        "mean",
+        "max"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    },
+    "tooltip": {
+      "mode": "single",
+      "sort": "none"
+    }
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prometheus_data_source}"
+      },
+      "editorMode": "builder",
+      "expr": "sum(container_memory_usage_bytes{container!=\"\", pod!=\"\"}/1024/1024) by (pod)",
+      "hide": false,
+      "instant": false,
+      "range": true,
+      "refId": "A"
+    }
+  ],
+  "title": "Pod Memory Usage",
+  "type": "timeseries"
+},
+{
+  "datasource": {
+    "type": "prometheus",
+    "uid": "${prometheus_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "palette-classic"
+      },
+      "custom": {
+        "axisBorderShow": false,
+        "axisCenteredZero": false,
+        "axisColorMode": "text",
+        "axisLabel": "",
+        "axisPlacement": "auto",
+        "barAlignment": 0,
+        "barWidthFactor": 0.6,
+        "drawStyle": "line",
+        "fillOpacity": 0,
+        "gradientMode": "none",
+        "hideFrom": {
+          "legend": false,
+          "tooltip": false,
+          "viz": false
+        },
+        "insertNulls": false,
+        "lineInterpolation": "linear",
+        "lineWidth": 1,
+        "pointSize": 5,
+        "scaleDistribution": {
+          "type": "linear"
+        },
+        "showPoints": "auto",
+        "spanNulls": false,
+        "stacking": {
+          "group": "A",
+          "mode": "none"
+        },
+        "thresholdsStyle": {
+          "mode": "off"
+        }
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green",
+            "value": null
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 16,
+    "w": 12,
+    "x": 12,
+    "y": 0
+  },
+  "id": 1,
+  "options": {
+    "legend": {
+      "calcs": [
+        "mean",
+        "max"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    },
+    "tooltip": {
+      "mode": "single",
+      "sort": "none"
+    }
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prometheus_data_source}"
+      },
+      "editorMode": "builder",
+      "expr": "sum(rate(container_cpu_usage_seconds_total{container!=\"\", pod!=\"\"}[5m])) by (pod)",
+      "range": true,
+      "refId": "A"
+    }
+  ],
+  "title": "Pod CPU Usage",
+  "type": "timeseries"
+},
+{
+  "datasource": {
+    "type": "prometheus",
+    "uid": "${prometheus_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "palette-classic"
+      },
+      "custom": {
+        "axisBorderShow": false,
+        "axisCenteredZero": false,
+        "axisColorMode": "text",
+        "axisLabel": "",
+        "axisPlacement": "auto",
+        "barAlignment": 0,
+        "barWidthFactor": 0.6,
+        "drawStyle": "line",
+        "fillOpacity": 0,
+        "gradientMode": "none",
+        "hideFrom": {
+          "legend": false,
+          "tooltip": false,
+          "viz": false
+        },
+        "insertNulls": false,
+        "lineInterpolation": "linear",
+        "lineWidth": 1,
+        "pointSize": 5,
+        "scaleDistribution": {
+          "type": "linear"
+        },
+        "showPoints": "auto",
+        "spanNulls": false,
+        "stacking": {
+          "group": "A",
+          "mode": "none"
+        },
+        "thresholdsStyle": {
+          "mode": "off"
+        }
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green",
+            "value": null
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 16
+  },
+  "id": 7,
+  "options": {
+    "legend": {
+      "calcs": [
+        "mean",
+        "max"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    },
+    "tooltip": {
+      "mode": "single",
+      "sort": "none"
+    }
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prometheus_data_source}"
+      },
+      "editorMode": "builder",
+      "expr": "sum((node_memory_MemTotal_bytes - node_memory_MemFree_bytes - node_memory_Cached_bytes - node_memory_Buffers_bytes)/1024/1024) by (instance)",
+      "instant": false,
+      "range": true,
+      "refId": "A"
+    }
+  ],
+  "title": "Node Memory Usage",
+  "type": "timeseries"
+},
+{
+  "datasource": {
+    "type": "prometheus",
+    "uid": "${prometheus_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "palette-classic"
+      },
+      "custom": {
+        "axisBorderShow": false,
+        "axisCenteredZero": false,
+        "axisColorMode": "text",
+        "axisLabel": "",
+        "axisPlacement": "auto",
+        "barAlignment": 0,
+        "barWidthFactor": 0.6,
+        "drawStyle": "line",
+        "fillOpacity": 0,
+        "gradientMode": "none",
+        "hideFrom": {
+          "legend": false,
+          "tooltip": false,
+          "viz": false
+        },
+        "insertNulls": false,
+        "lineInterpolation": "linear",
+        "lineWidth": 1,
+        "pointSize": 5,
+        "scaleDistribution": {
+          "type": "linear"
+        },
+        "showPoints": "auto",
+        "spanNulls": false,
+        "stacking": {
+          "group": "A",
+          "mode": "none"
+        },
+        "thresholdsStyle": {
+          "mode": "off"
+        }
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green",
+            "value": null
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 16
+  },
+  "id": 6,
+  "options": {
+    "legend": {
+      "calcs": [
+        "mean",
+        "max"
+      ],
+      "displayMode": "table",
+      "placement": "bottom",
+      "showLegend": true
+    },
+    "tooltip": {
+      "mode": "single",
+      "sort": "none"
+    }
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prometheus_data_source}"
+      },
+      "editorMode": "builder",
+      "expr": "sum(rate(node_cpu_seconds_total{mode!=\"idle\"}[5m])) by (node)",
+      "instant": false,
+      "range": true,
+      "refId": "A"
+    }
+  ],
+  "title": "Node CPU Usage",
+  "type": "timeseries"
+},
+{
+  "datasource": {
+    "type": "prometheus",
+    "uid": "${prometheus_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "palette-classic"
+      },
+      "custom": {
+        "axisBorderShow": false,
+        "axisCenteredZero": false,
+        "axisColorMode": "text",
+        "axisLabel": "",
+        "axisPlacement": "auto",
+        "barAlignment": 0,
+        "barWidthFactor": 0.6,
+        "drawStyle": "line",
+        "fillOpacity": 0,
+        "gradientMode": "none",
+        "hideFrom": {
+          "legend": false,
+          "tooltip": false,
+          "viz": false
+        },
+        "insertNulls": false,
+        "lineInterpolation": "linear",
+        "lineWidth": 1,
+        "pointSize": 5,
+        "scaleDistribution": {
+          "type": "linear"
+        },
+        "showPoints": "auto",
+        "spanNulls": false,
+        "stacking": {
+          "group": "A",
+          "mode": "none"
+        },
+        "thresholdsStyle": {
+          "mode": "off"
+        }
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green"
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 24
+  },
+  "id": 3,
+  "options": {
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    },
+    "tooltip": {
+      "mode": "single",
+      "sort": "none"
+    }
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prometheus_data_source}"
+      },
+      "editorMode": "builder",
+      "expr": "histogram_quantile(0.99,sum(rate(apiserver_request_duration_seconds_bucket[5m])) by (le))",
+      "instant": false,
+      "range": true,
+      "refId": "A"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prometheus_data_source}"
+      },
+      "editorMode": "builder",
+      "expr": "histogram_quantile(0.95,sum(rate(apiserver_request_duration_seconds_bucket[5m])) by (le))",
+      "hide": false,
+      "instant": false,
+      "range": true,
+      "refId": "B"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prometheus_data_source}"
+      },
+      "editorMode": "builder",
+      "expr": "sum(rate(apiserver_request_duration_seconds_sum[5m])) / sum(rate(apiserver_request_duration_seconds_count[5m]))",
+      "hide": false,
+      "instant": false,
+      "range": true,
+      "refId": "C"
+    }
+  ],
+  "title": "API Request Latency (p99, p95, avg)",
+  "type": "timeseries"
+},
+{
+  "datasource": {
+    "type": "prometheus",
+    "uid": "${prometheus_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "palette-classic"
+      },
+      "custom": {
+        "axisBorderShow": false,
+        "axisCenteredZero": false,
+        "axisColorMode": "text",
+        "axisLabel": "",
+        "axisPlacement": "auto",
+        "barAlignment": 0,
+        "barWidthFactor": 0.6,
+        "drawStyle": "line",
+        "fillOpacity": 0,
+        "gradientMode": "none",
+        "hideFrom": {
+          "legend": false,
+          "tooltip": false,
+          "viz": false
+        },
+        "insertNulls": false,
+        "lineInterpolation": "linear",
+        "lineWidth": 1,
+        "pointSize": 5,
+        "scaleDistribution": {
+          "type": "linear"
+        },
+        "showPoints": "auto",
+        "spanNulls": false,
+        "stacking": {
+          "group": "A",
+          "mode": "none"
+        },
+        "thresholdsStyle": {
+          "mode": "off"
+        }
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green"
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 24
+  },
+  "id": 8,
+  "options": {
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    },
+    "tooltip": {
+      "mode": "single",
+      "sort": "none"
+    }
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prometheus_data_source}"
+      },
+      "editorMode": "builder",
+      "expr": "sum(rate(node_cpu_seconds_total{mode!=\"idle\"}[5m])) by (instance) / count(node_cpu_seconds_total{mode=\"idle\"}) by (instance) * 100",
+      "instant": false,
+      "range": true,
+      "refId": "A"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prometheus_data_source}"
+      },
+      "editorMode": "builder",
+      "expr": "avg(node_memory_Active_bytes / node_memory_MemTotal_bytes) by (instance) * 100",
+      "hide": false,
+      "instant": false,
+      "range": true,
+      "refId": "B"
+    }
+  ],
+  "title": "CPU & Memory Usage per Node",
+  "type": "timeseries"
+},
+{
+  "datasource": {
+    "type": "prometheus",
+    "uid": "${prometheus_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "palette-classic"
+      },
+      "custom": {
+        "axisBorderShow": false,
+        "axisCenteredZero": false,
+        "axisColorMode": "text",
+        "axisLabel": "",
+        "axisPlacement": "auto",
+        "barAlignment": 0,
+        "barWidthFactor": 0.6,
+        "drawStyle": "line",
+        "fillOpacity": 0,
+        "gradientMode": "none",
+        "hideFrom": {
+          "legend": false,
+          "tooltip": false,
+          "viz": false
+        },
+        "insertNulls": false,
+        "lineInterpolation": "linear",
+        "lineWidth": 1,
+        "pointSize": 5,
+        "scaleDistribution": {
+          "type": "linear"
+        },
+        "showPoints": "auto",
+        "spanNulls": false,
+        "stacking": {
+          "group": "A",
+          "mode": "none"
+        },
+        "thresholdsStyle": {
+          "mode": "off"
+        }
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green"
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 32
+  },
+  "id": 5,
+  "options": {
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    },
+    "tooltip": {
+      "mode": "single",
+      "sort": "none"
+    }
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prometheus_data_source}"
+      },
+      "editorMode": "builder",
+      "expr": "kube_node_status_condition{status=\"true\", condition=~\"MemoryPressure|DiskPressure|PIDPressure\"}",
+      "instant": false,
+      "range": true,
+      "refId": "A"
+    }
+  ],
+  "title": "Node Conditions (MemoryPressure, DiskPressure, PIDPressure)",
+  "type": "timeseries"
+},
+{
+  "datasource": {
+    "type": "prometheus",
+    "uid": "${prometheus_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "palette-classic"
+      },
+      "custom": {
+        "axisBorderShow": false,
+        "axisCenteredZero": false,
+        "axisColorMode": "text",
+        "axisLabel": "",
+        "axisPlacement": "auto",
+        "barAlignment": 0,
+        "barWidthFactor": 0.6,
+        "drawStyle": "line",
+        "fillOpacity": 0,
+        "gradientMode": "none",
+        "hideFrom": {
+          "legend": false,
+          "tooltip": false,
+          "viz": false
+        },
+        "insertNulls": false,
+        "lineInterpolation": "linear",
+        "lineWidth": 1,
+        "pointSize": 5,
+        "scaleDistribution": {
+          "type": "linear"
+        },
+        "showPoints": "auto",
+        "spanNulls": false,
+        "stacking": {
+          "group": "A",
+          "mode": "none"
+        },
+        "thresholdsStyle": {
+          "mode": "off"
+        }
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green"
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 32
+  },
+  "id": 4,
+  "options": {
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    },
+    "tooltip": {
+      "mode": "single",
+      "sort": "none"
+    }
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prometheus_data_source}"
+      },
+      "editorMode": "builder",
+      "expr": "sum(rate(kube_pod_container_status_restarts_total[5m]))",
+      "instant": false,
+      "range": true,
+      "refId": "A"
+    }
+  ],
+  "title": "Pods Restarts",
+  "type": "timeseries"
+},
+{
+  "datasource": {
+    "type": "prometheus",
+    "uid": "${prometheus_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "palette-classic"
+      },
+      "custom": {
+        "axisBorderShow": false,
+        "axisCenteredZero": false,
+        "axisColorMode": "text",
+        "axisLabel": "",
+        "axisPlacement": "auto",
+        "barAlignment": 0,
+        "barWidthFactor": 0.6,
+        "drawStyle": "line",
+        "fillOpacity": 0,
+        "gradientMode": "none",
+        "hideFrom": {
+          "legend": false,
+          "tooltip": false,
+          "viz": false
+        },
+        "insertNulls": false,
+        "lineInterpolation": "linear",
+        "lineWidth": 1,
+        "pointSize": 5,
+        "scaleDistribution": {
+          "type": "linear"
+        },
+        "showPoints": "auto",
+        "spanNulls": false,
+        "stacking": {
+          "group": "A",
+          "mode": "none"
+        },
+        "thresholdsStyle": {
+          "mode": "off"
+        }
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green"
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 0,
+    "y": 40
+  },
+  "id": 9,
+  "options": {
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    },
+    "tooltip": {
+      "mode": "single",
+      "sort": "none"
+    }
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prometheus_data_source}"
+      },
+      "editorMode": "builder",
+      "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+      "instant": false,
+      "range": true,
+      "refId": "A"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prometheus_data_source}"
+      },
+      "editorMode": "builder",
+      "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+      "hide": false,
+      "instant": false,
+      "range": true,
+      "refId": "B"
+    }
+  ],
+  "title": "Service Response Time (p99, p95, avg)",
+  "type": "timeseries"
+},
+{
+  "datasource": {
+    "type": "prometheus",
+    "uid": "${prometheus_data_source}"
+  },
+  "fieldConfig": {
+    "defaults": {
+      "color": {
+        "mode": "palette-classic"
+      },
+      "custom": {
+        "axisBorderShow": false,
+        "axisCenteredZero": false,
+        "axisColorMode": "text",
+        "axisLabel": "",
+        "axisPlacement": "auto",
+        "barAlignment": 0,
+        "barWidthFactor": 0.6,
+        "drawStyle": "line",
+        "fillOpacity": 0,
+        "gradientMode": "none",
+        "hideFrom": {
+          "legend": false,
+          "tooltip": false,
+          "viz": false
+        },
+        "insertNulls": false,
+        "lineInterpolation": "linear",
+        "lineWidth": 1,
+        "pointSize": 5,
+        "scaleDistribution": {
+          "type": "linear"
+        },
+        "showPoints": "auto",
+        "spanNulls": false,
+        "stacking": {
+          "group": "A",
+          "mode": "none"
+        },
+        "thresholdsStyle": {
+          "mode": "off"
+        }
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "color": "green"
+          },
+          {
+            "color": "red",
+            "value": 80
+          }
+        ]
+      }
+    },
+    "overrides": []
+  },
+  "gridPos": {
+    "h": 8,
+    "w": 12,
+    "x": 12,
+    "y": 40
+  },
+  "id": 10,
+  "options": {
+    "legend": {
+      "calcs": [],
+      "displayMode": "list",
+      "placement": "bottom",
+      "showLegend": true
+    },
+    "tooltip": {
+      "mode": "single",
+      "sort": "none"
+    }
+  },
+  "pluginVersion": "11.4.0",
+  "targets": [
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prometheus_data_source}"
+      },
+      "editorMode": "builder",
+      "expr": "histogram_quantile(0.50, sum(rate(scheduler_e2e_scheduling_duration_seconds_bucket[5m])) by (le))",
+      "instant": false,
+      "range": true,
+      "refId": "A"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${prometheus_data_source}"
+      },
+      "editorMode": "builder",
+      "expr": "histogram_quantile(0.95, sum(rate(scheduler_e2e_scheduling_duration_seconds_bucket[5m])) by (le))",
+      "hide": false,
+      "instant": false,
+      "range": true,
+      "refId": "B"
+    }
+  ],
+  "title": "Scheduler Performance (Pod Scheduling Time)",
+  "type": "timeseries"
+}
+],
+"preload": false,
+"refresh": "",
+"schemaVersion": 40,
+"tags": [],
+"templating": {
+"list": [
+  {
+    "current": {
+      "text": "VM Select",
+      "value": "z0kS3jGVk"
+    },
+    "label": "Prometheus",
+    "name": "prometheus_data_source",
+    "options": [],
+    "query": "prometheus",
+    "refresh": 1,
+    "regex": "",
+    "type": "datasource"
+  }
+]
+},
+"time": {
+"from": "now-3h",
+"to": "now"
+},
+"timepicker": {},
+"timezone": "",
+"title": "CPU and Memory Usage of Pods v2",
+"uid": "feex0xesj1wxse",
+"version": 7,
+"weekStart": ""
+}
+
+  }
+
+]
