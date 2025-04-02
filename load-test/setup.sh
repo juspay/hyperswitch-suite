@@ -65,8 +65,8 @@ echo -e "To activate it later, use: ${CYAN}source test_env/bin/activate${RESET}\
 
 print_section "Enter Credentials"
 
-credentials_keys=("HYPERSWITCH_HOST_URL" "POSTGRES_USERNAME" "POSTGRES_PASSWORD" "POSTGRES_DBNAME" "POSTGRES_HOST" "POSTGRES_PORT" "GRAFANA_HOST" "GRAFANA_TOKEN" "GRAFANA_USERNAME" "GRAFANA_PASSWORD")
-credentials_prompts=("Hyperswitch host URL" "PostgreSQL Username" "PostgreSQL Password" "PostgreSQL Database Name" "PostgreSQL Host" "PostgreSQL Port" "Grafana Host" "Grafana Service Account Token" "Grafana Username" "Grafana Password")
+credentials_keys=("HYPERSWITCH_HOST_URL" "GRAFANA_HOST" "GRAFANA_TOKEN" "GRAFANA_USERNAME" "GRAFANA_PASSWORD")
+credentials_prompts=("Hyperswitch host URL" "Grafana Host" "Grafana Service Account Token" "Grafana Username" "Grafana Password")
 
 # Create or overwrite .env file
 echo "# Stored credentials" > .env
@@ -84,14 +84,6 @@ for ((i = 0; i < ${#credentials_keys[@]}; i++)); do
 done
 
 print_section "Finalizing Setup"
-
-# Ensure .gitignore exists and add .env to it
-if [ ! -f .gitignore ]; then
-    touch .gitignore
-fi
-if ! grep -q "^.env$" .gitignore; then
-    echo ".env" >> .gitignore
-fi
 
 echo -e "${GREEN}✔ Credentials stored in .env file securely.${RESET}\n"
 

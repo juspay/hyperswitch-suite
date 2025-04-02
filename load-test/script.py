@@ -4,7 +4,6 @@ import time
 import subprocess
 import sys
 import asyncio
-import psycopg2
 import time
 import requests
 import json
@@ -17,20 +16,14 @@ from datetime import datetime
 from dotenv import load_dotenv
 from playwright.async_api import async_playwright
 
-load_dotenv(override=True)
+load_dotenv(dotenv_path=str(Path(__file__).parent / ".env"),override=True)
 
 # Access credentials using os.getenv()
 HYPERSWITCH_HOST_URL = os.getenv("HYPERSWITCH_HOST_URL")
-POSTGRES_USERNAME = os.getenv("POSTGRES_USERNAME")
-POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-POSTGRES_DBNAME = os.getenv("POSTGRES_DBNAME")
-POSTGRES_HOST = os.getenv("POSTGRES_HOST")
-POSTGRES_PORT = os.getenv("POSTGRES_PORT")
 GRAFANA_HOST = os.getenv("GRAFANA_HOST")
 GRAFANA_TOKEN = os.getenv("GRAFANA_TOKEN")
 GRAFANA_USERNAME = os.getenv("GRAFANA_USERNAME")
 GRAFANA_PASSWORD = os.getenv("GRAFANA_PASSWORD")
-LOKI_HOST = os.getenv("LOKI_HOST")
 
 IDEAL_VALUES = {"Response Time":"1000 - 1300 ms", "Storage per Transaction":"< 18 Kb"}
 
@@ -107,35 +100,6 @@ def calculator(regular_transactions, spike_transactions, scaling_factor):
     """
     return html_content
 
-def get_storage_usage():
-    """Connect to PostgreSQL and fetch storage usage."""
-    DB_CONFIG = {
-    "dbname": POSTGRES_DBNAME,
-    "user": POSTGRES_USERNAME,
-    "password": POSTGRES_PASSWORD,
-    "host": POSTGRES_HOST,
-    "port": POSTGRES_PORT
-    }
-    QUERY = """
-    SELECT
-        tablename AS table_name,
-        pg_total_relation_size(quote_ident(tablename)) AS total_size
-        FROM pg_tables
-        WHERE schemaname = 'public'
-        ORDER BY total_size DESC;
-    """
-    try:
-        conn = psycopg2.connect(**DB_CONFIG)
-        cur = conn.cursor()
-        cur.execute(QUERY)
-        result = {row[0]: row[1] for row in cur.fetchall()}  # Store as {table_name: size_in_bytes}
-        cur.close()
-        conn.close()
-        return result
-    except Exception as e:
-        print(f"Error: {e}")
-        return {}
-
 def run_merchant_create(test_spec):
     """Runs the merchant_create.py script and waits for completion."""
     print(f"\n🔹 Creating Merchant for {test_spec} testing...")
@@ -177,48 +141,6 @@ async def run_locust(test_spec, users,run_time, file_name):
             
     except Exception as error:
         print(f"❌ Failed to save locust report as pdf: {error}")
-
-def append_storage_table_to_html(storage_diff, total_bytes_regular):
-    html_file = Path('output/temp/metric_report.html').resolve()
-    total_mb = round(total_bytes_regular / (1024 * 1024), 2)  # Convert to MB
-
-    # Generate Table Rows
-    table_rows = "".join(
-        f"<tr><td>{table}</td><td>{size} bytes ({round(size / (1024 * 1024), 2)} MB)</td></tr>"
-        for table, size in storage_diff.items()
-    )
-
-    # Add Total Row
-    table_rows += f"""
-    <tr style="font-weight:bold; background-color:#f2f2f2;">
-        <td>Total</td>
-        <td>{total_bytes_regular} bytes ({total_mb} MB)</td>
-    </tr>
-    """
-
-    html_content = f"""
-    <html>
-    <head>
-    </head>
-    <body>
-    <div style="padding: 0 24px; page-break-before: always; ">
-        <h1>Metrics Report</h1>
-        <h2>Storage Used</h2>
-        <table class="storage-table">
-            <tr><th>Table Name</th><th>Storage Used (bytes)</th></tr>
-            {table_rows}
-        </table>
-        </div>
-    </body>
-    </html>
-    """
-
-    try:
-        with open(html_file, "w", encoding="utf-8") as f:
-            f.write(html_content)
-            
-    except Exception as error:
-        print(f"❌ Failed to append storage table: {error}")
 
 async def generate_med_report_table(requirement_content, total_bytes_list):
     file_names = ["test_normal", "test_spike"]
@@ -417,7 +339,7 @@ async def append_snap_to_pdf():
     """
 
     # Save the HTML file
-    with open(html_file, "a", encoding="utf-8") as f:
+    with open(html_file, "w", encoding="utf-8") as f:
         f.write(html_content)
     await html_to_pdf(html_file,pdf_file)   
 
@@ -633,38 +555,33 @@ async def main():
     
     print("\n🚀 Starting load test...")
     # Check initial storage usage
-    initial_storage = get_storage_usage()
+    initial_storage = float(input("\nEnter the initial disk storage size before load-test [in bytes] : "))
 
     # Run Locust load test for regular traffic
     run_merchant_create("Regular")
     await run_locust("Regular Traffic", int(NORMAL_RPS)+5, test_duration_normal, "test_normal")
 
     # Check final storage usage
-    final_storage = get_storage_usage()
+    final_storage = float(input("\nEnter the final disk storage size after load-test [in bytes] : "))
     
     # Calculate storage used
-    storage_diff_regular = {table: final_storage.get(table, 0) - initial_storage.get(table, 0) for table in final_storage}
-    total_bytes_regular = sum(storage_diff_regular.values())
+    total_bytes_regular = final_storage - initial_storage
 
     # Check initial storage usage
-    initial_storage = get_storage_usage()
+    initial_storage = float(input("\nEnter the initial disk storage size before spike-test [in bytes] : "))
 
     # Run Locust load test for spike
     run_merchant_create("Spike")
     await run_locust("Spike", int(SPIKE_RPS)+5, test_duration_spike, "test_spike")
 
     # Check final storage usage
-    final_storage = get_storage_usage()
+    final_storage = float(input("\nEnter the final disk storage size after spike-test [in bytes] : "))
 
     # Calculate storage used
-    storage_diff_spike = {table: final_storage.get(table, 0) - initial_storage.get(table, 0) for table in final_storage}
-    total_bytes_spike = sum(storage_diff_spike.values())
+    total_bytes_spike = final_storage - initial_storage
 
     print("\n✅ Load test completed.")
     print("\n⚙️  Generating Report...")
-
-    # Convert Locust HTML report to PDF
-    append_storage_table_to_html(storage_diff_regular, total_bytes_regular)
     
     total_bytes_list = [total_bytes_regular,total_bytes_spike]
 
@@ -679,8 +596,16 @@ async def main():
     await create_reference_section()
     merge_pdfs()   
     
+    # clear temporary files/folders created during load-test
     temp_dir = Path("output/temp").resolve()
     shutil.rmtree(temp_dir)
+
+    # remove environment variables used during the load-test
+    os.environ.pop('HYPERSWITCH_HOST_URL', None)
+    os.environ.pop('GRAFANA_HOST', None)
+    os.environ.pop('GRAFANA_TOKEN', None)
+    os.environ.pop('GRAFANA_USERNAME', None)
+    os.environ.pop('GRAFANA_PASSWORD', None)
 
 if __name__ == "__main__":
     asyncio.run(main())    
