@@ -4,6 +4,7 @@ import time
 import subprocess
 import sys
 import asyncio
+import signal
 import time
 import requests
 import json
@@ -12,9 +13,9 @@ import shutil
 from tqdm import tqdm
 from pathlib import Path
 from bs4 import BeautifulSoup
-from datetime import datetime
 from dotenv import load_dotenv
 from playwright.async_api import async_playwright
+from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
 
 load_dotenv(dotenv_path=str(Path(__file__).parent / ".env"),override=True)
 
@@ -24,6 +25,12 @@ GRAFANA_HOST = os.getenv("GRAFANA_HOST")
 GRAFANA_TOKEN = os.getenv("GRAFANA_TOKEN")
 GRAFANA_USERNAME = os.getenv("GRAFANA_USERNAME")
 GRAFANA_PASSWORD = os.getenv("GRAFANA_PASSWORD")
+STORAGE_PERMISSION = os.getenv("STORAGE_PERMISSION")
+POSTGRES_USERNAME = os.getenv("POSTGRES_USERNAME")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
+POSTGRES_DBNAME = os.getenv("POSTGRES_DBNAME")
+POSTGRES_HOST = os.getenv("POSTGRES_HOST")
+POSTGRES_PORT = os.getenv("POSTGRES_PORT")
 
 IDEAL_VALUES = {"Response Time":"1000 - 1300 ms", "Storage per Transaction":"< 18 Kb"}
 
@@ -100,11 +107,61 @@ def calculator(regular_transactions, spike_transactions, scaling_factor):
     """
     return html_content
 
+def get_storage_usage_manual(input_string):
+    YELLOW="\033[1;33m"
+    CYAN="\033[1;36m"
+    RESET="\033[0m"
+    psql_query = """
+        SELECT SUM(pg_total_relation_size(quote_ident(tablename))) AS total_size
+        FROM pg_tables
+        WHERE schemaname = 'public';
+        """
+    return float(input(f"\n{YELLOW}You can run this psql query to get the storage used in bytes!{RESET}\n{CYAN}{psql_query}{RESET}{input_string}"))
+
+def get_storage_usage(input_string):
+    """Fetch storage usage by calling the psql CLI."""
+    try:
+        # Build connection URI
+        user = os.environ["POSTGRES_USERNAME"]
+        password = os.environ["POSTGRES_PASSWORD"]
+        host = os.environ["POSTGRES_HOST"]
+        port = os.environ["POSTGRES_PORT"]
+        dbname = os.environ["POSTGRES_DBNAME"]
+
+        conn_str = f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
+
+        query = """
+        SELECT SUM(pg_total_relation_size(quote_ident(tablename))) AS total_size
+        FROM pg_tables
+        WHERE schemaname = 'public';
+        """
+
+        cmd = [
+            "psql",
+            conn_str,
+            "-t",  # tuples only (no headers)
+            "-c", query
+        ]
+
+        output = subprocess.check_output(cmd, text=True)
+
+        # Parse and return the total size as an integer
+        total_size = int(output.strip())
+        return total_size
+
+    except subprocess.CalledProcessError as e:
+        print(f"psql command failed: {e}\nResorting to manual input !")
+        return get_storage_usage_manual(input_string)
+    except Exception as e:
+        print(f"Error: {e}\nResorting to manual input !")
+        return get_storage_usage_manual(input_string)   
+
 def run_merchant_create(test_spec):
     """Runs the merchant_create.py script and waits for completion."""
     print(f"\n🔹 Creating Merchant for {test_spec} testing...")
     try:
         result = subprocess.run([sys.executable, "merchant_create.py"], capture_output=True, text=True, check=True)
+        time.sleep(2)
         print("  ✅ Merchant created successfully.")
     except subprocess.CalledProcessError as e:
         print(f"Error running merchant_create.py: {e.stderr}")
@@ -114,7 +171,7 @@ async def run_locust(test_spec, users,run_time, file_name):
     """Runs the Locust load test."""
     subprocess.Popen([
         "locust", "-f", "locustfile.py", "--headless", 
-        "-u", f"{users}", "-r", f"{users}", "--run-time", f"{run_time}s", 
+        "-u", f"{users}", "-r", f"{int(users/2)}", "--run-time", f"{run_time}s", 
         "--html", f"output/temp/{file_name}.html", "--host", HYPERSWITCH_HOST_URL
     ],stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     print(f"    ⏳ Load test running for {test_spec}...")
@@ -245,7 +302,7 @@ async def generate_med_report_table(requirement_content, total_bytes_list):
     
     await html_to_pdf(html_file, pdf_file)
 
-async def download_dashboard_pdf(json_data, idx):
+async def download_dashboard_pdf(json_data, idx, duration):
     url = f"{GRAFANA_HOST}/api/snapshots"
     headers = {
         "Accept": "application/json",
@@ -254,6 +311,10 @@ async def download_dashboard_pdf(json_data, idx):
     }
     response = requests.post(url, json=json_data, headers=headers)
     dashboard_url = response.json().get("url")
+    parsed = urlparse(dashboard_url)
+    params = dict(parse_qsl(parsed.query))
+    params.update({'from': f'now-{duration+5}m', 'to': 'now'})
+    dashboard_url = urlunparse(parsed._replace(query=urlencode(params)))
     output_file = f"output/snapshots/snap-{idx+1}.png"
     session = requests.Session()
     response = session.post(
@@ -540,6 +601,30 @@ async def loading_bar(duration):
     for _ in tqdm(range(100), desc="Running Locust",ncols=150, ascii=True):
         await asyncio.sleep(duration / 100)
 
+def cleanup():
+    for var in [
+        'HYPERSWITCH_HOST_URL',
+        'GRAFANA_HOST',
+        'GRAFANA_TOKEN',
+        'GRAFANA_USERNAME',
+        'GRAFANA_PASSWORD',
+        'STORAGE_PERMISSION',
+        'POSTGRES_USERNAME',
+        'POSTGRES_PASSWORD',
+        'POSTGRES_DBNAME',
+        'POSTGRES_HOST',
+        'POSTGRES_PORT',
+    ]:
+        os.environ.pop(var, None)
+
+def handle_interrupt(sig, frame):
+    print("\n❌ Keyboard interrupt detected.")
+    cleanup()
+    exit(1)
+
+signal.signal(signal.SIGINT, handle_interrupt)
+signal.signal(signal.SIGTERM, handle_interrupt)
+
 async def main():
 
     Path("output").mkdir(parents=True, exist_ok=True)
@@ -555,29 +640,41 @@ async def main():
     
     print("\n🚀 Starting load test...")
     # Check initial storage usage
-    initial_storage = float(input("\nEnter the initial disk storage size before load-test [in bytes] : "))
+    if STORAGE_PERMISSION == "true":
+        initial_storage = float(get_storage_usage("\nEnter the initial disk storage size before load-test [in bytes] : "))
+    else:    
+        initial_storage = float(get_storage_usage_manual("\nEnter the initial disk storage size before load-test [in bytes] : "))
 
     # Run Locust load test for regular traffic
     run_merchant_create("Regular")
     await run_locust("Regular Traffic", int(NORMAL_RPS)+5, test_duration_normal, "test_normal")
 
     # Check final storage usage
-    final_storage = float(input("\nEnter the final disk storage size after load-test [in bytes] : "))
+    if STORAGE_PERMISSION == "true":
+        final_storage = float(get_storage_usage("\nEnter the final disk storage size after load-test [in bytes] : "))
+    else:
+        final_storage = float(get_storage_usage_manual("\nEnter the final disk storage size after load-test [in bytes] : "))
     
-    # Calculate storage used
     total_bytes_regular = final_storage - initial_storage
+    
+    print("\n🚀 Initializing spike load test...")
 
     # Check initial storage usage
-    initial_storage = float(input("\nEnter the initial disk storage size before spike-test [in bytes] : "))
+    if STORAGE_PERMISSION == "true":
+        initial_storage = float(get_storage_usage("\nEnter the initial disk storage size before spike-test [in bytes] : "))
+    else:    
+        initial_storage = float(get_storage_usage_manual("\nEnter the initial disk storage size before spike-test [in bytes] : "))
 
     # Run Locust load test for spike
     run_merchant_create("Spike")
     await run_locust("Spike", int(SPIKE_RPS)+5, test_duration_spike, "test_spike")
 
     # Check final storage usage
-    final_storage = float(input("\nEnter the final disk storage size after spike-test [in bytes] : "))
-
-    # Calculate storage used
+    if STORAGE_PERMISSION == "true":
+        final_storage = float(get_storage_usage("\nEnter the final disk storage size after spike-test [in bytes] : "))
+    else:
+        final_storage = float(get_storage_usage_manual("\nEnter the final disk storage size after spike-test [in bytes] : "))
+    
     total_bytes_spike = final_storage - initial_storage
 
     print("\n✅ Load test completed.")
@@ -590,7 +687,7 @@ async def main():
     with open("dashboards.json", "r") as file:
         data = json.load(file)
     for idx, val in enumerate(data):    
-        await download_dashboard_pdf(val,idx)
+        await download_dashboard_pdf(val,idx,int((test_duration_normal+test_duration_spike)/60))
 
     await append_snap_to_pdf() 
     await create_reference_section()
@@ -600,12 +697,10 @@ async def main():
     temp_dir = Path("output/temp").resolve()
     shutil.rmtree(temp_dir)
 
-    # remove environment variables used during the load-test
-    os.environ.pop('HYPERSWITCH_HOST_URL', None)
-    os.environ.pop('GRAFANA_HOST', None)
-    os.environ.pop('GRAFANA_TOKEN', None)
-    os.environ.pop('GRAFANA_USERNAME', None)
-    os.environ.pop('GRAFANA_PASSWORD', None)
-
 if __name__ == "__main__":
-    asyncio.run(main())    
+    try:
+        asyncio.run(main())
+    except Exception as e:
+        print(f"Error occurred: {e}")
+    finally:
+        cleanup()   

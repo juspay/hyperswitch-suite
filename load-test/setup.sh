@@ -60,33 +60,135 @@ else
     echo -e "${RED}No requirements.txt found. Skipping dependency installation.${RESET}"
 fi
 
+# Install Playwright browsers silently
+playwright install > /dev/null 2>&1
+
 echo -e "\n${GREEN}✔ Virtual environment 'test_env' is set up and activated.${RESET}"
 echo -e "To activate it later, use: ${CYAN}source test_env/bin/activate${RESET}\n"
 
 print_section "Enter Credentials"
 
-credentials_keys=("HYPERSWITCH_HOST_URL" "GRAFANA_HOST" "GRAFANA_TOKEN" "GRAFANA_USERNAME" "GRAFANA_PASSWORD")
+credentials_keys=(
+    "HYPERSWITCH_HOST_URL|${CYAN}e.g., http://localhost:8080${RESET}"
+    "GRAFANA_HOST|${CYAN}e.g., http://localhost:3000${RESET}"
+    "GRAFANA_TOKEN|"
+    "GRAFANA_USERNAME|"
+    "GRAFANA_PASSWORD|"
+)
 credentials_prompts=("Hyperswitch host URL" "Grafana Host" "Grafana Service Account Token" "Grafana Username" "Grafana Password")
 
 # Create or overwrite .env file
 echo "# Stored credentials" > .env
 
-# Loop through the credentials
-for ((i = 0; i < ${#credentials_keys[@]}; i++)); do
-    key="${credentials_keys[$i]}"
-    prompt="${credentials_prompts[$i]}"
+# Function to collect input with optional example
+collect_input() {
+    local key="$1"
+    local prompt="$2"
+    local example="$3"
 
-    echo -e "➡ Enter $prompt : \c"
-    read value
-
-    # Save credentials to .env file
+    if [[ -n "$example" ]]; then
+        echo -e "➡ Enter $prompt $example: \c"
+    else
+        echo -e "➡ Enter $prompt: \c"
+    fi
+    
+    read -r value
     echo "$key=\"$value\"" >> .env
+}
+
+# Collect main credentials
+for ((i = 0; i < ${#credentials_keys[@]}; i++)); do
+    IFS="|" read -r key example <<< "${credentials_keys[$i]}"
+    collect_input "$key" "${credentials_prompts[$i]}" "$example"
 done
 
-print_section "Finalizing Setup"
+# Ask if the user wants to track storage
+echo -e "\n${YELLOW}Do you wish to provide your Postgres Credentials to track your storage automatically during load test? [y/n]: ${RESET}\c"
+read -r track_storage
 
+if [[ "$track_storage" == "y" || "$track_storage" == "Y" ]]; then
+
+    print_section "Checking for psql Client"
+
+    # Function to compare psql version
+    check_psql_version() {
+        local min_version="13"
+        local current_version
+        current_version=$(psql --version | awk '{print $3}' | cut -d. -f1)
+
+        if (( current_version >= min_version )); then
+            return 0
+        else
+            return 1
+        fi
+    }
+
+    # Check if psql is installed
+    if ! command -v psql &>/dev/null; then
+        echo -e "${RED}❌ psql is not installed.${RESET}"
+        echo -e "${YELLOW}Would you like to install the PostgreSQL client now? [y/n]: ${RESET}\c"
+        read -r install_psql
+        if [[ "$install_psql" == "y" || "$install_psql" == "Y" ]]; then
+            if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+                sudo apt update && sudo apt install -y postgresql-client
+            elif [[ "$OSTYPE" == "darwin"* ]]; then
+                brew install postgresql
+            else
+                echo -e "${RED}Unsupported OS. Please install psql manually.${RESET}"
+                echo "STORAGE_PERMISSION=false" >> .env
+                skip_storage=true
+            fi
+        else
+            echo -e "${YELLOW}Skipping psql installation. Storage tracking disabled.${RESET}"
+            echo "STORAGE_PERMISSION=false" >> .env
+            skip_storage=true
+        fi
+    fi
+
+    # Only check version if psql is installed
+    if command -v psql &>/dev/null && ! check_psql_version; then
+        echo -e "${RED}❌ Your psql version is too old.${RESET}"
+        echo -e "${YELLOW}Would you like to update it? [y/n]: ${RESET}\c"
+        read -r update_psql
+        if [[ "$update_psql" == "y" || "$update_psql" == "Y" ]]; then
+            if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+                sudo apt update && sudo apt install -y postgresql-client
+            elif [[ "$OSTYPE" == "darwin"* ]]; then
+                brew upgrade postgresql
+            else
+                echo -e "${RED}Unsupported OS. Please update psql manually.${RESET}"
+                echo "STORAGE_PERMISSION=false" >> .env
+                skip_storage=true
+            fi
+        else
+            echo -e "${YELLOW}Skipping psql update. Storage tracking disabled.${RESET}"
+            echo "STORAGE_PERMISSION=false" >> .env
+            skip_storage=true
+        fi
+    fi
+
+    # If no skip_storage flag is set, continue with credential collection
+    if [[ "$skip_storage" != "true" ]]; then
+        echo "STORAGE_PERMISSION=true" >> .env
+        echo -e "\n${CYAN}Collecting PostgreSQL credentials...${RESET}"
+
+        collect_input "POSTGRES_USERNAME" "PostgreSQL Username"
+        collect_input "POSTGRES_PASSWORD" "PostgreSQL Password"
+        collect_input "POSTGRES_DBNAME" "PostgreSQL Database Name"
+        collect_input "POSTGRES_HOST" "PostgreSQL Host" "${CYAN}e.g., localhost${RESET}"
+        collect_input "POSTGRES_PORT" "PostgreSQL Port"
+    fi
+
+else
+    echo "STORAGE_PERMISSION=false" >> .env
+fi
+
+print_section "Finalizing Setup"
 echo -e "${GREEN}✔ Credentials stored in .env file securely.${RESET}\n"
 
-# Run Python script
+# Run Python script and exit if it fails
 echo -e "${YELLOW}Running script.py...${RESET}\n"
-python3 script.py
+if ! python3 script.py; then
+    echo -e "${RED}❌ script.py failed! Exiting.${RESET}"
+    exit 1
+fi
