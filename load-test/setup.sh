@@ -112,11 +112,16 @@ if [[ "$track_storage" == "y" || "$track_storage" == "Y" ]]; then
 
     # Function to compare psql version
     check_psql_version() {
-        local min_version="13"
-        local current_version
-        current_version=$(psql --version | awk '{print $3}' | cut -d. -f1)
+        local min_major=13
+        local min_minor=1
 
-        if (( current_version >= min_version )); then
+        local version
+        version=$(psql --version | awk '{print $3}')
+        local current_major=${version%%.*}
+        local current_minor=${version#*.}
+        current_minor=${current_minor%%.*}
+
+        if (( current_major > min_major )) || { (( current_major == min_major )) && (( current_minor >= min_minor )); }; then
             return 0
         else
             return 1
@@ -147,7 +152,7 @@ if [[ "$track_storage" == "y" || "$track_storage" == "Y" ]]; then
 
     # Only check version if psql is installed
     if command -v psql &>/dev/null && ! check_psql_version; then
-        echo -e "${RED}❌ Your psql version is too old.${RESET}"
+        echo -e "${RED}❌ Your psql version is old. Required version >= 13.1${RESET}"
         echo -e "${YELLOW}Would you like to update it? [y/n]: ${RESET}\c"
         read -r update_psql
         if [[ "$update_psql" == "y" || "$update_psql" == "Y" ]]; then
