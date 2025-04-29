@@ -392,6 +392,7 @@ async def append_snap_to_pdf():
     image_paths = [
         Path("output/snapshots/snap-1.png").resolve(),
         Path("output/snapshots/snap-2.png").resolve(),
+        Path("output/snapshots/snap-3.png").resolve(),
     ]
 
     # Generate HTML Content
@@ -404,11 +405,15 @@ async def append_snap_to_pdf():
                 <h1 style="page-break-before: always;">Grafana Snapshots</h1>
                 <div style="page-break-inside: avoid; margin-bottom: 20px;">
                     <h2 style="margin-bottom: 20px;">Pod CPU and Memory Usage :</h2>
-                    <img src="{image_paths[1]}" style="max-width: 100%; max-height: 80vh; display: block; margin: 0 auto;" />
+                    <img src="{image_paths[1]}" style="max-width: 100%; max-height: 95vh; display: block; margin: 0 auto;" />
                 </div>
                 <div style="page-break-inside: avoid; margin-bottom: 20px;">
                     <h2 style="margin-bottom: 20px;">Business Metrics :</h2>
-                    <img src="{image_paths[0]}" style="max-width: 100%; max-height: 95vh; display: block;" />
+                    <img src="{image_paths[0]}" style="max-width: 100%; max-height: 95vh; display: block; margin: 0 auto;" />
+                </div>
+                <div style="page-break-inside: avoid; margin-bottom: 20px;">
+                    <h2 style="margin-bottom: 20px;">Server CPU and Memory Usage :</h2>
+                    <img src="{image_paths[2]}" style="max-width: 100%; max-height: 95vh; display: block;  margin: 0 auto;" />
                 </div>
             </div>    
         </body>
