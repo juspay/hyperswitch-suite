@@ -5,15 +5,16 @@ import subprocess
 from dotenv import load_dotenv
 
 load_dotenv()
+
 HYPERSWITCH_HOST_URL = os.getenv("HYPERSWITCH_HOST_URL")
+ADMIN_API_KEY = os.getenv("ADMIN_API_KEY")
 
 def run_curl(command):
     result = subprocess.run(command, shell=True, capture_output=True, text=True)
     if result.returncode == 0:
         return json.loads(result.stdout)
     else:
-        print(f"Error: {result.stderr}")
-        return None
+        raise RuntimeError(f"\033[91mError: {result.stderr}\033[0m")
 
 def merchant_account_create():
     payload = json.dumps({
@@ -55,7 +56,7 @@ def merchant_account_create():
         "metadata": {"city": "NY", "unit": "245"},
         "primary_business_details": [{"country": "US", "business": "default"}]
     })
-    command = f"curl -X POST {HYPERSWITCH_HOST_URL}/accounts -H 'Content-Type: application/json' -H 'Accept: application/json' -H 'api-key: test_admin' -d '{payload}'"
+    command = f"curl --silent --show-error --fail --request POST {HYPERSWITCH_HOST_URL}/accounts --header 'Content-Type: application/json' --header 'Accept: application/json' --header 'api-key: {ADMIN_API_KEY}' --data '{payload}'"
     response = run_curl(command)
     return response["merchant_id"] if response else None
 
@@ -65,7 +66,7 @@ def api_key_create(m_id):
         "description": None,
         "expiration": "2038-01-19T03:14:08.000Z"
     })
-    command = f"curl -X POST {HYPERSWITCH_HOST_URL}/api_keys/{m_id} -H 'Content-Type: application/json' -H 'Accept: application/json' -H 'api-key: test_admin' -d '{payload}'"
+    command = f"curl --silent --show-error --fail --request POST {HYPERSWITCH_HOST_URL}/api_keys/{m_id} --header 'Content-Type: application/json' --header 'Accept: application/json' --header 'api-key: {ADMIN_API_KEY}' --data '{payload}'"
     response = run_curl(command)
     return response["api_key"] if response else None
 
@@ -101,7 +102,7 @@ def connector_create(merchant_id):
         "business_country": "US",
         "business_label": "default"
     })
-    command = f"curl -X POST {HYPERSWITCH_HOST_URL}/account/{merchant_id}/connectors -H 'Content-Type: application/json' -H 'Accept: application/json' -H 'api-key: test_admin' -d '{payload}'"
+    command = f"curl --silent --show-error --fail --request POST {HYPERSWITCH_HOST_URL}/account/{merchant_id}/connectors --header 'Content-Type: application/json' --header 'Accept: application/json' --header 'api-key: {ADMIN_API_KEY}' --data '{payload}'"
     run_curl(command)
 
 def main():

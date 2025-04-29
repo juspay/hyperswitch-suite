@@ -21,8 +21,9 @@ load_dotenv(dotenv_path=str(Path(__file__).parent / ".env"),override=True)
 
 # Access credentials using os.getenv()
 HYPERSWITCH_HOST_URL = os.getenv("HYPERSWITCH_HOST_URL")
+GRAFANA_PERMISSION = os.getenv("GRAFANA_PERMISSION")
 GRAFANA_HOST = os.getenv("GRAFANA_HOST")
-GRAFANA_TOKEN = os.getenv("GRAFANA_TOKEN")
+GRAFANA_SERVICE_ACCOUNT_TOKEN = os.getenv("GRAFANA_SERVICE_ACCOUNT_TOKEN")
 GRAFANA_USERNAME = os.getenv("GRAFANA_USERNAME")
 GRAFANA_PASSWORD = os.getenv("GRAFANA_PASSWORD")
 STORAGE_PERMISSION = os.getenv("STORAGE_PERMISSION")
@@ -32,21 +33,49 @@ POSTGRES_DBNAME = os.getenv("POSTGRES_DBNAME")
 POSTGRES_HOST = os.getenv("POSTGRES_HOST")
 POSTGRES_PORT = os.getenv("POSTGRES_PORT")
 
-IDEAL_VALUES = {"Response Time":"1000 - 1300 ms", "Storage per Transaction":"< 18 Kb"}
+# Colors for terminal output
+YELLOW="\033[1;33m"
+CYAN="\033[1;36m"
+RESET="\033[0m"
 
+# Global Variables
+IDEAL_VALUES = {"Response Time":"1000 - 1300 ms", "Storage per Transaction":"< 18 Kb"}
 NORMAL_RPS = 0
 SPIKE_RPS = 0
+TPS_TO_RPS_FACTOR = 7
+RPS_CAPACITY_PER_POD = 35
+POD_CPU_ALLOCATION = 400
+POD_MEMORY_ALLOCATION = 1000
+IDEAL_STORAGE_PER_TRANSACTION = 14
+PSQL_QUERY = """
+        SELECT SUM(pg_total_relation_size(quote_ident(tablename))) AS total_size
+        FROM pg_tables
+        WHERE schemaname = 'public';
+        """
 
+#Machine Specifications Variables
+MACHINE_SPECS = {
+    "Machine": "Apple MacBook Pro",
+    "Processor": "Apple M4 Pro",
+    "RAM": "24 GB",
+    "Operating System": "macOS 15.3.2 (24D81)",
+    "Container Runtime": "OrbStack",
+    "Cluster Type": "Kubernetes",
+    "Pod CPU Allocation": f"{POD_CPU_ALLOCATION}m ({POD_CPU_ALLOCATION/1000:.1f} vCPU)",
+    "Pod Memory Allocation": f"{POD_MEMORY_ALLOCATION}Mi (1 GB RAM)"
+}
+
+# Function to calculate performance requirements and recommendations
 def calculator(regular_transactions, spike_transactions, scaling_factor):
     results = []
+
+    # Normal Traffic
     tps = regular_transactions / (365 * 12 * 60 * 60)
-    # Convert TPS to RPS (1 TPS = 4 RPS)
-    rps = tps * 4 * scaling_factor
+    rps = tps * TPS_TO_RPS_FACTOR * scaling_factor
     global NORMAL_RPS, SPIKE_RPS
     NORMAL_RPS = round(rps,2)
-    pods_required = int(rps / 35) + (1 if rps % 35 != 0 else 0)  # Round up
-    # Calculate the total storage needed (each transaction takes 14 KB)
-    storage_needed_gb = (regular_transactions * 14) / (1024 * 1024)  # Convert KB to GB
+    pods_required = int(rps / RPS_CAPACITY_PER_POD) + (1 if rps % RPS_CAPACITY_PER_POD != 0 else 0)  # Round up
+    storage_needed_gb = (regular_transactions * IDEAL_STORAGE_PER_TRANSACTION) / (1024 * 1024)  # Convert KB to GB
     results.append([
         "Regular Traffic",
         round(tps, 2),
@@ -54,11 +83,12 @@ def calculator(regular_transactions, spike_transactions, scaling_factor):
         round(rps, 2),
         pods_required,
         ])
+    
+    # Spike Traffic
     tps = spike_transactions
-    # Convert TPS to RPS (1 TPS = 4 RPS)
-    rps = tps * 4 * scaling_factor
+    rps = tps * TPS_TO_RPS_FACTOR * scaling_factor
     SPIKE_RPS = round(rps,2)
-    pods_required = int(rps / 35) + (1 if rps % 35 != 0 else 0)  # Round up
+    pods_required = int(rps / RPS_CAPACITY_PER_POD) + (1 if rps % RPS_CAPACITY_PER_POD != 0 else 0)  # Round up
     results.append([
         "Spike Traffic",
         round(tps, 2),
@@ -66,6 +96,7 @@ def calculator(regular_transactions, spike_transactions, scaling_factor):
         round(rps, 2),
         pods_required,
         ])
+    
     # Convert results to separate HTML tables
     keys = ["Traffic", "TPS", "RPS", f"Recommended RPS [x{scaling_factor}]","Pods Required"]
     requirements_table = f"<h2 class='subheading'>Performance Requirements & Recommendations</h2><table><tr>"
@@ -89,73 +120,55 @@ def calculator(regular_transactions, spike_transactions, scaling_factor):
         <p>These recommendations and requirements were calculated based on the inputs and assumptions such as :</p>
         <ul>
             <li><strong>TPS Calculation :</strong><br>
-                <div style="text-align: center; margin:0.2em"><code>TPS = Total Transactions per Year / (365 × 12 × 60 × 60)</code></div>
+                <div style="text-align: center; margin:5px"><code class="code-block-single">TPS = Total Transactions per Year / (365 × 12 × 60 × 60)</code></div>
                 TPS is determined by dividing the total expected transactions per year by the total number of seconds in a 12-hour daily window, assuming that the majority of transactions occur during peak business hours.
             </li>
             <li><strong>RPS Calculation :</strong><br>
-                <div style="text-align: center;margin:0.2em"><code>1 TPS = 4 RPS</code></div>
-                Assuming 1 transaction would trigger an average of 4 requests.  
+                <div style="text-align: center;margin:5px"><code class="code-block-single">1 TPS = {TPS_TO_RPS_FACTOR} RPS</code></div>
+                Assuming 1 transaction would trigger an average of {TPS_TO_RPS_FACTOR} requests.  
                 We also recommend a <strong>10x</strong> scaling factor to ensure efficient processing and responsiveness under varying loads.
             </li>
             <li><strong>Pod Calculation :</strong><br>
-                <div style="text-align: center;margin:0.2em"><code>No. of pods required = Total RPS / RPS that each pod can handle</code></div>
+                <div style="text-align: center;margin:5px"><code class="code-block-single">No. of pods required = Total RPS / RPS that each pod can handle</code></div>
                 Here, the recommended RPS is considered for total RPS, and the RPS that each pod can handle is determined during load testing.
-                <div style="text-align: center;margin:0.2em"><code>RPS that each pod can handle = 35</code></div>
-                Note : The value <strong>35</strong> was derived from load testing under ideal conditions using a pod with a 400m CPU allocation and 1000Mi of memory, ensuring optimal performance.
+                <div style="text-align: center;margin:5px"><code class="code-block-single">RPS that each pod can handle = {RPS_CAPACITY_PER_POD} *</code></div>
+                <h5>* Please refer to the <strong>References Section</strong> at the end of the report to know more </h5>
             </li>
         </ul>
     """
     return html_content
 
+# Function to get storage usage through manual input
 def get_storage_usage_manual(input_string):
-    YELLOW="\033[1;33m"
-    CYAN="\033[1;36m"
-    RESET="\033[0m"
-    psql_query = """
-        SELECT SUM(pg_total_relation_size(quote_ident(tablename))) AS total_size
-        FROM pg_tables
-        WHERE schemaname = 'public';
-        """
-    return float(input(f"\n{YELLOW}You can run this psql query to get the storage used in bytes!{RESET}\n{CYAN}{psql_query}{RESET}{input_string}"))
+    return float(input(f"\n{YELLOW}You can run this psql query to get the storage used in bytes!{RESET}\n{CYAN}{PSQL_QUERY}{RESET}{input_string}"))
 
+# Function to get storage usage through psql CLI
 def get_storage_usage(input_string):
     """Fetch storage usage by calling the psql CLI."""
-    try:
-        # Build connection URI
-        user = os.environ["POSTGRES_USERNAME"]
-        password = os.environ["POSTGRES_PASSWORD"]
-        host = os.environ["POSTGRES_HOST"]
-        port = os.environ["POSTGRES_PORT"]
-        dbname = os.environ["POSTGRES_DBNAME"]
+    if STORAGE_PERMISSION == "true":
+        try:
+            # Build connection URI
+            conn_str = f"postgresql://{POSTGRES_USERNAME}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DBNAME}"
+            cmd = [
+                "psql",
+                conn_str,
+                "--tuples-only",  # tuples only (no headers)
+                "--command", PSQL_QUERY
+            ]
+            output = subprocess.check_output(cmd, text=True)
 
-        conn_str = f"postgresql://{user}:{password}@{host}:{port}/{dbname}"
+            # Parse and return the total size as an integer
+            total_size = float(output.strip())
+            return total_size
 
-        query = """
-        SELECT SUM(pg_total_relation_size(quote_ident(tablename))) AS total_size
-        FROM pg_tables
-        WHERE schemaname = 'public';
-        """
-
-        cmd = [
-            "psql",
-            conn_str,
-            "-t",  # tuples only (no headers)
-            "-c", query
-        ]
-
-        output = subprocess.check_output(cmd, text=True)
-
-        # Parse and return the total size as an integer
-        total_size = int(output.strip())
-        return total_size
-
-    except subprocess.CalledProcessError as e:
-        print(f"psql command failed: {e}\nResorting to manual input !")
+        except (subprocess.CalledProcessError, Exception, ValueError) as e:
+            print(f"psql command failed: {e}\nResorting to manual input !")
+            return get_storage_usage_manual(input_string)  
+            
+    else:
         return get_storage_usage_manual(input_string)
-    except Exception as e:
-        print(f"Error: {e}\nResorting to manual input !")
-        return get_storage_usage_manual(input_string)   
-
+    
+# Function to create merchant account for hyperswitch
 def run_merchant_create(test_spec):
     """Runs the merchant_create.py script and waits for completion."""
     print(f"\n🔹 Creating Merchant for {test_spec} testing...")
@@ -167,13 +180,14 @@ def run_merchant_create(test_spec):
         print(f"Error running merchant_create.py: {e.stderr}")
         sys.exit(1)  # Exit the script if merchant_create.py fails
 
+# Function to run Locust load test
 async def run_locust(test_spec, users,run_time, file_name):
     """Runs the Locust load test."""
     subprocess.Popen([
-        "locust", "-f", "locustfile.py", "--headless", 
-        "-u", f"{users}", "-r", f"{int(users/2)}", "--run-time", f"{run_time}s", 
+        "locust", "--locustfile", "locustfile.py", "--headless", 
+        "--users", f"{users}", "--spawn-rate", f"{int(users/2)}", "--run-time", f"{run_time}s", 
         "--html", f"output/temp/{file_name}.html", "--host", HYPERSWITCH_HOST_URL
-    ],stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     print(f"    ⏳ Load test running for {test_spec}...")
     # Run the loading bar while the Locust test runs
     await loading_bar(run_time)
@@ -199,6 +213,7 @@ async def run_locust(test_spec, users,run_time, file_name):
     except Exception as error:
         print(f"❌ Failed to save locust report as pdf: {error}")
 
+# Function to generate the overview report
 async def generate_med_report_table(requirement_content, total_bytes_list):
     file_names = ["test_normal", "test_spike"]
     rps_list = [NORMAL_RPS, SPIKE_RPS]
@@ -262,7 +277,7 @@ async def generate_med_report_table(requirement_content, total_bytes_list):
             </thead>
             {results[0]}
         </table>
-        <h5>* This reference is based on testing the pod with a 400m CPU allocation and 1000Mi of memory </h5>
+        <h5>* Please refer to the <strong>References Section</strong> at the end of the report to know more </h5>
 
         <h3 class="subheading bottom-spaceless">Spike Traffic Load Test</h3>
         <table>
@@ -275,18 +290,18 @@ async def generate_med_report_table(requirement_content, total_bytes_list):
             </thead>
             {results[1]}
         </table>
-        <h5>* This reference is based on testing the pod with a 400m CPU allocation and 1000Mi of memory </h5>
+        <h5>* Please refer to the <strong>References Section</strong> at the end of the report to know more </h5>
         <p>This summary is based on observed values from the load test, as well as reference data from tests conducted in an ideal production environment using machines with the specified capacity:</p> 
         <ul> 
             <li><strong>RPS:</strong><br>The maximum number of requests per second (RPS) achieved by your server during the load test.</li> 
             <li><strong>Response Time:</strong><br>The total time taken for each API call, including external connector calls. These external calls significantly contribute to latency, which can vary depending on the connector, region, and other factors.</li> 
             <li><strong>Storage Used:</strong><br>The estimated storage consumption per transaction, indicating how much space each transaction occupies in your storage system. It is calculated as: 
-                <div style="text-align:center;margin:0.2em"><code>Storage used per transaction = Total storage used / Number of transactions</code></div>
+                <div style="text-align:center;margin:5px"><code class="code-block-single">Storage used per transaction = Total storage used / Number of transactions</code></div>
             </li>
          </ul>
 
         <h2>Conclusion</h2>
-        <p>The load test results offer valuable insights into system performance. By following these scaling recommendations, the infrastructure can efficiently scale while maintaining optimal performance. Feel free to share this report with us at <a href="mailto:hyperswitch@support.in">hyperswitch@support.in</a> for validation and feedback.</p> <br>
+        <p>The load test results offer valuable insights into system performance. By following these scaling recommendations, the infrastructure can efficiently scale while maintaining optimal performance. Feel free to share this report with us at <a href="mailto:hyperswitch@support.in">hyperswitch@support.in</a> for validation and feedback.</p>
         <p>For detailed insights into the specifications and APIs used in the load test, please refer to the <strong>References</strong> section at the end of the document.</p>
 
     </div>
@@ -302,12 +317,13 @@ async def generate_med_report_table(requirement_content, total_bytes_list):
     
     await html_to_pdf(html_file, pdf_file)
 
+# Function to download Grafana dashboard snapshots
 async def download_dashboard_pdf(json_data, idx, duration):
     url = f"{GRAFANA_HOST}/api/snapshots"
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {GRAFANA_TOKEN}"
+        "Authorization": f"Bearer {GRAFANA_SERVICE_ACCOUNT_TOKEN}"
     }
     response = requests.post(url, json=json_data, headers=headers)
     dashboard_url = response.json().get("url")
@@ -324,8 +340,6 @@ async def download_dashboard_pdf(json_data, idx, duration):
             "Accept-Language": "en-US,en;q=0.9",
             "Origin": f"{GRAFANA_HOST}",
             "Referer": f"{GRAFANA_HOST}/login",
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-                          "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
             "Accept": "application/json, text/plain, */*",
             "Content-Type": "application/json",
         }
@@ -341,11 +355,13 @@ async def download_dashboard_pdf(json_data, idx, duration):
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
+        parsed_url = urlparse(GRAFANA_HOST)
+        cookie_domain = parsed_url.hostname 
         await page.context.add_cookies([
             {
                 "name": "grafana_session",
                 "value": session_cookie,
-                "domain": "localhost",
+                "domain": cookie_domain,
                 "path": "/"
             }
         ])
@@ -369,6 +385,7 @@ async def download_dashboard_pdf(json_data, idx, duration):
 
         await browser.close()
 
+# Function to append Grafana snapshots to the PDF
 async def append_snap_to_pdf():
     html_file = Path("output/temp/metric_report.html").resolve()
     pdf_file = Path('output/temp/metric_report.pdf').resolve()
@@ -404,89 +421,90 @@ async def append_snap_to_pdf():
         f.write(html_content)
     await html_to_pdf(html_file,pdf_file)   
 
+# Function to create the references section
 async def create_reference_section():
-    html_content ="""<div style="padding:0 24px;">
+    html_content =f"""<div style="padding:0 24px;">
     <h1>References</h1>
 
     <h3>System Specifications</h3>
-    <p>The load test was conducted using a machine with the following specifications and allocations :</p>
+    <p>The reference values used in this load test were derived from running it on a machine with the following specifications and resource allocations:</p>
     <ul>
-        <li><strong>Machine:</strong> Apple MacBook Pro</li>
-        <li><strong>Processor:</strong> Apple M4 Pro</li>
-        <li><strong>RAM:</strong> 24 GB</li>
-        <li><strong>Operating System:</strong> macOS 15.3.2 (24D81)</li>
-        <li><strong>Pod CPU Allocation:</strong> 400m (0.4 vCPU)</li>
-        <li><strong>Pod Memory Allocation:</strong> 1000Mi (1 GB RAM)</li>
+        {''.join(f'<li><strong>{key}:</strong> {value}</li>' for key, value in MACHINE_SPECS.items())}
     </ul>
+    <p><strong>Note:</strong> The load test was conducted in a Kubernetes cluster running on OrbStack, which provides a lightweight and efficient container runtime environment for macOS. This setup allows for better resource isolation and more accurate performance measurements compared to running directly on the host machine.</p>
 
     <h3>API Details</h3>
     <p>The load test utilized the following API request to simulate payment transactions:</p>
-
-    <pre>
-        <code style="color: #000000; font-style: normal;">
-        curl -X POST https://your-api-endpoint.com/payments
+    
+    <div style="font-size:18px;"><strong>Payment Create API</strong></div>
+    <pre style="font-family: 'Courier New', monospace; padding: 12px; background-color: #F5F5F5; border-radius: 8px; font-size: 14px; line-height: 3;">
+        <code>curl -X POST https://your-api-endpoint.com/payments
         -H "Content-Type: application/json" 
         -H "Accept: application/json" 
         -H "api-key: YOUR_API_KEY" 
-        -d '{
+        -d '{{
             "amount": 6540,
             "currency": "USD",
-            "confirm": true,
+            "confirm": False,
             "capture_method": "automatic",
             "capture_on": "2022-09-10T10:11:12Z",
             "amount_to_capture": 6540,
-            "customer_id": "StripeCustomer",
+            "customer_id": "DummyCustomer",
             "email": "guest@example.com",
             "name": "John Doe",
             "phone": "999999999",
             "phone_country_code": "+65",
             "description": "Its my first payment request",
             "authentication_type": "no_three_ds",
-            "return_url": "https://duck.com",
-            "billing": {
-                "address": {
+            "return_url": "https://hyperswitch.io/",
+            "billing": {{
+                "address": {{
                     "line1": "1467",
                     "line2": "Harrison Street",
-                    "city": "San Francisco",
+                    "line3": "Harrison Street",
+                    "city": "San Fransico",
                     "state": "California",
                     "zip": "94122",
                     "country": "US",
                     "first_name": "PiX",
                     "last_name": "Pix"
-                }
-            },
-            "shipping": {
-                "address": {
+                }}
+            }},
+            "shipping": {{
+                "address": {{
                     "line1": "1467",
                     "line2": "Harrison Street",
-                    "city": "San Francisco",
+                    "line3": "Harrison Street",
+                    "city": "San Fransico",
                     "state": "California",
                     "zip": "94122",
                     "country": "US",
                     "first_name": "PiX"
-                }
-            },
+                }}
+            }},
             "statement_descriptor_name": "joseph",
-            "statement_descriptor_suffix": "JS",
-            "metadata": {
-                "udf1": "value1",
-                "new_customer": "True",
-                "login_date": "2019-09-10T10:11:12Z"
-            },
+            "statement_descriptor_suffix": "JS"
+        }}'</code></pre>
+
+    <div style="font-size:18px;"><strong>Payment Confirm API</strong></div>
+    <pre style="font-family: 'Courier New', monospace; padding: 12px; background-color: #F5F5F5; border-radius: 8px; font-size: 14px; line-height: 3;">
+        <code>curl -X POST https://your-api-endpoint.com//payments/payment_id/confirm
+        -H "Content-Type: application/json" 
+        -H "Accept: application/json" 
+        -H "api-key: YOUR_API_KEY" 
+        -d '{{
             "payment_method": "card",
             "payment_method_type": "credit",
-            "payment_method_data": {
-                "card": {
+            "payment_method_data": {{
+                "card": {{
                     "card_number": "4242424242424242",
                     "card_exp_month": "10",
                     "card_exp_year": "25",
                     "card_holder_name": "joseph Doe",
                     "card_cvc": "123"
-                }
-            }
-        }'
-        </code>
-    </pre>
+                }}
+            }}
+        }}'</code></pre>
     
     <p>Feel free to try out our Payment Create API to test out a payment. For a comprehensive list of APIs to create and manage payments, visit our official API documentation at <a href="https://api-reference.hyperswitch.io/" target="_blank">Hyperswitch-API-Docs</a>.</p>
     </div>
@@ -498,6 +516,7 @@ async def create_reference_section():
     
     await html_to_pdf(html_file, pdf_file)
 
+# Function to convert HTML to PDF using Playwright
 async def html_to_pdf(html_file,output_file):
     try:
         async with async_playwright() as p:
@@ -524,7 +543,7 @@ async def html_to_pdf(html_file,output_file):
                 }}
                 h2 {{
                     font-weight: 600 !important;
-                    font-size: 30px;
+                    font-size: 28px;
                     line-height: 1.235;
                     letter-spacing: 0.00735em;
                 }}
@@ -532,7 +551,7 @@ async def html_to_pdf(html_file,output_file):
                     font-size:24px;
                 }}
                 h5{{
-                    font-size:18px;
+                    font-size:16px;
                     margin-block-start: 0.5em !important;                     
                 }}
                 p, li {{
@@ -540,8 +559,13 @@ async def html_to_pdf(html_file,output_file):
                     font-size:20px;
                     line-height: 1.5;
                 }}
-                code {{
-                    font-style: italic;
+                .code-block-single {{
+                    font-size: 16px;
+                    font-family: 'Courier New', monospace;
+                    padding: 10px;
+                    background-color: #F5F5F5;
+                    border-radius: 8px;
+                    line-height: 3;
                 }}
                 .bottom-spaceless {{
                     margin-block-end: -0.2em !important;
@@ -586,9 +610,12 @@ async def html_to_pdf(html_file,output_file):
     except Exception as error:
         print(f"❌ Failed to convert HTML to PDF: {error}") 
 
+# Function to merge multiple PDFs into one  
 def merge_pdfs():
     output_file = Path("output/report.pdf").resolve()
-    pdf_list = ["overview_report","test_normal","test_spike","metric_report","references"]
+    pdf_list = ["overview_report", "test_normal", "test_spike", "references"]
+    if GRAFANA_PERMISSION == "true":
+        pdf_list.insert(3, "metric_report")
 
     merged_pdf = fitz.open()
     for pdf in pdf_list:
@@ -597,15 +624,17 @@ def merge_pdfs():
     merged_pdf.save(output_file)
     print(f"✅ PDF successfully created: {output_file}")
 
+# Function to display a loading bar
 async def loading_bar(duration):
     for _ in tqdm(range(100), desc="Running Locust",ncols=150, ascii=True):
         await asyncio.sleep(duration / 100)
 
+# Function to clean up environment variables
 def cleanup():
     for var in [
         'HYPERSWITCH_HOST_URL',
         'GRAFANA_HOST',
-        'GRAFANA_TOKEN',
+        'GRAFANA_SERVICE_ACCOUNT_TOKEN',
         'GRAFANA_USERNAME',
         'GRAFANA_PASSWORD',
         'STORAGE_PERMISSION',
@@ -617,20 +646,33 @@ def cleanup():
     ]:
         os.environ.pop(var, None)
 
+    # clear temporary files/folders created during load-test
+    temp_dir = Path("output/temp").resolve()
+    if temp_dir.exists():
+        shutil.rmtree(temp_dir) 
+         
+    # delete .secrets.env file if it exists
+    secrets_file = Path(".secrets.env").resolve()
+    if secrets_file.exists():
+        secrets_file.unlink()      
+
+# Function to handle keyboard interrupts
 def handle_interrupt(sig, frame):
     print("\n❌ Keyboard interrupt detected.")
     cleanup()
     exit(1)
 
+# Register signal handlers for graceful shutdown
 signal.signal(signal.SIGINT, handle_interrupt)
 signal.signal(signal.SIGTERM, handle_interrupt)
 
 async def main():
-
+    # Create output directories
     Path("output").mkdir(parents=True, exist_ok=True)
     Path("output/snapshots").mkdir(parents=True, exist_ok=True)
     Path("output/temp").mkdir(parents=True, exist_ok=True)
 
+    # Get all the required inputs
     regular_transactions = int(input("Enter the no. of transactions per year during usual traffic : "))
     spike_transactions = int(input("Enter the no. of transactions per second [TPS] during spike : ")) 
     test_duration_normal = 60 * int(input("Enter the duration for the Load Test under regular traffic [in mins] : ")) 
@@ -640,62 +682,47 @@ async def main():
     
     print("\n🚀 Starting load test...")
     # Check initial storage usage
-    if STORAGE_PERMISSION == "true":
-        initial_storage = float(get_storage_usage("\nEnter the initial disk storage size before load-test [in bytes] : "))
-    else:    
-        initial_storage = float(get_storage_usage_manual("\nEnter the initial disk storage size before load-test [in bytes] : "))
+    initial_storage = float(get_storage_usage("\nEnter the initial disk storage size before load-test [in bytes] : "))
 
     # Run Locust load test for regular traffic
     run_merchant_create("Regular")
     await run_locust("Regular Traffic", int(NORMAL_RPS)+5, test_duration_normal, "test_normal")
 
     # Check final storage usage
-    if STORAGE_PERMISSION == "true":
-        final_storage = float(get_storage_usage("\nEnter the final disk storage size after load-test [in bytes] : "))
-    else:
-        final_storage = float(get_storage_usage_manual("\nEnter the final disk storage size after load-test [in bytes] : "))
-    
+    final_storage = float(get_storage_usage("\nEnter the final disk storage size after load-test [in bytes] : "))
     total_bytes_regular = final_storage - initial_storage
     
     print("\n🚀 Initializing spike load test...")
 
     # Check initial storage usage
-    if STORAGE_PERMISSION == "true":
-        initial_storage = float(get_storage_usage("\nEnter the initial disk storage size before spike-test [in bytes] : "))
-    else:    
-        initial_storage = float(get_storage_usage_manual("\nEnter the initial disk storage size before spike-test [in bytes] : "))
+    initial_storage = float(get_storage_usage("\nEnter the initial disk storage size before spike-test [in bytes] : "))
 
     # Run Locust load test for spike
     run_merchant_create("Spike")
     await run_locust("Spike", int(SPIKE_RPS)+5, test_duration_spike, "test_spike")
 
     # Check final storage usage
-    if STORAGE_PERMISSION == "true":
-        final_storage = float(get_storage_usage("\nEnter the final disk storage size after spike-test [in bytes] : "))
-    else:
-        final_storage = float(get_storage_usage_manual("\nEnter the final disk storage size after spike-test [in bytes] : "))
-    
+    final_storage = float(get_storage_usage("\nEnter the final disk storage size after spike-test [in bytes] : "))
     total_bytes_spike = final_storage - initial_storage
 
     print("\n✅ Load test completed.")
+
     print("\n⚙️  Generating Report...")
     
     total_bytes_list = [total_bytes_regular,total_bytes_spike]
 
     await generate_med_report_table(requirements_content,total_bytes_list)
 
-    with open("dashboards.json", "r") as file:
-        data = json.load(file)
-    for idx, val in enumerate(data):    
-        await download_dashboard_pdf(val,idx,int((test_duration_normal+test_duration_spike)/60))
+    if GRAFANA_PERMISSION == "true":
+        with open("dashboards.json", "r") as file:
+            data = json.load(file)
+        for idx, val in enumerate(data):    
+            await download_dashboard_pdf(val,idx,int((test_duration_normal+test_duration_spike)/60))
 
-    await append_snap_to_pdf() 
+        await append_snap_to_pdf() 
+        
     await create_reference_section()
     merge_pdfs()   
-    
-    # clear temporary files/folders created during load-test
-    temp_dir = Path("output/temp").resolve()
-    shutil.rmtree(temp_dir)
 
 if __name__ == "__main__":
     try:
