@@ -18,6 +18,7 @@ from playwright.async_api import async_playwright
 from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
 
 load_dotenv(dotenv_path=str(Path(__file__).parent / ".env"),override=True)
+load_dotenv(dotenv_path=str(Path(__file__).parent / ".env"),override=True)
 
 # Access credentials using os.getenv()
 HYPERSWITCH_HOST_URL = os.getenv("HYPERSWITCH_HOST_URL")
@@ -418,6 +419,7 @@ async def append_snap_to_pdf():
 
     # Save the HTML file
     with open(html_file, "w", encoding="utf-8") as f:
+    with open(html_file, "w", encoding="utf-8") as f:
         f.write(html_content)
     await html_to_pdf(html_file,pdf_file)   
 
@@ -723,6 +725,13 @@ async def main():
         
     await create_reference_section()
     merge_pdfs()   
+
+    # remove environment variables used during the load-test
+    os.environ.pop('HYPERSWITCH_HOST_URL', None)
+    os.environ.pop('GRAFANA_HOST', None)
+    os.environ.pop('GRAFANA_TOKEN', None)
+    os.environ.pop('GRAFANA_USERNAME', None)
+    os.environ.pop('GRAFANA_PASSWORD', None)
 
 if __name__ == "__main__":
     try:
