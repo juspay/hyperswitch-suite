@@ -537,9 +537,9 @@ We are excited to release the latest version of the Hyperswitch control center! 
 
 ### [Hyperswitch Web Client v0.121.2 (2025-05-30)](https://github.com/juspay/hyperswitch-web/releases/tag/v0.121.2)
 
-## 🚀 Features
+### 🚀 Features
 
-### 💳 Card & Payment Methods
+#### 💳 Card & Payment Methods
 - **Click to Pay**
   - feat: Added initial support [#846](https://github.com/juspay/hyperswitch-web/pull/846)
   - fix: Error handling improvements [#923](https://github.com/juspay/hyperswitch-web/pull/923)
@@ -566,7 +566,7 @@ We are excited to release the latest version of the Hyperswitch control center! 
 
 ---
 
-## 🐛 Fixes
+### 🐛 Fixes
 
 - fix: Loader above saved cards [#880](https://github.com/juspay/hyperswitch-web/pull/880)
 - fix: CVC and expiry behavior updates [#840](https://github.com/juspay/hyperswitch-web/pull/840)
@@ -582,7 +582,7 @@ We are excited to release the latest version of the Hyperswitch control center! 
 
 ---
 
-## 🔄 Refactors
+### 🔄 Refactors
 
 - refactor: Remove `displaySavedPaymentMethodsCheckbox` condition [#904](https://github.com/juspay/hyperswitch-web/pull/904)
 - refactor: Update `state.json` [#907](https://github.com/juspay/hyperswitch-web/pull/907), [#908](https://github.com/juspay/hyperswitch-web/pull/908)
@@ -593,7 +593,7 @@ We are excited to release the latest version of the Hyperswitch control center! 
 
 ---
 
-## 🧪 Tests
+### 🧪 Tests
 
 - test: Add Cypress test for card input validation [#796](https://github.com/juspay/hyperswitch-web/pull/796)
 - test: Card payment tests with multiple brands [#825](https://github.com/juspay/hyperswitch-web/pull/825)
@@ -601,7 +601,7 @@ We are excited to release the latest version of the Hyperswitch control center! 
 
 ---
 
-## 🧹 Chores
+### 🧹 Chores
 
 - chore: Fix webpack & ReScript Docker parallel issue [#878](https://github.com/juspay/hyperswitch-web/pull/878)
 - chore: Enforce no `console.log` via eslint [#912](https://github.com/juspay/hyperswitch-web/pull/912)
@@ -614,7 +614,7 @@ We are excited to release the latest version of the Hyperswitch control center! 
 
 ---
 
-## ⚙️ CI/CD
+### ⚙️ CI/CD
 
 - ci: Version bump [#921](https://github.com/juspay/hyperswitch-web/pull/921)
 - chore(deps): Bump `@babel/helpers` from 7.26.0 → 7.27.0 [#967](https://github.com/juspay/hyperswitch-web/pull/967)
