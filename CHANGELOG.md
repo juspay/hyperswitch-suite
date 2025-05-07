@@ -12,7 +12,7 @@ All notable changes to Hyperswitch will be documented here.
 
 - `v1.114.0-standalone` (without AWS SES support): `docker pull docker.juspay.io/juspaydotin/hyperswitch-router:v1.114.0-standalone`
 
-## Features
+### Features
 - **analytics:**
   - Refactor and rewrite authentication related analytics ([#7433](https://github.com/juspay/hyperswitch/pull/7433))
   - Add new filters, dimensions and metrics for authentication analytics ([#7451](https://github.com/juspay/hyperswitch/pull/7451))
@@ -42,7 +42,7 @@ All notable changes to Hyperswitch will be documented here.
 - **payment-methods:**
   - Add support to pass apple pay recurring details to obtain apple pay merchant token ([#6770](https://github.com/juspay/hyperswitch/pull/6770))
 
-### Bug Fixes
+#### Bug Fixes
 - **connector:**
   - [fiuu] update PSync and webhooks response ([#7211](https://github.com/juspay/hyperswitch/pull/7211))
   - [NMI] Added enum for Void Reason ([#7221](https://github.com/juspay/hyperswitch/pull/7221))
@@ -53,7 +53,7 @@ All notable changes to Hyperswitch will be documented here.
 - **router:**
   - Card network for co-badged card and update regex ([#6801](https://github.com/juspay/hyperswitch/pull/6801))
 
-### Refactors
+#### Refactors
 - **authentication:** Modify auth for profiles and mca routes to ApiKeyAuthWithMerchantIdFromRoute ([#7656](https://github.com/juspay/hyperswitch/pull/7656))
 - **connector:**
   - [Rapyd] fix amount conversion framework ([#7466](https://github.com/juspay/hyperswitch/pull/7466))
@@ -62,13 +62,13 @@ All notable changes to Hyperswitch will be documented here.
   - Add support for expand attempt list in psync v2 ([#7209](https://github.com/juspay/hyperswitch/pull/7209))
 - **payments_v2:** Create customer at connector end and populate connector customer ID ([#7246](https://github.com/juspay/hyperswitch/pull/7246))
 
-### Documentation
+#### Documentation
 - **api-reference:** Fix the content of the tip ([#7387](https://github.com/juspay/hyperswitch/pull/7387))
 
-### Miscellaneous Tasks
+#### Miscellaneous Tasks
 - **analytics:** Opensearch client creation based on config ([#7881](https://github.com/juspay/hyperswitch/pull/7881))
 
-## Database Migrations
+### Database Migrations
 
 ```sql
 -- DB Difference between v1.113.0 and v1.114.0
@@ -203,7 +203,7 @@ ALTER TABLE merchant_connector_account
 ADD COLUMN id VARCHAR(64);
 ```
 
-## Configuration Changes
+### Configuration Changes
 Diff of configuration changes between v1.113.0 and v1.114.0:
 
 ```patch
