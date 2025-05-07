@@ -4,6 +4,8 @@ All notable changes to Hyperswitch will be documented here.
 
 ## Hyperswitch Suite v1.8
 
+$${\color{red}Note}$$: For customers working with [Hyperswitch v1.109.0](https://github.com/juspay/hyperswitch/releases/tag/v1.109.0) or older version are recommended to first to [Hyperwitch v1.11.0](https://github.com/juspay/hyperswitch/releases/tag/v1.110.0), then upgrade to latest version. Direct upgradation from [Hyperswitch v1.109.0](https://github.com/juspay/hyperswitch/releases/tag/v1.109.0) or older version to the latest version can result in failures.
+
 ### [Hyperswitch App Server v1.114.0 (2025-04-09)](https://github.com/juspay/hyperswitch/releases/tag/v1.114.0)
 
 ### Docker Images
