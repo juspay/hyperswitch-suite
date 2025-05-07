@@ -557,7 +557,7 @@ This version of the Hyperswitch Control Center is compatible with the following 
 - Card Vault Version: [v0.6.5](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.6.5)
 - Key Manager: [v0.1.7](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.7)
 
-**Full Changelog**: https://github.com/juspay/hyperswitch-control-center/compare/v1.37.0...v1.37.1
+**Full Changelog**: [`v1.37.0...v1.37.1`](https://github.com/juspay/hyperswitch-control-center/compare/v1.37.0...v1.37.1)
 
 ### [Hyperswitch Web Client v0.121.2 (2025-05-30)](https://github.com/juspay/hyperswitch-web/releases/tag/v0.121.2)
 
