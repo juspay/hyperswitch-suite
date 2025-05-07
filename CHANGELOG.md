@@ -516,44 +516,45 @@ We are excited to release the latest version of the Hyperswitch control center! 
 
 #### Features
 
-- Debit routing toggle by @kanikabansal-juspay in https://github.com/juspay/hyperswitch-control-center/pull/2720
-- Addition of new connector -  paystack by @ImSagnik007 in https://github.com/juspay/hyperswitch-control-center/pull/2306
-- Field addition for create refund for coingate connector by @kanikabansal-juspay in https://github.com/juspay/hyperswitch-control-center/pull/2731
-- Webhook list and details introduced by @gitanjli525 in https://github.com/juspay/hyperswitch-control-center/pull/2224
-- Added worldpay connector in prod by @Muditbhatia12 in https://github.com/juspay/hyperswitch-control-center/pull/2832
-- Product type added in get production api payload by @gitanjli525 in https://github.com/juspay/hyperswitch-control-center/pull/2683
+- Debit routing toggle https://github.com/juspay/hyperswitch-control-center/pull/2720
+- Addition of new connector - paystack https://github.com/juspay/hyperswitch-control-center/pull/2306
+- Field addition for create refund for coingate connector https://github.com/juspay/hyperswitch-control-center/pull/2731
+- Webhook list and details introduced https://github.com/juspay/hyperswitch-control-center/pull/2224
+- Added worldpay connector in prod https://github.com/juspay/hyperswitch-control-center/pull/2832
+- Product type added in get production api payload https://github.com/juspay/hyperswitch-control-center/pull/2683
 
 #### Enhancement
 
-- Removed default allowed auth methods in google pay by @susrithasabbini in https://github.com/juspay/hyperswitch-control-center/pull/2726
-- Toast notification redesign by @kanikabansal-juspay in https://github.com/juspay/hyperswitch-control-center/pull/2771
-- Changed label badge colours by @Muditbhatia12 in https://github.com/juspay/hyperswitch-control-center/pull/2772
-- Threeds app url validation by @kanikabansal-juspay in https://github.com/juspay/hyperswitch-control-center/pull/2795
-- Modified connector bodykey handling for NoAuth auth type by @Muditbhatia12 in https://github.com/juspay/hyperswitch-control-center/pull/2797
+- Removed default allowed auth methods in google pay https://github.com/juspay/hyperswitch-control-center/pull/2726
+- Toast notification redesign https://github.com/juspay/hyperswitch-control-center/pull/2771
+- Changed label badge colours https://github.com/juspay/hyperswitch-control-center/pull/2772
+- Threeds app url validation https://github.com/juspay/hyperswitch-control-center/pull/2795
+- Modified connector bodykey handling for NoAuth auth type https://github.com/juspay/hyperswitch-control-center/pull/2797
 
 #### Fixes
 
-- Demo data banner issues by @susrithasabbini in https://github.com/juspay/hyperswitch-control-center/pull/2768
-- Profile name not showing in about payment section by @Muditbhatia12 in https://github.com/juspay/hyperswitch-control-center/pull/2803
-- Recon ui issues in 13 inch screen by @susrithasabbini in https://github.com/juspay/hyperswitch-control-center/pull/2767
-- Hypersense product name change to cost observability by @Riddhiagrawal001 in https://github.com/juspay/hyperswitch-control-center/pull/2780
-- Fixed vault 13 inch screen ui bugs by @Muditbhatia12 in https://github.com/juspay/hyperswitch-control-center/pull/2789
-- Recovery product name change by @sagarnaikjuspay in https://github.com/juspay/hyperswitch-control-center/pull/2798
-- Merchant name update failing for v2 by @Riddhiagrawal001 in https://github.com/juspay/hyperswitch-control-center/pull/2815
-- Text overlap in Configure PMTs & Remove profile id and name by @kanikabansal-juspay in https://github.com/juspay/hyperswitch-control-center/pull/2804
-- Amount available to refund in payments page initiate refund by @susrithasabbini in https://github.com/juspay/hyperswitch-control-center/pull/2840
-- Logs in payments details by @kanikabansal-juspay in https://github.com/juspay/hyperswitch-control-center/pull/2825
-- Changed merchant level api endpoint to profile level by @gitanjli525 in https://github.com/juspay/hyperswitch-control-center/pull/2843
-- Wrong metrics in the operations cards by @susrithasabbini in https://github.com/juspay/hyperswitch-control-center/pull/2842
+- Demo data banner issues https://github.com/juspay/hyperswitch-control-center/pull/2768
+- Profile name not showing in about payment section https://github.com/juspay/hyperswitch-control-center/pull/2803
+- Recon ui issues in 13 inch screen https://github.com/juspay/hyperswitch-control-center/pull/2767
+- Hypersense product name change to cost observability https://github.com/juspay/hyperswitch-control-center/pull/2780
+- Fixed vault 13 inch screen ui bugs https://github.com/juspay/hyperswitch-control-center/pull/2789
+- Recovery product name change https://github.com/juspay/hyperswitch-control-center/pull/2798
+- Merchant name update failing for v2 https://github.com/juspay/hyperswitch-control-center/pull/2815
+- Text overlap in Configure PMTs & Remove profile id and name https://github.com/juspay/hyperswitch-control-center/pull/2804
+- Amount available to refund in payments page initiate refund https://github.com/juspay/hyperswitch-control-center/pull/2840
+- Logs in payments details https://github.com/juspay/hyperswitch-control-center/pull/2825
+- Changed merchant level api endpoint to profile level https://github.com/juspay/hyperswitch-control-center/pull/2843
+- Wrong metrics in the operations cards https://github.com/juspay/hyperswitch-control-center/pull/2842
+
 
 **Compatibility**
 This version of the Hyperswitch Control Center is compatible with the following versions of other components:
 
-App Server Version: [v1.113.0](https://github.com/juspay/hyperswitch/releases/tag/v1.113.0)
-Web Client Version: [v0.109.2](https://github.com/juspay/hyperswitch-web/releases/tag/v0.109.2)
-WooCommerce Plugin Version: [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)
-Card Vault Version: [v0.6.5](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.6.5)
-Key Manager: [v0.1.7](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.7)
+- App Server Version: [v1.113.0](https://github.com/juspay/hyperswitch/releases/tag/v1.113.0)
+- Web Client Version: [v0.109.2](https://github.com/juspay/hyperswitch-web/releases/tag/v0.109.2)
+- WooCommerce Plugin Version: [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)
+- Card Vault Version: [v0.6.5](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.6.5)
+- Key Manager: [v0.1.7](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.7)
 
 **Full Changelog**: https://github.com/juspay/hyperswitch-control-center/compare/v1.37.0...v1.37.1
 
@@ -661,23 +662,23 @@ This version of the Hyperswitch SDK is compatible with the following versions of
 
 #### Bug Fixes
 
-- **config:** Use `cfg.debug_assertions` to decide env ([#145](https://github.com/juspay/hyperswitch-card-vault/pull/145)) ([`97ec865`](https://github.com/juspay/hyperswitch-card-vault/commit/97ec8656deef339d421329d853071673b068eeee)) by @Chethan-rao
-- **keys:** Remove hardcoded keys from tests ([#146](https://github.com/juspay/hyperswitch-card-vault/pull/146)) ([`10f3f85`](https://github.com/juspay/hyperswitch-card-vault/commit/10f3f854f240112dd41b780e7ea59f65a0cef874)) by @NishantJoshi00
-- Fix error message in kms decryption ([#147](https://github.com/juspay/hyperswitch-card-vault/pull/147)) ([`bafdc92`](https://github.com/juspay/hyperswitch-card-vault/commit/bafdc92c362bb0108daff3b24e44289f802647fc)) by @Chethan-rao
+- **config:** Use `cfg.debug_assertions` to decide env ([#145](https://github.com/juspay/hyperswitch-card-vault/pull/145)) ([`97ec865`](https://github.com/juspay/hyperswitch-card-vault/commit/97ec8656deef339d421329d853071673b068eeee))
+- **keys:** Remove hardcoded keys from tests ([#146](https://github.com/juspay/hyperswitch-card-vault/pull/146)) ([`10f3f85`](https://github.com/juspay/hyperswitch-card-vault/commit/10f3f854f240112dd41b780e7ea59f65a0cef874))
+- Fix error message in kms decryption ([#147](https://github.com/juspay/hyperswitch-card-vault/pull/147)) ([`bafdc92`](https://github.com/juspay/hyperswitch-card-vault/commit/bafdc92c362bb0108daff3b24e44289f802647fc))
 
 #### Refactors
 
-- Add dev feature flag ([#148](https://github.com/juspay/hyperswitch-card-vault/pull/148)) ([`bc75b97`](https://github.com/juspay/hyperswitch-card-vault/commit/bc75b97b599a878e3992aca955a40540339f70b8)) by @Chethan-rao
+- Add dev feature flag ([#148](https://github.com/juspay/hyperswitch-card-vault/pull/148)) ([`bc75b97`](https://github.com/juspay/hyperswitch-card-vault/commit/bc75b97b599a878e3992aca955a40540339f70b8))
 
 #### Miscellaneous Tasks
 
-- Add rsa key generation ([#149](https://github.com/juspay/hyperswitch-card-vault/pull/149)) ([`4cb3cc7`](https://github.com/juspay/hyperswitch-card-vault/commit/4cb3cc798c78c49e7ed3312bde08f3a8793ff724)) by @NishantJoshi00
-- Ignore `map_identity` in caching ([#150](https://github.com/juspay/hyperswitch-card-vault/pull/150)) ([`149d894`](https://github.com/juspay/hyperswitch-card-vault/commit/149d89401fc6211add492eebfa0755862790375d)) by @NishantJoshi00
-- Cleanup the docker image and locker main ([#151](https://github.com/juspay/hyperswitch-card-vault/pull/151)) ([`627d121`](https://github.com/juspay/hyperswitch-card-vault/commit/627d121a07d520a7be2c4c558834cc60dadcdc5b)) by @NishantJoshi00
+- Add rsa key generation ([#149](https://github.com/juspay/hyperswitch-card-vault/pull/149)) ([`4cb3cc7`](https://github.com/juspay/hyperswitch-card-vault/commit/4cb3cc798c78c49e7ed3312bde08f3a8793ff724))
+- Ignore `map_identity` in caching ([#150](https://github.com/juspay/hyperswitch-card-vault/pull/150)) ([`149d894`](https://github.com/juspay/hyperswitch-card-vault/commit/149d89401fc6211add492eebfa0755862790375d)) 
+- Cleanup the docker image and locker main ([#151](https://github.com/juspay/hyperswitch-card-vault/pull/151)) ([`627d121`](https://github.com/juspay/hyperswitch-card-vault/commit/627d121a07d520a7be2c4c558834cc60dadcdc5b)) 
 
 #### Build System / Dependencies
 
-- **deps:** Bump `openssl` from 0.10.66 to 0.10.70 ([#144](https://github.com/juspay/hyperswitch-card-vault/pull/144)) ([`63df522`](https://github.com/juspay/hyperswitch-card-vault/commit/63df522a5e7f90e27098618ed83a152c59e24ac5)) by @ShankarSinghC
+- **deps:** Bump `openssl` from 0.10.66 to 0.10.70 ([#144](https://github.com/juspay/hyperswitch-card-vault/pull/144)) ([`63df522`](https://github.com/juspay/hyperswitch-card-vault/commit/63df522a5e7f90e27098618ed83a152c59e24ac5)) 
 
 **Full Changelog:** [`v0.6.4...v0.6.5`](https://github.com/juspay/hyperswitch-card-vault/compare/v0.6.4...v0.6.5)
 
