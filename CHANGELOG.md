@@ -516,35 +516,36 @@ We are excited to release the latest version of the Hyperswitch control center! 
 
 #### Features
 
-- Debit routing toggle https://github.com/juspay/hyperswitch-control-center/pull/2720
-- Addition of new connector - paystack https://github.com/juspay/hyperswitch-control-center/pull/2306
-- Field addition for create refund for coingate connector https://github.com/juspay/hyperswitch-control-center/pull/2731
-- Webhook list and details introduced https://github.com/juspay/hyperswitch-control-center/pull/2224
-- Added worldpay connector in prod https://github.com/juspay/hyperswitch-control-center/pull/2832
-- Product type added in get production api payload https://github.com/juspay/hyperswitch-control-center/pull/2683
+- Debit routing toggle ([#2720](https://github.com/juspay/hyperswitch-control-center/pull/2720))
+- Addition of new connector - paystack ([#2306](https://github.com/juspay/hyperswitch-control-center/pull/2306))
+- Field addition for create refund for coingate connector ([#2731](https://github.com/juspay/hyperswitch-control-center/pull/2731))
+- Webhook list and details introduced ([#2224](https://github.com/juspay/hyperswitch-control-center/pull/2224))
+- Added worldpay connector in prod ([#2832](https://github.com/juspay/hyperswitch-control-center/pull/2832))
+- Product type added in get production api payload ([#2683](https://github.com/juspay/hyperswitch-control-center/pull/2683))
 
 #### Enhancement
 
-- Removed default allowed auth methods in google pay https://github.com/juspay/hyperswitch-control-center/pull/2726
-- Toast notification redesign https://github.com/juspay/hyperswitch-control-center/pull/2771
-- Changed label badge colours https://github.com/juspay/hyperswitch-control-center/pull/2772
-- Threeds app url validation https://github.com/juspay/hyperswitch-control-center/pull/2795
-- Modified connector bodykey handling for NoAuth auth type https://github.com/juspay/hyperswitch-control-center/pull/2797
+- Removed default allowed auth methods in google pay ([#2726](https://github.com/juspay/hyperswitch-control-center/pull/2726))
+- Toast notification redesign ([#2771](https://github.com/juspay/hyperswitch-control-center/pull/2771))
+- Changed label badge colours ([#2772](https://github.com/juspay/hyperswitch-control-center/pull/2772))
+- Threeds app url validation ([#2795](https://github.com/juspay/hyperswitch-control-center/pull/2795))
+- Modified connector bodykey handling for NoAuth auth type ([#2797](https://github.com/juspay/hyperswitch-control-center/pull/2797))
 
 #### Fixes
 
-- Demo data banner issues https://github.com/juspay/hyperswitch-control-center/pull/2768
-- Profile name not showing in about payment section https://github.com/juspay/hyperswitch-control-center/pull/2803
-- Recon ui issues in 13 inch screen https://github.com/juspay/hyperswitch-control-center/pull/2767
-- Hypersense product name change to cost observability https://github.com/juspay/hyperswitch-control-center/pull/2780
-- Fixed vault 13 inch screen ui bugs https://github.com/juspay/hyperswitch-control-center/pull/2789
-- Recovery product name change https://github.com/juspay/hyperswitch-control-center/pull/2798
-- Merchant name update failing for v2 https://github.com/juspay/hyperswitch-control-center/pull/2815
-- Text overlap in Configure PMTs & Remove profile id and name https://github.com/juspay/hyperswitch-control-center/pull/2804
-- Amount available to refund in payments page initiate refund https://github.com/juspay/hyperswitch-control-center/pull/2840
-- Logs in payments details https://github.com/juspay/hyperswitch-control-center/pull/2825
-- Changed merchant level api endpoint to profile level https://github.com/juspay/hyperswitch-control-center/pull/2843
-- Wrong metrics in the operations cards https://github.com/juspay/hyperswitch-control-center/pull/2842
+- Demo data banner issues ([#2768](https://github.com/juspay/hyperswitch-control-center/pull/2768))
+- Profile name not showing in about payment section ([#2803](https://github.com/juspay/hyperswitch-control-center/pull/2803))
+- Recon ui issues in 13 inch screen ([#2767](https://github.com/juspay/hyperswitch-control-center/pull/2767))
+- Hypersense product name change to cost observability ([#2780](https://github.com/juspay/hyperswitch-control-center/pull/2780))
+- Fixed vault 13 inch screen ui bugs ([#2789](https://github.com/juspay/hyperswitch-control-center/pull/2789))
+- Recovery product name change ([#2798](https://github.com/juspay/hyperswitch-control-center/pull/2798))
+- Merchant name update failing for v2 ([#2815](https://github.com/juspay/hyperswitch-control-center/pull/2815))
+- Text overlap in Configure PMTs & Remove profile id and name ([#2804](https://github.com/juspay/hyperswitch-control-center/pull/2804))
+- Amount available to refund in payments page initiate refund ([#2840](https://github.com/juspay/hyperswitch-control-center/pull/2840))
+- Logs in payments details ([#2825](https://github.com/juspay/hyperswitch-control-center/pull/2825))
+- Changed merchant level api endpoint to profile level ([#2843](https://github.com/juspay/hyperswitch-control-center/pull/2843))
+- Wrong metrics in the operations cards ([#2842](https://github.com/juspay/hyperswitch-control-center/pull/2842))
+
 
 
 **Compatibility**
