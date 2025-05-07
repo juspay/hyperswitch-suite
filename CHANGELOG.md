@@ -523,7 +523,7 @@ We are excited to release the latest version of the Hyperswitch control center! 
 - Added worldpay connector in prod by @Muditbhatia12 in https://github.com/juspay/hyperswitch-control-center/pull/2832
 - Product type added in get production api payload by @gitanjli525 in https://github.com/juspay/hyperswitch-control-center/pull/2683
 
-####cEnhancement
+#### Enhancement
 
 - Removed default allowed auth methods in google pay by @susrithasabbini in https://github.com/juspay/hyperswitch-control-center/pull/2726
 - Toast notification redesign by @kanikabansal-juspay in https://github.com/juspay/hyperswitch-control-center/pull/2771
