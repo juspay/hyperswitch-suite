@@ -71,6 +71,16 @@ All notable changes to Hyperswitch will be documented here.
 #### Miscellaneous Tasks
 - **analytics:** Opensearch client creation based on config ([#7881](https://github.com/juspay/hyperswitch/pull/7881))
 
+#### Compatibility
+
+This version of the Hyperswitch App server is compatible with the following versions of the other components:
+
+- Control Center: [v1.37.1](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.37.1)
+- Web Client: [v0.121.2](https://github.com/juspay/hyperswitch-web/releases/tag/v0.121.2)
+- WooCommerce Plugin: [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)
+- Card Vault: [v 0.6.5](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.6.5)
+- Key Manager: [v0.1.7](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.7)
+  
 #### Database Migrations
 
 ```sql
@@ -536,6 +546,15 @@ We are excited to release the latest version of the Hyperswitch control center! 
 - Changed merchant level api endpoint to profile level by @gitanjli525 in https://github.com/juspay/hyperswitch-control-center/pull/2843
 - Wrong metrics in the operations cards by @susrithasabbini in https://github.com/juspay/hyperswitch-control-center/pull/2842
 
+**Compatibility**
+This version of the Hyperswitch Control Center is compatible with the following versions of other components:
+
+App Server Version: [v1.113.0](https://github.com/juspay/hyperswitch/releases/tag/v1.113.0)
+Web Client Version: [v0.109.2](https://github.com/juspay/hyperswitch-web/releases/tag/v0.109.2)
+WooCommerce Plugin Version: [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)
+Card Vault Version: [v0.6.5](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.6.5)
+Key Manager: [v0.1.7](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.7)
+
 **Full Changelog**: https://github.com/juspay/hyperswitch-control-center/compare/v1.37.0...v1.37.1
 
 ### [Hyperswitch Web Client v0.121.2 (2025-05-30)](https://github.com/juspay/hyperswitch-web/releases/tag/v0.121.2)
@@ -623,6 +642,18 @@ We are excited to release the latest version of the Hyperswitch control center! 
 - chore(deps): Bump `@babel/helpers` from 7.26.0 → 7.27.0 [#967](https://github.com/juspay/hyperswitch-web/pull/967)
 
 ---
+
+#### 🧩 Compatibility
+
+This version of the Hyperswitch SDK is compatible with the following versions of other components:
+
+| Component                 | Version  |
+|--------------------------|----------|
+| Control Center           | [v1.37.1](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.37.1)  |
+| App Server               | [v1.114.0](https://github.com/juspay/hyperswitch/releases/tag/v1.114.0)      |
+| WooCommerce Plugin       | [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)   |
+| Card Vault               | [v0.6.4](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.6.4)    | 
+| Key Manager              |   [v0.1.7](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.7)  |
 
 🔗 [Compare changes from `v0.109.2` → `v0.121.2`](https://github.com/juspay/hyperswitch-web/compare/v0.109.2...v0.121.2)
 
