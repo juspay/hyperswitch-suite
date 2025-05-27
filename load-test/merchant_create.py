@@ -102,7 +102,7 @@ def connector_create(merchant_id):
         "business_country": "US",
         "business_label": "default"
     })
-    command = f"curl --silent --show-error --fail --request POST {HYPERSWITCH_HOST_URL}/account/{merchant_id}/connectors --header 'Content-Type: application/json' --header 'Accept: application/json' --header 'api-key: {ADMIN_API_KEY}' --data '{payload}'"
+    command = f"curl --silent --show-error --fail --request POST {HYPERSWITCH_HOST_URL}/account/{merchant_id}/connectors --header 'Content-Type: application/json' --header 'Accept: application/json' --header 'api-key: {api_key}' --data '{payload}'"
     run_curl(command)
 
 def main():

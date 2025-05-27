@@ -365,8 +365,8 @@ async def download_dashboard_pdf(json_data, idx, duration):
                 "path": "/"
             }
         ])
-        await page.goto(dashboard_url, wait_until="load")
-        await asyncio.sleep(2)
+        await page.goto(dashboard_url, wait_until="networkidle")
+        await asyncio.sleep(5)
         
         element = await page.query_selector(".scrollbar-view")
         if element:
