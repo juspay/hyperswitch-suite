@@ -9,7 +9,7 @@
               "type": "grafana",
               "uid": "-- Grafana --"
             },
-            "enable": true,
+            "enable": false,
             "hide": true,
             "iconColor": "rgba(0, 211, 255, 1)",
             "name": "Annotations & Alerts",
@@ -4810,7 +4810,7 @@
               "type": "grafana",
               "uid": "-- Grafana --"
             },
-            "enable": true,
+            "enable": false,
             "hide": true,
             "iconColor": "rgba(0, 211, 255, 1)",
             "name": "Annotations & Alerts",
@@ -5882,7 +5882,7 @@
               "type": "grafana",
               "uid": "-- Grafana --"
             },
-            "enable": true,
+            "enable": false,
             "hide": true,
             "iconColor": "rgba(0, 211, 255, 1)",
             "name": "Annotations & Alerts",
@@ -5952,35 +5952,10 @@
                 ]
               }
             },
-            "overrides": [
-              {
-                "__systemRef": "hideSeriesFrom",
-                "matcher": {
-                  "id": "byNames",
-                  "options": {
-                    "mode": "exclude",
-                    "names": [
-                      "{pod=\"hyperswitch-server-v1o113o0-fb6bbc86f-krp9l\"}"
-                    ],
-                    "prefix": "All except:",
-                    "readOnly": true
-                  }
-                },
-                "properties": [
-                  {
-                    "id": "custom.hideFrom",
-                    "value": {
-                      "legend": false,
-                      "tooltip": false,
-                      "viz": true
-                    }
-                  }
-                ]
-              }
-            ]
+            "overrides": []
           },
           "gridPos": {
-            "h": 23,
+            "h": 21,
             "w": 12,
             "x": 0,
             "y": 0
@@ -6072,7 +6047,7 @@
             "overrides": []
           },
           "gridPos": {
-            "h": 23,
+            "h": 21,
             "w": 12,
             "x": 12,
             "y": 0
