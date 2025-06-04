@@ -17,28 +17,121 @@ from dotenv import load_dotenv
 from playwright.async_api import async_playwright
 from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
 
-load_dotenv(dotenv_path=str(Path(__file__).parent / ".env"),override=True)
+# Colors for terminal output (moved earlier for use in input function)
+GREEN = "\033[1;32m"
+YELLOW = "\033[1;33m"
+RED = "\033[1;31m"
+CYAN = "\033[1;36m"
+RESET = "\033[0m"
 
-# Access credentials using os.getenv()
-HYPERSWITCH_HOST_URL = os.getenv("HYPERSWITCH_HOST_URL")
-GRAFANA_PERMISSION = os.getenv("GRAFANA_PERMISSION")
-GRAFANA_HOST = os.getenv("GRAFANA_HOST")
-GRAFANA_SERVICE_ACCOUNT_TOKEN = os.getenv("GRAFANA_SERVICE_ACCOUNT_TOKEN")
-GRAFANA_USERNAME = os.getenv("GRAFANA_USERNAME")
-GRAFANA_PASSWORD = os.getenv("GRAFANA_PASSWORD")
-STORAGE_PERMISSION = os.getenv("STORAGE_PERMISSION")
-POSTGRES_USERNAME = os.getenv("POSTGRES_USERNAME")
-POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-POSTGRES_DBNAME = os.getenv("POSTGRES_DBNAME")
-POSTGRES_HOST = os.getenv("POSTGRES_HOST")
-POSTGRES_PORT = os.getenv("POSTGRES_PORT")
+# Function to print section headers
+def print_section(title):
+    print(f"\n{CYAN}========================================{RESET}")
+    print(f"{CYAN}{title}{RESET}")
+    print(f"{CYAN}========================================{RESET}\n")
 
-# Colors for terminal output
-YELLOW="\033[1;33m"
-CYAN="\033[1;36m"
-RESET="\033[0m"
+def get_psql_version():
+    try:
+        result = subprocess.run(["psql", "--version"], capture_output=True, text=True, check=True)
+        match = re.search(r"psql \(PostgreSQL\) (\d+\.\d+)", result.stdout)
+        if match:
+            return match.group(1)
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return None
+    return None
 
-# Global Variables
+def collect_and_store_inputs():
+    """Collects all necessary inputs from the user and stores them in .env file."""
+    env_vars = {}
+    env_file_path = Path(__file__).parent / ".env"
+
+    print_section("Enter Host Credentials")
+
+    # Collect main credentials
+    hyperswitch_host = input(f"➡ Enter Hyperswitch host URL {CYAN}e.g., http://localhost:8080{RESET}: ")
+    env_vars["HYPERSWITCH_HOST_URL"] = hyperswitch_host
+    admin_api_key = input("➡ Enter Admin API Key: ")
+    env_vars["ADMIN_API_KEY"] = admin_api_key
+
+    # Ask if the user wants to track storage
+    while True:
+        track_storage_input = input(f"\n{YELLOW}Do you wish to provide your Postgres Credentials to track your storage automatically during load test? [y/n]: {RESET}").lower()
+        if track_storage_input in ["y", "n"]:
+            break
+        print(f"{RED}Invalid input. Please enter 'y' or 'n'.{RESET}")
+
+    if track_storage_input == "y":
+        print_section("Checking for psql Client")
+        psql_version = get_psql_version()
+        if not psql_version:
+            print(f"{RED}❌ psql is not installed.{RESET}")
+            while True:
+                continue_without_psql = input(f"{YELLOW}Would you like to continue without storage tracking? [y/n]: {RESET}").lower()
+                if continue_without_psql in ["y", "n"]:
+                    break
+                print(f"{RED}Invalid input. Please enter 'y' or 'n'.{RESET}")
+            if continue_without_psql == "y":
+                env_vars["STORAGE_PERMISSION"] = "false"
+                print(f"{YELLOW}Continuing without storage tracking...{RESET}")
+            else:
+                print(f"{RED}Please install psql and run this script again.{RESET}")
+                sys.exit(1)
+        else:
+            major, minor = map(int, psql_version.split('.'))
+            if major < 13 or (major == 13 and minor < 1):
+                print(f"{RED}❌ Your psql version is {psql_version}. Required version >= 13.1{RESET}")
+                while True:
+                    continue_without_psql = input(f"{YELLOW}Would you like to continue without storage tracking? [y/n]: {RESET}").lower()
+                    if continue_without_psql in ["y", "n"]:
+                        break
+                    print(f"{RED}Invalid input. Please enter 'y' or 'n'.{RESET}")
+                if continue_without_psql == "y":
+                    env_vars["STORAGE_PERMISSION"] = "false"
+                    print(f"{YELLOW}Continuing without storage tracking...{RESET}")
+                else:
+                    print(f"{RED}Please install psql version >= 13.1 and run this script again.{RESET}")
+                    sys.exit(1)
+            else:
+                print(f"{GREEN}✔ psql version {psql_version} is sufficient.{RESET}")
+                env_vars["STORAGE_PERMISSION"] = "true"
+                print(f"\n{CYAN}Collecting PostgreSQL credentials...{RESET}")
+                env_vars["POSTGRES_USERNAME"] = input("➡ Enter PostgreSQL Username: ")
+                env_vars["POSTGRES_PASSWORD"] = input("➡ Enter PostgreSQL Password: ")
+                env_vars["POSTGRES_DBNAME"] = input("➡ Enter PostgreSQL Database Name: ")
+                env_vars["POSTGRES_HOST"] = input(f"➡ Enter PostgreSQL Host {CYAN}e.g., localhost{RESET}: ")
+                env_vars["POSTGRES_PORT"] = input("➡ Enter PostgreSQL Port: ")
+    else:
+        env_vars["STORAGE_PERMISSION"] = "false"
+
+    # Ask if the user wants to include Grafana Dashboard snapshots
+    while True:
+        include_grafana_input = input(f"\n{YELLOW}Do you wish to include Grafana Dashboard snapshots in your load test report? [y/n]: {RESET}").lower()
+        if include_grafana_input in ["y", "n"]:
+            break
+        print(f"{RED}Invalid input. Please enter 'y' or 'n'.{RESET}")
+
+    if include_grafana_input == "y":
+        env_vars["GRAFANA_PERMISSION"] = "true"
+        print(f"\n{CYAN}Collecting Grafana credentials...{RESET}")
+        env_vars["GRAFANA_HOST"] = input(f"➡ Enter Grafana Host {CYAN}e.g., http://localhost:3000{RESET}: ")
+        env_vars["GRAFANA_SERVICE_ACCOUNT_TOKEN"] = input("➡ Enter Grafana Service Account Token: ")
+        env_vars["GRAFANA_USERNAME"] = input("➡ Enter Grafana Username: ")
+        env_vars["GRAFANA_PASSWORD"] = input("➡ Enter Grafana Password: ")
+    else:
+        env_vars["GRAFANA_PERMISSION"] = "false"
+    
+    with open(env_file_path, "w") as f:
+        f.write("# Stored credentials\n")
+        for key, value in env_vars.items():
+            f.write(f"{key}=\"{value}\"\n")
+    
+    print_section("Finalizing Setup")
+    print(f"{GREEN}✔ Credentials stored in .env file securely.{RESET}\n")
+    
+    # Load the .env file immediately after writing it
+    load_dotenv(dotenv_path=env_file_path, override=True)
+
+# Global Variables - Credentials will be fetched directly using os.getenv() in functions
 IDEAL_VALUES = {"Response Time":"1000 - 1300 ms", "Storage per Transaction":"< 18 Kb"}
 NORMAL_RPS = 0
 SPIKE_RPS = 0
@@ -145,10 +238,15 @@ def get_storage_usage_manual(input_string):
 # Function to get storage usage through psql CLI
 def get_storage_usage(input_string):
     """Fetch storage usage by calling the psql CLI."""
-    if STORAGE_PERMISSION == "true":
+    if os.getenv("STORAGE_PERMISSION") == "true":
         try:
             # Build connection URI
-            conn_str = f"postgresql://{POSTGRES_USERNAME}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DBNAME}"
+            pg_user = os.getenv("POSTGRES_USERNAME")
+            pg_pass = os.getenv("POSTGRES_PASSWORD")
+            pg_host = os.getenv("POSTGRES_HOST")
+            pg_port = os.getenv("POSTGRES_PORT")
+            pg_dbname = os.getenv("POSTGRES_DBNAME")
+            conn_str = f"postgresql://{pg_user}:{pg_pass}@{pg_host}:{pg_port}/{pg_dbname}"
             cmd = [
                 "psql",
                 conn_str,
@@ -183,10 +281,11 @@ def run_merchant_create(test_spec):
 # Function to run Locust load test
 async def run_locust(test_spec, users,run_time, file_name):
     """Runs the Locust load test."""
+    hyperswitch_host_url = os.getenv("HYPERSWITCH_HOST_URL")
     subprocess.Popen([
         "locust", "--locustfile", "locustfile.py", "--headless", 
         "--users", f"{users}", "--spawn-rate", f"{int(users/2)}", "--run-time", f"{run_time}s", 
-        "--html", f"output/temp/{file_name}.html", "--host", HYPERSWITCH_HOST_URL
+        "--html", f"output/temp/{file_name}.html", "--host", hyperswitch_host_url
     ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     print(f"    ⏳ Load test running for {test_spec}...")
     # Run the loading bar while the Locust test runs
@@ -319,11 +418,20 @@ async def generate_med_report_table(requirement_content, total_bytes_list):
 
 # Function to download Grafana dashboard snapshots
 async def download_dashboard_pdf(json_data, idx, duration):
-    url = f"{GRAFANA_HOST}/api/snapshots"
+    grafana_host = os.getenv("GRAFANA_HOST")
+    grafana_token = os.getenv("GRAFANA_SERVICE_ACCOUNT_TOKEN")
+    grafana_user = os.getenv("GRAFANA_USERNAME")
+    grafana_pass = os.getenv("GRAFANA_PASSWORD")
+
+    if not all([grafana_host, grafana_token, grafana_user, grafana_pass]):
+        print("❌ Grafana credentials not fully configured. Skipping snapshot download.")
+        return
+
+    url = f"{grafana_host}/api/snapshots"
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {GRAFANA_SERVICE_ACCOUNT_TOKEN}"
+        "Authorization": f"Bearer {grafana_token}"
     }
     response = requests.post(url, json=json_data, headers=headers)
     dashboard_url = response.json().get("url")
@@ -334,12 +442,12 @@ async def download_dashboard_pdf(json_data, idx, duration):
     output_file = f"output/snapshots/snap-{idx+1}.png"
     session = requests.Session()
     response = session.post(
-        f"{GRAFANA_HOST}/login",
-        json={"user": GRAFANA_USERNAME, "password": GRAFANA_PASSWORD},
+        f"{grafana_host}/login",
+        json={"user": grafana_user, "password": grafana_pass},
         headers={
             "Accept-Language": "en-US,en;q=0.9",
-            "Origin": f"{GRAFANA_HOST}",
-            "Referer": f"{GRAFANA_HOST}/login",
+            "Origin": grafana_host,
+            "Referer": f"{grafana_host}/login",
             "Accept": "application/json, text/plain, */*",
             "Content-Type": "application/json",
         }
@@ -349,13 +457,17 @@ async def download_dashboard_pdf(json_data, idx, duration):
         for cookie in session.cookies:
             if cookie.name == "grafana_session":
                 session_cookie = cookie.value
+                break
+        else:
+            print("❌ Grafana session cookie not found after login.")
+            return
     else:            
-        print("❌ Login failed! Check credentials or Grafana status.")
+        print(f"❌ Login failed! Status: {response.status_code}. Check credentials or Grafana status.")
         return
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
-        parsed_url = urlparse(GRAFANA_HOST)
+        parsed_url = urlparse(grafana_host)
         cookie_domain = parsed_url.hostname 
         await page.context.add_cookies([
             {
@@ -374,7 +486,7 @@ async def download_dashboard_pdf(json_data, idx, duration):
             full_height = await page.evaluate("el => el.scrollHeight", element)
                 
             # Resize viewport to capture entire scrollbar-view
-            await page.set_viewport_size({"width": 1920, "height": full_height})
+            await page.set_viewport_size({"width": 1920, "height": full_height+100})
             await asyncio.sleep(2)  # Ensure rendering is complete
                 
             # Capture the screenshot
@@ -619,7 +731,7 @@ async def html_to_pdf(html_file,output_file):
 def merge_pdfs():
     output_file = Path("output/report.pdf").resolve()
     pdf_list = ["overview_report", "test_normal", "test_spike", "references"]
-    if GRAFANA_PERMISSION == "true":
+    if os.getenv("GRAFANA_PERMISSION") == "true":
         pdf_list.insert(3, "metric_report")
 
     merged_pdf = fitz.open()
@@ -638,6 +750,7 @@ async def loading_bar(duration):
 def cleanup():
     for var in [
         'HYPERSWITCH_HOST_URL',
+        'GRAFANA_PERMISSION',
         'GRAFANA_HOST',
         'GRAFANA_SERVICE_ACCOUNT_TOKEN',
         'GRAFANA_USERNAME',
@@ -672,17 +785,22 @@ signal.signal(signal.SIGINT, handle_interrupt)
 signal.signal(signal.SIGTERM, handle_interrupt)
 
 async def main():
+    # Collect inputs first
+    collect_and_store_inputs()
+
     # Create output directories
     Path("output").mkdir(parents=True, exist_ok=True)
     Path("output/snapshots").mkdir(parents=True, exist_ok=True)
     Path("output/temp").mkdir(parents=True, exist_ok=True)
 
     # Get all the required inputs
-    regular_transactions = int(input("Enter the no. of transactions per year during usual traffic : "))
-    spike_transactions = int(input("Enter the no. of transactions per second [TPS] during spike : ")) 
-    test_duration_normal = 60 * int(input("Enter the duration for the Load Test under regular traffic [in mins] : ")) 
-    test_duration_spike = 60 * int(input("Enter the duration for the Load Test under spike traffic [in mins] : "))
-    scaling_factor = int(input("Enter your preferred scaling factor for the server [default is 10x] : ") or 10)
+    print_section("Load Test Configuration")
+    regular_transactions = int(input(f"➡ Enter the no. of transactions per year during usual traffic {CYAN}eg., 25000000{RESET}: "))
+    spike_transactions = int(input(f"➡ Enter the no. of transactions per second {CYAN}[TPS]{RESET} during spike: "))
+    test_duration_normal = 60 * int(input(f"➡ Enter the duration for the Load Test under regular traffic {CYAN}[in mins]{RESET}: "))
+    test_duration_spike = 60 * int(input(f"➡ Enter the duration for the Load Test under spike traffic {CYAN}[in mins]{RESET}: "))
+    scaling_factor_input = input(f"➡ Enter your preferred scaling factor for the server {CYAN}[default is 10x]{RESET}: ")
+    scaling_factor = int(scaling_factor_input) if scaling_factor_input else 10
     requirements_content = calculator(regular_transactions,spike_transactions, scaling_factor)
     
     print("\n🚀 Starting load test...")
@@ -718,13 +836,17 @@ async def main():
 
     await generate_med_report_table(requirements_content,total_bytes_list)
 
-    if GRAFANA_PERMISSION == "true":
-        with open("dashboards.json", "r") as file:
-            data = json.load(file)
-        for idx, val in enumerate(data):    
-            await download_dashboard_pdf(val,idx,int((test_duration_normal+test_duration_spike)/60))
-
-        await append_snap_to_pdf() 
+    if os.getenv("GRAFANA_PERMISSION") == "true":
+        # Ensure dashboards.json exists
+        dashboards_file_path = Path(__file__).parent / "dashboards.json"
+        if not dashboards_file_path.exists():
+            print(f"{RED}❌ dashboards.json not found. Cannot download Grafana snapshots.{RESET}")
+        else:
+            with open(dashboards_file_path, "r") as file:
+                data = json.load(file)
+            for idx, val in enumerate(data):    
+                await download_dashboard_pdf(val,idx,int((test_duration_normal+test_duration_spike)/60))
+            await append_snap_to_pdf() 
         
     await create_reference_section()
     merge_pdfs()   
@@ -735,4 +857,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error occurred: {e}")
     finally:
-        cleanup()   
+        cleanup()
