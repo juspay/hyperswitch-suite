@@ -83,7 +83,7 @@ def calculator(regular_transactions, spike_transactions, scaling_factor):
         round(rps, 2),
         pods_required,
         ])
-    
+
     # Spike Traffic
     tps = spike_transactions
     rps = tps * TPS_TO_RPS_FACTOR * scaling_factor
@@ -96,7 +96,7 @@ def calculator(regular_transactions, spike_transactions, scaling_factor):
         round(rps, 2),
         pods_required,
         ])
-    
+
     # Convert results to separate HTML tables
     keys = ["Traffic", "TPS", "RPS", f"Recommended RPS [x{scaling_factor}]","Pods Required"]
     requirements_table = f"<h2 class='subheading'>Performance Requirements & Recommendations</h2><table><tr>"
@@ -125,7 +125,7 @@ def calculator(regular_transactions, spike_transactions, scaling_factor):
             </li>
             <li><strong>RPS Calculation :</strong><br>
                 <div style="text-align: center;margin:5px"><code class="code-block-single">1 TPS = {TPS_TO_RPS_FACTOR} RPS</code></div>
-                Assuming 1 transaction would trigger an average of {TPS_TO_RPS_FACTOR} requests.  
+                Assuming 1 transaction would trigger an average of {TPS_TO_RPS_FACTOR} requests.
                 We also recommend a <strong>10x</strong> scaling factor to ensure efficient processing and responsiveness under varying loads.
             </li>
             <li><strong>Pod Calculation :</strong><br>
@@ -163,11 +163,11 @@ def get_storage_usage(input_string):
 
         except (subprocess.CalledProcessError, Exception, ValueError) as e:
             print(f"psql command failed: {e}\nResorting to manual input !")
-            return get_storage_usage_manual(input_string)  
-            
+            return get_storage_usage_manual(input_string)
+
     else:
         return get_storage_usage_manual(input_string)
-    
+
 # Function to create merchant account for hyperswitch
 def run_merchant_create(test_spec):
     """Runs the merchant_create.py script and waits for completion."""
@@ -184,8 +184,8 @@ def run_merchant_create(test_spec):
 async def run_locust(test_spec, users,run_time, file_name):
     """Runs the Locust load test."""
     subprocess.Popen([
-        "locust", "--locustfile", "locustfile.py", "--headless", 
-        "--users", f"{users}", "--spawn-rate", f"{int(users/2)}", "--run-time", f"{run_time}s", 
+        "locust", "--locustfile", "locustfile.py", "--headless",
+        "--users", f"{users}", "--spawn-rate", f"{int(users/2)}", "--run-time", f"{run_time}s",
         "--html", f"output/temp/{file_name}.html", "--host", HYPERSWITCH_HOST_URL
     ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     print(f"    ⏳ Load test running for {test_spec}...")
@@ -200,16 +200,16 @@ async def run_locust(test_spec, users,run_time, file_name):
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
             page = await browser.new_page()
-            
+
             # Load the HTML file
             await page.goto(f"file://{input_file}", wait_until="load")
             rendered_html = await page.content()
             edited_html = rendered_html.replace('Locust Test Report', f'Locust Report for {test_spec}')
             with open(input_file, "w", encoding="utf-8") as f:
-                f.write(edited_html)    
+                f.write(edited_html)
             await browser.close()
             await html_to_pdf(input_file, output_file)
-            
+
     except Exception as error:
         print(f"❌ Failed to save locust report as pdf: {error}")
 
@@ -218,7 +218,7 @@ async def generate_med_report_table(requirement_content, total_bytes_list):
     file_names = ["test_normal", "test_spike"]
     rps_list = [NORMAL_RPS, SPIKE_RPS]
     results = []
-    for idx, file_name in enumerate(file_names):    
+    for idx, file_name in enumerate(file_names):
         with open(f"output/temp/{file_name}.html", "r", encoding="utf-8") as file:
             html_content = file.read()
 
@@ -238,7 +238,7 @@ async def generate_med_report_table(requirement_content, total_bytes_list):
             columns_95 = last_row_95.find_all("td")
             response_time = columns_95[7].text.strip()  # 95th percentile response time column
         else:
-            response_time = "N/A"    
+            response_time = "N/A"
 
         total_storage = int(total_bytes_list[idx]) if total_bytes_list[idx] else 0
         num_requests = int(num_requests) if num_requests.isdigit() else 1  # Avoid division by zero
@@ -248,7 +248,7 @@ async def generate_med_report_table(requirement_content, total_bytes_list):
                 <tr><td>Response Time</td><td>{response_time}</td><td>{IDEAL_VALUES['Response Time']}</td></tr>
                 <tr><td>Storage Used(per transaction)</td><td>{storage_per_transaction}Kb</td><td>{IDEAL_VALUES['Storage per Transaction']}</td></tr>
             </tbody>""")
-        
+
     # Create HTML segment with extracted values
     new_html_segment = f"""
     <html>
@@ -291,11 +291,11 @@ async def generate_med_report_table(requirement_content, total_bytes_list):
             {results[1]}
         </table>
         <h5>* Please refer to the <strong>References Section</strong> at the end of the report to know more </h5>
-        <p>This summary is based on observed values from the load test, as well as reference data from tests conducted in an ideal production environment using machines with the specified capacity:</p> 
-        <ul> 
-            <li><strong>RPS:</strong><br>The maximum number of requests per second (RPS) achieved by your server during the load test.</li> 
-            <li><strong>Response Time:</strong><br>The total time taken for each API call, including external connector calls. These external calls significantly contribute to latency, which can vary depending on the connector, region, and other factors.</li> 
-            <li><strong>Storage Used:</strong><br>The estimated storage consumption per transaction, indicating how much space each transaction occupies in your storage system. It is calculated as: 
+        <p>This summary is based on observed values from the load test, as well as reference data from tests conducted in an ideal production environment using machines with the specified capacity:</p>
+        <ul>
+            <li><strong>RPS:</strong><br>The maximum number of requests per second (RPS) achieved by your server during the load test.</li>
+            <li><strong>Response Time:</strong><br>The total time taken for each API call, including external connector calls. These external calls significantly contribute to latency, which can vary depending on the connector, region, and other factors.</li>
+            <li><strong>Storage Used:</strong><br>The estimated storage consumption per transaction, indicating how much space each transaction occupies in your storage system. It is calculated as:
                 <div style="text-align:center;margin:5px"><code class="code-block-single">Storage used per transaction = Total storage used / Number of transactions</code></div>
             </li>
          </ul>
@@ -313,8 +313,8 @@ async def generate_med_report_table(requirement_content, total_bytes_list):
     html_file = Path("output/temp/overview_report.html").resolve()
     pdf_file = Path('output/temp/overview_report.pdf').resolve()
     with open(html_file, "w", encoding="utf-8") as file:
-        file.write(new_html_segment)   
-    
+        file.write(new_html_segment)
+
     await html_to_pdf(html_file, pdf_file)
 
 # Function to download Grafana dashboard snapshots
@@ -344,19 +344,19 @@ async def download_dashboard_pdf(json_data, idx, duration):
             "Content-Type": "application/json",
         }
     )
-  
+
     if response.status_code == 200:
         for cookie in session.cookies:
             if cookie.name == "grafana_session":
                 session_cookie = cookie.value
-    else:            
+    else:
         print("❌ Login failed! Check credentials or Grafana status.")
         return
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
         parsed_url = urlparse(GRAFANA_HOST)
-        cookie_domain = parsed_url.hostname 
+        cookie_domain = parsed_url.hostname
         await page.context.add_cookies([
             {
                 "name": "grafana_session",
@@ -367,16 +367,16 @@ async def download_dashboard_pdf(json_data, idx, duration):
         ])
         await page.goto(dashboard_url, wait_until="networkidle")
         await asyncio.sleep(5)
-        
+
         element = await page.query_selector(".scrollbar-view")
         if element:
             # Get the full height of the element
             full_height = await page.evaluate("el => el.scrollHeight", element)
-                
+
             # Resize viewport to capture entire scrollbar-view
-            await page.set_viewport_size({"width": 1920, "height": full_height})
+            await page.set_viewport_size({"width": 1920, "height": full_height+100})
             await asyncio.sleep(2)  # Ensure rendering is complete
-                
+
             # Capture the screenshot
             await element.screenshot(path=str(output_file))
             print(f"📷 Snapshot captured and saved: {output_file}")
@@ -415,7 +415,7 @@ async def append_snap_to_pdf():
                     <h2 style="margin-bottom: 20px;">Server CPU and Memory Usage :</h2>
                     <img src="{image_paths[2]}" style="max-width: 100%; max-height: 95vh; display: block;  margin: 0 auto;" />
                 </div>
-            </div>    
+            </div>
         </body>
     </html>
 
@@ -424,7 +424,7 @@ async def append_snap_to_pdf():
     # Save the HTML file
     with open(html_file, "w", encoding="utf-8") as f:
         f.write(html_content)
-    await html_to_pdf(html_file,pdf_file)   
+    await html_to_pdf(html_file,pdf_file)
 
 # Function to create the references section
 async def create_reference_section():
@@ -440,13 +440,13 @@ async def create_reference_section():
 
     <h3>API Details</h3>
     <p>The load test utilized the following API request to simulate payment transactions:</p>
-    
+
     <div style="font-size:18px;"><strong>Payment Create API</strong></div>
     <pre style="font-family: 'Courier New', monospace; padding: 12px; background-color: #F5F5F5; border-radius: 8px; font-size: 14px; line-height: 3;">
         <code>curl -X POST https://your-api-endpoint.com/payments
-        -H "Content-Type: application/json" 
-        -H "Accept: application/json" 
-        -H "api-key: YOUR_API_KEY" 
+        -H "Content-Type: application/json"
+        -H "Accept: application/json"
+        -H "api-key: YOUR_API_KEY"
         -d '{{
             "amount": 6540,
             "currency": "USD",
@@ -494,9 +494,9 @@ async def create_reference_section():
     <div style="font-size:18px;"><strong>Payment Confirm API</strong></div>
     <pre style="font-family: 'Courier New', monospace; padding: 12px; background-color: #F5F5F5; border-radius: 8px; font-size: 14px; line-height: 3;">
         <code>curl -X POST https://your-api-endpoint.com//payments/payment_id/confirm
-        -H "Content-Type: application/json" 
-        -H "Accept: application/json" 
-        -H "api-key: YOUR_API_KEY" 
+        -H "Content-Type: application/json"
+        -H "Accept: application/json"
+        -H "api-key: YOUR_API_KEY"
         -d '{{
             "payment_method": "card",
             "payment_method_type": "credit",
@@ -510,15 +510,15 @@ async def create_reference_section():
                 }}
             }}
         }}'</code></pre>
-    
+
     <p>Feel free to try out our Payment Create API to test out a payment. For a comprehensive list of APIs to create and manage payments, visit our official API documentation at <a href="https://api-reference.hyperswitch.io/" target="_blank">Hyperswitch-API-Docs</a>.</p>
     </div>
     """
     html_file = Path("output/temp/references.html").resolve()
     pdf_file = Path('output/temp/references.pdf').resolve()
     with open(html_file, "w", encoding="utf-8") as file:
-        file.write(html_content)   
-    
+        file.write(html_content)
+
     await html_to_pdf(html_file, pdf_file)
 
 # Function to convert HTML to PDF using Playwright
@@ -532,7 +532,7 @@ async def html_to_pdf(html_file,output_file):
                 @page {{
                     size: A4;
                     margin:20px;
-                    border: 1px solid black; 
+                    border: 1px solid black;
                     padding:24px 0;
                 }}
                 * {{
@@ -557,7 +557,7 @@ async def html_to_pdf(html_file,output_file):
                 }}
                 h5{{
                     font-size:16px;
-                    margin-block-start: 0.5em !important;                     
+                    margin-block-start: 0.5em !important;
                 }}
                 p, li {{
                     text-align: justify;
@@ -580,42 +580,42 @@ async def html_to_pdf(html_file,output_file):
                     page-break-inside: avoid;
                     display: block;
                 }}
-                table {{ 
-                    width: 100%; 
-                    border-collapse: 
-                    collapse; 
-                    margin-top: 20px; 
+                table {{
+                    width: 100%;
+                    border-collapse:
+                    collapse;
+                    margin-top: 20px;
                 }}
-                th, td {{ 
-                    border: 1px solid black; 
-                    padding: 8px; 
+                th, td {{
+                    border: 1px solid black;
+                    padding: 8px;
                     text-align: left;
                 }}
                 th {{
-                    background-color: #f2f2f2; 
+                    background-color: #f2f2f2;
                 }}
                 .grafana-snapshot-page {{
-                    page-break-before: always; 
+                    page-break-before: always;
                 }}
                 .MuiStack-root:has(button svg[data-testid="ViewColumnIcon"]) {{
                 display: none !important;
                 }}
             """)
 
-            await asyncio.sleep(2)          
+            await asyncio.sleep(2)
             # Generate PDF
             await page.pdf(
                 path=str(output_file),
                 format="A4",
                 print_background=True,
                 scale=0.8
-            )           
+            )
             await browser.close()
-            
-    except Exception as error:
-        print(f"❌ Failed to convert HTML to PDF: {error}") 
 
-# Function to merge multiple PDFs into one  
+    except Exception as error:
+        print(f"❌ Failed to convert HTML to PDF: {error}")
+
+# Function to merge multiple PDFs into one
 def merge_pdfs():
     output_file = Path("output/report.pdf").resolve()
     pdf_list = ["overview_report", "test_normal", "test_spike", "references"]
@@ -654,12 +654,12 @@ def cleanup():
     # clear temporary files/folders created during load-test
     temp_dir = Path("output/temp").resolve()
     if temp_dir.exists():
-        shutil.rmtree(temp_dir) 
-         
+        shutil.rmtree(temp_dir)
+
     # delete .secrets.env file if it exists
     secrets_file = Path(".secrets.env").resolve()
     if secrets_file.exists():
-        secrets_file.unlink()      
+        secrets_file.unlink()
 
 # Function to handle keyboard interrupts
 def handle_interrupt(sig, frame):
@@ -679,12 +679,12 @@ async def main():
 
     # Get all the required inputs
     regular_transactions = int(input("Enter the no. of transactions per year during usual traffic : "))
-    spike_transactions = int(input("Enter the no. of transactions per second [TPS] during spike : ")) 
-    test_duration_normal = 60 * int(input("Enter the duration for the Load Test under regular traffic [in mins] : ")) 
+    spike_transactions = int(input("Enter the no. of transactions per second [TPS] during spike : "))
+    test_duration_normal = 60 * int(input("Enter the duration for the Load Test under regular traffic [in mins] : "))
     test_duration_spike = 60 * int(input("Enter the duration for the Load Test under spike traffic [in mins] : "))
     scaling_factor = int(input("Enter your preferred scaling factor for the server [default is 10x] : ") or 10)
     requirements_content = calculator(regular_transactions,spike_transactions, scaling_factor)
-    
+
     print("\n🚀 Starting load test...")
     # Check initial storage usage
     initial_storage = float(get_storage_usage("\nEnter the initial disk storage size before load-test [in bytes] : "))
@@ -696,7 +696,7 @@ async def main():
     # Check final storage usage
     final_storage = float(get_storage_usage("\nEnter the final disk storage size after load-test [in bytes] : "))
     total_bytes_regular = final_storage - initial_storage
-    
+
     print("\n🚀 Initializing spike load test...")
 
     # Check initial storage usage
@@ -713,7 +713,7 @@ async def main():
     print("\n✅ Load test completed.")
 
     print("\n⚙️  Generating Report...")
-    
+
     total_bytes_list = [total_bytes_regular,total_bytes_spike]
 
     await generate_med_report_table(requirements_content,total_bytes_list)
@@ -721,13 +721,13 @@ async def main():
     if GRAFANA_PERMISSION == "true":
         with open("dashboards.json", "r") as file:
             data = json.load(file)
-        for idx, val in enumerate(data):    
+        for idx, val in enumerate(data):
             await download_dashboard_pdf(val,idx,int((test_duration_normal+test_duration_spike)/60))
 
-        await append_snap_to_pdf() 
-        
+        await append_snap_to_pdf()
+
     await create_reference_section()
-    merge_pdfs()   
+    merge_pdfs()
 
 if __name__ == "__main__":
     try:
@@ -735,4 +735,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error occurred: {e}")
     finally:
-        cleanup()   
+        cleanup()
