@@ -1139,43 +1139,72 @@ This version of the Hyperswitch SDK is compatible with the following versions of
 
 We are excited to release the latest version of the Hyperswitch control center! This release represents yet another achievement in our ongoing efforts to deliver a flexible, cutting-edge, and community-focused payment solution.
 
-**Features**
-- Themes release by @kanikabansal-juspay in https://github.com/juspay/hyperswitch-control-center/pull/2300
-- Added facilitapay connector by @Muditbhatia12 in https://github.com/juspay/hyperswitch-control-center/pull/2929
-- Sample data analytics by @kanikabansal-juspay in https://github.com/juspay/hyperswitch-control-center/pull/2912
-- Archipel connector by @gbague in https://github.com/juspay/hyperswitch-control-center/pull/2876
-- Debit routing configuration addition by @kanikabansal-juspay in https://github.com/juspay/hyperswitch-control-center/pull/3025
-- Added worldpayxml connector by @Riddhiagrawal001 in https://github.com/juspay/hyperswitch-control-center/pull/3049
-- Auth-rate-based-routing for orchestrator by @gitanjli525 in https://github.com/juspay/hyperswitch-control-center/pull/3033
-- Routing audit logs by @sagarnaikjuspay in https://github.com/juspay/hyperswitch-control-center/pull/3120
-- New connector worldpay vantiv by @susrithasabbini in https://github.com/juspay/hyperswitch-control-center/pull/3090
-- Added 3ds exemption analytics by @aritro2002 in https://github.com/juspay/hyperswitch-control-center/pull/3072
-- Acquirer config settings by @AbhishekChorotiya in https://github.com/juspay/hyperswitch-control-center/pull/3084
-- Addition of new connector barclaycard by @Muditbhatia12 in https://github.com/juspay/hyperswitch-control-center/pull/3177
-- OMP Hierarchy by @kanikabansal-juspay in https://github.com/juspay/hyperswitch-control-center/pull/3001
-- Addition of new connector tokenio by @Muditbhatia12 in https://github.com/juspay/hyperswitch-control-center/pull/3176
-- 3ds-exemption-rules  by @AbhishekChorotiya in https://github.com/juspay/hyperswitch-control-center/pull/3190
+# Hyperswitch Control Center Release Notes
 
+## ✨ Features
 
-**Enhancement**
-- Changed scrollbar colour and state by @Muditbhatia12 in https://github.com/juspay/hyperswitch-control-center/pull/2852
-- Added country currency mapping with icons by @PritishBudhiraja in https://github.com/juspay/hyperswitch-control-center/pull/2859
-- Removed business details and business profile page and refacto… by @Muditbhatia12 in https://github.com/juspay/hyperswitch-control-center/pull/2845
-- Added disable functionality  to threeds connectors by @Muditbhatia12 in https://github.com/juspay/hyperswitch-control-center/pull/2870
-- SDK page revamp with updated configuration support by @PritishBudhiraja in https://github.com/juspay/hyperswitch-control-center/pull/2895
-- Move typography folder under UI config by @kanikabansal-juspay in https://github.com/juspay/hyperswitch-control-center/pull/3013
-- Stripe refund for split payment by @susrithasabbini in https://github.com/juspay/hyperswitch-control-center/pull/3038
-- Horizontal scroll fix by @kanikabansal-juspay in https://github.com/juspay/hyperswitch-control-center/pull/3101
-- Validation of not allowing same merchant name in same organisation by @kanikabansal-juspay in https://github.com/juspay/hyperswitch-control-center/pull/3103
+### UI & Themes
+- Themes release ([#2300](https://github.com/juspay/hyperswitch-control-center/pull/2300))
 
-**Fixes**
-- Added time selection for payments and reports by @susrithasabbini in https://github.com/juspay/hyperswitch-control-center/pull/2854
-- Fixed ctp_vissa connector not updating by @Muditbhatia12 in https://github.com/juspay/hyperswitch-control-center/pull/2856
-- Configure pmts filter issues by @susrithasabbini in https://github.com/juspay/hyperswitch-control-center/pull/2871
-- Added success toast after updating connector credentials by @susrithasabbini in https://github.com/juspay/hyperswitch-control-center/pull/2890
-- All types of connectors showing in operations connector filter by @Muditbhatia12 in https://github.com/juspay/hyperswitch-control-center/pull/2897
-- Added validation for the api keys by @susrithasabbini in https://github.com/juspay/hyperswitch-control-center/pull/2920
-- Fixed arrows in custom range calenders by @kanikabansal-juspay in https://github.com/juspay/hyperswitch-control-center/pull/2969
+### Payment Connectors
+- Added facilitapay connector ([#2929](https://github.com/juspay/hyperswitch-control-center/pull/2929))
+- Archipel connector ([#2876](https://github.com/juspay/hyperswitch-control-center/pull/2876))
+- Added worldpayxml connector ([#3049](https://github.com/juspay/hyperswitch-control-center/pull/3049))
+- New connector worldpay vantiv ([#3090](https://github.com/juspay/hyperswitch-control-center/pull/3090))
+- Addition of new connector barclaycard ([#3177](https://github.com/juspay/hyperswitch-control-center/pull/3177))
+- Addition of new connector tokenio ([#3176](https://github.com/juspay/hyperswitch-control-center/pull/3176))
+
+### Analytics & Reporting
+- Sample data analytics ([#2912](https://github.com/juspay/hyperswitch-control-center/pull/2912))
+- Added 3ds exemption analytics ([#3072](https://github.com/juspay/hyperswitch-control-center/pull/3072))
+
+### Routing & Configuration
+- Debit routing configuration addition ([#3025](https://github.com/juspay/hyperswitch-control-center/pull/3025))
+- Auth-rate-based-routing for orchestrator ([#3033](https://github.com/juspay/hyperswitch-control-center/pull/3033))
+- Routing audit logs ([#3120](https://github.com/juspay/hyperswitch-control-center/pull/3120))
+
+### Security & Authentication
+- Acquirer config settings ([#3084](https://github.com/juspay/hyperswitch-control-center/pull/3084))
+- 3ds-exemption-rules ([#3190](https://github.com/juspay/hyperswitch-control-center/pull/3190))
+
+### Organization Management
+- OMP Hierarchy ([#3001](https://github.com/juspay/hyperswitch-control-center/pull/3001))
+
+## 🚀 Enhancements
+
+### User Experience
+- Changed scrollbar colour and state ([#2852](https://github.com/juspay/hyperswitch-control-center/pull/2852))
+- Added country currency mapping with icons ([#2859](https://github.com/juspay/hyperswitch-control-center/pull/2859))
+- Horizontal scroll fix ([#3101](https://github.com/juspay/hyperswitch-control-center/pull/3101))
+
+### Interface Improvements
+- Removed business details and business profile page and refactored ([#2845](https://github.com/juspay/hyperswitch-control-center/pull/2845))
+- Added disable functionality to threeds connectors ([#2870](https://github.com/juspay/hyperswitch-control-center/pull/2870))
+- SDK page revamp with updated configuration support ([#2895](https://github.com/juspay/hyperswitch-control-center/pull/2895))
+
+### Code Organization
+- Move typography folder under UI config ([#3013](https://github.com/juspay/hyperswitch-control-center/pull/3013))
+
+### Payment Features
+- Stripe refund for split payment ([#3038](https://github.com/juspay/hyperswitch-control-center/pull/3038))
+
+### Validation & Security
+- Validation of not allowing same merchant name in same organisation ([#3103](https://github.com/juspay/hyperswitch-control-center/pull/3103))
+
+## 🐛 Bug Fixes
+
+### Time & Date Selection
+- Added time selection for payments and reports ([#2854](https://github.com/juspay/hyperswitch-control-center/pull/2854))
+- Fixed arrows in custom range calenders ([#2969](https://github.com/juspay/hyperswitch-control-center/pull/2969))
+
+### Connector Issues
+- Fixed ctp_vissa connector not updating ([#2856](https://github.com/juspay/hyperswitch-control-center/pull/2856))
+- Configure pmts filter issues ([#2871](https://github.com/juspay/hyperswitch-control-center/pull/2871))
+- All types of connectors showing in operations connector filter ([#2897](https://github.com/juspay/hyperswitch-control-center/pull/2897))
+
+### User Feedback & Validation
+- Added success toast after updating connector credentials ([#2890](https://github.com/juspay/hyperswitch-control-center/pull/2890))
+- Added validation for the api keys ([#2920](https://github.com/juspay/hyperswitch-control-center/pull/2920))
 
 **Compatibility**
 This version of the Hyperswitch Control Center is compatible with the following versions of other components:
