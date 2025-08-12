@@ -838,36 +838,77 @@ index 784f672a8a..4428b50801 100644
 
 ## Features
 
-* feat: added upi intent qr flow  payment method (#1140)
-* feat: added dynamic fields in klarna v1 and added klarna in v2 (#1114)
-* feat: add support for v2 in api utils (#1152)
-* feat: added skrill payment method (#1164)
-* feat: added flexiti and breadpay (#1167)
-* feat: added bluecode payment method (#1168)
-* feat: added paypal redirect flow in v2 (#1115)
+* feat: added upi intent qr flow  payment method ([#1140](https://github.com/juspay/hyperswitch-web/pull/1140))
+* feat: added dynamic fields in klarna v1 and added klarna in v2 ([#1114](https://github.com/juspay/hyperswitch-web/pull/1114))
+* feat: add support for v2 in api utils ([#1152](https://github.com/juspay/hyperswitch-web/pull/1152))
+* feat: added skrill payment method ([#1164](https://github.com/juspay/hyperswitch-web/pull/1164))
+* feat: added flexiti and breadpay ([#1167](https://github.com/juspay/hyperswitch-web/pull/1167))
+* feat: added bluecode payment method ([#1168](https://github.com/juspay/hyperswitch-web/pull/1168))
+* feat: added paypal redirect flow in v2 ([#1115](https://github.com/juspay/hyperswitch-web/pull/1115))
 
-##  Fixes
+## Fixes
 
-* fix: v2 confirm intent call (#1094)
-* fix: saved screen shimmer fix (#1097)
-* fix: warning remove (#1099)
-* fix: retrieve payment intent endpoint correction (#1103)
-* fix: added new timezone in local country mappings (#1104)
-* fix: unnecessary warnings removed (#1142)
-* fix: added locales for tabs heading display name (#1129)
-* fix: remove CVC number on card brand change & cobadeged cards CVV fixed (#1148)
-* fix: dynamic fields for eps stripe workflow (#1159)
-* fix: bluecode payment method body fix (#1177)
+* fix: v2 confirm intent call ([#1094](https://github.com/juspay/hyperswitch-web/pull/1094))
+* fix: saved screen shimmer fix ([#1097](https://github.com/juspay/hyperswitch-web/pull/1097))
+* fix: warning remove ([#1099](https://github.com/juspay/hyperswitch-web/pull/1099))
+* fix: retrieve payment intent endpoint correction ([#1103](https://github.com/juspay/hyperswitch-web/pull/1103))
+* fix: added new timezone in local country mappings ([#1104](https://github.com/juspay/hyperswitch-web/pull/1104))
+* fix: unnecessary warnings removed ([#1142](https://github.com/juspay/hyperswitch-web/pull/1142))
+* fix: added locales for tabs heading display name ([#1129](https://github.com/juspay/hyperswitch-web/pull/1129))
+* fix: remove CVC number on card brand change & cobadeged cards CVV fixed ([#1148](https://github.com/juspay/hyperswitch-web/pull/1148))
+* fix: dynamic fields for eps stripe workflow ([#1159](https://github.com/juspay/hyperswitch-web/pull/1159))
+* fix: bluecode payment method body fix ([#1177](https://github.com/juspay/hyperswitch-web/pull/1177))
 
-##  Refactors
+## Refactors
 
-* refactor: rename show fields to showPaymentMethodsScreen (#1096)
-* refactor: added comments and moved utilities (#1133)
-* refactor: removed destination bank account id from dynamic fields (#1144)
-* refactor: name changes from  hyperSwitch to value (#1161)
-* refactor: Moving common functions to shared-codebase (#1143)
-* refactor: updated payment method session endpoint (#1149)
-* refactor: remove unnecessary util function (#1171)
+* refactor: rename show fields to showPaymentMethodsScreen ([#1096](https://github.com/juspay/hyperswitch-web/pull/1096))
+* refactor: added comments and moved utilities ([#1133](https://github.com/juspay/hyperswitch-web/pull/1133))
+* refactor: removed destination bank account id from dynamic fields ([#1144](https://github.com/juspay/hyperswitch-web/pull/1144))
+* refactor: name changes from  hyperSwitch to value ([#1161](https://github.com/juspay/hyperswitch-web/pull/1161))
+* refactor: Moving common functions to shared-codebase ([#1143](https://github.com/juspay/hyperswitch-web/pull/1143))
+* refactor: updated payment method session endpoint ([#1149](https://github.com/juspay/hyperswitch-web/pull/1149))
+* refactor: remove unnecessary util function ([#1171](https://github.com/juspay/hyperswitch-web/pull/1171))
+
+## Tests
+
+* test: add cypress test case for bank of america ([#1132](https://github.com/juspay/hyperswitch-web/pull/1132))
+* test: added cypress test for cybersource and trustpay ([#1163](https://github.com/juspay/hyperswitch-web/pull/1163))
+
+## Chores
+
+* chore: separate expiry month and year fields ([#1098](https://github.com/juspay/hyperswitch-web/pull/1098))
+* chore: add csp for custom backend url ([#1102](https://github.com/juspay/hyperswitch-web/pull/1102))
+* chore: added payment experience field in payments list ([#1052](https://github.com/juspay/hyperswitch-web/pull/1052))
+* chore: added bank names support in v2 ([#1101](https://github.com/juspay/hyperswitch-web/pull/1101))
+* chore: link issue pipeline time reduce ([#1108](https://github.com/juspay/hyperswitch-web/pull/1108))
+* chore: add csp disable option ([#1173](https://github.com/juspay/hyperswitch-web/pull/1173))
+
+## CI/CD
+
+* ci: pr-label-removal ([#1093](https://github.com/juspay/hyperswitch-web/pull/1093))
+* ci: added workflow to check if issue is linked with pr ([#1106](https://github.com/juspay/hyperswitch-web/pull/1106))
+* ci: auto assign ([#1109](https://github.com/juspay/hyperswitch-web/pull/1109))
+* ci: added workflow for stable release ([#1113](https://github.com/juspay/hyperswitch-web/pull/1113))
+* ci: fix ux of workflow menu for stable release ([#1119](https://github.com/juspay/hyperswitch-web/pull/1119))
+* ci: fix stable release ([#1121](https://github.com/juspay/hyperswitch-web/pull/1121))
+* ci: format cypress test cases ([#1139](https://github.com/juspay/hyperswitch-web/pull/1139))
+* ci: updated gitmodules ([#1135](https://github.com/juspay/hyperswitch-web/pull/1135))
+
+## Compatibility
+
+This version of the Hyperswitch SDK is compatible with the following versions of other components:
+
+| Component                 | Version  |
+|--------------------------|----------|
+| Control Center           | [v1.37.3](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.37.3)  |
+| App Server               | [v1.116.0](https://github.com/juspay/hyperswitch/releases/tag/v1.116.0)      |
+| WooCommerce Plugin       | [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)   |
+| Card Vault               | [v0.6.5](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.6.5)    | 
+| Key Manager              |   [v0.1.10](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.10)  |
+
+---
+
+**Full Changelog**: https://github.com/juspay/hyperswitch-web/compare/v0.123.0...v0.125.0
 
 ### [Hyperswitch Encryption Service v0.1.10 (2025-07-28)](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.10)
 
