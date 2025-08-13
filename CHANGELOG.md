@@ -7,13 +7,13 @@ All notable changes to Hyperswitch will be documented here.
 ### [Hyperswitch App Server v1.116.0 (2025-08-05)](https://github.com/juspay/hyperswitch/releases/tag/v1.116.0)
 
 
-### Docker Images
+#### Docker Images
 
 - `v1.116.0` (with AWS SES support): `docker pull docker.juspay.io/juspaydotin/hyperswitch-router:v1.116.0`
 
 - `v1.116.0-standalone` (without AWS SES support): `docker pull docker.juspay.io/juspaydotin/hyperswitch-router:v1.116.0-standalone`
 
-### Features
+#### Features
 
 - **ai:** Add endpoints to chat with ai service ([#8585](https://github.com/juspay/hyperswitch/pull/8585))
 - **analytics:** Add RoutingApproach filter in payment analytics ([#8408](https://github.com/juspay/hyperswitch/pull/8408))
@@ -69,7 +69,7 @@ All notable changes to Hyperswitch will be documented here.
   - Add support to pass fallback connectors to decision engine ([#8615](https://github.com/juspay/hyperswitch/pull/8615))
   - Add routing evaluation rule endpoint and related flow ([#8656](https://github.com/juspay/hyperswitch/pull/8656))
   - Add API key auth for decision engine endpoints ([#8640](https://github.com/juspay/hyperswitch/pull/8640))
-### Bug Fixes
+#### Bug Fixes
 
 - **connector:**
   - [STRIPE] Retrieving Connect Account Id from Mandate Metadata in MITs ([#8326](https://github.com/juspay/hyperswitch/pull/8326))
@@ -94,7 +94,7 @@ All notable changes to Hyperswitch will be documented here.
 - Payments redirects for v2 ([#8405](https://github.com/juspay/hyperswitch/pull/8405))
 - Update routing_approach for session_token flow ([#8490](https://github.com/juspay/hyperswitch/pull/8490))
 
-### Refactors
+#### Refactors
 
 - **connector:**
   - Update add connector script with new connector features ([#8213](https://github.com/juspay/hyperswitch/pull/8213))
@@ -117,7 +117,7 @@ All notable changes to Hyperswitch will be documented here.
 - Extract connector auth and metadata validation into separate module ([#8501](https://github.com/juspay/hyperswitch/pull/8501))
 
 
-### Compatibility
+#### Compatibility
 
 This version of the Hyperswitch App server is compatible with the following versions of the other components:
 
@@ -128,7 +128,7 @@ This version of the Hyperswitch App server is compatible with the following vers
 - Key Manager: [v0.1.10](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.10)
 
 
-## Database Migration Changes
+#### Database Migration Changes
 
 DB Difference between v1.115.0 and v1.116.0
 ```sql
@@ -186,7 +186,7 @@ ALTER TABLE payment_attempt ADD COLUMN IF NOT EXISTS connector_request_reference
 ALTER TABLE business_profile ADD COLUMN IF NOT EXISTS merchant_country_code Varchar(32);
 ``` 
 
-## Configuration Changes
+#### Configuration Changes
 
 ```patch
 diff --git a/config/deployments/sandbox.toml b/config/deployments/sandbox.toml
@@ -810,7 +810,7 @@ index 784f672a8a..4428b50801 100644
 
 ### [Hyperswitch Control Center v1.37.3 (2025-08-05)](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.37.3)
 
-**Features**
+#### Features
 - Added new connector payload ([#3290](https://github.com/juspay/hyperswitch-control-center/pull/3290))
 - Integrate chat bot ([#3301](https://github.com/juspay/hyperswitch-control-center/pull/3301))
 - Added functionality to change the order of columns in loaded table with custom columns ([#3251](https://github.com/juspay/hyperswitch-control-center/pull/3251))
@@ -819,7 +819,7 @@ index 784f672a8a..4428b50801 100644
 - Orchestrator v2 connected connectors table ([#3229](https://github.com/juspay/hyperswitch-control-center/pull/3229))
 - Recon(V1) product in ([#3262](https://github.com/juspay/hyperswitch-control-center/pull/3262)) ([#3266](https://github.com/juspay/hyperswitch-control-center/pull/3266)) ([#3267](https://github.com/juspay/hyperswitch-control-center/pull/3267)) ([#3275](https://github.com/juspay/hyperswitch-control-center/pull/3275)) ([#3283](https://github.com/juspay/hyperswitch-control-center/pull/3283))
 
-**Enhancement**
+#### Enhancement
 - Display prefilled merchant name in create merchant modal ([#3249](https://github.com/juspay/hyperswitch-control-center/pull/3249))
 - Add entity-specific routes for authentication analytics v2 ([#3270](https://github.com/juspay/hyperswitch-control-center/pull/3270))
 - Make filter menu scrollable and fix filter type issues ([#3218](https://github.com/juspay/hyperswitch-control-center/pull/3218))
@@ -827,7 +827,7 @@ index 784f672a8a..4428b50801 100644
 - Added custom webhook headers tab in revamped payment settings ([#3210](https://github.com/juspay/hyperswitch-control-center/pull/3210))
 - Remove unused code ([#3282](https://github.com/juspay/hyperswitch-control-center/pull/3282))
 
-**Fixes**
+#### Fixes
 - Webhook responsiveness fix ([#3204](https://github.com/juspay/hyperswitch-control-center/pull/3204))
 - Theme colors for sidebar ompchart and border fix ([#3197](https://github.com/juspay/hyperswitch-control-center/pull/3197))
 - Product type matching bugfix ([#3236](https://github.com/juspay/hyperswitch-control-center/pull/3236))
@@ -836,7 +836,7 @@ index 784f672a8a..4428b50801 100644
 
 ### [Hyperswitch Web v0.125.0 (2025-08-05)](https://github.com/juspay/hyperswitch-web/releases/tag/v0.125.0)
 
-## Features
+#### Features
 
 * feat: added upi intent qr flow  payment method ([#1140](https://github.com/juspay/hyperswitch-web/pull/1140))
 * feat: added dynamic fields in klarna v1 and added klarna in v2 ([#1114](https://github.com/juspay/hyperswitch-web/pull/1114))
@@ -846,7 +846,7 @@ index 784f672a8a..4428b50801 100644
 * feat: added bluecode payment method ([#1168](https://github.com/juspay/hyperswitch-web/pull/1168))
 * feat: added paypal redirect flow in v2 ([#1115](https://github.com/juspay/hyperswitch-web/pull/1115))
 
-## Fixes
+#### Fixes
 
 * fix: v2 confirm intent call ([#1094](https://github.com/juspay/hyperswitch-web/pull/1094))
 * fix: saved screen shimmer fix ([#1097](https://github.com/juspay/hyperswitch-web/pull/1097))
@@ -859,7 +859,7 @@ index 784f672a8a..4428b50801 100644
 * fix: dynamic fields for eps stripe workflow ([#1159](https://github.com/juspay/hyperswitch-web/pull/1159))
 * fix: bluecode payment method body fix ([#1177](https://github.com/juspay/hyperswitch-web/pull/1177))
 
-## Refactors
+#### Refactors
 
 * refactor: rename show fields to showPaymentMethodsScreen ([#1096](https://github.com/juspay/hyperswitch-web/pull/1096))
 * refactor: added comments and moved utilities ([#1133](https://github.com/juspay/hyperswitch-web/pull/1133))
@@ -869,12 +869,12 @@ index 784f672a8a..4428b50801 100644
 * refactor: updated payment method session endpoint ([#1149](https://github.com/juspay/hyperswitch-web/pull/1149))
 * refactor: remove unnecessary util function ([#1171](https://github.com/juspay/hyperswitch-web/pull/1171))
 
-## Tests
+#### Tests
 
 * test: add cypress test case for bank of america ([#1132](https://github.com/juspay/hyperswitch-web/pull/1132))
 * test: added cypress test for cybersource and trustpay ([#1163](https://github.com/juspay/hyperswitch-web/pull/1163))
 
-## Chores
+#### Chores
 
 * chore: separate expiry month and year fields ([#1098](https://github.com/juspay/hyperswitch-web/pull/1098))
 * chore: add csp for custom backend url ([#1102](https://github.com/juspay/hyperswitch-web/pull/1102))
@@ -883,7 +883,7 @@ index 784f672a8a..4428b50801 100644
 * chore: link issue pipeline time reduce ([#1108](https://github.com/juspay/hyperswitch-web/pull/1108))
 * chore: add csp disable option ([#1173](https://github.com/juspay/hyperswitch-web/pull/1173))
 
-## CI/CD
+#### CI/CD
 
 * ci: pr-label-removal ([#1093](https://github.com/juspay/hyperswitch-web/pull/1093))
 * ci: added workflow to check if issue is linked with pr ([#1106](https://github.com/juspay/hyperswitch-web/pull/1106))
@@ -894,7 +894,7 @@ index 784f672a8a..4428b50801 100644
 * ci: format cypress test cases ([#1139](https://github.com/juspay/hyperswitch-web/pull/1139))
 * ci: updated gitmodules ([#1135](https://github.com/juspay/hyperswitch-web/pull/1135))
 
-## Compatibility
+#### Compatibility
 
 This version of the Hyperswitch SDK is compatible with the following versions of other components:
 
@@ -914,11 +914,11 @@ This version of the Hyperswitch SDK is compatible with the following versions of
 
 This release contains no code changes, it only contains changes to the `gen_certs.sh` script used to generate mTLS certificates.
 
-### Refactors
+#### Refactors
 
 - **gen_certs:** Enhancements to the TLS certificate generation script ([#53](https://github.com/juspay/hyperswitch-encryption-service/pull/53)) 
 
-### Compatibility
+#### Compatibility
 
 This version of the Hyperswitch App server is compatible with the following versions of the other components:
 
