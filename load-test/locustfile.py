@@ -12,6 +12,7 @@ class APICalls(SequentialTaskSet):
             "capture_method": "automatic",
             "capture_on": "2022-09-10T10:11:12Z",
             "amount_to_capture": 6540,
+            "setup_future_usage": "on_session",
             "customer_id": "DummyCustomer",
             "email": "guest@example.com",
             "name": "John Doe",
@@ -52,14 +53,14 @@ class APICalls(SequentialTaskSet):
                         headers={
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
-                            'api-key' : api_key 
+                            'api-key' : api_key
                         })
         if response.status_code == 200:
             self.payment_id = json.loads(response.text)["payment_id"]
         else:
-            error_message = response.json().get("error", "Unknown error") 
-            print(error_message)  
-    
+            error_message = response.json().get("error", "Unknown error")
+            print(error_message)
+
     @task
     def payment_confirm(self):
         payload = json.dumps({
@@ -73,9 +74,17 @@ class APICalls(SequentialTaskSet):
                     "card_holder_name": "joseph Doe",
                     "card_cvc": "123"
                 }
-            }
+            },
+            "customer_acceptance": {
+            "acceptance_type": "online",
+            "accepted_at": "1963-05-03T04:07:52.723Z",
+            "online": {
+                "ip_address": "127.0.0.1",
+                "user_agent": "amet irure esse"
+                }
+            },
         })
-                
+
         response = self.client.post('/payments/'+self.payment_id+'/confirm', name='/payments/payment_id/confirm', data=payload,
                         headers={
                             'Content-Type': 'application/json',
@@ -88,8 +97,8 @@ class APICalls(SequentialTaskSet):
             status = json.loads(response.text)["status"]
             print("Payment status: ", status)
         else:
-            error_message = response.json().get("error", "Unknown error") 
-            print(error_message)  
+            error_message = response.json().get("error", "Unknown error")
+            print(error_message)
 
 
 class TestUser(HttpUser):
@@ -99,5 +108,4 @@ class TestUser(HttpUser):
         global api_key
         with open(".secrets.env", "r") as f:
             api_key = f.read().strip()
-    
-    
+
