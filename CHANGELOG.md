@@ -905,6 +905,17 @@ index 4428b5080..40868da8f 100644
 - Payout connector display name ([#3450](https://github.com/juspay/hyperswitch-control-center/pull/3450))
 - Recovery onboarding and switch merchant changes ([#3435](https://github.com/juspay/hyperswitch-control-center/pull/3435))
 
+#### Compatibility
+This version of the Hyperswitch Control Center is compatible with the following versions of other components:
+
+- App Server Version: [v1.117.0](https://github.com/juspay/hyperswitch/releases/tag/v1.117.0)
+- Web Client Version: [v0.126.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.126.0)
+- WooCommerce Plugin Version: [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)
+- Card Vault Version: [v0.6.5](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.6.5)
+- Key Manager: [v0.1.8](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.8)
+
+**Full Changelog**: https://github.com/juspay/hyperswitch-control-center/compare/v1.37.3...v1.37.4
+
 
 ### [Hyperswitch Web v0.126.0 (2025-09-10)](https://github.com/juspay/hyperswitch-web/releases/tag/v0.126.0)
 
@@ -946,13 +957,6 @@ This version of the Hyperswitch SDK is compatible with the following versions of
 
 **Full Changelog**: https://github.com/juspay/hyperswitch-web/compare/v0.125.0...v0.126.0
 
-### [Hyperswitch Encryption Service v0.1.10 (2025-07-28)](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.10)
-
-This release contains no code changes, it only contains changes to the `gen_certs.sh` script used to generate mTLS certificates.
-
-#### Refactors
-
-- **gen_certs:** Enhancements to the TLS certificate generation script ([#53](https://github.com/juspay/hyperswitch-encryption-service/pull/53))
 
 #### Compatibility
 
