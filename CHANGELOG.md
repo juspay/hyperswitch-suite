@@ -957,17 +957,6 @@ This version of the Hyperswitch SDK is compatible with the following versions of
 
 **Full Changelog**: https://github.com/juspay/hyperswitch-web/compare/v0.125.0...v0.126.0
 
-
-#### Compatibility
-
-This version of the Hyperswitch App server is compatible with the following versions of the other components:
-
-- Control Center: [v1.37.4](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.37.4)
-- Web Client: [v0.126.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.126.0)
-- WooCommerce Plugin: [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)
-- Card Vault: [v0.6.5](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.6.5)
-- Key Manager: [v0.1.10](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.10)
-
 ## Hyperswitch Suite v1.10
 
 ### [Hyperswitch App Server v1.116.0 (2025-08-05)](https://github.com/juspay/hyperswitch/releases/tag/v1.116.0)
