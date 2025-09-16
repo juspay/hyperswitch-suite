@@ -10,6 +10,8 @@ import requests
 import json
 import fitz
 import shutil
+import argparse
+import logging
 from tqdm import tqdm
 from pathlib import Path
 from bs4 import BeautifulSoup
@@ -18,6 +20,9 @@ from playwright.async_api import async_playwright
 from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
 
 load_dotenv(dotenv_path=str(Path(__file__).parent / ".env"),override=True)
+
+# Global debug mode flag
+DEBUG_MODE = False
 
 # Access credentials using os.getenv()
 HYPERSWITCH_HOST_URL = os.getenv("HYPERSWITCH_HOST_URL")
@@ -37,6 +42,42 @@ POSTGRES_PORT = os.getenv("POSTGRES_PORT")
 YELLOW="\033[1;33m"
 CYAN="\033[1;36m"
 RESET="\033[0m"
+
+def setup_logging():
+    """Setup logging configuration based on debug mode."""
+    if DEBUG_MODE:
+        import shutil
+        debug_dir = Path("output/debug_logs")
+
+        # Clear existing debug logs
+        if debug_dir.exists():
+            shutil.rmtree(debug_dir)
+        debug_dir.mkdir(parents=True, exist_ok=True)
+
+        log_file = debug_dir / "load_test_debug.log"
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format='%(asctime)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s',
+            handlers=[logging.FileHandler(log_file)]
+        )
+        print(f"Debug mode enabled - detailed logging to {log_file}")
+        return log_file
+    return None
+
+def get_subprocess_args():
+    """Return subprocess arguments based on debug mode."""
+    if DEBUG_MODE:
+        log_file = Path("output/debug_logs/load_test_debug.log")
+        return {
+            'stdout': open(log_file, 'a'),
+            'stderr': subprocess.STDOUT,
+            'text': True
+        }
+    else:
+        return {
+            'stdout': subprocess.DEVNULL,
+            'stderr': subprocess.DEVNULL
+        }
 
 # Global Variables
 IDEAL_VALUES = {"Response Time":"1000 - 1300 ms", "Storage per Transaction":"< 18 Kb"}
@@ -155,14 +196,23 @@ def get_storage_usage(input_string):
                 "--tuples-only",  # tuples only (no headers)
                 "--command", PSQL_QUERY
             ]
-            output = subprocess.check_output(cmd, text=True)
+
+            if DEBUG_MODE:
+                logging.debug("Executing psql command: %s", " ".join(cmd))
+                output = subprocess.check_output(cmd, text=True, stderr=subprocess.STDOUT)
+                logging.debug("psql output: %s", output)
+            else:
+                output = subprocess.check_output(cmd, text=True)
 
             # Parse and return the total size as an integer
             total_size = float(output.strip())
             return total_size
 
         except (subprocess.CalledProcessError, Exception, ValueError) as e:
-            print(f"psql command failed: {e}\nResorting to manual input !")
+            error_msg = f"psql command failed: {e}\nResorting to manual input !"
+            print(error_msg)
+            if DEBUG_MODE:
+                logging.error(error_msg)
             return get_storage_usage_manual(input_string)
 
     else:
@@ -172,22 +222,60 @@ def get_storage_usage(input_string):
 def run_merchant_create(test_spec):
     """Runs the merchant_create.py script and waits for completion."""
     print(f"\n🔹 Creating Merchant for {test_spec} testing...")
+
+    webhook_url = input("Enter webhook URL: ").strip()
+    webhook_username = input("Enter webhook username (optional, press Enter to skip): ").strip()
+    webhook_password = input("Enter webhook password (optional, press Enter to skip): ").strip()
+
     try:
-        result = subprocess.run([sys.executable, "merchant_create.py"], capture_output=True, text=True, check=True)
+        cmd = [sys.executable, "merchant_create.py", webhook_url]
+        if webhook_username:
+            cmd.append(webhook_username)
+        if webhook_password:
+            cmd.append(webhook_password)
+
+        # Set environment variable for debug mode
+        env = os.environ.copy()
+        if DEBUG_MODE:
+            env["DEBUG_MODE"] = "true"
+
+        if DEBUG_MODE:
+            logging.debug("Executing merchant_create command: %s", " ".join(cmd))
+            result = subprocess.run(cmd, text=True, check=True,
+                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, env=env)
+            logging.debug("merchant_create output: %s", result.stdout)
+        else:
+            subprocess.run(cmd, capture_output=True, text=True, check=True, env=env)
+
         time.sleep(2)
         print("  ✅ Merchant created successfully.")
     except subprocess.CalledProcessError as e:
-        print(f"Error running merchant_create.py: {e.stderr}")
+        error_msg = f"Error running merchant_create.py: {e.stderr if hasattr(e, 'stderr') else str(e)}"
+        print(error_msg)
+        if DEBUG_MODE:
+            logging.error(error_msg)
         sys.exit(1)  # Exit the script if merchant_create.py fails
 
 # Function to run Locust load test
 async def run_locust(test_spec, users,run_time, file_name):
     """Runs the Locust load test."""
-    subprocess.Popen([
+    subprocess_args = get_subprocess_args()
+    cmd = [
         "locust", "--locustfile", "locustfile.py", "--headless",
         "--users", f"{users}", "--spawn-rate", f"{int(users/2)}", "--run-time", f"{run_time}s",
         "--html", f"output/temp/{file_name}.html", "--host", HYPERSWITCH_HOST_URL
-    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    ]
+
+    # Set environment variable for debug mode
+    env = os.environ.copy()
+    if DEBUG_MODE:
+        env["DEBUG_MODE"] = "true"
+        logging.debug("Executing locust command: %s", " ".join(cmd))
+
+    # Update subprocess_args to include environment
+    subprocess_args['env'] = env
+
+    subprocess.Popen(cmd, **subprocess_args)
     print(f"    ⏳ Load test running for {test_spec}...")
     # Run the loading bar while the Locust test runs
     await loading_bar(run_time)
@@ -319,20 +407,42 @@ async def generate_med_report_table(requirement_content, total_bytes_list):
 
 # Function to download Grafana dashboard snapshots
 async def download_dashboard_pdf(json_data, idx, duration):
+    if DEBUG_MODE:
+        logging.debug("Starting Grafana dashboard snapshot %d with duration %d", idx+1, duration)
+        logging.debug("Dashboard JSON data: %s", json.dumps(json_data, indent=2))
+
     url = f"{GRAFANA_HOST}/api/snapshots"
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
         "Authorization": f"Bearer {GRAFANA_SERVICE_ACCOUNT_TOKEN}"
     }
+
+    if DEBUG_MODE:
+        logging.debug("Creating Grafana snapshot at: %s", url)
+
     response = requests.post(url, json=json_data, headers=headers)
+
+    if DEBUG_MODE:
+        logging.debug("Snapshot creation response status: %s", response.status_code)
+        logging.debug("Snapshot creation response: %s", response.text)
+
     dashboard_url = response.json().get("url")
     parsed = urlparse(dashboard_url)
     params = dict(parse_qsl(parsed.query))
     params.update({'from': f'now-{duration+5}m', 'to': 'now'})
     dashboard_url = urlunparse(parsed._replace(query=urlencode(params)))
     output_file = f"output/snapshots/snap-{idx+1}.png"
+
+    if DEBUG_MODE:
+        logging.debug("Dashboard URL: %s", dashboard_url)
+        logging.debug("Output file: %s", output_file)
+
     session = requests.Session()
+
+    if DEBUG_MODE:
+        logging.debug("Attempting Grafana login at: %s/login", GRAFANA_HOST)
+
     response = session.post(
         f"{GRAFANA_HOST}/login",
         json={"user": GRAFANA_USERNAME, "password": GRAFANA_PASSWORD},
@@ -345,18 +455,33 @@ async def download_dashboard_pdf(json_data, idx, duration):
         }
     )
 
+    if DEBUG_MODE:
+        logging.debug("Grafana login response status: %s", response.status_code)
+
     if response.status_code == 200:
         for cookie in session.cookies:
             if cookie.name == "grafana_session":
                 session_cookie = cookie.value
+                if DEBUG_MODE:
+                    logging.debug("Grafana session cookie obtained: %s", session_cookie[:20] + "...")
     else:
-        print("❌ Login failed! Check credentials or Grafana status.")
+        error_msg = "❌ Login failed! Check credentials or Grafana status."
+        print(error_msg)
+        if DEBUG_MODE:
+            logging.error("Grafana login failed: %s", response.text)
         return
     async with async_playwright() as p:
+        if DEBUG_MODE:
+            logging.debug("Launching Playwright browser for screenshot capture")
+
         browser = await p.chromium.launch(headless=True)
         page = await browser.new_page()
         parsed_url = urlparse(GRAFANA_HOST)
         cookie_domain = parsed_url.hostname
+
+        if DEBUG_MODE:
+            logging.debug("Setting Grafana session cookie for domain: %s", cookie_domain)
+
         await page.context.add_cookies([
             {
                 "name": "grafana_session",
@@ -365,28 +490,52 @@ async def download_dashboard_pdf(json_data, idx, duration):
                 "path": "/"
             }
         ])
+
+        if DEBUG_MODE:
+            logging.debug("Navigating to dashboard URL: %s", dashboard_url)
+
         await page.goto(dashboard_url, wait_until="networkidle")
         await asyncio.sleep(5)
+
+        if DEBUG_MODE:
+            logging.debug("Page loaded, searching for .scrollbar-view element")
 
         element = await page.query_selector(".scrollbar-view")
         if element:
             # Get the full height of the element
             full_height = await page.evaluate("el => el.scrollHeight", element)
 
+            if DEBUG_MODE:
+                logging.debug("Found scrollbar-view element with height: %d", full_height)
+
             # Resize viewport to capture entire scrollbar-view
             await page.set_viewport_size({"width": 1920, "height": full_height+100})
             await asyncio.sleep(2)  # Ensure rendering is complete
 
+            if DEBUG_MODE:
+                logging.debug("Capturing screenshot to: %s", output_file)
+
             # Capture the screenshot
             await element.screenshot(path=str(output_file))
-            print(f"📷 Snapshot captured and saved: {output_file}")
+            success_msg = f"📷 Snapshot captured and saved: {output_file}"
+            print(success_msg)
+            if DEBUG_MODE:
+                logging.info("Screenshot captured successfully: %s", output_file)
         else:
-            print("❌ Error saving snapshot!")
+            error_msg = "❌ Error saving snapshot!"
+            print(error_msg)
+            if DEBUG_MODE:
+                logging.error("Could not find .scrollbar-view element for screenshot")
 
         await browser.close()
+        if DEBUG_MODE:
+            logging.debug("Browser closed for snapshot %d", idx+1)
 
 # Function to append Grafana snapshots to the PDF
 async def append_snap_to_pdf():
+    if DEBUG_MODE:
+        logging.debug("Starting to append Grafana snapshots to PDF")
+
     html_file = Path("output/temp/metric_report.html").resolve()
     pdf_file = Path('output/temp/metric_report.pdf').resolve()
     image_paths = [
@@ -394,6 +543,13 @@ async def append_snap_to_pdf():
         Path("output/snapshots/snap-2.png").resolve(),
         Path("output/snapshots/snap-3.png").resolve(),
     ]
+
+    if DEBUG_MODE:
+        logging.debug("HTML file: %s", html_file)
+        logging.debug("PDF file: %s", pdf_file)
+        for i, path in enumerate(image_paths):
+            exists = path.exists()
+            logging.debug("Image %d: %s (exists: %s)", i+1, path, exists)
 
     # Generate HTML Content
     html_content = f"""
@@ -422,9 +578,19 @@ async def append_snap_to_pdf():
     """
 
     # Save the HTML file
+    if DEBUG_MODE:
+        logging.debug("Writing HTML content to file: %s", html_file)
+
     with open(html_file, "w", encoding="utf-8") as f:
         f.write(html_content)
+
+    if DEBUG_MODE:
+        logging.debug("Converting HTML to PDF: %s -> %s", html_file, pdf_file)
+
     await html_to_pdf(html_file,pdf_file)
+
+    if DEBUG_MODE:
+        logging.debug("Grafana snapshots PDF creation completed")
 
 # Function to create the references section
 async def create_reference_section():
@@ -523,10 +689,20 @@ async def create_reference_section():
 
 # Function to convert HTML to PDF using Playwright
 async def html_to_pdf(html_file,output_file):
+    if DEBUG_MODE:
+        logging.debug("Starting HTML to PDF conversion: %s -> %s", html_file, output_file)
+
     try:
         async with async_playwright() as p:
+            if DEBUG_MODE:
+                logging.debug("Launching browser for PDF conversion")
+
             browser = await p.chromium.launch(headless=True)
             page = await browser.new_page()
+
+            if DEBUG_MODE:
+                logging.debug("Loading HTML file: %s", html_file)
+
             await page.goto(f"file://{html_file}", wait_until="load")
             await page.add_style_tag(content=f"""
                 @page {{
@@ -603,6 +779,10 @@ async def html_to_pdf(html_file,output_file):
             """)
 
             await asyncio.sleep(2)
+
+            if DEBUG_MODE:
+                logging.debug("Generating PDF with A4 format, scale 0.8")
+
             # Generate PDF
             await page.pdf(
                 path=str(output_file),
@@ -612,8 +792,14 @@ async def html_to_pdf(html_file,output_file):
             )
             await browser.close()
 
+            if DEBUG_MODE:
+                logging.debug("PDF conversion completed successfully: %s", output_file)
+
     except Exception as error:
-        print(f"❌ Failed to convert HTML to PDF: {error}")
+        error_msg = f"❌ Failed to convert HTML to PDF: {error}"
+        print(error_msg)
+        if DEBUG_MODE:
+            logging.error("HTML to PDF conversion failed: %s", str(error))
 
 # Function to merge multiple PDFs into one
 def merge_pdfs():
@@ -671,7 +857,22 @@ def handle_interrupt(sig, frame):
 signal.signal(signal.SIGINT, handle_interrupt)
 signal.signal(signal.SIGTERM, handle_interrupt)
 
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(description="Load Test Script")
+    parser.add_argument("--debug", action="store_true", help="Enable debug mode with detailed logging")
+    return parser.parse_args()
+
 async def main():
+    global DEBUG_MODE
+
+    # Parse command line arguments
+    args = parse_arguments()
+    DEBUG_MODE = args.debug
+
+    # Setup logging
+    setup_logging()
+
     # Create output directories
     Path("output").mkdir(parents=True, exist_ok=True)
     Path("output/snapshots").mkdir(parents=True, exist_ok=True)

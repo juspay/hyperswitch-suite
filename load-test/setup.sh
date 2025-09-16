@@ -1,5 +1,26 @@
 #!/bin/bash
 
+# Parse command line arguments
+DEBUG_MODE=false
+for arg in "$@"; do
+    case $arg in
+        --debug)
+            DEBUG_MODE=true
+            shift
+            ;;
+        -h|--help)
+            echo "Usage: $0 [--debug]"
+            echo "  --debug    Enable debug mode with detailed logging"
+            exit 0
+            ;;
+        *)
+            echo "Unknown option: $arg"
+            echo "Use --help for usage information"
+            exit 1
+            ;;
+    esac
+done
+
 # Define color codes
 GREEN="\033[1;32m"
 YELLOW="\033[1;33m"
@@ -202,8 +223,16 @@ print_section "Finalizing Setup"
 echo -e "${GREEN}✔ Credentials stored in .env file securely.${RESET}\n"
 
 # Run Python script and exit if it fails
-echo -e "${YELLOW}Running script.py...${RESET}\n"
-if ! python3 script.py; then
-    echo -e "${RED}❌ script.py failed! Exiting.${RESET}"
-    exit 1
+if [ "$DEBUG_MODE" = true ]; then
+    echo -e "${YELLOW}Running script.py in debug mode...${RESET}\n"
+    if ! python3 script.py --debug; then
+        echo -e "${RED}❌ script.py failed! Exiting.${RESET}"
+        exit 1
+    fi
+else
+    echo -e "${YELLOW}Running script.py...${RESET}\n"
+    if ! python3 script.py; then
+        echo -e "${RED}❌ script.py failed! Exiting.${RESET}"
+        exit 1
+    fi
 fi
