@@ -1,11 +1,22 @@
 from locust import HttpUser, task, constant, SequentialTaskSet
 import json
 import os
+import sys
 import logging
 from pathlib import Path
 
 # Check if debug mode is enabled
 DEBUG_MODE = os.getenv("DEBUG_MODE", "false").lower() == "true"
+
+# Get testing mode from environment variable
+TESTING_MODE = os.getenv("TESTING_MODE", "basic").lower()
+
+# Define testing modes and their API call sequences
+TESTING_MODES = {
+    "basic": ["payment_create", "payment_confirm"],
+    "advanced": ["payment_create", "payment_confirm", "payment_retrieve"],
+    "comprehensive": ["payment_create", "payment_confirm", "payment_retrieve", "payment_update", "payment_capture"]
+}
 
 def setup_logging():
     """Setup logging for locustfile.py"""
@@ -44,7 +55,33 @@ setup_logging()
 
 class APICalls(SequentialTaskSet):
     payment_id = ""
+
+    def on_start(self):
+        """Initialize the task sequence based on testing mode."""
+        self.task_sequence = TESTING_MODES.get(TESTING_MODE, TESTING_MODES["basic"])
+        self.current_task_index = 0
+        user_id = getattr(self.user, 'user_id', 'unknown')
+        debug_log("User %s initialized with testing mode: %s, task sequence: %s", user_id, TESTING_MODE, self.task_sequence)
+
     @task
+    def execute_next_task(self):
+        """Execute the next task in the sequence based on testing mode."""
+        if self.current_task_index < len(self.task_sequence):
+            task_name = self.task_sequence[self.current_task_index]
+            user_id = getattr(self.user, 'user_id', 'unknown')
+            debug_log("User %s executing task %d: %s", user_id, self.current_task_index + 1, task_name)
+
+            # Execute the appropriate method
+            method = getattr(self, task_name, None)
+            if method:
+                method()
+                self.current_task_index += 1
+            else:
+                debug_log("User %s: Task method %s not found", user_id, task_name)
+        else:
+            # Reset to start sequence again
+            self.current_task_index = 0
+
     def payment_create(self):
         user_id = getattr(self.user, 'user_id', 'unknown')
         debug_log("User %s starting payment_create task", user_id)
@@ -114,7 +151,6 @@ class APICalls(SequentialTaskSet):
             debug_log("User %s payment creation failed: %s", user_id, error_message)
             print(error_message)
 
-    @task
     def payment_confirm(self):
         user_id = getattr(self.user, 'user_id', 'unknown')
         debug_log("User %s starting payment_confirm task with payment_id: %s", user_id, self.payment_id)

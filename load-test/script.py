@@ -257,7 +257,7 @@ def run_merchant_create(test_spec):
         sys.exit(1)  # Exit the script if merchant_create.py fails
 
 # Function to run Locust load test
-async def run_locust(test_spec, users,run_time, file_name):
+async def run_locust(test_spec, users,run_time, file_name, testing_mode="basic"):
     """Runs the Locust load test."""
     subprocess_args = get_subprocess_args()
     cmd = [
@@ -266,11 +266,13 @@ async def run_locust(test_spec, users,run_time, file_name):
         "--html", f"output/temp/{file_name}.html", "--host", HYPERSWITCH_HOST_URL
     ]
 
-    # Set environment variable for debug mode
+    # Set environment variables
     env = os.environ.copy()
+    env["TESTING_MODE"] = testing_mode
     if DEBUG_MODE:
         env["DEBUG_MODE"] = "true"
         logging.debug("Executing locust command: %s", " ".join(cmd))
+        logging.debug("Testing mode: %s", testing_mode)
 
     # Update subprocess_args to include environment
     subprocess_args['env'] = env
@@ -884,6 +886,14 @@ async def main():
     test_duration_normal = 60 * int(input("Enter the duration for the Load Test under regular traffic [in mins] : "))
     test_duration_spike = 60 * int(input("Enter the duration for the Load Test under spike traffic [in mins] : "))
     scaling_factor = int(input("Enter your preferred scaling factor for the server [default is 10x] : ") or 10)
+
+    # Get testing mode
+    print("\nAvailable testing modes:")
+    print("  basic: Payment creation + confirmation (default)")
+    print("  advanced: Payment creation + confirmation + retrieval")
+    print("  comprehensive: All payment operations")
+    testing_mode = input("Enter testing mode [basic/advanced/comprehensive] (default: basic): ").strip().lower() or "basic"
+
     requirements_content = calculator(regular_transactions,spike_transactions, scaling_factor)
 
     print("\n🚀 Starting load test...")
@@ -892,7 +902,7 @@ async def main():
 
     # Run Locust load test for regular traffic
     run_merchant_create("Regular")
-    await run_locust("Regular Traffic", int(NORMAL_RPS)+5, test_duration_normal, "test_normal")
+    await run_locust("Regular Traffic", int(NORMAL_RPS)+5, test_duration_normal, "test_normal", testing_mode)
 
     # Check final storage usage
     final_storage = float(get_storage_usage("\nEnter the final disk storage size after load-test [in bytes] : "))
@@ -905,7 +915,7 @@ async def main():
 
     # Run Locust load test for spike
     run_merchant_create("Spike")
-    await run_locust("Spike", int(SPIKE_RPS)+5, test_duration_spike, "test_spike")
+    await run_locust("Spike", int(SPIKE_RPS)+5, test_duration_spike, "test_spike", testing_mode)
 
     # Check final storage usage
     final_storage = float(get_storage_usage("\nEnter the final disk storage size after spike-test [in bytes] : "))
