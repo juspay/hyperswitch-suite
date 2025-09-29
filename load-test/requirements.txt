@@ -22,6 +22,7 @@ locust==2.33.2
 lxml==5.3.1
 MarkupSafe==3.0.2
 msgpack==1.1.0
+numpy==2.3.3
 packaging==24.2
 pillow==11.1.0
 playwright==1.50.0
