@@ -50,6 +50,7 @@ IDEAL_STORAGE_PER_TRANSACTION = 14
 NORMAL_APPLICATION_LATENCY = "N/A"
 SPIKE_APPLICATION_LATENCY = "N/A"
 RECOMMENDED_APPLICATION_LATENCY = "30 - 60 ms"
+CAPTURE_SAMPLE_LOGS = os.getenv("GEN_SAMPLE_LOG", "false").lower() == "true"
 PSQL_QUERY = """
         SELECT SUM(pg_total_relation_size(quote_ident(tablename))) AS total_size
         FROM pg_tables
@@ -188,11 +189,16 @@ async def run_locust(test_spec, users,run_time, file_name):
     """Runs the Locust load test."""
     global NORMAL_APPLICATION_LATENCY, SPIKE_APPLICATION_LATENCY
 
+    # Set environment variables for the locust process
+    env = os.environ.copy()
+    if CAPTURE_SAMPLE_LOGS and "normal" in file_name:
+        env["CAPTURE_SAMPLE_LOGS"] = "true"
+
     subprocess.Popen([
         "locust", "--locustfile", "locustfile.py", "--headless",
         "--users", f"{users}", "--spawn-rate", f"{int(users/2)}", "--run-time", f"{run_time}s",
         "--html", f"output/temp/{file_name}.html", "--host", HYPERSWITCH_HOST_URL
-    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env)
     print(f"    ⏳ Load test running for {test_spec}...")
     # Run the loading bar while the Locust test runs
     await loading_bar(run_time)
@@ -711,6 +717,9 @@ signal.signal(signal.SIGINT, handle_interrupt)
 signal.signal(signal.SIGTERM, handle_interrupt)
 
 async def main():
+    if CAPTURE_SAMPLE_LOGS:
+        print("🔍 Sample log generation enabled")
+
     # Create output directories
     Path("output").mkdir(parents=True, exist_ok=True)
     Path("output/snapshots").mkdir(parents=True, exist_ok=True)

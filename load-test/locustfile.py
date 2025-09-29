@@ -1,9 +1,16 @@
 from locust import HttpUser, task, constant, SequentialTaskSet
 import json
 import numpy as np
+import os
 
 # Global list to store x-hs-latency values
 x_hs_latency_values = []
+
+# Global variables for sample logs
+sample_logs_captured = {"create": False, "confirm": False}
+sample_logs = {}
+sample_payment_id = None  # Track the payment_id for consistent logging
+CAPTURE_LOGS = os.getenv("CAPTURE_SAMPLE_LOGS", "false").lower() == "true"
 
 class APICalls(SequentialTaskSet):
     payment_id = ""
@@ -61,12 +68,27 @@ class APICalls(SequentialTaskSet):
                         })
         if response.status_code == 200:
             self.payment_id = json.loads(response.text)["payment_id"]
+
+            # Capture sample log for successful payment create
+            if CAPTURE_LOGS and not sample_logs_captured["create"]:
+                global sample_payment_id
+                sample_payment_id = self.payment_id  # Store the payment_id for matching
+                sample_logs["payment_create"] = {
+                    "api": "payment_create",
+                    "status_code": response.status_code,
+                    "headers": dict(response.headers),
+                    "request_payload": json.loads(payload),
+                    "response": response.json()
+                }
+                sample_logs_captured["create"] = True
+                print(f"✅ Sample log captured for payment_create (ID: {self.payment_id})")
         else:
             error_message = response.json().get("error", "Unknown error")
             print(error_message)
 
     @task
     def payment_confirm(self):
+        global sample_payment_id
         payload = json.dumps({
             "payment_method": "card",
             "payment_method_type": "credit",
@@ -110,9 +132,28 @@ class APICalls(SequentialTaskSet):
         if response.status_code == 200:
             status = json.loads(response.text)["status"]
             print("Payment status: ", status)
+
+            # Capture sample log for successful payment confirm only for the same payment_id
+            if CAPTURE_LOGS and sample_logs_captured["create"] and not sample_logs_captured["confirm"] and self.payment_id == sample_payment_id:
+                sample_logs["payment_confirm"] = {
+                    "api": "payment_confirm",
+                    "status_code": response.status_code,
+                    "headers": dict(response.headers),
+                    "request_payload": json.loads(payload),
+                    "response": response.json()
+                }
+                sample_logs_captured["confirm"] = True
+                print(f"✅ Sample log captured for payment_confirm (ID: {self.payment_id}) - Complete transaction logged!")
         else:
             error_message = response.json().get("error", "Unknown error")
             print(error_message)
+
+            # If confirm fails for the tracked payment, reset and try next transaction
+            if CAPTURE_LOGS and sample_logs_captured["create"] and self.payment_id == sample_payment_id:
+                sample_logs.clear()
+                sample_logs_captured["create"] = False
+                sample_payment_id = None
+                print(f"❌ Payment confirm failed for {self.payment_id}, resetting sample logs to try next transaction")
 
 
 def calculate_and_save_p99():
@@ -127,6 +168,15 @@ def calculate_and_save_p99():
             f.write("N/A")
         print("No x-hs-latency values collected")
 
+def save_sample_logs():
+    """Save sample logs to a single file if captured"""
+    if CAPTURE_LOGS and sample_logs:
+        # Create output directory if it doesn't exist
+        os.makedirs("output", exist_ok=True)
+        with open("output/sample_logs.json", "w") as f:
+            json.dump(sample_logs, f, indent=2)
+        print(f"✅ Sample logs saved: output/sample_logs.json ({len(sample_logs)} APIs)")
+
 class TestUser(HttpUser):
     wait_time = constant(0)
     tasks = [APICalls]
@@ -138,4 +188,5 @@ class TestUser(HttpUser):
     def on_stop(self):
         """Called when the user stops"""
         calculate_and_save_p99()
+        save_sample_logs()
 
