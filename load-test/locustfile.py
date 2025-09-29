@@ -1,5 +1,9 @@
 from locust import HttpUser, task, constant, SequentialTaskSet
 import json
+import numpy as np
+
+# Global list to store x-hs-latency values
+x_hs_latency_values = []
 
 class APICalls(SequentialTaskSet):
     payment_id = ""
@@ -90,9 +94,19 @@ class APICalls(SequentialTaskSet):
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
                             'api-key' : api_key,
-                            'x-hs-latency' : 'True'
+                            'x-hs-latency' : 'true'
                         })
-        print(response.headers.get('x-hs-latency'))
+        x_hs_latency = response.headers.get('x-hs-latency')
+        print(x_hs_latency)
+
+        # Store x-hs-latency value if present
+        if x_hs_latency:
+            try:
+                latency_value = float(x_hs_latency)
+                x_hs_latency_values.append(latency_value)
+            except ValueError:
+                pass  # Skip invalid latency values
+
         if response.status_code == 200:
             status = json.loads(response.text)["status"]
             print("Payment status: ", status)
@@ -101,6 +115,18 @@ class APICalls(SequentialTaskSet):
             print(error_message)
 
 
+def calculate_and_save_p99():
+    """Calculate p99 of x-hs-latency values and save to temporary file"""
+    if x_hs_latency_values:
+        p99 = np.percentile(x_hs_latency_values, 99)
+        with open(".p99_latency.txt", "w") as f:
+            f.write(str(p99))
+        print(f"P99 x-hs-latency: {p99}")
+    else:
+        with open(".p99_latency.txt", "w") as f:
+            f.write("N/A")
+        print("No x-hs-latency values collected")
+
 class TestUser(HttpUser):
     wait_time = constant(0)
     tasks = [APICalls]
@@ -108,4 +134,8 @@ class TestUser(HttpUser):
         global api_key
         with open(".secrets.env", "r") as f:
             api_key = f.read().strip()
+
+    def on_stop(self):
+        """Called when the user stops"""
+        calculate_and_save_p99()
 

@@ -47,6 +47,9 @@ RPS_CAPACITY_PER_POD = 35
 POD_CPU_ALLOCATION = 400
 POD_MEMORY_ALLOCATION = 1000
 IDEAL_STORAGE_PER_TRANSACTION = 14
+NORMAL_APPLICATION_LATENCY = "N/A"
+SPIKE_APPLICATION_LATENCY = "N/A"
+RECOMMENDED_APPLICATION_LATENCY = "30 - 60 ms"
 PSQL_QUERY = """
         SELECT SUM(pg_total_relation_size(quote_ident(tablename))) AS total_size
         FROM pg_tables
@@ -183,6 +186,8 @@ def run_merchant_create(test_spec):
 # Function to run Locust load test
 async def run_locust(test_spec, users,run_time, file_name):
     """Runs the Locust load test."""
+    global NORMAL_APPLICATION_LATENCY, SPIKE_APPLICATION_LATENCY
+
     subprocess.Popen([
         "locust", "--locustfile", "locustfile.py", "--headless",
         "--users", f"{users}", "--spawn-rate", f"{int(users/2)}", "--run-time", f"{run_time}s",
@@ -192,6 +197,22 @@ async def run_locust(test_spec, users,run_time, file_name):
     # Run the loading bar while the Locust test runs
     await loading_bar(run_time)
     time.sleep(5)
+
+    # Read p99 value from temporary file and store in global variable
+    p99_value = "N/A"
+    try:
+        with open(".p99_latency.txt", "r") as f:
+            p99_value = f.read().strip()
+        # Remove the temporary file
+        os.remove(".p99_latency.txt")
+    except FileNotFoundError:
+        pass
+
+    # Store in appropriate global variable
+    if "normal" in file_name:
+        NORMAL_APPLICATION_LATENCY = p99_value
+    else:
+        SPIKE_APPLICATION_LATENCY = p99_value
 
     output_file = Path(f'output/temp/{file_name}.pdf').resolve()
     input_file = Path(f'output/temp/{file_name}.html').resolve()
@@ -217,7 +238,9 @@ async def run_locust(test_spec, users,run_time, file_name):
 async def generate_med_report_table(requirement_content, total_bytes_list):
     file_names = ["test_normal", "test_spike"]
     rps_list = [NORMAL_RPS, SPIKE_RPS]
+    p99_values = [NORMAL_APPLICATION_LATENCY, SPIKE_APPLICATION_LATENCY]
     results = []
+
     for idx, file_name in enumerate(file_names):
         with open(f"output/temp/{file_name}.html", "r", encoding="utf-8") as file:
             html_content = file.read()
@@ -243,10 +266,21 @@ async def generate_med_report_table(requirement_content, total_bytes_list):
         total_storage = int(total_bytes_list[idx]) if total_bytes_list[idx] else 0
         num_requests = int(num_requests) if num_requests.isdigit() else 1  # Avoid division by zero
         storage_per_transaction = round(total_storage / (num_requests * 1024) if num_requests else 0, 2)
+
+        # Format p99 value with ms unit if it's a number, limited to 1 decimal place
+        p99_display = p99_values[idx]
+        if p99_display != "N/A":
+            try:
+                p99_float = float(p99_display)
+                p99_display = f"{p99_float:.1f} ms"
+            except ValueError:
+                pass
+
         results.append(f"""<tbody>
                 <tr><td>RPS(Requests per second)</td><td>{rps}</td><td>> {rps_list[idx]}</td></tr>
                 <tr><td>Response Time</td><td>{response_time}</td><td>{IDEAL_VALUES['Response Time']}</td></tr>
                 <tr><td>Storage Used(per transaction)</td><td>{storage_per_transaction}Kb</td><td>{IDEAL_VALUES['Storage per Transaction']}</td></tr>
+                <tr><td>Application Latency</td><td>{p99_display}</td><td>{RECOMMENDED_APPLICATION_LATENCY}</td></tr>
             </tbody>""")
 
     # Create HTML segment with extracted values
@@ -660,6 +694,11 @@ def cleanup():
     secrets_file = Path(".secrets.env").resolve()
     if secrets_file.exists():
         secrets_file.unlink()
+
+    # delete .p99_latency.txt file if it exists
+    p99_file = Path(".p99_latency.txt").resolve()
+    if p99_file.exists():
+        p99_file.unlink()
 
 # Function to handle keyboard interrupts
 def handle_interrupt(sig, frame):
