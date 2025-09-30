@@ -69,8 +69,8 @@ class APICalls(SequentialTaskSet):
         if response.status_code == 200:
             self.payment_id = json.loads(response.text)["payment_id"]
 
-            # Capture sample log for successful payment create
-            if CAPTURE_LOGS and not sample_logs_captured["create"]:
+            # Capture sample log for successful payment create (only if both are not already captured)
+            if CAPTURE_LOGS and not sample_logs_captured["create"] and not sample_logs_captured["confirm"]:
                 global sample_payment_id
                 sample_payment_id = self.payment_id  # Store the payment_id for matching
                 sample_logs["payment_create"] = {
@@ -133,7 +133,7 @@ class APICalls(SequentialTaskSet):
             status = json.loads(response.text)["status"]
             print("Payment status: ", status)
 
-            # Capture sample log for successful payment confirm only for the same payment_id
+            # If confirm succeeds and payment_id matches, capture log and mark confirm as true
             if CAPTURE_LOGS and sample_logs_captured["create"] and not sample_logs_captured["confirm"] and self.payment_id == sample_payment_id:
                 sample_logs["payment_confirm"] = {
                     "api": "payment_confirm",
@@ -148,12 +148,12 @@ class APICalls(SequentialTaskSet):
             error_message = response.json().get("error", "Unknown error")
             print(error_message)
 
-            # If confirm fails for the tracked payment, reset and try next transaction
-            if CAPTURE_LOGS and sample_logs_captured["create"] and self.payment_id == sample_payment_id:
+            # If confirm fails and create is true and confirm is false, clear logs
+            if CAPTURE_LOGS and sample_logs_captured["create"] and not sample_logs_captured["confirm"]:
                 sample_logs.clear()
                 sample_logs_captured["create"] = False
                 sample_payment_id = None
-                print(f"❌ Payment confirm failed for {self.payment_id}, resetting sample logs to try next transaction")
+                print(f"❌ Payment confirm failed, resetting sample logs to try next transaction")
 
 
 def calculate_and_save_p99():
@@ -169,13 +169,12 @@ def calculate_and_save_p99():
         print("No x-hs-latency values collected")
 
 def save_sample_logs():
-    """Save sample logs to a single file if captured"""
-    if CAPTURE_LOGS and sample_logs:
-        # Create output directory if it doesn't exist
-        os.makedirs("output", exist_ok=True)
-        with open("output/sample_logs.json", "w") as f:
+    """Save sample logs to a single file if both APIs are captured"""
+    if CAPTURE_LOGS and sample_logs_captured["create"] and sample_logs_captured["confirm"]:
+        # Use a temporary filename that script.py will rename appropriately
+        with open(".sample_logs.json", "w") as f:
             json.dump(sample_logs, f, indent=2)
-        print(f"✅ Sample logs saved: output/sample_logs.json ({len(sample_logs)} APIs)")
+        print(f"✅ Sample logs saved: .sample_logs.json ({len(sample_logs)} APIs)")
 
 class TestUser(HttpUser):
     wait_time = constant(0)
