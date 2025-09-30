@@ -191,7 +191,7 @@ async def run_locust(test_spec, users,run_time, file_name):
 
     # Set environment variables for the locust process
     env = os.environ.copy()
-    if CAPTURE_SAMPLE_LOGS and "normal" in file_name:
+    if CAPTURE_SAMPLE_LOGS:
         env["CAPTURE_SAMPLE_LOGS"] = "true"
 
     subprocess.Popen([
@@ -214,11 +214,19 @@ async def run_locust(test_spec, users,run_time, file_name):
     except FileNotFoundError:
         pass
 
-    # Store in appropriate global variable
+    # Store in appropriate global variable and handle sample logs
     if "normal" in file_name:
         NORMAL_APPLICATION_LATENCY = p99_value
+        test_type = "normal"
     else:
         SPIKE_APPLICATION_LATENCY = p99_value
+        test_type = "spike"
+
+    # Handle sample logs if they exist
+    if CAPTURE_SAMPLE_LOGS and os.path.exists(".sample_logs.json"):
+        output_log_file = f"output/sample_logs_{test_type}.json"
+        shutil.move(".sample_logs.json", output_log_file)
+        print(f"    📄 Sample logs saved: {output_log_file}")
 
     output_file = Path(f'output/temp/{file_name}.pdf').resolve()
     input_file = Path(f'output/temp/{file_name}.html').resolve()
