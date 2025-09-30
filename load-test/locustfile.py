@@ -1,9 +1,14 @@
 from locust import HttpUser, task, constant, SequentialTaskSet
 import json
 import numpy as np
+import os
 
 # Global list to store x-hs-latency values
 x_hs_latency_values = []
+
+# Global variables to store payment IDs for sample log generation
+sample_payment_id = None
+sample_log_captured = False
 
 class APICalls(SequentialTaskSet):
     payment_id = ""
@@ -67,6 +72,8 @@ class APICalls(SequentialTaskSet):
 
     @task
     def payment_confirm(self):
+        global sample_payment_id, sample_log_captured
+
         payload = json.dumps({
             "payment_method": "card",
             "payment_method_type": "credit",
@@ -107,6 +114,20 @@ class APICalls(SequentialTaskSet):
             except ValueError:
                 pass  # Skip invalid latency values
 
+        # Capture payment_id for sample log generation if enabled and not already captured
+        if (os.getenv('GEN_SAMPLE_LOG', 'false').lower() == 'true' and
+            not sample_log_captured and response.status_code == 200):
+            try:
+                response_data = json.loads(response.text)
+                if response_data.get("status") == "succeeded":
+                    payment_id = response_data.get("payment_id")
+                    if payment_id:
+                        sample_payment_id = payment_id
+                        sample_log_captured = True
+                        print(f"Sample payment ID captured: {payment_id}")
+            except (json.JSONDecodeError, KeyError):
+                pass
+
         if response.status_code == 200:
             status = json.loads(response.text)["status"]
             print("Payment status: ", status)
@@ -115,17 +136,34 @@ class APICalls(SequentialTaskSet):
             print(error_message)
 
 
-def calculate_and_save_p99():
-    """Calculate p99 of x-hs-latency values and save to temporary file"""
+def save_load_test_results():
+    """Save P99 latency and sample request ID to JSON file"""
+    import os
+
+    # Ensure output/temp directory exists
+    os.makedirs("output/temp", exist_ok=True)
+
+    # Calculate P99 latency
+    p99_latency = "N/A"
     if x_hs_latency_values:
-        p99 = np.percentile(x_hs_latency_values, 99)
-        with open(".p99_latency.txt", "w") as f:
-            f.write(str(p99))
-        print(f"P99 x-hs-latency: {p99}")
+        p99_latency = float(np.percentile(x_hs_latency_values, 99))
+        print(f"P99 x-hs-latency: {p99_latency}")
     else:
-        with open(".p99_latency.txt", "w") as f:
-            f.write("N/A")
         print("No x-hs-latency values collected")
+
+    # Prepare data
+    results = {
+        "p99_latency": p99_latency,
+        "sample_payment_id": sample_payment_id if sample_payment_id else "N/A"
+    }
+
+    # Save to JSON file
+    with open("output/temp/load_test.json", "w") as f:
+        json.dump(results, f, indent=2)
+
+    print(f"Load test results saved to output/temp/load_test.json")
+    if sample_payment_id:
+        print(f"Sample payment ID: {sample_payment_id}")
 
 class TestUser(HttpUser):
     wait_time = constant(0)
@@ -137,5 +175,5 @@ class TestUser(HttpUser):
 
     def on_stop(self):
         """Called when the user stops"""
-        calculate_and_save_p99()
+        save_load_test_results()
 
