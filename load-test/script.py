@@ -39,6 +39,7 @@ CYAN="\033[1;36m"
 RESET="\033[0m"
 
 # Global Variables
+LOAD_TEST_VERSION = "1.0.0"
 IDEAL_VALUES = {"Response Time":"1000 - 1300 ms", "Storage per Transaction":"< 18 Kb"}
 NORMAL_RPS = 0
 SPIKE_RPS = 0
@@ -568,6 +569,12 @@ async def html_to_pdf(html_file,output_file):
                     margin:20px;
                     border: 1px solid black;
                     padding:24px 0;
+                    @bottom-right {{
+                        content: "v{LOAD_TEST_VERSION}";
+                        font-size: 10px;
+                        color: #666;
+                        margin-right: 10px;
+                    }}
                 }}
                 * {{
                     font-family: Arial, sans-serif !important;
