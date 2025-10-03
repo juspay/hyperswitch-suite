@@ -1,24 +1,23 @@
 #!/bin/bash
 
 # Parse command line arguments
-for arg in "$@"; do
-    case $arg in
+GEN_SAMPLE_LOG=false
+while [[ $# -gt 0 ]]; do
+    case $1 in
         --gen-sample-log)
-            export GEN_SAMPLE_LOG=true
+            GEN_SAMPLE_LOG=true
             shift
             ;;
-        -h|--help)
-            echo "Usage: $0 [--gen-sample-log]"
-            echo "  --gen-sample-log  Generate sample logs for easch API called during the load test."
-            exit 0
-            ;;
         *)
-            echo "Unknown option: $arg"
-            echo "Use --help for usage information"
+            echo "Unknown option: $1"
+            echo "Usage: $0 [--gen-sample-log]"
             exit 1
             ;;
     esac
 done
+
+# Export the flag as environment variable
+export GEN_SAMPLE_LOG
 
 # Define color codes
 GREEN="\033[1;32m"

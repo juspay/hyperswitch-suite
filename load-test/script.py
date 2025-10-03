@@ -39,6 +39,7 @@ CYAN="\033[1;36m"
 RESET="\033[0m"
 
 # Global Variables
+LOAD_TEST_VERSION = "1.0.0"
 IDEAL_VALUES = {"Response Time":"1000 - 1300 ms", "Storage per Transaction":"< 18 Kb"}
 NORMAL_RPS = 0
 SPIKE_RPS = 0
@@ -50,7 +51,6 @@ IDEAL_STORAGE_PER_TRANSACTION = 14
 NORMAL_APPLICATION_LATENCY = "N/A"
 SPIKE_APPLICATION_LATENCY = "N/A"
 RECOMMENDED_APPLICATION_LATENCY = "30 - 60 ms"
-CAPTURE_SAMPLE_LOGS = os.getenv("GEN_SAMPLE_LOG", "false").lower() == "true"
 PSQL_QUERY = """
         SELECT SUM(pg_total_relation_size(quote_ident(tablename))) AS total_size
         FROM pg_tables
@@ -172,6 +172,90 @@ def get_storage_usage(input_string):
     else:
         return get_storage_usage_manual(input_string)
 
+# Function to query Loki logs using Grafana API
+async def query_loki_logs(payment_id, output_filename, duration_minutes=10):
+    """Query Loki logs for a specific payment ID via Grafana API."""
+    if GRAFANA_PERMISSION != "true":
+        print(f"⚠️  Grafana not enabled, skipping log query for payment ID: {payment_id}")
+        return
+
+    try:
+        # Construct the LogQL query to find logs with the specific payment ID
+        logql_query = f'{{app="hyperswitch-server"}} |= "{payment_id}"'
+
+        # Calculate time range based on test duration plus 5 minute buffer
+        query_duration = duration_minutes + 5
+        from_time = f"now-{query_duration}m"
+        to_time = "now"
+
+        # Grafana datasource query API endpoint
+        url = f"{GRAFANA_HOST}/api/ds/query"
+
+        # Get the full Loki datasource info to get both ID and UID
+        loki_datasource_url = f"{GRAFANA_HOST}/api/datasources/name/Loki"
+        ds_response = requests.get(loki_datasource_url, headers={'Authorization': f'Bearer {GRAFANA_SERVICE_ACCOUNT_TOKEN}'})
+
+        datasource_uid = "loki"  # default fallback
+        datasource_id = 2  # default fallback based on your system
+        if ds_response.status_code == 200:
+            datasource = ds_response.json()
+            datasource_uid = datasource.get('uid', 'loki')
+            datasource_id = datasource.get('id', 2)
+            print(f"Found Loki datasource - ID: {datasource_id}, UID: {datasource_uid}")
+        else:
+            print(f"Warning: Could not find Loki datasource, using defaults - ID: {datasource_id}, UID: {datasource_uid}")
+
+        # Build the query payload according to Grafana API spec for Loki
+        payload = {
+            "queries": [
+                {
+                    "refId": "A",
+                    "expr": logql_query,
+                    "datasource": {
+                        "type": "loki",
+                        "uid": datasource_uid
+                    },
+                    "maxLines": 100,
+                    "resolution": 1,
+                    "step": 60,
+                    "queryType": "range",
+                    "legendFormat": "",
+                    "intervalMs": 1000,
+                    "maxDataPoints": 100
+                }
+            ],
+            "from": from_time,
+            "to": to_time
+        }
+
+        headers = {
+            'Authorization': f'Bearer {GRAFANA_SERVICE_ACCOUNT_TOKEN}',
+            'Content-Type': 'application/json'
+        }
+
+        print(f"📡 Querying Loki logs for payment ID: {payment_id}")
+
+        response = requests.post(url, json=payload, headers=headers)
+
+        if response.status_code == 200:
+            grafana_data = response.json()
+
+            # Save the raw response data to JSON file
+            output_path = f"output/{output_filename}.json"
+            with open(output_path, 'w') as f:
+                json.dump({
+                    'payment_id': payment_id,
+                    'raw_response': grafana_data
+                }, f, indent=2)
+
+            print(f"✅ Sample logs saved to {output_path}")
+
+        else:
+            print(f"❌ Failed to query Loki logs: {response.status_code} - {response.text}")
+
+    except Exception as e:
+        print(f"❌ Error querying Loki logs: {e}")
+
 # Function to create merchant account for hyperswitch
 def run_merchant_create(test_spec):
     """Runs the merchant_create.py script and waits for completion."""
@@ -189,10 +273,10 @@ async def run_locust(test_spec, users,run_time, file_name):
     """Runs the Locust load test."""
     global NORMAL_APPLICATION_LATENCY, SPIKE_APPLICATION_LATENCY
 
-    # Set environment variables for the locust process
+    # Set environment variable for sample log generation if enabled
     env = os.environ.copy()
-    if CAPTURE_SAMPLE_LOGS and "normal" in file_name:
-        env["CAPTURE_SAMPLE_LOGS"] = "true"
+    if os.getenv('GEN_SAMPLE_LOG', 'false').lower() == 'true':
+        env['GEN_SAMPLE_LOG'] = 'true'
 
     subprocess.Popen([
         "locust", "--locustfile", "locustfile.py", "--headless",
@@ -204,21 +288,28 @@ async def run_locust(test_spec, users,run_time, file_name):
     await loading_bar(run_time)
     time.sleep(5)
 
-    # Read p99 value from temporary file and store in global variable
+    # Read load test results from JSON file
     p99_value = "N/A"
+    payment_id = None
     try:
-        with open(".p99_latency.txt", "r") as f:
-            p99_value = f.read().strip()
-        # Remove the temporary file
-        os.remove(".p99_latency.txt")
-    except FileNotFoundError:
+        with open("output/temp/load_test.json", "r") as f:
+            results = json.load(f)
+            p99_value = results.get("p99_latency", "N/A")
+            payment_id = results.get("sample_payment_id", "N/A")
+    except (FileNotFoundError, json.JSONDecodeError):
         pass
 
     # Store in appropriate global variable
     if "normal" in file_name:
         NORMAL_APPLICATION_LATENCY = p99_value
+        if payment_id and payment_id != "N/A":
+            test_duration_minutes = run_time // 60  # Convert seconds to minutes
+            await query_loki_logs(payment_id, f"sample_logs_normal", test_duration_minutes)
     else:
         SPIKE_APPLICATION_LATENCY = p99_value
+        if payment_id and payment_id != "N/A":
+            test_duration_minutes = run_time // 60  # Convert seconds to minutes
+            await query_loki_logs(payment_id, f"sample_logs_spike", test_duration_minutes)
 
     output_file = Path(f'output/temp/{file_name}.pdf').resolve()
     input_file = Path(f'output/temp/{file_name}.html').resolve()
@@ -574,6 +665,12 @@ async def html_to_pdf(html_file,output_file):
                     margin:20px;
                     border: 1px solid black;
                     padding:24px 0;
+                    @bottom-right {{
+                        content: "v{LOAD_TEST_VERSION}";
+                        font-size: 10px;
+                        color: #666;
+                        margin-right: 10px;
+                    }}
                 }}
                 * {{
                     font-family: Arial, sans-serif !important;
@@ -700,12 +797,6 @@ def cleanup():
     secrets_file = Path(".secrets.env").resolve()
     if secrets_file.exists():
         secrets_file.unlink()
-
-    # delete .p99_latency.txt file if it exists
-    p99_file = Path(".p99_latency.txt").resolve()
-    if p99_file.exists():
-        p99_file.unlink()
-
 # Function to handle keyboard interrupts
 def handle_interrupt(sig, frame):
     print("\n❌ Keyboard interrupt detected.")
@@ -717,9 +808,6 @@ signal.signal(signal.SIGINT, handle_interrupt)
 signal.signal(signal.SIGTERM, handle_interrupt)
 
 async def main():
-    if CAPTURE_SAMPLE_LOGS:
-        print("🔍 Sample log generation enabled")
-
     # Create output directories
     Path("output").mkdir(parents=True, exist_ok=True)
     Path("output/snapshots").mkdir(parents=True, exist_ok=True)
