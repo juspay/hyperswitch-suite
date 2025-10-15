@@ -1,5 +1,24 @@
 #!/bin/bash
 
+# Parse command line arguments
+GEN_SAMPLE_LOG=false
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --gen-sample-log)
+            GEN_SAMPLE_LOG=true
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Usage: $0 [--gen-sample-log]"
+            exit 1
+            ;;
+    esac
+done
+
+# Export the flag as environment variable
+export GEN_SAMPLE_LOG
+
 # Define color codes
 GREEN="\033[1;32m"
 YELLOW="\033[1;33m"
