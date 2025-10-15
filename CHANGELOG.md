@@ -959,11 +959,11 @@ index 40868da8f3..d48ab2d148 100644
 #### Compatibility
 This version of the Hyperswitch Control Center is compatible with the following versions of other components:
 
-App Server Version: [v1.118.0](https://github.com/juspay/hyperswitch/releases/tag/v1.118.0)
-Web Client Version: [v0.126.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.126.0)
-WooCommerce Plugin Version: [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)
-Card Vault Version: [v0.6.5](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.6.5)
-Key Manager: [v0.1.8](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.8)
+- App Server Version: [v1.118.0](https://github.com/juspay/hyperswitch/releases/tag/v1.118.0)
+- Web Client Version: [v0.126.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.126.0)
+- WooCommerce Plugin Version: [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)
+- Card Vault Version: [v0.6.5](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.6.5)
+- Key Manager: [v0.1.8](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.8)
 
 **Full Changelog**: https://github.com/juspay/hyperswitch-control-center/compare/v1.37.4...v1.37.5
 
