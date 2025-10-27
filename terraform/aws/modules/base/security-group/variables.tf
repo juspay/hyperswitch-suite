@@ -17,7 +17,7 @@ variable "vpc_id" {
 variable "revoke_rules_on_delete" {
   description = "Revoke all rules on security group deletion"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "ingress_rules" {

@@ -45,6 +45,34 @@ resource "aws_autoscaling_group" "this" {
     }
   }
 
+  # Instance Refresh Configuration (optional)
+  # When enabled, automatically replaces instances when launch template changes
+  # with manual checkpoints for validation
+  dynamic "instance_refresh" {
+    for_each = var.enable_instance_refresh ? [1] : []
+
+    content {
+      strategy = "Rolling"
+
+      preferences {
+        min_healthy_percentage = var.instance_refresh_preferences.min_healthy_percentage
+        instance_warmup        = var.instance_refresh_preferences.instance_warmup
+        max_healthy_percentage = var.instance_refresh_preferences.max_healthy_percentage
+
+        # Checkpoints - ASG pauses at these percentages for manual validation
+        checkpoint_percentages = var.instance_refresh_preferences.checkpoint_percentages
+        checkpoint_delay       = var.instance_refresh_preferences.checkpoint_delay
+
+        # How to handle protected/standby instances during refresh
+        scale_in_protected_instances = var.instance_refresh_preferences.scale_in_protected_instances
+        standby_instances            = var.instance_refresh_preferences.standby_instances
+      }
+
+      # Triggers that automatically start an instance refresh
+      triggers = var.instance_refresh_triggers
+    }
+  }
+
   lifecycle {
     create_before_destroy = true
   }

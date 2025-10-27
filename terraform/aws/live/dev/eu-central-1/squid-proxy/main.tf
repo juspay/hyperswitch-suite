@@ -1,24 +1,54 @@
-# Example: Using Existing Load Balancer
-# Rename this to main.tf to use
+# ============================================================================
+# Squid Proxy Deployment - Dev Environment
+# ============================================================================
+# This configuration supports TWO modes:
+#
+# MODE 1: Create New NLB (Default)
+#   - Set create_nlb = true (or comment out the existing LB configuration)
+#   - Module creates: NLB + Listener + Target Group + ASG + Security Groups
+#   - Use this for: New deployments, isolated environments
+#
+# MODE 2: Use Existing NLB (Current Configuration)
+#   - Set create_nlb = false
+#   - Provide: existing_lb_name, existing_lb_arn, existing_lb_listener_arn
+#   - Module creates: Target Group + ASG + ASG Security Group only
+#   - Use this for: Sharing NLB across multiple services, cost optimization
+#
+# To switch modes:
+#   - For Mode 1: Set create_nlb = true and comment out data sources below
+#   - For Mode 2: Set create_nlb = false and uncomment data sources below
+# ============================================================================
 
 provider "aws" {
   region = var.region
 }
 
-# Reference your existing load balancer
+# ============================================================================
+# DATA SOURCES - Only needed when using EXISTING NLB (Mode 2)
+# Comment these out if creating a new NLB (Mode 1)
+# ============================================================================
+
+# Reference your existing load balancer by name
 data "aws_lb" "existing" {
-  name = var.existing_lb_name  # or use: arn = var.existing_lb_arn
+  count = var.create_nlb ? 0 : 1  # Only fetch if using existing NLB
+  name  = var.existing_lb_name
 }
 
 # Reference existing listener on the load balancer
 data "aws_lb_listener" "existing" {
-  load_balancer_arn = data.aws_lb.existing.arn
-  port              = var.squid_port  # or the port your listener is on
+  count             = var.create_nlb ? 0 : 1  # Only fetch if using existing NLB
+  load_balancer_arn = data.aws_lb.existing[0].arn
+  port              = var.squid_port
 }
 
-# Read your custom userdata script
+# Get security groups attached to the existing NLB
+# Convert set to list to get first security group
 locals {
-  custom_userdata = file("${path.module}/userdata.sh")
+  existing_lb_security_group_id = var.create_nlb ? null : (
+    length(data.aws_lb.existing[0].security_groups) > 0 ?
+    tolist(data.aws_lb.existing[0].security_groups)[0] :
+    null
+  )
 }
 
 # Squid Proxy Module - Using Existing LB
@@ -36,10 +66,20 @@ module "squid_proxy" {
   eks_security_group_id = var.eks_security_group_id
 
   # Squid configuration
-  squid_port    = var.squid_port
-  ami_id        = var.ami_id
-  instance_type = var.instance_type
-  key_name      = var.key_name
+  squid_port      = var.squid_port
+  ami_id          = var.ami_id
+  instance_type   = var.instance_type
+
+  # SSH Key Configuration
+  generate_ssh_key = var.generate_ssh_key
+  key_name         = var.key_name  # Only used if generate_ssh_key=false
+
+  # Userdata with templating ({{config_bucket}} and {{logs_bucket}} will be replaced)
+  custom_userdata = file("${path.module}/templates/userdata.sh")
+
+  # S3 Config Upload (optional)
+  upload_config_to_s3       = var.upload_config_to_s3
+  config_files_source_path  = "${path.module}/config"
 
   # ASG configuration
   min_size         = var.min_size
@@ -56,15 +96,32 @@ module "squid_proxy" {
   root_volume_type           = var.root_volume_type
 
   # ========================================
-  # EXISTING LOAD BALANCER CONFIGURATION
+  # LOAD BALANCER CONFIGURATION
   # ========================================
-  create_nlb                = false  # Don't create new NLB
-  existing_lb_arn           = data.aws_lb.existing.arn
-  existing_lb_listener_arn  = data.aws_lb_listener.existing.arn
+  # MODE 1: Create New NLB
+  #   create_nlb = true
+  #   eks_security_group_id is required (for LB security group ingress)
+  #
+  # MODE 2: Use Existing NLB (Current Setting)
+  #   create_nlb = false
+  #   existing_lb_arn, existing_lb_listener_arn, existing_lb_security_group_id required
+  # ========================================
 
-  # Create target group and attach to ASG
-  # After terraform apply, manually update the existing NLB listener's
-  # default action to forward to the created target group ARN (check outputs)
+  create_nlb                     = var.create_nlb  # Set in terraform.tfvars
+
+  # Only used when create_nlb = false (Mode 2)
+  existing_lb_arn                = var.create_nlb ? null : data.aws_lb.existing[0].arn
+  existing_lb_listener_arn       = var.create_nlb ? null : data.aws_lb_listener.existing[0].arn
+  existing_lb_security_group_id  = local.existing_lb_security_group_id
+
+  # NOTE: When using existing NLB (create_nlb = false):
+  # After terraform apply, manually update the existing NLB listener's default
+  # action to forward to the newly created target group ARN (see outputs)
+
+  # Instance Refresh Configuration
+  enable_instance_refresh      = var.enable_instance_refresh
+  instance_refresh_preferences = var.instance_refresh_preferences
+  instance_refresh_triggers    = var.instance_refresh_triggers
 
   tags = var.common_tags
 }

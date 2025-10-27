@@ -2,7 +2,11 @@ resource "aws_security_group" "this" {
   name                   = var.name
   description            = var.description
   vpc_id                 = var.vpc_id
-  revoke_rules_on_delete = var.revoke_rules_on_delete
+  revoke_rules_on_delete = true
+
+  # Explicitly set empty egress to remove default rule
+  # Rules are managed by aws_vpc_security_group_egress_rule resources
+  egress = []
 
   tags = merge(
     var.tags,
@@ -13,6 +17,7 @@ resource "aws_security_group" "this" {
 
   lifecycle {
     create_before_destroy = true
+    ignore_changes        = [egress]
   }
 }
 

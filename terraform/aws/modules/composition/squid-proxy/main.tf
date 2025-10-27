@@ -1,4 +1,52 @@
 # =========================================================================
+# SSH Key Pair for Squid Instances
+# =========================================================================
+
+# Generate RSA key pair for SSH access
+resource "tls_private_key" "squid" {
+  count = var.generate_ssh_key ? 1 : 0
+
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+# Create AWS key pair from generated public key
+resource "aws_key_pair" "squid_key_pair" {
+  count = var.generate_ssh_key ? 1 : 0
+
+  key_name   = "${local.name_prefix}-keypair-${data.aws_region.current.name}"
+  public_key = tls_private_key.squid[0].public_key_openssh
+
+  tags = local.common_tags
+}
+
+# Save private key to AWS Systems Manager Parameter Store
+# This allows you to retrieve the key later for SSH access if needed
+resource "aws_ssm_parameter" "squid_private_key" {
+  count = var.generate_ssh_key ? 1 : 0
+
+  name        = "/ec2/keypair/${aws_key_pair.squid_key_pair[0].key_pair_id}"
+  description = "Private SSH key for ${local.name_prefix} instances"
+  type        = "SecureString"
+  value       = tls_private_key.squid[0].private_key_pem
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-private-key"
+    }
+  )
+}
+
+# Note: Private key is saved to Parameter Store for later retrieval
+# Retrieve it with:
+#   aws ssm get-parameter --name "/ec2/keypair/<key-pair-id>" --with-decryption --query 'Parameter.Value' --output text > squid-keypair.pem
+#   chmod 400 squid-keypair.pem
+#
+# Recommended: Use AWS Systems Manager Session Manager (SSM) to connect to instances instead of SSH
+# If SSH is required, use the command above to retrieve the private key
+
+# =========================================================================
 # S3 Bucket for Squid Logs
 # =========================================================================
 module "logs_bucket" {
@@ -16,29 +64,34 @@ module "logs_bucket" {
 
   sse_algorithm = "AES256"
 
-  # Lifecycle rules for log retention
-  lifecycle_rules = [
-    {
-      id      = "delete-old-logs"
-      enabled = true
-      prefix  = ""
-      expiration_days = var.environment == "prod" ? 90 : 30
-      transition = [
-        {
-          days          = var.environment == "prod" ? 30 : 7
-          storage_class = "INTELLIGENT_TIERING"
-        }
-      ]
-    }
-  ]
+  # Note: Lifecycle rules removed - manage log retention manually if needed
+  lifecycle_rules = []
 
   tags = local.common_tags
 }
 
 # =========================================================================
-# IAM Role for Squid Instances
+# S3 Configuration Upload (Optional)
+# =========================================================================
+# Upload Squid configuration files from local directory to S3 config bucket
+# Only if upload_config_to_s3 is true
+
+resource "aws_s3_object" "squid_config_files" {
+  for_each = var.upload_config_to_s3 ? fileset(var.config_files_source_path, "**") : []
+
+  bucket = var.config_bucket_name
+  key    = "squid/${each.value}"
+  source = "${var.config_files_source_path}/${each.value}"
+  etag   = filemd5("${var.config_files_source_path}/${each.value}")
+
+  tags = local.common_tags
+}
+
+# =========================================================================
+# IAM Role for Squid Instances (Conditional - Create only if needed)
 # =========================================================================
 module "squid_iam_role" {
+  count  = var.create_iam_role ? 1 : 0
   source = "../../base/iam-role"
 
   name                    = "${local.name_prefix}-role"
@@ -78,9 +131,9 @@ module "squid_iam_role" {
         {
           Effect = "Allow"
           Action = [
-            "s3:PutObject",
-            "s3:PutObjectAcl",
             "s3:GetObject",
+            "s3:PutObject",
+            "s3:DeleteObject",
             "s3:ListBucket",
             "s3:GetBucketLocation"
           ]
@@ -96,12 +149,35 @@ module "squid_iam_role" {
   tags = local.common_tags
 }
 
+# Reference to existing IAM role (if using existing)
+data "aws_iam_role" "existing_squid_role" {
+  count = var.create_iam_role ? 0 : 1
+  name  = var.existing_iam_role_name
+}
+
+# Create a new instance profile for existing IAM role
+# This allows you to reuse an existing IAM role but create a fresh instance profile
+resource "aws_iam_instance_profile" "squid_profile" {
+  count = !var.create_iam_role && var.create_instance_profile ? 1 : 0
+
+  name = "${local.name_prefix}-instance-profile"
+  role = data.aws_iam_role.existing_squid_role[0].name
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-instance-profile"
+    }
+  )
+}
+
 # =========================================================================
 # Security Groups
 # =========================================================================
 
-# Security Group for Load Balancer
+# Security Group for Load Balancer (Only create if creating new NLB)
 module "lb_security_group" {
+  count  = var.create_nlb ? 1 : 0
   source = "../../base/security-group"
 
   name        = "${local.name_prefix}-lb-sg"
@@ -146,7 +222,8 @@ module "asg_security_group" {
       from_port                = var.squid_port
       to_port                  = var.squid_port
       protocol                 = "tcp"
-      source_security_group_id = module.lb_security_group.sg_id
+      # Use existing LB SG if provided, otherwise use the newly created one
+      source_security_group_id = var.create_nlb ? module.lb_security_group[0].sg_id : var.existing_lb_security_group_id
     }
   ]
 
@@ -171,6 +248,24 @@ module "asg_security_group" {
 }
 
 # =========================================================================
+# Security Group Rule: Allow Existing LB to communicate with ASG
+# =========================================================================
+# When using an existing NLB, add an egress rule to the existing LB's security group
+# to allow traffic to the new ASG security group on squid_port
+resource "aws_security_group_rule" "existing_lb_to_asg" {
+  count = var.create_nlb ? 0 : 1  # Only create when using existing NLB
+
+  type                     = "egress"
+  from_port                = var.squid_port
+  to_port                  = var.squid_port
+  protocol                 = "tcp"
+  source_security_group_id = module.asg_security_group.sg_id
+  security_group_id        = var.existing_lb_security_group_id
+
+  description = "Allow traffic from existing LB to Squid ASG instances on port ${var.squid_port}"
+}
+
+# =========================================================================
 # Network Load Balancer (Conditional - Create only if needed)
 # =========================================================================
 resource "aws_lb" "squid" {
@@ -180,7 +275,7 @@ resource "aws_lb" "squid" {
   internal           = true
   load_balancer_type = "network"
   subnets            = var.lb_subnet_ids
-  security_groups    = [module.lb_security_group.sg_id]
+  security_groups    = [module.lb_security_group[0].sg_id]
 
   enable_deletion_protection = var.environment == "prod" ? true : false
   enable_cross_zone_load_balancing = true
@@ -248,21 +343,22 @@ resource "aws_lb_listener" "squid" {
 # =========================================================================
 
 # =========================================================================
-# Launch Template
+# Launch Template (Conditional - Create only if not using existing)
 # =========================================================================
 module "launch_template" {
+  count  = var.use_existing_launch_template ? 0 : 1
   source = "../../base/launch-template"
 
   name               = local.name_prefix
   description        = "Launch template for Squid proxy instances"
   ami_id             = var.ami_id
   instance_type      = var.instance_type
-  key_name           = var.key_name
+  key_name           = var.generate_ssh_key ? aws_key_pair.squid_key_pair[0].key_name : var.key_name
   security_group_ids = [module.asg_security_group.sg_id]
 
-  iam_instance_profile_name = module.squid_iam_role.instance_profile_name
+  iam_instance_profile_name = local.instance_profile_name
 
-  user_data = local.userdata_content
+  user_data = base64encode(local.userdata_content)
 
   ebs_optimized     = true
   enable_monitoring = var.enable_detailed_monitoring
@@ -308,10 +404,15 @@ module "launch_template" {
 module "asg" {
   source = "../../base/asg"
 
-  name                   = "${local.name_prefix}-asg"
-  launch_template_id     = module.launch_template.lt_id
-  launch_template_version = "$Latest"
-  subnet_ids             = var.proxy_subnet_ids
+  # Ensure S3 config files are uploaded before ASG starts
+  # Even when upload_config_to_s3=false, this is safe because the resource
+  # uses for_each with empty set, so Terraform just skips the dependency
+  depends_on = [aws_s3_object.squid_config_files]
+
+  name                    = "${local.name_prefix}-asg"
+  launch_template_id      = local.launch_template_id
+  launch_template_version = local.launch_template_version
+  subnet_ids              = var.proxy_subnet_ids
 
   min_size         = var.min_size
   max_size         = var.max_size
@@ -328,6 +429,11 @@ module "asg" {
     "GroupInServiceInstances",
     "GroupTotalInstances"
   ]
+
+  # Instance Refresh Configuration
+  enable_instance_refresh      = var.enable_instance_refresh
+  instance_refresh_preferences = var.instance_refresh_preferences
+  instance_refresh_triggers    = var.instance_refresh_triggers
 
   tags          = local.common_tags
   instance_tags = local.instance_tags

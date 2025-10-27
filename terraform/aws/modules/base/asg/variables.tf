@@ -122,3 +122,40 @@ variable "suspended_processes" {
   type        = list(string)
   default     = []
 }
+
+# =========================================================================
+# Instance Refresh Configuration
+# =========================================================================
+variable "enable_instance_refresh" {
+  description = "Enable automatic instance refresh when launch template changes"
+  type        = bool
+  default     = false
+}
+
+variable "instance_refresh_preferences" {
+  description = "Preferences for instance refresh behavior"
+  type = object({
+    min_healthy_percentage       = optional(number, 50)
+    instance_warmup              = optional(number, 300)
+    max_healthy_percentage       = optional(number, 100)
+    checkpoint_percentages       = optional(list(number), [50])
+    checkpoint_delay             = optional(number, 300)
+    scale_in_protected_instances = optional(string, "Ignore")
+    standby_instances            = optional(string, "Ignore")
+  })
+  default = {
+    min_healthy_percentage       = 50
+    instance_warmup              = 300
+    max_healthy_percentage       = 100
+    checkpoint_percentages       = [50]
+    checkpoint_delay             = 300
+    scale_in_protected_instances = "Ignore"
+    standby_instances            = "Ignore"
+  }
+}
+
+variable "instance_refresh_triggers" {
+  description = "List of triggers that will start an instance refresh. Note: launch_template changes always trigger refresh automatically."
+  type        = list(string)
+  default     = []  # Empty - launch_template triggers are automatic
+}

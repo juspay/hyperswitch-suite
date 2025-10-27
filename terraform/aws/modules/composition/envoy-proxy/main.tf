@@ -1,4 +1,52 @@
 # =========================================================================
+# SSH Key Pair for Envoy Instances
+# =========================================================================
+
+# Generate RSA key pair for SSH access
+resource "tls_private_key" "envoy" {
+  count = var.generate_ssh_key ? 1 : 0
+
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+# Create AWS key pair from generated public key
+resource "aws_key_pair" "envoy_key_pair" {
+  count = var.generate_ssh_key ? 1 : 0
+
+  key_name   = "${local.name_prefix}-keypair-${data.aws_region.current.name}"
+  public_key = tls_private_key.envoy[0].public_key_openssh
+
+  tags = local.common_tags
+}
+
+# Save private key to AWS Systems Manager Parameter Store
+# This allows you to retrieve the key later for SSH access if needed
+resource "aws_ssm_parameter" "envoy_private_key" {
+  count = var.generate_ssh_key ? 1 : 0
+
+  name        = "/ec2/keypair/${aws_key_pair.envoy_key_pair[0].key_pair_id}"
+  description = "Private SSH key for ${local.name_prefix} instances"
+  type        = "SecureString"
+  value       = tls_private_key.envoy[0].private_key_pem
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-private-key"
+    }
+  )
+}
+
+# Note: Private key is saved to Parameter Store for later retrieval
+# Retrieve it with:
+#   aws ssm get-parameter --name "/ec2/keypair/<key-pair-id>" --with-decryption --query 'Parameter.Value' --output text > envoy-keypair.pem
+#   chmod 400 envoy-keypair.pem
+#
+# Recommended: Use AWS Systems Manager Session Manager (SSM) to connect to instances instead of SSH
+# If SSH is required, use the command above to retrieve the private key
+
+# =========================================================================
 # S3 Bucket for Envoy Logs
 # =========================================================================
 module "logs_bucket" {
@@ -8,6 +56,7 @@ module "logs_bucket" {
   force_destroy     = var.environment != "prod" ? true : false
   enable_versioning = false
 
+  # Security best practices
   block_public_acls       = true
   block_public_policy     = true
   ignore_public_acls      = true
@@ -15,28 +64,36 @@ module "logs_bucket" {
 
   sse_algorithm = "AES256"
 
-  lifecycle_rules = [
-    {
-      id              = "delete-old-logs"
-      enabled         = true
-      prefix          = ""
-      expiration_days = var.environment == "prod" ? 90 : 30
-      transition = [
-        {
-          days          = var.environment == "prod" ? 30 : 7
-          storage_class = "INTELLIGENT_TIERING"
-        }
-      ]
-    }
-  ]
+  # Note: Lifecycle rules removed - manage log retention manually if needed
+  lifecycle_rules = []
 
   tags = local.common_tags
 }
 
 # =========================================================================
-# IAM Role for Envoy Instances
+# S3 Configuration Upload (Optional)
+# =========================================================================
+# Upload Envoy configuration files from local directory to S3 config bucket
+# Only if upload_config_to_s3 is true
+
+resource "aws_s3_object" "envoy_config_files" {
+  for_each = var.upload_config_to_s3 ? fileset(var.config_files_source_path, "**") : []
+
+  bucket = var.config_bucket_name
+  key    = "envoy/${each.value}"
+
+  # Use templated content for envoy.yaml, raw content for other files
+  content = each.value == "envoy.yaml" ? local.envoy_config_content : file("${var.config_files_source_path}/${each.value}")
+  etag    = each.value == "envoy.yaml" ? md5(local.envoy_config_content) : filemd5("${var.config_files_source_path}/${each.value}")
+
+  tags = local.common_tags
+}
+
+# =========================================================================
+# IAM Role for Envoy Instances (Conditional - Create only if needed)
 # =========================================================================
 module "envoy_iam_role" {
+  count  = var.create_iam_role ? 1 : 0
   source = "../../base/iam-role"
 
   name                    = "${local.name_prefix}-role"
@@ -74,9 +131,9 @@ module "envoy_iam_role" {
         {
           Effect = "Allow"
           Action = [
-            "s3:PutObject",
-            "s3:PutObjectAcl",
             "s3:GetObject",
+            "s3:PutObject",
+            "s3:DeleteObject",
             "s3:ListBucket",
             "s3:GetBucketLocation"
           ]
@@ -87,44 +144,76 @@ module "envoy_iam_role" {
         }
       ]
     })
+
+    envoy-ssm-parameters = jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Effect = "Allow"
+          Action = [
+            "ssm:GetParameter",
+            "ssm:GetParameters",
+            "ssm:GetParametersByPath"
+          ]
+          Resource = "*"
+        }
+      ]
+    })
   }
 
   tags = local.common_tags
 }
 
+# Reference to existing IAM role (if using existing)
+data "aws_iam_role" "existing_envoy_role" {
+  count = var.create_iam_role ? 0 : 1
+  name  = var.existing_iam_role_name
+}
+
 # =========================================================================
 # Security Groups
 # =========================================================================
+
+# Security Group for Load Balancer (Only create if creating new ALB)
 module "lb_security_group" {
+  count  = var.create_lb ? 1 : 0
   source = "../../base/security-group"
 
-  name        = "${local.name_prefix}-lb-sg"
-  description = "Security group for Envoy proxy load balancer"
+  name        = "${local.name_prefix}-alb-sg"
+  description = "Security group for Envoy proxy Application Load Balancer"
   vpc_id      = var.vpc_id
 
   ingress_rules = [
     {
-      description              = "Allow traffic from EKS cluster"
-      from_port                = var.envoy_listener_port
-      to_port                  = var.envoy_listener_port
-      protocol                 = "tcp"
-      source_security_group_id = var.eks_security_group_id
+      description = "Allow HTTP from CloudFront/Internet"
+      from_port   = 80
+      to_port     = 80
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]  # CloudFront uses dynamic IPs, use prefix list if needed
+    },
+    {
+      description = "Allow HTTPS from CloudFront/Internet"
+      from_port   = 443
+      to_port     = 443
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]  # CloudFront uses dynamic IPs, use prefix list if needed
     }
   ]
 
   egress_rules = [
     {
-      description = "Allow traffic to Envoy ASG instances"
-      from_port   = var.envoy_listener_port
-      to_port     = var.envoy_listener_port
+      description = "Allow HTTP traffic to Envoy ASG instances"
+      from_port   = 80
+      to_port     = 80
       protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
+      cidr_blocks = ["0.0.0.0/0"]  # Will be restricted by ASG SG
     }
   ]
 
   tags = local.common_tags
 }
 
+# Security Group for Envoy ASG Instances
 module "asg_security_group" {
   source = "../../base/security-group"
 
@@ -134,33 +223,48 @@ module "asg_security_group" {
 
   ingress_rules = [
     {
-      description              = "Allow traffic from Load Balancer"
-      from_port                = var.envoy_listener_port
-      to_port                  = var.envoy_listener_port
+      description              = "Allow HTTP traffic from ALB on port 80"
+      from_port                = 80 #idealy should be 8080
+      to_port                  = 80
       protocol                 = "tcp"
-      source_security_group_id = module.lb_security_group.sg_id
+      # Use existing LB SG if provided, otherwise use the newly created one
+      source_security_group_id = var.create_lb ? module.lb_security_group[0].sg_id : var.existing_lb_security_group_id
     },
     {
-      description              = "Allow admin traffic from Load Balancer"
-      from_port                = var.envoy_admin_port
-      to_port                  = var.envoy_admin_port
+      description              = "Allow health checks from ALB on port 8081"
+      from_port                = 8081
+      to_port                  = 8081
       protocol                 = "tcp"
-      source_security_group_id = module.lb_security_group.sg_id
+      source_security_group_id = var.create_lb ? module.lb_security_group[0].sg_id : var.existing_lb_security_group_id
     }
   ]
 
   egress_rules = [
     {
-      description = "Allow HTTP to internet"
+      description = "Allow HTTP to Istio Internal LB"
       from_port   = 80
       to_port     = 80
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]  # Will be restricted by Istio ALB SG
+    },
+    {
+      description = "Allow HTTPS to S3 via VPC Gateway Endpoint"
+      from_port   = 443
+      to_port     = 443
       protocol    = "tcp"
       cidr_blocks = ["0.0.0.0/0"]
     },
     {
-      description = "Allow HTTPS to internet"
-      from_port   = 443
-      to_port     = 443
+      description = "Allow DNS UDP"
+      from_port   = 53
+      to_port     = 53
+      protocol    = "udp"
+      cidr_blocks = ["0.0.0.0/0"]
+    },
+    {
+      description = "Allow DNS TCP"
+      from_port   = 53
+      to_port     = 53
       protocol    = "tcp"
       cidr_blocks = ["0.0.0.0/0"]
     }
@@ -170,35 +274,77 @@ module "asg_security_group" {
 }
 
 # =========================================================================
-# Network Load Balancer
+# Security Group Rules: Allow Existing ALB to communicate with ASG
 # =========================================================================
+# When using an existing ALB, add egress rules to the existing ALB's security group
+# to allow traffic to the new ASG security group
+
+# Rule for traffic on port 8080
+resource "aws_security_group_rule" "existing_lb_to_asg_traffic" {
+  count = var.create_lb ? 0 : 1  # Only create when using existing ALB
+
+  type                     = "egress"
+  from_port                = 80 # idealy should be 8080
+  to_port                  = 80
+  protocol                 = "tcp"
+  source_security_group_id = module.asg_security_group.sg_id
+  security_group_id        = var.existing_lb_security_group_id
+
+  description = "Allow traffic to Envoy ASG instances on port 8080"
+}
+
+# Rule for health checks on port 8081
+resource "aws_security_group_rule" "existing_lb_to_asg_healthcheck" {
+  count = var.create_lb ? 0 : 1  # Only create when using existing ALB
+
+  type                     = "egress"
+  from_port                = 8081
+  to_port                  = 8081
+  protocol                 = "tcp"
+  source_security_group_id = module.asg_security_group.sg_id
+  security_group_id        = var.existing_lb_security_group_id
+
+  description = "Health check to Envoy ASG instances on port 8081"
+}
+
+# =========================================================================
+# Application Load Balancer (Conditional - Create only if needed)
+# =========================================================================
+# External ALB sits between CloudFront and Envoy ASG
+# Architecture: CloudFront → External ALB → Envoy ASG → Internal ALB → EKS
 resource "aws_lb" "envoy" {
-  name               = "${local.name_prefix}-nlb"
-  internal           = true
-  load_balancer_type = "network"
+  count = var.create_lb ? 1 : 0
+
+  name               = "${local.name_prefix}-alb"
+  internal           = false  # Public-facing to receive from CloudFront
+  load_balancer_type = "application"
   subnets            = var.lb_subnet_ids
-  security_groups    = [module.lb_security_group.sg_id]
+  security_groups    = [module.lb_security_group[0].sg_id]
 
   enable_deletion_protection       = var.environment == "prod" ? true : false
   enable_cross_zone_load_balancing = true
+  enable_http2                     = true
 
   tags = merge(
     local.common_tags,
     {
-      Name = "${local.name_prefix}-nlb"
+      Name = "${local.name_prefix}-alb"
     }
   )
 }
 
 # =========================================================================
-# Target Group
+# Target Group (Conditional - Create only if needed)
 # =========================================================================
+# Target group for ALB → Envoy ASG
+# Targets Envoy listener on port 8080 for traffic
 module "target_group" {
+  count  = var.create_target_group ? 1 : 0
   source = "../../base/target-group"
 
   name        = "${local.name_prefix}-tg"
-  port        = var.envoy_listener_port
-  protocol    = "TCP"
+  port        = 80 # Envoy traffic listener port idealy should be 8080
+  protocol    = "HTTP"  # ALB uses HTTP protocol
   vpc_id      = var.vpc_id
   target_type = "instance"
 
@@ -208,48 +354,72 @@ module "target_group" {
     enabled             = true
     healthy_threshold   = 2
     unhealthy_threshold = 2
-    timeout             = 10
+    timeout             = 5
     interval            = 30
-    port                = var.envoy_admin_port
+    port                = "traffic-port"  # Dedicated health check port this should be 8081
     protocol            = "HTTP"
-    path                = "/ready"
+    path                = "/healthz"  # Envoy health check endpoint
+    matcher             = "200"       # Expect 200 OK response
   }
 
   tags = local.common_tags
 }
 
 # =========================================================================
-# Load Balancer Listener
+# Load Balancer Listeners (Create only if creating new ALB)
 # =========================================================================
-resource "aws_lb_listener" "envoy" {
-  load_balancer_arn = aws_lb.envoy.arn
-  port              = var.envoy_listener_port
-  protocol          = "TCP"
+# HTTP Listener (port 80) - Main traffic from CloudFront
+resource "aws_lb_listener" "envoy_http" {
+  count = var.create_lb ? 1 : 0
+
+  load_balancer_arn = aws_lb.envoy[0].arn
+  port              = 80
+  protocol          = "HTTP"
 
   default_action {
     type             = "forward"
-    target_group_arn = module.target_group.tg_arn
+    target_group_arn = var.create_target_group ? module.target_group[0].tg_arn : var.existing_tg_arn
   }
 
   tags = local.common_tags
 }
 
+# HTTPS Listener (port 443) - Optional, requires SSL certificate
+# Uncomment if you want to terminate SSL at ALB
+# resource "aws_lb_listener" "envoy_https" {
+#   count = var.create_lb ? 1 : 0
+#
+#   load_balancer_arn = aws_lb.envoy[0].arn
+#   port              = 443
+#   protocol          = "HTTPS"
+#   ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01"
+#   certificate_arn   = var.ssl_certificate_arn
+#
+#   default_action {
+#     type             = "forward"
+#     target_group_arn = var.create_target_group ? module.target_group[0].tg_arn : var.existing_tg_arn
+#   }
+#
+#   tags = local.common_tags
+# }
+
 # =========================================================================
-# Launch Template
+# Launch Template (Conditional - Create only if not using existing)
 # =========================================================================
 module "launch_template" {
+  count  = var.use_existing_launch_template ? 0 : 1
   source = "../../base/launch-template"
 
   name               = local.name_prefix
-  description        = "Launch template for Envoy proxy instances"
+  description        = "Launch template for Envoy proxy instances - Config: ${substr(md5(local.envoy_config_content), 0, 8)}"
   ami_id             = var.ami_id
   instance_type      = var.instance_type
-  key_name           = var.key_name
+  key_name           = var.generate_ssh_key ? aws_key_pair.envoy_key_pair[0].key_name : var.key_name
   security_group_ids = [module.asg_security_group.sg_id]
 
-  iam_instance_profile_name = module.envoy_iam_role.instance_profile_name
+  iam_instance_profile_name = local.instance_profile_name
 
-  user_data = local.userdata_content
+  user_data = base64encode(local.userdata_content)
 
   ebs_optimized     = true
   enable_monitoring = var.enable_detailed_monitoring
@@ -293,14 +463,17 @@ module "launch_template" {
 module "asg" {
   source = "../../base/asg"
 
+  # Ensure S3 config files are uploaded before ASG starts
+  depends_on = [aws_s3_object.envoy_config_files]
+
   name                      = "${local.name_prefix}-asg"
-  launch_template_id        = module.launch_template.lt_id
-  launch_template_version   = "$Latest"
+  launch_template_id        = local.launch_template_id
+  launch_template_version   = local.launch_template_version
   subnet_ids                = var.proxy_subnet_ids
   min_size                  = var.min_size
   max_size                  = var.max_size
   desired_capacity          = var.desired_capacity
-  target_group_arns         = [module.target_group.tg_arn]
+  target_group_arns         = [var.create_target_group ? module.target_group[0].tg_arn : var.existing_tg_arn]
   health_check_type         = "ELB"
   health_check_grace_period = 300
 
@@ -312,6 +485,52 @@ module "asg" {
     "GroupTotalInstances"
   ]
 
+  # Instance Refresh Configuration
+  enable_instance_refresh      = var.enable_instance_refresh
+  instance_refresh_preferences = var.instance_refresh_preferences
+  instance_refresh_triggers    = var.instance_refresh_triggers
+
   tags          = local.common_tags
-  instance_tags = local.instance_tags
+  instance_tags = merge(
+    local.instance_tags,
+    {
+      # This tag changes when config changes, triggering instance refresh
+      ConfigVersion = substr(md5(local.envoy_config_content), 0, 8)
+    }
+  )
+}
+
+# =========================================================================
+# Instance Refresh Configuration
+# =========================================================================
+# This resource triggers rolling replacement of instances when config changes
+
+resource "aws_autoscaling_group_tag" "config_version" {
+  autoscaling_group_name = module.asg.asg_name
+
+  tag {
+    key                 = "ConfigVersion"
+    value               = substr(md5(local.envoy_config_content), 0, 8)
+    propagate_at_launch = true
+  }
+}
+
+# Enable instance refresh on the ASG
+resource "null_resource" "enable_instance_refresh" {
+  count = var.enable_instance_refresh ? 1 : 0
+
+  triggers = {
+    config_version = substr(md5(local.envoy_config_content), 0, 8)
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      aws autoscaling start-instance-refresh \
+        --auto-scaling-group-name ${module.asg.asg_name} \
+        --preferences '{"MinHealthyPercentage":50,"InstanceWarmup":60}' \
+        --region ${data.aws_region.current.name} || true
+    EOT
+  }
+
+  depends_on = [module.asg]
 }

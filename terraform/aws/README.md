@@ -17,18 +17,46 @@ Industry-standard, modular Terraform infrastructure for Hyperswitch Suite proxy 
 
 ## Architecture Overview
 
-This infrastructure follows a **two-layer module architecture**:
+This infrastructure follows a **three-layer architecture**:
 
-1. **Base Modules** (`modules/base/`): Reusable, atomic AWS resource modules
-2. **Composition Modules** (`modules/composition/`): Service-specific orchestrations
+### Layer 1: Base Modules (`modules/base/`)
+**Purpose**: Atomic, reusable AWS resource wrappers
+
+- Generic building blocks (ASG, security groups, IAM roles, etc.)
+- No business logic - just AWS resource abstractions
+- Shared across all services and environments
+- **You never run terraform here** - these are libraries
+
+**Example**: The `asg` module can be used by squid-proxy, envoy-proxy, nginx, or any other service that needs an Auto Scaling Group.
+
+### Layer 2: Composition Modules (`modules/composition/`)
+**Purpose**: Service-specific orchestration of base modules
+
+- Combines multiple base modules to create a complete service
+- Contains service-specific business logic (ports, configurations, userdata)
+- Implements the "how" for deploying a specific service
+- **You never run terraform here** - these are templates
+
+**Example**: The `squid-proxy` module orchestrates ASG + Target Group + Security Groups + IAM + S3 to create a complete Squid proxy service.
+
+### Layer 3: Live Environments (`live/`)
+**Purpose**: Actual deployments with environment-specific values
+
+- Contains concrete values for each environment (dev, integ, prod, sandbox)
+- References composition modules with specific configuration
+- Manages state files (one per deployment)
+- **This is where you run terraform** - `terraform apply` happens here
+
+**Example**: `live/dev/eu-central-1/squid-proxy/` deploys a Squid proxy in dev environment using the squid-proxy composition module.
 
 ### Benefits
 
-- **DRY Principle**: No code duplication
-- **Modularity**: Change one module, update all consumers
-- **Blast Radius Control**: Isolated state files per deployment
+- **DRY Principle**: No code duplication across layers
+- **Modularity**: Change one base module, update all services automatically
+- **Blast Radius Control**: Isolated state files per deployment (each `live/` directory)
 - **Regional Isolation**: Independent deployments per region
 - **Environment Isolation**: Dev, Integ, Prod, Sandbox completely separated
+- **Testability**: Test base modules → composition modules → live deployments
 
 ---
 
