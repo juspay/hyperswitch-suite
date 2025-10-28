@@ -6,14 +6,14 @@ project_name = "hyperswitch"
 
 # Network Configuration
 # TODO: Replace with your actual VPC and subnet IDs
-vpc_id = "vpc-0782844646e671bb0"
+vpc_id = "vpc-083eba8b4449acaac"
 proxy_subnet_ids = [
-  "subnet-065ae3efdecda0f01",
-  "subnet-0b6f74d07b26ec752"
+  "subnet-0095f1439ed2a59fc",
+  "subnet-0846e9cb642f9c7b9"
 ]
 lb_subnet_ids = [
-  "subnet-03924881d12971b3d",
-  "subnet-05dd9dbc4493c5662"
+  "subnet-05ca7c5af3dbef091",
+  "subnet-0015119340b5e7835"
 ]
 
 # NOTE: EKS Security Group ID is NOT needed for Envoy proxy
@@ -28,6 +28,8 @@ lb_subnet_ids = [
 # Envoy Configuration
 envoy_admin_port    = 9901
 envoy_listener_port = 10000
+envoy_traffic_port      = 80
+envoy_health_check_port = 80 
 
 # EC2 Configuration
 # TODO: Replace with your actual AMI ID
@@ -168,8 +170,8 @@ create_target_group = true  # Set to true to create new target group
 
 # Required when using existing ALB (create_lb = false)
 # TODO: Replace with your actual external ALB ARN and security group ID
-existing_lb_arn               = "arn:aws:elasticloadbalancing:eu-central-1:225681119357:loadbalancer/app/external-lb/acbaa6cfc2ea759e"
-existing_lb_security_group_id = "sg-08d29cf394528363f"  # Security group ID (not ARN) of existing external ALB
+existing_lb_arn               = "arn:aws:elasticloadbalancing:eu-central-1:225681119357:loadbalancer/app/external-lb/a30fbd9d42141361"
+existing_lb_security_group_id = "sg-04399aafbd3bb9a18"  # Security group ID (not ARN) of existing external ALB
 
 # Optional: Only needed if create_target_group = false (currently creating new target group)
 # existing_tg_arn = "arn:aws:elasticloadbalancing:eu-central-1:225681119357:targetgroup/your-envoy-tg/xxxxx"

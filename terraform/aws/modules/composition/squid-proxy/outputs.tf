@@ -1,16 +1,16 @@
 output "nlb_arn" {
   description = "ARN of the Network Load Balancer"
-  value       = var.create_nlb ? aws_lb.squid[0].arn : var.existing_lb_arn
+  value       = var.create_nlb ? module.nlb[0].nlb_arn : var.existing_lb_arn
 }
 
 output "nlb_dns_name" {
   description = "DNS name of the Network Load Balancer"
-  value       = var.create_nlb ? aws_lb.squid[0].dns_name : null
+  value       = var.create_nlb ? module.nlb[0].nlb_dns_name : null
 }
 
 output "nlb_zone_id" {
   description = "Zone ID of the Network Load Balancer"
-  value       = var.create_nlb ? aws_lb.squid[0].zone_id : null
+  value       = var.create_nlb ? module.nlb[0].nlb_zone_id : null
 }
 
 output "target_group_arn" {

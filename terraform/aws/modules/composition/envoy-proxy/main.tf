@@ -186,15 +186,15 @@ module "lb_security_group" {
   ingress_rules = [
     {
       description = "Allow HTTP from CloudFront/Internet"
-      from_port   = 80
-      to_port     = 80
+      from_port   = var.alb_http_listener_port
+      to_port     = var.alb_http_listener_port
       protocol    = "tcp"
       cidr_blocks = ["0.0.0.0/0"]  # CloudFront uses dynamic IPs, use prefix list if needed
     },
     {
       description = "Allow HTTPS from CloudFront/Internet"
-      from_port   = 443
-      to_port     = 443
+      from_port   = var.alb_https_listener_port
+      to_port     = var.alb_https_listener_port
       protocol    = "tcp"
       cidr_blocks = ["0.0.0.0/0"]  # CloudFront uses dynamic IPs, use prefix list if needed
     }
@@ -202,9 +202,9 @@ module "lb_security_group" {
 
   egress_rules = [
     {
-      description = "Allow HTTP traffic to Envoy ASG instances"
-      from_port   = 80
-      to_port     = 80
+      description = "Allow traffic to Envoy ASG instances"
+      from_port   = var.envoy_traffic_port
+      to_port     = var.envoy_traffic_port
       protocol    = "tcp"
       cidr_blocks = ["0.0.0.0/0"]  # Will be restricted by ASG SG
     }
@@ -221,29 +221,34 @@ module "asg_security_group" {
   description = "Security group for Envoy proxy ASG instances"
   vpc_id      = var.vpc_id
 
-  ingress_rules = [
-    {
-      description              = "Allow HTTP traffic from ALB on port 80"
-      from_port                = 80 #idealy should be 8080
-      to_port                  = 80
-      protocol                 = "tcp"
-      # Use existing LB SG if provided, otherwise use the newly created one
-      source_security_group_id = var.create_lb ? module.lb_security_group[0].sg_id : var.existing_lb_security_group_id
-    },
-    {
-      description              = "Allow health checks from ALB on port 8081"
-      from_port                = 8081
-      to_port                  = 8081
-      protocol                 = "tcp"
-      source_security_group_id = var.create_lb ? module.lb_security_group[0].sg_id : var.existing_lb_security_group_id
-    }
-  ]
+  ingress_rules = concat(
+    [
+      {
+        description              = "Allow traffic from ALB to Envoy"
+        from_port                = var.envoy_traffic_port
+        to_port                  = var.envoy_traffic_port
+        protocol                 = "tcp"
+        # Use existing LB SG if provided, otherwise use the newly created one
+        source_security_group_id = var.create_lb ? module.lb_security_group[0].sg_id : var.existing_lb_security_group_id
+      }
+    ],
+    # Only add health check rule if port is different from traffic port
+    var.envoy_health_check_port != var.envoy_traffic_port ? [
+      {
+        description              = "Allow health checks from ALB"
+        from_port                = var.envoy_health_check_port
+        to_port                  = var.envoy_health_check_port
+        protocol                 = "tcp"
+        source_security_group_id = var.create_lb ? module.lb_security_group[0].sg_id : var.existing_lb_security_group_id
+      }
+    ] : []
+  )
 
   egress_rules = [
     {
-      description = "Allow HTTP to Istio Internal LB"
-      from_port   = 80
-      to_port     = 80
+      description = "Allow traffic to Istio Internal LB"
+      from_port   = var.envoy_upstream_port
+      to_port     = var.envoy_upstream_port
       protocol    = "tcp"
       cidr_blocks = ["0.0.0.0/0"]  # Will be restricted by Istio ALB SG
     },
@@ -279,32 +284,32 @@ module "asg_security_group" {
 # When using an existing ALB, add egress rules to the existing ALB's security group
 # to allow traffic to the new ASG security group
 
-# Rule for traffic on port 8080
+# Rule for traffic to Envoy ASG
 resource "aws_security_group_rule" "existing_lb_to_asg_traffic" {
   count = var.create_lb ? 0 : 1  # Only create when using existing ALB
 
   type                     = "egress"
-  from_port                = 80 # idealy should be 8080
-  to_port                  = 80
+  from_port                = var.envoy_traffic_port
+  to_port                  = var.envoy_traffic_port
   protocol                 = "tcp"
   source_security_group_id = module.asg_security_group.sg_id
   security_group_id        = var.existing_lb_security_group_id
 
-  description = "Allow traffic to Envoy ASG instances on port 8080"
+  description = "Allow traffic to Envoy ASG instances"
 }
 
-# Rule for health checks on port 8081
+# Rule for health checks (only if different port)
 resource "aws_security_group_rule" "existing_lb_to_asg_healthcheck" {
-  count = var.create_lb ? 0 : 1  # Only create when using existing ALB
+  count = var.create_lb ? 0 : (var.envoy_health_check_port != var.envoy_traffic_port ? 1 : 0)
 
   type                     = "egress"
-  from_port                = 8081
-  to_port                  = 8081
+  from_port                = var.envoy_health_check_port
+  to_port                  = var.envoy_health_check_port
   protocol                 = "tcp"
   source_security_group_id = module.asg_security_group.sg_id
   security_group_id        = var.existing_lb_security_group_id
 
-  description = "Health check to Envoy ASG instances on port 8081"
+  description = "Health check to Envoy ASG instances"
 }
 
 # =========================================================================
@@ -337,13 +342,13 @@ resource "aws_lb" "envoy" {
 # Target Group (Conditional - Create only if needed)
 # =========================================================================
 # Target group for ALB → Envoy ASG
-# Targets Envoy listener on port 8080 for traffic
+# Targets Envoy traffic listener port
 module "target_group" {
   count  = var.create_target_group ? 1 : 0
   source = "../../base/target-group"
 
   name        = "${local.name_prefix}-tg"
-  port        = 80 # Envoy traffic listener port idealy should be 8080
+  port        = var.envoy_traffic_port
   protocol    = "HTTP"  # ALB uses HTTP protocol
   vpc_id      = var.vpc_id
   target_type = "instance"
@@ -356,7 +361,7 @@ module "target_group" {
     unhealthy_threshold = 2
     timeout             = 5
     interval            = 30
-    port                = "traffic-port"  # Dedicated health check port this should be 8081
+    port                = tostring(var.envoy_health_check_port)  # Dedicated health check port
     protocol            = "HTTP"
     path                = "/healthz"  # Envoy health check endpoint
     matcher             = "200"       # Expect 200 OK response
@@ -368,12 +373,12 @@ module "target_group" {
 # =========================================================================
 # Load Balancer Listeners (Create only if creating new ALB)
 # =========================================================================
-# HTTP Listener (port 80) - Main traffic from CloudFront
+# HTTP Listener - Main traffic from CloudFront
 resource "aws_lb_listener" "envoy_http" {
   count = var.create_lb ? 1 : 0
 
   load_balancer_arn = aws_lb.envoy[0].arn
-  port              = 80
+  port              = var.alb_http_listener_port
   protocol          = "HTTP"
 
   default_action {
@@ -384,15 +389,15 @@ resource "aws_lb_listener" "envoy_http" {
   tags = local.common_tags
 }
 
-# HTTPS Listener (port 443) - Optional, requires SSL certificate
+# HTTPS Listener - Optional, requires SSL certificate
 # Uncomment if you want to terminate SSL at ALB
 # resource "aws_lb_listener" "envoy_https" {
 #   count = var.create_lb ? 1 : 0
 #
 #   load_balancer_arn = aws_lb.envoy[0].arn
-#   port              = 443
+#   port              = var.alb_https_listener_port
 #   protocol          = "HTTPS"
-#   ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01"
+#   ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
 #   certificate_arn   = var.ssl_certificate_arn
 #
 #   default_action {

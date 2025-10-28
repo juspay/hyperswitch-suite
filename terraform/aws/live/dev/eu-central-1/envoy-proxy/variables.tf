@@ -47,6 +47,40 @@ variable "envoy_listener_port" {
   default     = 10000
 }
 
+# =========================================================================
+# Port Configuration Variables (Environment-specific)
+# =========================================================================
+
+variable "alb_http_listener_port" {
+  description = "Port for ALB HTTP listener"
+  type        = number
+  default     = 80  # Dev uses standard HTTP port
+}
+
+variable "alb_https_listener_port" {
+  description = "Port for ALB HTTPS listener"
+  type        = number
+  default     = 443
+}
+
+variable "envoy_traffic_port" {
+  description = "Port where Envoy listens for traffic from ALB"
+  type        = number
+  default     = 80  # Dev uses port 80
+}
+
+variable "envoy_health_check_port" {
+  description = "Port for Envoy health check endpoint"
+  type        = number
+  default     = 8081
+}
+
+variable "envoy_upstream_port" {
+  description = "Port for Envoy to forward traffic to upstream"
+  type        = number
+  default     = 80
+}
+
 variable "ami_id" {
   description = "AMI ID for Envoy instances (ignored if use_existing_launch_template = true)"
   type        = string

@@ -7,19 +7,19 @@ project_name = "hyperswitch"
 
 # Network Configuration
 # TODO: Replace with your actual VPC and subnet IDs
-vpc_id = "vpc-03aa8b632e488dd58"
+vpc_id = "vpc-083eba8b4449acaac"
 proxy_subnet_ids = [
-  "subnet-0f1f8c28509188dd6", # Private subnet AZ1
-  "subnet-015ce1914ed8568b6"  # Private subnet AZ2
+  "subnet-052b7bdaa5f4a0da0", # Private subnet AZ1
+  "subnet-0753586349d51a032"  # Private subnet AZ2
 ]
 lb_subnet_ids = [
-  "subnet-063151cf324efefcc", # Service subnet AZ1
-  "subnet-045e8e559e40d367b"  # Service subnet AZ2
+  "subnet-04bc85dcb23d4bf9a", # Service subnet AZ1
+  "subnet-045b4e843de773007"  # Service subnet AZ2
 ]
 
 # EKS Configuration
 # TODO: Replace with your actual EKS security group ID
-eks_security_group_id = "sg-0c9806c06fdf36990"
+eks_security_group_id = "sg-0e29889cc389fdcda"
 
 # Squid Configuration
 squid_port = 3128
@@ -28,7 +28,6 @@ squid_port = 3128
 # TODO: Replace with your actual AMI ID (Amazon Linux 2 or Ubuntu)
 ami_id        = "ami-08d31f74c5093410c" # squid ami id
 instance_type = "t3.small"               # Smaller instance for dev
-key_name      = null                     # Optional: Add your SSH key name
 
 #=======================================================================
 # LAUNCH TEMPLATE CONFIGURATION
@@ -119,10 +118,10 @@ existing_lb_name = "squid-nlb"  # Comment out if create_nlb = true
 #   - You must manage the .pem file yourself
 #=======================================================================
 
-generate_ssh_key = true  # Set to false to use existing key
+generate_ssh_key = false  # Set to false to use existing key
 
 # Only used when generate_ssh_key = false
-# key_name = "my-existing-keypair"
+key_name = "hyperswitch-squid-proxy-keypair-eu-central-1"
 
 #=======================================================================
 # SSH ACCESS OPTIONS (when generate_ssh_key = true):

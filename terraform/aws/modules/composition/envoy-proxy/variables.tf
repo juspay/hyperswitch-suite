@@ -52,6 +52,66 @@ variable "envoy_listener_port" {
   default     = 10000
 }
 
+# =========================================================================
+# Port Configuration Variables
+# These allow per-environment port configuration (e.g., dev uses 80, prod uses 8080)
+# =========================================================================
+
+variable "alb_http_listener_port" {
+  description = "Port for ALB HTTP listener (port that ALB listens on for incoming HTTP traffic)"
+  type        = number
+  default     = 80
+
+  validation {
+    condition     = var.alb_http_listener_port >= 1 && var.alb_http_listener_port <= 65535
+    error_message = "ALB HTTP listener port must be between 1 and 65535"
+  }
+}
+
+variable "alb_https_listener_port" {
+  description = "Port for ALB HTTPS listener (port that ALB listens on for incoming HTTPS traffic)"
+  type        = number
+  default     = 443
+
+  validation {
+    condition     = var.alb_https_listener_port >= 1 && var.alb_https_listener_port <= 65535
+    error_message = "ALB HTTPS listener port must be between 1 and 65535"
+  }
+}
+
+variable "envoy_traffic_port" {
+  description = "Port where Envoy instances listen for traffic from ALB (target group port)"
+  type        = number
+  default     = 80
+
+  validation {
+    condition     = var.envoy_traffic_port >= 1 && var.envoy_traffic_port <= 65535
+    error_message = "Envoy traffic port must be between 1 and 65535"
+  }
+}
+
+variable "envoy_health_check_port" {
+  description = "Port for Envoy health check endpoint"
+  type        = number
+  default     = 8081
+
+  validation {
+    condition     = var.envoy_health_check_port >= 1 && var.envoy_health_check_port <= 65535
+    error_message = "Envoy health check port must be between 1 and 65535"
+  }
+}
+
+variable "envoy_upstream_port" {
+  description = "Port for Envoy to forward traffic to upstream (e.g., Internal ALB/Istio)"
+  type        = number
+  default     = 80
+
+  validation {
+    condition     = var.envoy_upstream_port >= 1 && var.envoy_upstream_port <= 65535
+    error_message = "Envoy upstream port must be between 1 and 65535"
+  }
+}
+
 variable "ami_id" {
   description = "AMI ID for Envoy instances (ignored if use_existing_launch_template = true)"
   type        = string

@@ -21,6 +21,13 @@ module "envoy_proxy" {
   ami_id              = var.ami_id
   instance_type       = var.instance_type
 
+  # Port Configuration (Environment-specific)
+  alb_http_listener_port  = var.alb_http_listener_port
+  alb_https_listener_port = var.alb_https_listener_port
+  envoy_traffic_port      = var.envoy_traffic_port
+  envoy_health_check_port = var.envoy_health_check_port
+  envoy_upstream_port     = var.envoy_upstream_port
+
   # SSH Key Configuration
   generate_ssh_key = var.generate_ssh_key
   key_name         = var.key_name  # Only used if generate_ssh_key=false

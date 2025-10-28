@@ -21,6 +21,13 @@ module "envoy_proxy" {
   instance_type       = var.instance_type
   key_name            = var.key_name
 
+  # Port Configuration (Environment-specific)
+  alb_http_listener_port  = var.alb_http_listener_port
+  alb_https_listener_port = var.alb_https_listener_port
+  envoy_traffic_port      = var.envoy_traffic_port
+  envoy_health_check_port = var.envoy_health_check_port
+  envoy_upstream_port     = var.envoy_upstream_port
+
   min_size         = var.min_size
   max_size         = var.max_size
   desired_capacity = var.desired_capacity

@@ -268,24 +268,19 @@ resource "aws_security_group_rule" "existing_lb_to_asg" {
 # =========================================================================
 # Network Load Balancer (Conditional - Create only if needed)
 # =========================================================================
-resource "aws_lb" "squid" {
-  count = var.create_nlb ? 1 : 0
+module "nlb" {
+  count  = var.create_nlb ? 1 : 0
+  source = "../../base/nlb"
 
-  name               = "${local.name_prefix}-nlb"
-  internal           = true
-  load_balancer_type = "network"
-  subnets            = var.lb_subnet_ids
-  security_groups    = [module.lb_security_group[0].sg_id]
+  name            = "${local.name_prefix}-nlb"
+  internal        = true
+  subnets         = var.lb_subnet_ids
+  security_groups = [module.lb_security_group[0].sg_id]
 
-  enable_deletion_protection = var.environment == "prod" ? true : false
+  enable_deletion_protection       = var.environment == "prod" ? true : false
   enable_cross_zone_load_balancing = true
 
-  tags = merge(
-    local.common_tags,
-    {
-      Name = "${local.name_prefix}-nlb"
-    }
-  )
+  tags = local.common_tags
 }
 
 # =========================================================================
@@ -319,17 +314,15 @@ module "target_group" {
 # =========================================================================
 # Load Balancer Listener (Create only if creating new NLB)
 # =========================================================================
-resource "aws_lb_listener" "squid" {
-  count = var.create_nlb ? 1 : 0
+module "nlb_listener" {
+  count  = var.create_nlb ? 1 : 0
+  source = "../../base/nlb-listener"
 
-  load_balancer_arn = aws_lb.squid[0].arn
-  port              = var.squid_port
-  protocol          = "TCP"
-
-  default_action {
-    type             = "forward"
-    target_group_arn = var.create_target_group ? module.target_group[0].tg_arn : var.existing_tg_arn
-  }
+  name                = local.name_prefix
+  load_balancer_arn   = module.nlb[0].nlb_arn
+  port                = var.squid_port
+  protocol            = "TCP"
+  target_group_arn    = var.create_target_group ? module.target_group[0].tg_arn : var.existing_tg_arn
 
   tags = local.common_tags
 }
