@@ -24,35 +24,46 @@ eks_security_group_id = "sg-0e29889cc389fdcda"
 # Squid Configuration
 squid_port = 3128
 
-# EC2 Configuration (ignored if use_existing_launch_template = true)
-# TODO: Replace with your actual AMI ID (Amazon Linux 2 or Ubuntu)
-ami_id        = "ami-08d31f74c5093410c" # squid ami id
-instance_type = "t3.small"               # Smaller instance for dev
-
 #=======================================================================
 # LAUNCH TEMPLATE CONFIGURATION
 #=======================================================================
 # Two options available:
 #
-# OPTION 1: Create New Launch Template (Current Setting) - RECOMMENDED
+# OPTION 1: Create New Launch Template (Current Default)
 #   use_existing_launch_template = false
-#   - Terraform creates a new launch template with the AMI and config above
-#   - Full control over instance configuration
+#   - Module creates a new launch template with specified AMI, instance type, etc.
+#   - Uses ami_id, instance_type, key_name, root_volume_* below
 #
 # OPTION 2: Use Existing Launch Template
 #   use_existing_launch_template = true
 #   existing_launch_template_id = "lt-0123456789abcdef0"
-#   existing_launch_template_version = "$Latest"  # or specific version like "1"
-#   - Reuses an existing launch template
-#   - AMI, instance_type, key_name above are IGNORED
-#   - Useful for: Deploying new ASG with same config, testing different versions
+#   existing_launch_template_version = "$Latest"
+#   - Use this if you have a pre-configured launch template
+#   - The following variables will be IGNORED (taken from launch template):
+#     ❌ ami_id
+#     ❌ instance_type
+#     ❌ key_name (if specified in launch template)
+#     ❌ root_volume_size (if specified in launch template)
+#     ❌ root_volume_type (if specified in launch template)
+#
+# Version Options:
+#   - "$Latest" = Always use the latest version (auto-updates)
+#   - "$Default" = Use the default version (manually set in AWS)
+#   - "1", "2", etc. = Pin to specific version number
 #=======================================================================
 
 use_existing_launch_template = false  # Set to true to use existing launch template
 
 # Only used when use_existing_launch_template = true
-# existing_launch_template_id = "lt-0123456789abcdef0"
-# existing_launch_template_version = "$Latest"  # Options: $Latest, $Default, or version number
+# existing_launch_template_id = "lt-0123456789abcdef0"  # Replace with your launch template ID
+# existing_launch_template_version = "$Latest"  # or "$Default" or "1", "2", etc.
+
+#=======================================================================
+# EC2 Configuration (ignored if use_existing_launch_template = true)
+#=======================================================================
+# TODO: Replace with your actual AMI ID (Amazon Linux 2 or Ubuntu)
+ami_id        = "ami-08d31f74c5093410c" # squid ami id
+instance_type = "t3.small"               # Smaller instance for dev
 
 #=======================================================================
 
@@ -69,7 +80,7 @@ config_bucket_arn  = "arn:aws:s3:::app-proxy-config-225681119357-eu-central-1"
 # Monitoring
 enable_detailed_monitoring = false
 
-# Storage
+# Storage (ignored if use_existing_launch_template = true)
 root_volume_size = 20
 root_volume_type = "gp3"
 

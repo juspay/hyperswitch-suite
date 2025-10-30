@@ -24,7 +24,43 @@ eks_security_group_id = "sg-xxxxxxxxx"
 # Squid Configuration
 squid_port = 3128
 
-# EC2 Configuration
+#=======================================================================
+# LAUNCH TEMPLATE CONFIGURATION
+#=======================================================================
+# Two options available:
+#
+# OPTION 1: Create New Launch Template (Current Default)
+#   use_existing_launch_template = false
+#   - Module creates a new launch template with specified AMI, instance type, etc.
+#   - Uses ami_id, instance_type, key_name, root_volume_* below
+#
+# OPTION 2: Use Existing Launch Template
+#   use_existing_launch_template = true
+#   existing_launch_template_id = "lt-0123456789abcdef0"
+#   existing_launch_template_version = "$Latest"
+#   - Use this if you have a pre-configured launch template
+#   - The following variables will be IGNORED (taken from launch template):
+#     ❌ ami_id
+#     ❌ instance_type
+#     ❌ key_name (if specified in launch template)
+#     ❌ root_volume_size (if specified in launch template)
+#     ❌ root_volume_type (if specified in launch template)
+#
+# Version Options:
+#   - "$Latest" = Always use the latest version (auto-updates)
+#   - "$Default" = Use the default version (manually set in AWS)
+#   - "1", "2", etc. = Pin to specific version number
+#=======================================================================
+
+use_existing_launch_template = false  # Set to true to use existing launch template
+
+# Only used when use_existing_launch_template = true
+# existing_launch_template_id = "lt-0123456789abcdef0"  # Replace with your launch template ID
+# existing_launch_template_version = "$Latest"  # or "$Default" or "1", "2", etc.
+
+#=======================================================================
+# EC2 Configuration (ignored if use_existing_launch_template = true)
+#=======================================================================
 # TODO: Replace with your actual AMI ID (Squid pre-installed)
 ami_id        = "ami-0c55b159cbfafe1f0" # Replace with Squid AMI ID
 instance_type = "t3.medium"              # Medium instance for integ
