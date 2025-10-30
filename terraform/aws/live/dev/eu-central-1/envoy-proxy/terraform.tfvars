@@ -17,13 +17,7 @@ lb_subnet_ids = [
 ]
 
 # NOTE: EKS Security Group ID is NOT needed for Envoy proxy
-# Envoy receives traffic FROM CloudFront via ALB (inbound)
-# EKS does NOT initiate connections TO Envoy (no outbound from EKS to Envoy)
 # Traffic flow: CloudFront → External ALB → Envoy ASG → Internal ALB → EKS
-#
-# This is different from Squid proxy where:
-# - EKS pods make outbound requests TO Squid
-# - Squid needs to allow traffic FROM EKS security group
 
 # Envoy Configuration
 envoy_admin_port    = 9901

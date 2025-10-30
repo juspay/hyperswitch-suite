@@ -118,5 +118,10 @@ module "squid_proxy" {
   # After terraform apply, manually update the existing NLB listener's default
   # action to forward to the newly created target group ARN (see outputs)
 
+  # Instance Refresh Configuration
+  enable_instance_refresh      = var.enable_instance_refresh
+  instance_refresh_preferences = var.instance_refresh_preferences
+  instance_refresh_triggers    = var.instance_refresh_triggers
+
   tags = var.common_tags
 }

@@ -173,12 +173,12 @@ variable "existing_iam_instance_profile_name" {
 }
 
 variable "custom_userdata" {
-  description = "Custom userdata script for Envoy instances"
+  description = "Custom userdata script for Envoy instances. This should be environment-specific and loaded from the live layer (e.g., file(\"$${path.module}/templates/userdata.sh\"))"
   type        = string
 }
 
 variable "envoy_config_template" {
-  description = "Envoy configuration template (envoy.yaml content)"
+  description = "Envoy configuration template (envoy.yaml content). This should be environment-specific and loaded from the live layer (e.g., file(\"$${path.module}/config/envoy.yaml\"))"
   type        = string
 }
 

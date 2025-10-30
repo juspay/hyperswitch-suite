@@ -1,5 +1,5 @@
 # Integration Environment - EU Central 1 - Squid Proxy
-# This file contains actual values for the integration environment
+# This file contains actual values for the integ environment
 
 environment  = "integ"
 region       = "eu-central-1"
@@ -61,12 +61,13 @@ use_existing_launch_template = false  # Set to true to use existing launch templ
 #=======================================================================
 # EC2 Configuration (ignored if use_existing_launch_template = true)
 #=======================================================================
-# TODO: Replace with your actual AMI ID (Squid pre-installed)
-ami_id        = "ami-0c55b159cbfafe1f0" # Replace with Squid AMI ID
-instance_type = "t3.medium"              # Medium instance for integ
-key_name      = null                     # Optional: Add your SSH key name
+# TODO: Replace with your actual AMI ID (Amazon Linux 2 or Ubuntu)
+ami_id        = "ami-0c55b159cbfafe1f0" # Amazon Linux 2
+instance_type = "t3.medium"             # Larger instance for integ
 
-# Auto Scaling Configuration (Higher for integ testing)
+#=======================================================================
+
+# Auto Scaling Configuration
 min_size         = 1
 max_size         = 3
 desired_capacity = 2
@@ -76,10 +77,10 @@ desired_capacity = 2
 config_bucket_name = "hyperswitch-integ-proxy-config-eu-central-1"
 config_bucket_arn  = "arn:aws:s3:::hyperswitch-integ-proxy-config-eu-central-1"
 
-# Monitoring (Enabled for integ)
+# Monitoring
 enable_detailed_monitoring = true
 
-# Storage
+# Storage (ignored if use_existing_launch_template = true)
 root_volume_size = 30
 root_volume_type = "gp3"
 
@@ -104,7 +105,7 @@ root_volume_type = "gp3"
 create_nlb       = true  # Set to false to use existing NLB instead
 
 # Only needed when create_nlb = false (Mode 2)
-# existing_lb_name = "my-existing-nlb"  # Uncomment and set if create_nlb = false
+# existing_lb_name = "squid-nlb-integ"  # Uncomment if create_nlb = false
 
 # Note for Mode 2: After terraform apply, manually update the existing NLB listener's
 # default action to forward traffic to the target group ARN (check terraform outputs)
@@ -131,7 +132,7 @@ create_nlb       = true  # Set to false to use existing NLB instead
 generate_ssh_key = true  # Set to false to use existing key
 
 # Only used when generate_ssh_key = false
-# key_name = "my-existing-keypair"
+# key_name = "hyperswitch-squid-proxy-keypair-eu-central-1"
 
 #=======================================================================
 # SSH ACCESS OPTIONS (when generate_ssh_key = true):
@@ -164,7 +165,7 @@ generate_ssh_key = true  # Set to false to use existing key
 upload_config_to_s3 = false  # Set to true to auto-upload configs
 
 # How to use:
-# 1. Place squid.conf, whitelist.txt, and other configs in ./config/ directory
+# 1. Place squid.conf and other configs in ./config/ directory
 # 2. Set upload_config_to_s3 = true
 # 3. Run terraform apply - configs will be uploaded to S3 automatically
 # 4. Userdata script will download them during instance initialization
@@ -174,27 +175,84 @@ upload_config_to_s3 = false  # Set to true to auto-upload configs
 #=======================================================================
 # IAM ROLE CONFIGURATION
 #=======================================================================
-# Two options available:
+# Three options available:
 #
-# OPTION 1: Create New IAM Role (Current Setting) - RECOMMENDED
+# OPTION 1: Create New IAM Role + Instance Profile (Current Setting) - RECOMMENDED
 #   create_iam_role = true
 #   - Terraform creates a new IAM role with required permissions
 #   - Includes S3 access for configs/logs, SSM, CloudWatch
 #   - Automatically creates instance profile
 #
-# OPTION 2: Use Existing IAM Role
+# OPTION 2: Use Existing IAM Role + Create New Instance Profile - RECOMMENDED for reusing roles
 #   create_iam_role = false
+#   create_instance_profile = true
+#   existing_iam_role_name = "my-existing-role"
+#   - Reuses an existing IAM role (with permissions already configured)
+#   - Creates a NEW instance profile for this deployment's launch template
+#   - Best for: Sharing IAM roles across deployments while keeping launch templates separate
+#
+# OPTION 3: Use Existing IAM Role + Existing Instance Profile
+#   create_iam_role = false
+#   create_instance_profile = false
 #   existing_iam_role_name = "my-existing-role"
 #   existing_iam_instance_profile_name = "my-existing-instance-profile"
-#   - Use this if you have a pre-existing IAM role with proper permissions
+#   - Uses both existing IAM role and instance profile
+#   - ⚠️ Warning: Instance profile can only be used by ONE launch template
 #   - Required permissions: S3 (config/logs buckets), SSM, CloudWatch
 #=======================================================================
 
 create_iam_role = true  # Set to false to use existing IAM role
 
 # Only used when create_iam_role = false
-# existing_iam_role_name = "my-squid-iam-role"
+# existing_iam_role_name = "hyperswitch-squid-role"
+
+# Only used when create_iam_role = false
+create_instance_profile = true  # Set to false to use existing instance profile
+
+# Only used when create_iam_role = false AND create_instance_profile = false
 # existing_iam_instance_profile_name = "my-squid-instance-profile"
+
+#=======================================================================
+# Instance Refresh Configuration
+#=======================================================================
+# When enabled, ASG automatically replaces instances when launch template changes
+# Provides manual checkpoints for validation during rollout
+#
+# How it works:
+# 1. Terraform updates launch template
+# 2. ASG automatically starts instance refresh
+# 3. Replaces instances gradually with new launch template
+# 4. Pauses at 50% for 5 minutes (checkpoint) - you can validate
+# 5. If issues found, cancel with: aws autoscaling cancel-instance-refresh
+# 6. If healthy, auto-continues after 5 minutes
+#
+# Settings explained:
+# - min_healthy_percentage: Keep at least 50% of instances healthy during refresh
+# - instance_warmup: Wait 5 minutes for new instances to pass health checks
+# - checkpoint_percentages: [50] = Pause when 50% of instances are replaced
+# - checkpoint_delay: 300 seconds (5 min) = How long to wait at checkpoint
+#
+# To monitor refresh:
+#   aws autoscaling describe-instance-refreshes --auto-scaling-group-name integ-hyperswitch-squid-asg
+#
+# To cancel refresh (if issues detected):
+#   aws autoscaling cancel-instance-refresh --auto-scaling-group-name integ-hyperswitch-squid-asg
+#=======================================================================
+
+enable_instance_refresh = true  # Enable automatic instance refresh on launch template changes
+
+instance_refresh_preferences = {
+  min_healthy_percentage       = 50      # Keep 50% instances healthy during refresh
+  instance_warmup              = 300     # Wait 5 min for new instances to stabilize
+  max_healthy_percentage       = 100     # Don't exceed desired capacity during refresh
+  checkpoint_percentages       = [50]    # Pause at 50% complete for validation
+  checkpoint_delay             = 300     # Wait 5 min at checkpoint before auto-continuing
+  scale_in_protected_instances = "Ignore"
+  standby_instances            = "Ignore"
+}
+
+# Note: launch_template changes automatically trigger refresh, no need to specify
+# instance_refresh_triggers = []  # Empty by default - launch_template triggers are automatic
 
 #=======================================================================
 
@@ -203,7 +261,5 @@ common_tags = {
   Environment = "integration"
   Project     = "hyperswitch"
   ManagedBy   = "terraform-IaC"
-  Team        = "platform"
-  CostCenter  = "engineering"
   Region      = "eu-central-1"
 }

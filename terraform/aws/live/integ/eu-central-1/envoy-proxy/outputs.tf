@@ -1,11 +1,16 @@
-output "envoy_nlb_dns_name" {
-  description = "DNS name of the Envoy NLB"
-  value       = module.envoy_proxy.nlb_dns_name
+output "envoy_alb_dns_name" {
+  description = "DNS name of the Envoy ALB (null if using existing ALB)"
+  value       = module.envoy_proxy.lb_dns_name
 }
 
-output "envoy_nlb_arn" {
-  description = "ARN of the Envoy NLB"
-  value       = module.envoy_proxy.nlb_arn
+output "envoy_alb_arn" {
+  description = "ARN of the Envoy ALB"
+  value       = module.envoy_proxy.lb_arn
+}
+
+output "envoy_alb_zone_id" {
+  description = "Route53 zone ID of the Envoy ALB (null if using existing ALB)"
+  value       = module.envoy_proxy.lb_zone_id
 }
 
 output "envoy_asg_name" {
