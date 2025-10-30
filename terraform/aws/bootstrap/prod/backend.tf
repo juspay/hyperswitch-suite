@@ -1,12 +1,12 @@
 # ============================================================================
-# Bootstrap Backend Configuration
+# Bootstrap Backend Configuration - PRODUCTION
 # ============================================================================
 # The bootstrap creates the S3 bucket and DynamoDB table, so it starts with
-# a LOCAL backend. After creation, you can optionally migrate to S3.
+# a LOCAL backend. After creation, you SHOULD migrate to S3.
 #
 # STEP 1: Initial bootstrap (use local backend)
 # STEP 2: Run terraform apply to create S3 + DynamoDB
-# STEP 3: (Optional) Uncomment S3 backend below and run: terraform init -migrate-state
+# STEP 3: RECOMMENDED: Uncomment S3 backend below and run: terraform init -migrate-state
 # ============================================================================
 
 # Current: LOCAL backend (initial bootstrap)
@@ -17,28 +17,31 @@ terraform {
 }
 
 # ============================================================================
-# OPTIONAL: Self-Referencing S3 Backend
+# RECOMMENDED: Self-Referencing S3 Backend (Production Best Practice)
 # ============================================================================
-# After the bootstrap infrastructure is created, you can migrate to storing
-# the bootstrap's own state in S3 for better team collaboration and backup.
+# For production, it's STRONGLY RECOMMENDED to migrate bootstrap state to S3:
+# - Better disaster recovery (S3 versioning + PITR on DynamoDB)
+# - Team collaboration with state locking
+# - Automated backups and replication
 #
 # To migrate:
 # 1. Uncomment the S3 backend configuration below
 # 2. Comment out the local backend above
 # 3. Run: terraform init -migrate-state
 # 4. Confirm the migration when prompted
-# 5. Delete the local terraform.tfstate file (it's now in S3!)
+# 5. Backup the local terraform.tfstate file before deleting
+# 6. Verify state in S3: aws s3 ls s3://hyperswitch-prod-terraform-state/bootstrap/prod/
 #
-# WARNING: Once migrated to S3, you cannot destroy the S3 bucket without
-# first migrating the state back to local.
+# ⚠️  CRITICAL: Once migrated to S3, you cannot destroy the S3 bucket without
+# first migrating the state back to local. This is a safety feature.
 # ============================================================================
 
 # terraform {
 #   backend "s3" {
-#     bucket         = "hyperswitch-dev-terraform-state"
-#     key            = "bootstrap/dev/terraform.tfstate"  # Special path for bootstrap
+#     bucket         = "hyperswitch-prod-terraform-state"
+#     key            = "bootstrap/prod/terraform.tfstate"  # Special path for bootstrap
 #     region         = "eu-central-1"
-#     dynamodb_table = "hyperswitch-dev-terraform-state-lock"
+#     dynamodb_table = "hyperswitch-prod-terraform-state-lock"
 #     encrypt        = true
 #   }
 # }

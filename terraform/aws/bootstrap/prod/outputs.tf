@@ -49,38 +49,31 @@ output "next_steps" {
   value = <<-EOT
 
   ========================================
-  Terraform State Backend Created!
+  ✅ Terraform State Backend Created!
   ========================================
 
   S3 Bucket:      ${module.terraform_backend.state_bucket_id}
   DynamoDB Table: ${module.terraform_backend.lock_table_name}
   Region:         ${module.terraform_backend.state_bucket_region}
+  Environment:    PRODUCTION
 
   ========================================
-  State Locking Enabled
+  🔒 State Locking Enabled
   ========================================
 
   The DynamoDB table will prevent race conditions when
   multiple team members run Terraform simultaneously.
 
+  ⚠️  PRODUCTION SETTINGS:
+  - Bucket deletion protection: ENABLED
+  - Point-in-time recovery: ENABLED
+  - State versioning: ENABLED
+
   ========================================
   Next Steps:
   ========================================
 
-  1. Update backend.tf in your deployments:
-
-     cd ../live/dev/eu-central-1/squid-proxy/
-
-     # Update backend.tf to:
-     terraform {
-       backend "s3" {
-         bucket         = "${module.terraform_backend.state_bucket_id}"
-         key            = "dev/eu-central-1/squid-proxy/terraform.tfstate"
-         region         = "${module.terraform_backend.state_bucket_region}"
-         dynamodb_table = "${module.terraform_backend.lock_table_name}"
-         encrypt        = true
-       }
-     }
+  1. Update backend.tf in your production deployments to use this backend.
 
   2. Initialize backend (if migrating from local):
 
@@ -90,17 +83,8 @@ output "next_steps" {
 
      terraform init -reconfigure
 
-  4. Verify state is in S3:
-
-     aws s3 ls s3://${module.terraform_backend.state_bucket_id}/dev/eu-central-1/squid-proxy/
-
-  5. Test state locking (optional):
-
-     # In one terminal:
-     terraform plan   # This acquires a lock
-
-     # In another terminal (will fail with lock error):
-     terraform plan   # This shows locking is working!
+  ⚠️  IMPORTANT: Protect the local terraform.tfstate file in this directory!
+      It contains the configuration for your production backend infrastructure.
 
   ========================================
 

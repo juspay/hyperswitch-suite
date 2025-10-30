@@ -11,7 +11,7 @@ variable "region" {
 variable "environment" {
   description = "Environment name"
   type        = string
-  default     = "dev"
+  default     = "prod"
 }
 
 variable "project_name" {
@@ -27,22 +27,23 @@ variable "project_name" {
 variable "state_bucket_name" {
   description = "Name of the S3 bucket for Terraform state (must be globally unique)"
   type        = string
-  default     = "hyperswitch-dev-terraform-state"
+  default     = "hyperswitch-prod-terraform-state"
 
   # Note: S3 bucket names must be globally unique
-  # If this name is taken, add a suffix like: hyperswitch-dev-terraform-state-YOURNAME
+  # If this name is taken, add a suffix like: hyperswitch-prod-terraform-state-YOURNAME
 }
 
 variable "allow_destroy" {
   description = "Allow destruction of the bucket (should be false for prod)"
   type        = bool
-  default     = true  # Dev can be destroyed easily
+  default     = false  # ⚠️ PROD: Prevent accidental deletion!
 }
 
 variable "sse_algorithm" {
   description = "Server-side encryption algorithm for S3 (AES256 or aws:kms)"
   type        = string
   default     = "AES256"
+  # Consider using "aws:kms" for production with a customer-managed KMS key
 }
 
 variable "lifecycle_rules" {
@@ -68,7 +69,7 @@ variable "lifecycle_rules" {
 variable "dynamodb_table_name" {
   description = "Name of the DynamoDB table for state locking"
   type        = string
-  default     = "hyperswitch-dev-terraform-state-lock"
+  default     = "hyperswitch-prod-terraform-state-lock"
 
   # Note: Should match the naming convention of your state bucket
 }
@@ -82,7 +83,7 @@ variable "dynamodb_billing_mode" {
 variable "enable_dynamodb_pitr" {
   description = "Enable point-in-time recovery for DynamoDB table"
   type        = bool
-  default     = false  # Can be enabled for additional safety in prod
+  default     = true  # ⚠️ PROD: Enable PITR for additional safety!
 }
 
 # ============================================================================

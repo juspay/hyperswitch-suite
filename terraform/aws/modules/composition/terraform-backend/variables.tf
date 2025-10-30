@@ -1,21 +1,15 @@
-# ============================================================================
-# General Configuration
-# ============================================================================
-
-variable "region" {
-  description = "AWS region for the state bucket and DynamoDB table"
-  type        = string
-  default     = "eu-central-1"
-}
-
 variable "environment" {
-  description = "Environment name"
+  description = "Environment name (dev, integ, prod, sandbox)"
   type        = string
-  default     = "dev"
+
+  validation {
+    condition     = contains(["dev", "integ", "prod", "sandbox"], var.environment)
+    error_message = "Environment must be one of: dev, integ, prod, sandbox"
+  }
 }
 
 variable "project_name" {
-  description = "Project name for tagging resources"
+  description = "Project name for tagging and naming resources"
   type        = string
   default     = "hyperswitch"
 }
@@ -27,22 +21,29 @@ variable "project_name" {
 variable "state_bucket_name" {
   description = "Name of the S3 bucket for Terraform state (must be globally unique)"
   type        = string
-  default     = "hyperswitch-dev-terraform-state"
-
-  # Note: S3 bucket names must be globally unique
-  # If this name is taken, add a suffix like: hyperswitch-dev-terraform-state-YOURNAME
 }
 
 variable "allow_destroy" {
   description = "Allow destruction of the bucket (should be false for prod)"
   type        = bool
-  default     = true  # Dev can be destroyed easily
+  default     = false
 }
 
 variable "sse_algorithm" {
   description = "Server-side encryption algorithm for S3 (AES256 or aws:kms)"
   type        = string
   default     = "AES256"
+
+  validation {
+    condition     = contains(["AES256", "aws:kms"], var.sse_algorithm)
+    error_message = "SSE algorithm must be either AES256 or aws:kms"
+  }
+}
+
+variable "kms_master_key_id" {
+  description = "KMS key ID for S3 encryption (required if sse_algorithm is aws:kms)"
+  type        = string
+  default     = null
 }
 
 variable "lifecycle_rules" {
@@ -68,21 +69,41 @@ variable "lifecycle_rules" {
 variable "dynamodb_table_name" {
   description = "Name of the DynamoDB table for state locking"
   type        = string
-  default     = "hyperswitch-dev-terraform-state-lock"
-
-  # Note: Should match the naming convention of your state bucket
 }
 
 variable "dynamodb_billing_mode" {
   description = "Billing mode for DynamoDB (PROVISIONED or PAY_PER_REQUEST)"
   type        = string
-  default     = "PAY_PER_REQUEST"  # Cost-effective for state locking
+  default     = "PAY_PER_REQUEST"  # Cost-effective for state locking workloads
+
+  validation {
+    condition     = contains(["PROVISIONED", "PAY_PER_REQUEST"], var.dynamodb_billing_mode)
+    error_message = "Billing mode must be either PROVISIONED or PAY_PER_REQUEST"
+  }
+}
+
+variable "dynamodb_read_capacity" {
+  description = "Read capacity units for DynamoDB (only used with PROVISIONED billing)"
+  type        = number
+  default     = 5
+}
+
+variable "dynamodb_write_capacity" {
+  description = "Write capacity units for DynamoDB (only used with PROVISIONED billing)"
+  type        = number
+  default     = 5
 }
 
 variable "enable_dynamodb_pitr" {
   description = "Enable point-in-time recovery for DynamoDB table"
   type        = bool
-  default     = false  # Can be enabled for additional safety in prod
+  default     = false  # Can be enabled for prod environments
+}
+
+variable "dynamodb_kms_key_arn" {
+  description = "ARN of KMS key for DynamoDB encryption (null uses AWS managed key)"
+  type        = string
+  default     = null
 }
 
 # ============================================================================

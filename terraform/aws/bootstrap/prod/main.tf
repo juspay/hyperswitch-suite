@@ -1,8 +1,8 @@
 # ============================================================================
-# Terraform Backend Bootstrap - Development Environment
+# Terraform Backend Bootstrap - Production Environment
 # ============================================================================
 # This creates the S3 bucket and DynamoDB table needed for Terraform remote
-# state management and locking for the development environment.
+# state management and locking for the production environment.
 #
 # Run this FIRST before setting up any other infrastructure:
 #   terraform init
