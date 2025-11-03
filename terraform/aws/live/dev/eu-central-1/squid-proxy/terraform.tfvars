@@ -1,28 +1,54 @@
-# Development Environment - EU Central 1 - Squid Proxy
-# This file contains actual values for the dev environment
+# ============================================================================
+# Development Environment - EU Central 1 - Squid Proxy Configuration
+# ============================================================================
+# This file contains configuration values for the dev environment
+# Modify values as needed for your deployment
+# ============================================================================
 
+# ============================================================================
+# Environment & Project Configuration
+# ============================================================================
 environment  = "dev"
 region       = "eu-central-1"
 project_name = "hyperswitch"
 
+# ============================================================================
 # Network Configuration
+# ============================================================================
 # TODO: Replace with your actual VPC and subnet IDs
-vpc_id = "vpc-083eba8b4449acaac"
+vpc_id = "vpc-XXXXXXXXXXXXX"  # Replace with your VPC ID
+
+# Subnets where Squid proxy instances will run (private subnets with NAT/IGW)
 proxy_subnet_ids = [
-  "subnet-052b7bdaa5f4a0da0", # Private subnet AZ1
-  "subnet-0753586349d51a032"  # Private subnet AZ2
+  "subnet-XXXXXXXXXXXXX",  # Private subnet AZ1
+  "subnet-XXXXXXXXXXXXX"   # Private subnet AZ2
 ]
+
+# Subnets where NLB will be placed (service/public subnets)
 lb_subnet_ids = [
-  "subnet-04bc85dcb23d4bf9a", # Service subnet AZ1
-  "subnet-045b4e843de773007"  # Service subnet AZ2
+  "subnet-XXXXXXXXXXXXX",  # Service subnet AZ1
+  "subnet-XXXXXXXXXXXXX"   # Service subnet AZ2
 ]
 
 # EKS Configuration
-# TODO: Replace with your actual EKS security group ID
-eks_security_group_id = "sg-0e29889cc389fdcda"
+# TODO: Replace with your actual EKS worker security group ID
+eks_security_group_id = "sg-XXXXXXXXXXXXX"  # Replace with your EKS worker security group ID
 
-# Squid Configuration
-squid_port = 3128
+# EKS Worker Node Subnet CIDRs
+# IMPORTANT: NLB preserves source IP, so we need to allow traffic from EKS worker subnets
+# These are the subnets where your EKS worker nodes (and pods) run
+# To find these subnets:
+#   aws ec2 describe-subnets --filters "Name=vpc-id,Values=YOUR_VPC_ID" \
+#     --query 'Subnets[?contains(Tags[?Key==`Name`].Value|[0], `eks-worker`)].{CIDR:CidrBlock,Name:Tags[?Key==`Name`].Value|[0]}'
+eks_worker_subnet_cidrs = [
+  "10.0.X.0/22",   # eks-worker-nodes-one-zoneSubnet1 (AZ1) - Replace with your CIDR
+  "10.0.X.0/22"    # eks-worker-nodes-one-zoneSubnet2 (AZ2) - Replace with your CIDR
+]
+
+# ============================================================================
+# Squid Proxy Configuration
+# ============================================================================
+squid_port = 3128  # Standard Squid proxy port (don't change unless you know what you're doing)
 
 #=======================================================================
 # LAUNCH TEMPLATE CONFIGURATION
@@ -62,8 +88,8 @@ use_existing_launch_template = false  # Set to true to use existing launch templ
 # EC2 Configuration (ignored if use_existing_launch_template = true)
 #=======================================================================
 # TODO: Replace with your actual AMI ID (Amazon Linux 2 or Ubuntu)
-ami_id        = "ami-08d31f74c5093410c" # squid ami id
-instance_type = "t3.small"               # Smaller instance for dev
+ami_id        = "ami-XXXXXXXXXXXXXXXXX"  # Replace with your Squid AMI ID
+instance_type = "t3.small"                # Smaller instance for dev
 
 #=======================================================================
 
@@ -73,16 +99,42 @@ max_size         = 2
 desired_capacity = 1
 
 # S3 Configuration
-# TODO: Create this bucket first or reference existing one
-config_bucket_name = "app-proxy-config-225681119357-eu-central-1"
-config_bucket_arn  = "arn:aws:s3:::app-proxy-config-225681119357-eu-central-1"
+# Create a new S3 bucket for configuration files (dev environment)
+create_config_bucket = true  # Automatically creates bucket: dev-hyperswitch-squid-config-<account-id>-eu-central-1
+
+# NOTE: If using existing bucket, set create_config_bucket = false and provide:
+# config_bucket_name = "app-proxy-config-225681119357-eu-central-1"
+# config_bucket_arn  = "arn:aws:s3:::app-proxy-config-225681119357-eu-central-1"
 
 # Monitoring
 enable_detailed_monitoring = false
 
-# Storage (ignored if use_existing_launch_template = true)
-root_volume_size = 20
-root_volume_type = "gp3"
+# ============================================================================
+# Storage Configuration (ignored if use_existing_launch_template = true)
+# ============================================================================
+# Configure root volume explicitly vs using AMI defaults
+#
+# Option 1: Explicit Storage Config (RECOMMENDED)
+#   configure_root_volume = true
+#   - Ensures consistent volume size across all instances
+#   - Uses gp3 (20% cheaper, better performance than gp2)
+#   - Guarantees encryption
+#   - Cost: ~$1.76/month per instance (20GB gp3)
+#
+# Option 2: Use AMI Defaults (NOT RECOMMENDED)
+#   configure_root_volume = false
+#   - Uses whatever volume config is in the AMI
+#   - No control over size, type, or encryption
+#   - Might be too small for logs (typical AMI = 8GB)
+#   - Cost savings: ~$0.70/month per instance
+#   - Risk: Disk full errors, inconsistent config
+#
+# Bottom line: $0.88/month extra is worth the peace of mind!
+# ============================================================================
+
+configure_root_volume = true  # Recommended: Keep this enabled!
+root_volume_size = 20         # GB - Enough for OS + Squid + logs
+root_volume_type = "gp3"      # Latest generation (cheaper + faster than gp2)
 
 #=======================================================================
 # LOAD BALANCER CONFIGURATION
@@ -102,10 +154,10 @@ root_volume_type = "gp3"
 #   - After apply, manually update existing NLB listener to forward to new target group
 #=======================================================================
 
-create_nlb       = false  # Set to true to create new NLB instead
+create_nlb       = true  # Set to true to create new NLB instead
 
 # Only needed when create_nlb = false (Mode 2)
-existing_lb_name = "squid-nlb"  # Comment out if create_nlb = true
+# existing_lb_name = "squid-nlb"  # Comment out if create_nlb = true
 
 # Note for Mode 2: After terraform apply, manually update the existing NLB listener's
 # default action to forward traffic to the target group ARN (check terraform outputs)
@@ -129,10 +181,10 @@ existing_lb_name = "squid-nlb"  # Comment out if create_nlb = true
 #   - You must manage the .pem file yourself
 #=======================================================================
 
-generate_ssh_key = false  # Set to false to use existing key
+generate_ssh_key = true  # Set to false to use existing key
 
 # Only used when generate_ssh_key = false
-key_name = "hyperswitch-squid-proxy-keypair-eu-central-1"
+# key_name = "hyperswitch-squid-proxy-keypair-eu-central-1"
 
 #=======================================================================
 # SSH ACCESS OPTIONS (when generate_ssh_key = true):
@@ -162,13 +214,15 @@ key_name = "hyperswitch-squid-proxy-keypair-eu-central-1"
 # S3 CONFIG UPLOAD
 #=======================================================================
 # Upload config files from ./config directory to S3
-upload_config_to_s3 = false  # Set to true to auto-upload configs
+# Git is the source of truth - any changes to files will trigger re-upload
+upload_config_to_s3 = true  # Automatically uploads configs from ./config directory
 
-# How to use:
-# 1. Place squid.conf and other configs in ./config/ directory
-# 2. Set upload_config_to_s3 = true
-# 3. Run terraform apply - configs will be uploaded to S3 automatically
-# 4. Userdata script will download them during instance initialization
+# How it works:
+# 1. Config files in ./config/ directory (squid.conf, whitelist.txt, etc.)
+# 2. When you run terraform apply, configs are uploaded to S3
+# 3. Changes to config files trigger automatic re-upload
+# 4. Userdata script downloads them during instance initialization
+# 5. Git is the source of truth for all configuration files
 
 #=======================================================================
 
@@ -256,7 +310,80 @@ instance_refresh_preferences = {
 
 #=======================================================================
 
+# ============================================================================
+# NLB LISTENER CONFIGURATION (TCP and TLS)
+# ============================================================================
+# Configure which listeners to enable on the Network Load Balancer
+#
+# TCP Listener (Port 80):
+#   - Unencrypted HTTP proxy traffic
+#   - Simple, no certificate needed
+#   - Good for testing or internal traffic
+#
+# TLS Listener (Port 443):
+#   - Encrypted HTTPS proxy traffic
+#   - Requires ACM certificate
+#   - Recommended for production
+#   - TLS termination at NLB (not mTLS)
+#
+# You can enable both listeners simultaneously!
+# ============================================================================
+
+# TCP Listener (Port 80) - Enabled by default
+enable_tcp_listener = true
+tcp_listener_port   = 80
+
+# TLS Listener (Port 443) - Disabled by default
+# To enable TLS:
+#   1. Request ACM certificate (see below)
+#   2. Set enable_tls_listener = true
+#   3. Add certificate ARN to tls_certificate_arn
+enable_tls_listener = false
+tls_listener_port   = 443
+
+# ACM Certificate ARN (required if enable_tls_listener = true)
+# How to get certificate:
+#   1. Request certificate in ACM:
+#      aws acm request-certificate \
+#        --domain-name "utils.outbound-dev.eu.juspay.net" \
+#        --validation-method DNS \
+#        --region eu-central-1
+#
+#   2. Validate via DNS (add CNAME record from ACM to your DNS)
+#
+#   3. Wait for status "ISSUED" (check with: aws acm describe-certificate)
+#
+#   4. Copy certificate ARN here:
+# tls_certificate_arn = "arn:aws:acm:eu-central-1:ACCOUNT_ID:certificate/CERT_ID"
+
+# SSL Policy for TLS Listener
+# ELBSecurityPolicy-TLS13-1-2-2021-06 = TLS 1.3 + TLS 1.2 (recommended)
+# See: https://docs.aws.amazon.com/elasticloadbalancing/latest/network/create-tls-listener.html#describe-ssl-policies
+tls_ssl_policy = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+
+# ALPN Policy (Application-Layer Protocol Negotiation)
+# "None" = Standard (recommended for proxy)
+# "HTTP2Preferred" = Prefer HTTP/2
+# "HTTP2Only" = Require HTTP/2
+tls_alpn_policy = "None"
+
+# ============================================================================
+# After enabling TLS, configure EKS pods with:
+# ============================================================================
+# env:
+#   - name: HTTP_PROXY
+#     value: "http://dev-hyperswitch-squid-nlb-XXXXX.elb.eu-central-1.amazonaws.com:80"
+#   - name: HTTPS_PROXY
+#     value: "https://dev-hyperswitch-squid-nlb-XXXXX.elb.eu-central-1.amazonaws.com:443"
+#   - name: NO_PROXY
+#     value: "localhost,127.0.0.1,.cluster.local,.svc,10.0.0.0/8,169.254.169.254"
+#
+# The NLB DNS name will be in terraform outputs: `terraform output proxy_endpoints`
+# ============================================================================
+
+# ============================================================================
 # Tags
+# ============================================================================
 common_tags = {
   Environment = "development"
   Project     = "hyperswitch"

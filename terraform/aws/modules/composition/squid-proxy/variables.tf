@@ -34,6 +34,16 @@ variable "eks_security_group_id" {
   type        = string
 }
 
+variable "eks_worker_subnet_cidrs" {
+  description = "List of CIDR blocks for EKS worker node subnets (required because NLB preserves source IP)"
+  type        = list(string)
+  default     = []
+
+  # Example: ["10.0.8.0/22", "10.0.12.0/22"]
+  # Note: These CIDRs are needed because Network Load Balancers preserve the client source IP,
+  # so traffic from EKS pods appears to come from the pod's IP address, not the security group.
+}
+
 variable "squid_port" {
   description = "Port for Squid proxy"
   type        = number
@@ -129,14 +139,22 @@ variable "desired_capacity" {
   default     = 1
 }
 
+variable "create_config_bucket" {
+  description = "Whether to create a new S3 bucket for configuration files (if false, use existing bucket)"
+  type        = bool
+  default     = false
+}
+
 variable "config_bucket_name" {
-  description = "Name of S3 bucket containing Squid configuration files"
+  description = "Name of S3 bucket containing Squid configuration files (required if create_config_bucket=false)"
   type        = string
+  default     = ""
 }
 
 variable "config_bucket_arn" {
-  description = "ARN of S3 bucket containing Squid configuration files"
+  description = "ARN of S3 bucket containing Squid configuration files (required if create_config_bucket=false)"
   type        = string
+  default     = ""
 }
 
 variable "upload_config_to_s3" {
@@ -157,14 +175,20 @@ variable "enable_detailed_monitoring" {
   default     = true
 }
 
+variable "configure_root_volume" {
+  description = "Whether to explicitly configure root volume. If false, uses AMI defaults (not recommended)"
+  type        = bool
+  default     = true
+}
+
 variable "root_volume_size" {
-  description = "Size of root EBS volume in GB"
+  description = "Size of root EBS volume in GB (only used if configure_root_volume=true)"
   type        = number
   default     = 30
 }
 
 variable "root_volume_type" {
-  description = "Type of root EBS volume"
+  description = "Type of root EBS volume (only used if configure_root_volume=true)"
   type        = string
   default     = "gp3"
 }
@@ -234,6 +258,61 @@ variable "existing_lb_security_group_id" {
 # When using an existing NLB, you have two options:
 # 1. Manually update the existing listener's default action to forward to the target group created by this module
 # 2. Use the existing target group by setting create_target_group=false and providing existing_tg_arn
+
+# =========================================================================
+# NLB Listener Configuration (TCP and TLS)
+# =========================================================================
+variable "enable_tcp_listener" {
+  description = "Enable TCP listener on the NLB (typically port 80 or 3128)"
+  type        = bool
+  default     = true
+}
+
+variable "tcp_listener_port" {
+  description = "Port for TCP listener (if enable_tcp_listener=true)"
+  type        = number
+  default     = 80
+}
+
+variable "enable_tls_listener" {
+  description = "Enable TLS listener on port 443 for encrypted proxy connections"
+  type        = bool
+  default     = false
+}
+
+variable "tls_listener_port" {
+  description = "Port for TLS listener (if enable_tls_listener=true)"
+  type        = number
+  default     = 443
+}
+
+variable "tls_certificate_arn" {
+  description = "ARN of ACM certificate for TLS listener (required if enable_tls_listener=true)"
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.enable_tls_listener == false || var.tls_certificate_arn != null
+    error_message = "tls_certificate_arn must be provided when enable_tls_listener is true"
+  }
+}
+
+variable "tls_ssl_policy" {
+  description = "SSL policy for TLS listener. Use ELBSecurityPolicy-TLS13-1-2-2021-06 for TLS 1.3 + 1.2 support"
+  type        = string
+  default     = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+}
+
+variable "tls_alpn_policy" {
+  description = "ALPN policy for TLS listener. Options: None, HTTP2Preferred, HTTP2Only"
+  type        = string
+  default     = "None"
+
+  validation {
+    condition     = contains(["None", "HTTP2Preferred", "HTTP2Only"], var.tls_alpn_policy)
+    error_message = "tls_alpn_policy must be one of: None, HTTP2Preferred, HTTP2Only"
+  }
+}
 
 # =========================================================================
 # Instance Refresh Configuration

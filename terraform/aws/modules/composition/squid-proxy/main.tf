@@ -71,15 +71,50 @@ module "logs_bucket" {
 }
 
 # =========================================================================
+# S3 Bucket for Squid Configuration (Optional - Create only if needed)
+# =========================================================================
+module "config_bucket" {
+  count  = var.create_config_bucket ? 1 : 0
+  source = "../../base/s3-bucket"
+
+  bucket_name       = "${local.name_prefix}-config-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
+  force_destroy     = var.environment != "prod" ? true : false
+  enable_versioning = true  # Enable versioning to track config changes
+
+  # Security best practices
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+
+  sse_algorithm = "AES256"
+
+  # Lifecycle rules for old versions
+  lifecycle_rules = [
+    {
+      id                             = "expire-old-config-versions"
+      enabled                        = true
+      prefix                         = ""
+      expiration_days                = null
+      noncurrent_version_expiration  = 90  # Keep old versions for 90 days
+      transition                     = []
+    }
+  ]
+
+  tags = local.common_tags
+}
+
+# =========================================================================
 # S3 Configuration Upload (Optional)
 # =========================================================================
 # Upload Squid configuration files from local directory to S3 config bucket
 # Only if upload_config_to_s3 is true
+# Git is the source of truth - any changes to files will trigger re-upload
 
 resource "aws_s3_object" "squid_config_files" {
   for_each = var.upload_config_to_s3 ? fileset(var.config_files_source_path, "**") : []
 
-  bucket = var.config_bucket_name
+  bucket = local.config_bucket_name
   key    = "squid/${each.value}"
   source = "${var.config_files_source_path}/${each.value}"
   etag   = filemd5("${var.config_files_source_path}/${each.value}")
@@ -118,8 +153,8 @@ module "squid_iam_role" {
             "s3:GetBucketLocation"
           ]
           Resource = [
-            var.config_bucket_arn,
-            "${var.config_bucket_arn}/*"
+            local.config_bucket_arn,
+            "${local.config_bucket_arn}/*"
           ]
         }
       ]
@@ -172,43 +207,17 @@ resource "aws_iam_instance_profile" "squid_profile" {
 }
 
 # =========================================================================
+# Data Sources for NLB Subnet CIDRs (for health check access)
+# =========================================================================
+data "aws_subnet" "lb_subnets" {
+  for_each = toset(var.lb_subnet_ids)
+  id       = each.value
+}
+
+# =========================================================================
 # Security Groups
 # =========================================================================
 
-# Security Group for Load Balancer (Only create if creating new NLB)
-module "lb_security_group" {
-  count  = var.create_nlb ? 1 : 0
-  source = "../../base/security-group"
-
-  name        = "${local.name_prefix}-lb-sg"
-  description = "Security group for Squid proxy load balancer"
-  vpc_id      = var.vpc_id
-
-  ingress_rules = [
-    {
-      description              = "Allow traffic from EKS cluster"
-      from_port                = var.squid_port
-      to_port                  = var.squid_port
-      protocol                 = "tcp"
-      source_security_group_id = var.eks_security_group_id
-    }
-  ]
-
-  egress_rules = [
-    {
-      description = "Allow traffic to Squid ASG instances"
-      from_port   = var.squid_port
-      to_port     = var.squid_port
-      protocol    = "tcp"
-      # This will be updated after ASG SG is created
-      cidr_blocks = ["0.0.0.0/0"] # Placeholder, will reference SG in real scenario
-    }
-  ]
-
-  tags = local.common_tags
-}
-
-# Security Group for Squid ASG Instances
 module "asg_security_group" {
   source = "../../base/security-group"
 
@@ -218,12 +227,11 @@ module "asg_security_group" {
 
   ingress_rules = [
     {
-      description              = "Allow traffic from Load Balancer"
+      description              = "Allow traffic from EKS cluster"
       from_port                = var.squid_port
       to_port                  = var.squid_port
       protocol                 = "tcp"
-      # Use existing LB SG if provided, otherwise use the newly created one
-      source_security_group_id = var.create_nlb ? module.lb_security_group[0].sg_id : var.existing_lb_security_group_id
+      source_security_group_id = var.eks_security_group_id
     }
   ]
 
@@ -248,12 +256,44 @@ module "asg_security_group" {
 }
 
 # =========================================================================
-# Security Group Rule: Allow Existing LB to communicate with ASG
+# Allow NLB Health Checks from LB Subnets
 # =========================================================================
-# When using an existing NLB, add an egress rule to the existing LB's security group
-# to allow traffic to the new ASG security group on squid_port
+# NLB health checks originate from the NLB's private IPs in the lb_subnet_ids
+# We need to allow traffic from those subnet CIDRs to the Squid port
+resource "aws_security_group_rule" "nlb_health_checks" {
+  for_each = var.create_target_group ? data.aws_subnet.lb_subnets : {}
+
+  type              = "ingress"
+  from_port         = var.squid_port
+  to_port           = var.squid_port
+  protocol          = "tcp"
+  cidr_blocks       = [each.value.cidr_block]
+  security_group_id = module.asg_security_group.sg_id
+
+  description = "Allow NLB health checks from LB subnet ${each.key}"
+}
+
+# =========================================================================
+# Allow Traffic from EKS Worker Node Subnets
+# =========================================================================
+# NLB preserves the client source IP, so traffic from EKS pods appears to come
+# from the pod's actual IP address (in the EKS worker subnet), not from a security group.
+# Therefore, we need to explicitly allow traffic from EKS worker subnet CIDRs.
+resource "aws_security_group_rule" "eks_worker_subnets" {
+  for_each = toset(var.eks_worker_subnet_cidrs)
+
+  type              = "ingress"
+  from_port         = var.squid_port
+  to_port           = var.squid_port
+  protocol          = "tcp"
+  cidr_blocks       = [each.value]
+  security_group_id = module.asg_security_group.sg_id
+
+  description = "Allow traffic from EKS worker subnet ${each.value}"
+}
+
 resource "aws_security_group_rule" "existing_lb_to_asg" {
-  count = var.create_nlb ? 0 : 1  # Only create when using existing NLB
+  count = !var.create_nlb && var.existing_lb_security_group_id != null ? 1 : 0
 
   type                     = "egress"
   from_port                = var.squid_port
@@ -275,7 +315,7 @@ module "nlb" {
   name            = "${local.name_prefix}-nlb"
   internal        = true
   subnets         = var.lb_subnet_ids
-  security_groups = [module.lb_security_group[0].sg_id]
+  security_groups = []
 
   enable_deletion_protection       = var.environment == "prod" ? true : false
   enable_cross_zone_load_balancing = true
@@ -312,16 +352,36 @@ module "target_group" {
 }
 
 # =========================================================================
-# Load Balancer Listener (Create only if creating new NLB)
+# Load Balancer Listeners (Create only if creating new NLB)
 # =========================================================================
-module "nlb_listener" {
-  count  = var.create_nlb ? 1 : 0
+
+# TCP Listener (Port 80 or custom) - Standard HTTP proxy traffic
+module "nlb_listener_tcp" {
+  count  = var.create_nlb && var.enable_tcp_listener ? 1 : 0
   source = "../../base/nlb-listener"
 
-  name                = local.name_prefix
+  name                = "${local.name_prefix}-tcp"
   load_balancer_arn   = module.nlb[0].nlb_arn
-  port                = var.squid_port
+  port                = var.tcp_listener_port
   protocol            = "TCP"
+  target_group_arn    = var.create_target_group ? module.target_group[0].tg_arn : var.existing_tg_arn
+
+  tags = local.common_tags
+}
+
+# TLS Listener (Port 443) - Encrypted proxy traffic with certificate
+# This provides TLS termination at the NLB for secure communication from EKS to proxy
+module "nlb_listener_tls" {
+  count  = var.create_nlb && var.enable_tls_listener ? 1 : 0
+  source = "../../base/nlb-listener"
+
+  name                = "${local.name_prefix}-tls"
+  load_balancer_arn   = module.nlb[0].nlb_arn
+  port                = var.tls_listener_port
+  protocol            = "TLS"
+  ssl_policy          = var.tls_ssl_policy
+  certificate_arn     = var.tls_certificate_arn
+  alpn_policy         = var.tls_alpn_policy
   target_group_arn    = var.create_target_group ? module.target_group[0].tg_arn : var.existing_tg_arn
 
   tags = local.common_tags
@@ -356,8 +416,8 @@ module "launch_template" {
   ebs_optimized     = true
   enable_monitoring = var.enable_detailed_monitoring
 
-  # Root volume configuration
-  block_device_mappings = [
+  # Root volume configuration (optional - if disabled, uses AMI defaults)
+  block_device_mappings = var.configure_root_volume ? [
     {
       device_name = "/dev/xvda"
       ebs = {
@@ -367,7 +427,7 @@ module "launch_template" {
         encrypted             = true
       }
     }
-  ]
+  ] : []
 
   # IMDSv2 enforced (security best practice)
   metadata_options = {

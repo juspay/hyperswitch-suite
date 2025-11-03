@@ -42,11 +42,14 @@ module "envoy_proxy" {
   hyperswitch_cloudfront_dns = var.hyperswitch_cloudfront_dns
   internal_loadbalancer_dns  = var.internal_loadbalancer_dns
 
+  # S3 Config Bucket - create or use existing
+  create_config_bucket     = var.create_config_bucket
+  config_bucket_name       = var.config_bucket_name
+  config_bucket_arn        = var.config_bucket_arn
+
   # S3 Config Upload (optional)
   upload_config_to_s3      = var.upload_config_to_s3
   config_files_source_path = "${path.module}/config"
-  config_bucket_name       = var.config_bucket_name
-  config_bucket_arn        = var.config_bucket_arn
 
   # ASG configuration
   min_size         = var.min_size
@@ -59,6 +62,36 @@ module "envoy_proxy" {
   existing_tg_arn               = var.existing_tg_arn
   existing_lb_arn               = var.existing_lb_arn
   existing_lb_security_group_id = var.existing_lb_security_group_id
+
+  # SSL/TLS Configuration
+  enable_https_listener         = var.enable_https_listener
+  ssl_certificate_arn           = var.ssl_certificate_arn
+  ssl_policy                    = var.ssl_policy
+  enable_http_to_https_redirect = var.enable_http_to_https_redirect
+
+  # Advanced Listener Rules
+  listener_rules = var.listener_rules
+
+  # WAF Configuration
+  enable_waf      = var.enable_waf
+  waf_web_acl_arn = var.waf_web_acl_arn
+
+  # Target Group Configuration
+  target_group_protocol = var.target_group_protocol
+
+  # S3 VPC Endpoint
+  s3_vpc_endpoint_prefix_list_id = var.s3_vpc_endpoint_prefix_list_id
+
+  # Spot Instances Configuration
+  enable_spot_instances     = var.enable_spot_instances
+  spot_instance_percentage  = var.spot_instance_percentage
+  on_demand_base_capacity   = var.on_demand_base_capacity
+  spot_allocation_strategy  = var.spot_allocation_strategy
+  enable_capacity_rebalance = var.enable_capacity_rebalance
+
+  # ASG Advanced Configuration
+  termination_policies  = var.termination_policies
+  max_instance_lifetime = var.max_instance_lifetime
 
   # Instance Refresh (automatic rolling updates when config changes)
   enable_instance_refresh = var.enable_instance_refresh

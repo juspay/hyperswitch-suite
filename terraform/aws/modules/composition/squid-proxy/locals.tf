@@ -21,16 +21,20 @@ locals {
     }
   )
 
+  # Config bucket selection - use created or existing
+  config_bucket_name = var.create_config_bucket ? module.config_bucket[0].bucket_name : var.config_bucket_name
+  config_bucket_arn  = var.create_config_bucket ? module.config_bucket[0].bucket_arn : var.config_bucket_arn
+
   # Userdata templating - replace placeholders with actual values
   userdata_content = replace(
     replace(
       replace(
         var.custom_userdata,
-        "{{config_bucket}}", var.config_bucket_name
+        "{{config_bucket}}", local.config_bucket_name
       ),
       "{{logs_bucket}}", module.logs_bucket.bucket_id
     ),
-    "{{bucket-name}}", var.config_bucket_name
+    "{{bucket-name}}", local.config_bucket_name
   )
 
   # IAM role selection - use created or existing

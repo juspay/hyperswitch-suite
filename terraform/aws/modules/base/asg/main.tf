@@ -12,10 +12,37 @@ resource "aws_autoscaling_group" "this" {
   suspended_processes       = var.suspended_processes
   wait_for_capacity_timeout = var.wait_for_capacity_timeout
   enabled_metrics           = var.enabled_metrics
+  max_instance_lifetime     = var.max_instance_lifetime > 0 ? var.max_instance_lifetime : null
+  capacity_rebalance        = var.capacity_rebalance
 
-  launch_template {
-    id      = var.launch_template_id
-    version = var.launch_template_version
+  # Use either launch_template (simple) or mixed_instances_policy (spot + on-demand)
+  dynamic "launch_template" {
+    for_each = var.enable_mixed_instances_policy ? [] : [1]
+    content {
+      id      = var.launch_template_id
+      version = var.launch_template_version
+    }
+  }
+
+  # Mixed Instances Policy for Spot + On-Demand instances
+  dynamic "mixed_instances_policy" {
+    for_each = var.enable_mixed_instances_policy ? [1] : []
+    content {
+      launch_template {
+        launch_template_specification {
+          launch_template_id = var.launch_template_id
+          version            = var.launch_template_version
+        }
+      }
+
+      instances_distribution {
+        on_demand_base_capacity                  = var.mixed_instances_policy.on_demand_base_capacity
+        on_demand_percentage_above_base_capacity = var.mixed_instances_policy.on_demand_percentage_above_base_capacity
+        spot_allocation_strategy                 = var.mixed_instances_policy.spot_allocation_strategy
+        spot_instance_pools                      = var.mixed_instances_policy.spot_instance_pools
+        spot_max_price                           = var.mixed_instances_policy.spot_max_price != "" ? var.mixed_instances_policy.spot_max_price : null
+      }
+    }
   }
 
   # Base tag for ASG itself

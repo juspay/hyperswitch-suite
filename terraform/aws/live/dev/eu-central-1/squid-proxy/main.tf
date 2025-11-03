@@ -63,7 +63,9 @@ module "squid_proxy" {
   proxy_subnet_ids = var.proxy_subnet_ids
   lb_subnet_ids    = var.lb_subnet_ids
 
-  eks_security_group_id = var.eks_security_group_id
+  # EKS Configuration
+  eks_security_group_id    = var.eks_security_group_id
+  eks_worker_subnet_cidrs  = var.eks_worker_subnet_cidrs
 
   # Squid configuration
   squid_port      = var.squid_port
@@ -77,21 +79,23 @@ module "squid_proxy" {
   # Userdata with templating ({{config_bucket}} and {{logs_bucket}} will be replaced)
   custom_userdata = file("${path.module}/templates/userdata.sh")
 
+  # S3 Config Bucket - create or use existing
+  create_config_bucket = var.create_config_bucket
+  config_bucket_name   = var.config_bucket_name
+  config_bucket_arn    = var.config_bucket_arn
+
   # S3 Config Upload (optional)
-  upload_config_to_s3       = var.upload_config_to_s3
-  config_files_source_path  = "${path.module}/config"
+  upload_config_to_s3      = var.upload_config_to_s3
+  config_files_source_path = "${path.module}/config"
 
   # ASG configuration
   min_size         = var.min_size
   max_size         = var.max_size
   desired_capacity = var.desired_capacity
 
-  # S3 configuration
-  config_bucket_name = var.config_bucket_name
-  config_bucket_arn  = var.config_bucket_arn
-
-  # Monitoring
+  # Monitoring & Storage
   enable_detailed_monitoring = var.enable_detailed_monitoring
+  configure_root_volume      = var.configure_root_volume
   root_volume_size           = var.root_volume_size
   root_volume_type           = var.root_volume_type
 
@@ -117,6 +121,15 @@ module "squid_proxy" {
   # NOTE: When using existing NLB (create_nlb = false):
   # After terraform apply, manually update the existing NLB listener's default
   # action to forward to the newly created target group ARN (see outputs)
+
+  # NLB Listener Configuration (TCP and TLS)
+  enable_tcp_listener  = var.enable_tcp_listener
+  tcp_listener_port    = var.tcp_listener_port
+  enable_tls_listener  = var.enable_tls_listener
+  tls_listener_port    = var.tls_listener_port
+  tls_certificate_arn  = var.tls_certificate_arn
+  tls_ssl_policy       = var.tls_ssl_policy
+  tls_alpn_policy      = var.tls_alpn_policy
 
   # Instance Refresh Configuration
   enable_instance_refresh      = var.enable_instance_refresh

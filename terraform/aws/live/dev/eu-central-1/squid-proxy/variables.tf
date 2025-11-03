@@ -36,6 +36,12 @@ variable "eks_security_group_id" {
   type        = string
 }
 
+variable "eks_worker_subnet_cidrs" {
+  description = "List of CIDR blocks for EKS worker node subnets (required because NLB preserves source IP)"
+  type        = list(string)
+  default     = []
+}
+
 variable "squid_port" {
   description = "Squid proxy port"
   type        = number
@@ -96,14 +102,22 @@ variable "desired_capacity" {
   default     = 1
 }
 
+variable "create_config_bucket" {
+  description = "Whether to create a new S3 bucket for configuration files"
+  type        = bool
+  default     = false
+}
+
 variable "config_bucket_name" {
-  description = "S3 bucket name for configurations"
+  description = "S3 bucket name for configurations (required if create_config_bucket=false)"
   type        = string
+  default     = ""
 }
 
 variable "config_bucket_arn" {
-  description = "S3 bucket ARN for configurations"
+  description = "S3 bucket ARN for configurations (required if create_config_bucket=false)"
   type        = string
+  default     = ""
 }
 
 variable "enable_detailed_monitoring" {
@@ -112,14 +126,20 @@ variable "enable_detailed_monitoring" {
   default     = false
 }
 
+variable "configure_root_volume" {
+  description = "Whether to explicitly configure root volume. If false, uses AMI defaults (not recommended)"
+  type        = bool
+  default     = true
+}
+
 variable "root_volume_size" {
-  description = "Root volume size in GB"
+  description = "Root volume size in GB (only used if configure_root_volume=true)"
   type        = number
   default     = 20
 }
 
 variable "root_volume_type" {
-  description = "Root volume type"
+  description = "Root volume type (only used if configure_root_volume=true)"
   type        = string
   default     = "gp3"
 }
@@ -225,5 +245,50 @@ variable "instance_refresh_triggers" {
   description = "List of triggers that will start an instance refresh. Note: launch_template changes always trigger refresh automatically."
   type        = list(string)
   default     = []  # Empty - launch_template triggers are automatic
+}
+
+# =========================================================================
+# NLB Listener Configuration (TCP and TLS)
+# =========================================================================
+variable "enable_tcp_listener" {
+  description = "Enable TCP listener on the NLB (typically port 80)"
+  type        = bool
+  default     = true
+}
+
+variable "tcp_listener_port" {
+  description = "Port for TCP listener (if enable_tcp_listener=true)"
+  type        = number
+  default     = 80
+}
+
+variable "enable_tls_listener" {
+  description = "Enable TLS listener on port 443 for encrypted proxy connections"
+  type        = bool
+  default     = false
+}
+
+variable "tls_listener_port" {
+  description = "Port for TLS listener (if enable_tls_listener=true)"
+  type        = number
+  default     = 443
+}
+
+variable "tls_certificate_arn" {
+  description = "ARN of ACM certificate for TLS listener (required if enable_tls_listener=true)"
+  type        = string
+  default     = null
+}
+
+variable "tls_ssl_policy" {
+  description = "SSL policy for TLS listener. Use ELBSecurityPolicy-TLS13-1-2-2021-06 for TLS 1.3 + 1.2 support"
+  type        = string
+  default     = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+}
+
+variable "tls_alpn_policy" {
+  description = "ALPN policy for TLS listener. Options: None, HTTP2Preferred, HTTP2Only"
+  type        = string
+  default     = "None"
 }
 

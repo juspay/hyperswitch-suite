@@ -63,6 +63,21 @@ output "logs_bucket_arn" {
   value       = module.logs_bucket.bucket_arn
 }
 
+output "config_bucket_name" {
+  description = "Name of the S3 bucket for configuration (created or existing)"
+  value       = local.config_bucket_name
+}
+
+output "config_bucket_arn" {
+  description = "ARN of the S3 bucket for configuration (created or existing)"
+  value       = local.config_bucket_arn
+}
+
+output "config_bucket_created" {
+  description = "Whether config bucket was created by this module (true) or using existing (false)"
+  value       = var.create_config_bucket
+}
+
 output "iam_role_arn" {
   description = "ARN of the IAM role (created or existing)"
   value       = local.iam_role_arn

@@ -135,14 +135,22 @@ variable "desired_capacity" {
   default     = 1
 }
 
+variable "create_config_bucket" {
+  description = "Whether to create a new S3 bucket for configuration files"
+  type        = bool
+  default     = false
+}
+
 variable "config_bucket_name" {
-  description = "S3 bucket name for configurations"
+  description = "S3 bucket name for configurations (required if create_config_bucket=false)"
   type        = string
+  default     = ""
 }
 
 variable "config_bucket_arn" {
-  description = "S3 bucket ARN for configurations"
+  description = "S3 bucket ARN for configurations (required if create_config_bucket=false)"
   type        = string
+  default     = ""
 }
 
 variable "enable_detailed_monitoring" {
@@ -245,6 +253,161 @@ variable "existing_iam_instance_profile_name" {
   description = "Name of existing IAM instance profile to use (only if create_iam_role = false AND create_instance_profile = false)"
   type        = string
   default     = null
+}
+
+# =========================================================================
+# SSL/TLS Configuration
+# =========================================================================
+
+variable "enable_https_listener" {
+  description = "Enable HTTPS listener on port 443"
+  type        = bool
+  default     = false
+}
+
+variable "ssl_certificate_arn" {
+  description = "ARN of SSL certificate for HTTPS listener"
+  type        = string
+  default     = null
+}
+
+variable "ssl_policy" {
+  description = "SSL policy for HTTPS listener"
+  type        = string
+  default     = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+}
+
+variable "enable_http_to_https_redirect" {
+  description = "Enable HTTP to HTTPS redirect"
+  type        = bool
+  default     = false
+}
+
+# =========================================================================
+# Advanced Listener Rules
+# =========================================================================
+
+variable "listener_rules" {
+  description = "Advanced listener rules for header-based routing"
+  type = list(object({
+    priority = number
+    actions = list(object({
+      type             = string
+      target_group_arn = optional(string)
+      redirect = optional(object({
+        port        = string
+        protocol    = string
+        status_code = string
+      }))
+      fixed_response = optional(object({
+        content_type = string
+        message_body = optional(string)
+        status_code  = string
+      }))
+    }))
+    conditions = list(object({
+      host_header = optional(object({
+        values = list(string)
+      }))
+      http_header = optional(object({
+        http_header_name = string
+        values           = list(string)
+      }))
+      path_pattern = optional(object({
+        values = list(string)
+      }))
+      source_ip = optional(object({
+        values = list(string)
+      }))
+    }))
+  }))
+  default = []
+}
+
+# =========================================================================
+# WAF Configuration
+# =========================================================================
+
+variable "enable_waf" {
+  description = "Enable AWS WAF WebACL"
+  type        = bool
+  default     = false
+}
+
+variable "waf_web_acl_arn" {
+  description = "ARN of AWS WAFv2 WebACL"
+  type        = string
+  default     = null
+}
+
+# =========================================================================
+# Target Group Configuration
+# =========================================================================
+
+variable "target_group_protocol" {
+  description = "Protocol for target group (HTTP or HTTPS)"
+  type        = string
+  default     = "HTTP"
+}
+
+# =========================================================================
+# VPC Endpoint Configuration
+# =========================================================================
+
+variable "s3_vpc_endpoint_prefix_list_id" {
+  description = "Prefix list ID for S3 VPC endpoint"
+  type        = string
+  default     = null
+}
+
+# =========================================================================
+# Spot Instances Configuration
+# =========================================================================
+
+variable "enable_spot_instances" {
+  description = "Enable mixed instances policy with spot instances"
+  type        = bool
+  default     = false
+}
+
+variable "spot_instance_percentage" {
+  description = "Percentage of spot instances (0-100)"
+  type        = number
+  default     = 50
+}
+
+variable "on_demand_base_capacity" {
+  description = "Minimum number of on-demand instances"
+  type        = number
+  default     = 1
+}
+
+variable "spot_allocation_strategy" {
+  description = "Strategy for allocating spot instances"
+  type        = string
+  default     = "capacity-optimized"
+}
+
+variable "enable_capacity_rebalance" {
+  description = "Enable capacity rebalancing for spot instances"
+  type        = bool
+  default     = false
+}
+
+# =========================================================================
+# ASG Advanced Configuration
+# =========================================================================
+
+variable "termination_policies" {
+  description = "List of policies for instance termination"
+  type        = list(string)
+  default     = ["OldestLaunchTemplate", "OldestInstance", "Default"]
+}
+
+variable "max_instance_lifetime" {
+  description = "Maximum lifetime of instances in seconds (0 = no limit)"
+  type        = number
+  default     = 0
 }
 
 variable "common_tags" {

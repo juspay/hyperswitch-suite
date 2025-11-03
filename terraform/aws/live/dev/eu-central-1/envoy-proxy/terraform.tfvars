@@ -6,14 +6,14 @@ project_name = "hyperswitch"
 
 # Network Configuration
 # TODO: Replace with your actual VPC and subnet IDs
-vpc_id = "vpc-083eba8b4449acaac"
+vpc_id = "vpc-XXXXXXXXXXXXX"  # Replace with your VPC ID
 proxy_subnet_ids = [
-  "subnet-0095f1439ed2a59fc",
-  "subnet-0846e9cb642f9c7b9"
+  "subnet-XXXXXXXXXXXXX",  # Proxy subnet AZ1
+  "subnet-XXXXXXXXXXXXX"   # Proxy subnet AZ2
 ]
 lb_subnet_ids = [
-  "subnet-05ca7c5af3dbef091",
-  "subnet-0015119340b5e7835"
+  "subnet-XXXXXXXXXXXXX",  # ALB subnet AZ1
+  "subnet-XXXXXXXXXXXXX"   # ALB subnet AZ2
 ]
 
 # NOTE: EKS Security Group ID is NOT needed for Envoy proxy
@@ -63,7 +63,7 @@ use_existing_launch_template = false  # Set to true to use existing launch templ
 # EC2 Configuration (ignored if use_existing_launch_template = true)
 #=======================================================================
 # TODO: Replace with your actual AMI ID
-ami_id        = "ami-0d600a369f03fe0c7"
+ami_id        = "ami-XXXXXXXXXXXXXXXXX"  # Replace with your Envoy AMI ID
 instance_type = "t3.small"
 
 # Auto Scaling Configuration
@@ -72,9 +72,12 @@ max_size         = 2
 desired_capacity = 1
 
 # S3 Configuration
-# TODO: Create this bucket first
-config_bucket_name = "app-proxy-config-225681119357-eu-central-1"
-config_bucket_arn  = "arn:aws:s3:::app-proxy-config-225681119357-eu-central-1"
+# Create a new S3 bucket for configuration files (dev environment)
+create_config_bucket = true  # Automatically creates bucket: dev-hyperswitch-envoy-config-<account-id>-eu-central-1
+
+# NOTE: If using existing bucket, set create_config_bucket = false and provide:
+# config_bucket_name = "app-proxy-config-225681119357-eu-central-1"
+# config_bucket_arn  = "arn:aws:s3:::app-proxy-config-225681119357-eu-central-1"
 
 # Monitoring
 enable_detailed_monitoring = false
@@ -102,10 +105,10 @@ root_volume_type = "gp3"
 #   - You must manage the .pem file yourself
 #=======================================================================
 
-generate_ssh_key = false  # Set to false to use existing key
+generate_ssh_key = true  # Set to false to use existing key
 
 # Only used when generate_ssh_key = false
-key_name = "hyperswitch-envoy-proxy-keypair-eu-central-1"
+# key_name = "hyperswitch-envoy-proxy-keypair-eu-central-1"
 
 #=======================================================================
 # SSH ACCESS OPTIONS (when generate_ssh_key = true):
@@ -135,13 +138,15 @@ key_name = "hyperswitch-envoy-proxy-keypair-eu-central-1"
 # S3 CONFIG UPLOAD
 #=======================================================================
 # Upload config files from ./config directory to S3
-upload_config_to_s3 = false  # Set to true to auto-upload configs
+# Git is the source of truth - any changes to files will trigger re-upload
+upload_config_to_s3 = true  # Automatically uploads configs from ./config directory
 
-# How to use:
-# 1. Place envoy.yaml and other configs in ./config/ directory
-# 2. Set upload_config_to_s3 = true
-# 3. Run terraform apply - configs will be uploaded to S3 automatically
-# 4. Userdata script will download them during instance initialization
+# How it works:
+# 1. Config files in ./config/ directory (envoy.yaml, etc.)
+# 2. When you run terraform apply, configs are uploaded to S3
+# 3. Changes to config files trigger automatic re-upload
+# 4. Userdata script downloads them during instance initialization
+# 5. Git is the source of truth for all configuration files
 
 #=======================================================================
 # ENVOY CONFIGURATION TEMPLATING
@@ -149,8 +154,8 @@ upload_config_to_s3 = false  # Set to true to auto-upload configs
 # These values replace {{placeholders}} in config/envoy.yaml
 # TODO: Replace with your actual values
 
-hyperswitch_cloudfront_dns = ""  # e.g., "d1234567890.cloudfront.net"
-internal_loadbalancer_dns  = ""  # e.g., "internal-alb-123.eu-central-1.elb.amazonaws.com"
+hyperswitch_cloudfront_dns = "dXXXXXXXXXXXXX.cloudfront.net"  # Replace with your CloudFront distribution DNS
+internal_loadbalancer_dns  = "your-internal-alb-XXXXXXXXXX.eu-central-1.elb.amazonaws.com"  # Replace with your internal ALB DNS
 
 # Template placeholders in envoy.yaml:
 # {{hyperswitch_cloudfront_dns}} - Replaced with above value
@@ -195,13 +200,13 @@ enable_instance_refresh = true
 # Note: For production, consider adding HTTPS listener (port 443) with SSL cert
 #=======================================================================
 
-create_lb           = false  # Set to true to create new ALB
+create_lb           = true  # Set to true to create new ALB
 create_target_group = true  # Set to true to create new target group
 
 # Required when using existing ALB (create_lb = false)
 # TODO: Replace with your actual external ALB ARN and security group ID
-existing_lb_arn               = "arn:aws:elasticloadbalancing:eu-central-1:225681119357:loadbalancer/app/external-lb/a30fbd9d42141361"
-existing_lb_security_group_id = "sg-04399aafbd3bb9a18"  # Security group ID (not ARN) of existing external ALB
+# existing_lb_arn               = "arn:aws:elasticloadbalancing:eu-central-1:225681119357:loadbalancer/app/external-lb/a30fbd9d42141361"
+# existing_lb_security_group_id = "sg-04399aafbd3bb9a18"  # Security group ID (not ARN) of existing external ALB
 
 # Optional: Only needed if create_target_group = false (currently creating new target group)
 # existing_tg_arn = "arn:aws:elasticloadbalancing:eu-central-1:225681119357:targetgroup/your-envoy-tg/xxxxx"
@@ -230,6 +235,90 @@ create_iam_role = true  # Set to false to use existing IAM role
 # Only used when create_iam_role = false
 # existing_iam_role_name = "my-envoy-iam-role"
 # existing_iam_instance_profile_name = "my-envoy-instance-profile"
+
+#=======================================================================
+# SSL/TLS CONFIGURATION
+#=======================================================================
+# Enable HTTPS listener with SSL certificate
+enable_https_listener = false  # Set to true to enable HTTPS on port 443
+
+# Required if enable_https_listener = true
+# ssl_certificate_arn = "arn:aws:acm:eu-central-1:xxxxx:certificate/xxxxx"
+# ssl_policy = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+
+# Enable HTTP to HTTPS redirect (requires enable_https_listener = true)
+enable_http_to_https_redirect = false
+
+#=======================================================================
+# ADVANCED LISTENER RULES
+#=======================================================================
+# Example: Header-based routing, path-based routing
+# Uncomment and modify as needed
+
+# listener_rules = [
+#   {
+#     priority = 1
+#     actions = [
+#       {
+#         type             = "forward"
+#         target_group_arn = "arn:aws:elasticloadbalancing:..."  # Your target group ARN
+#       }
+#     ]
+#     conditions = [
+#       {
+#         http_header = {
+#           http_header_name = "x-cloudfront-secret"
+#           values           = ["your-secret-value"]
+#         }
+#       }
+#     ]
+#   }
+# ]
+
+#=======================================================================
+# WAF CONFIGURATION
+#=======================================================================
+# Enable AWS WAF for additional security
+enable_waf = false
+
+# Required if enable_waf = true
+# waf_web_acl_arn = "arn:aws:wafv2:eu-central-1:xxxxx:regional/webacl/xxxxx"
+
+#=======================================================================
+# TARGET GROUP PROTOCOL
+#=======================================================================
+# Protocol for target group (HTTP or HTTPS)
+# Use HTTPS if Envoy is configured to listen on HTTPS
+target_group_protocol = "HTTP"
+
+#=======================================================================
+# S3 VPC ENDPOINT (Optional)
+#=======================================================================
+# Prefix list ID for S3 VPC endpoint for better security and performance
+# Find with: aws ec2 describe-prefix-lists --region eu-central-1
+# s3_vpc_endpoint_prefix_list_id = "pl-6ea54007"  # Example for eu-central-1
+
+#=======================================================================
+# SPOT INSTANCES CONFIGURATION
+#=======================================================================
+# Enable spot instances for cost savings (not recommended for production)
+enable_spot_instances = false
+
+# Spot instance configuration (only used if enable_spot_instances = true)
+spot_instance_percentage = 50  # 50% spot, 50% on-demand
+on_demand_base_capacity  = 1   # Always keep 1 on-demand instance
+spot_allocation_strategy = "capacity-optimized"
+enable_capacity_rebalance = false
+
+#=======================================================================
+# ASG ADVANCED CONFIGURATION
+#=======================================================================
+# Termination policies (order matters)
+termination_policies = ["OldestLaunchTemplate", "OldestInstance", "Default"]
+
+# Maximum instance lifetime in seconds (0 = no limit)
+# 604800 = 7 days, useful for forcing regular instance refresh
+max_instance_lifetime = 0
 
 #=======================================================================
 

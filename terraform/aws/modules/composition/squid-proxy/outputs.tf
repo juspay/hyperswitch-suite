@@ -18,6 +18,24 @@ output "target_group_arn" {
   value       = var.create_target_group ? module.target_group[0].tg_arn : var.existing_tg_arn
 }
 
+output "tcp_listener_arn" {
+  description = "ARN of the TCP listener (null if not created)"
+  value       = var.create_nlb && var.enable_tcp_listener ? module.nlb_listener_tcp[0].listener_arn : null
+}
+
+output "tls_listener_arn" {
+  description = "ARN of the TLS listener (null if not created)"
+  value       = var.create_nlb && var.enable_tls_listener ? module.nlb_listener_tls[0].listener_arn : null
+}
+
+output "proxy_endpoints" {
+  description = "Proxy endpoints for EKS pods to use"
+  value = var.create_nlb ? {
+    http_proxy  = var.enable_tcp_listener ? "http://${module.nlb[0].nlb_dns_name}:${var.tcp_listener_port}" : null
+    https_proxy = var.enable_tls_listener ? "https://${module.nlb[0].nlb_dns_name}:${var.tls_listener_port}" : null
+  } : null
+}
+
 output "launch_template_id" {
   description = "ID of the launch template (created or existing)"
   value       = local.launch_template_id
@@ -48,11 +66,6 @@ output "asg_security_group_id" {
   value       = module.asg_security_group.sg_id
 }
 
-output "lb_security_group_id" {
-  description = "Security group ID for load balancer (null if using existing NLB)"
-  value       = var.create_nlb ? module.lb_security_group[0].sg_id : null
-}
-
 output "logs_bucket_name" {
   description = "Name of the S3 bucket for logs"
   value       = module.logs_bucket.bucket_id
@@ -61,6 +74,21 @@ output "logs_bucket_name" {
 output "logs_bucket_arn" {
   description = "ARN of the S3 bucket for logs"
   value       = module.logs_bucket.bucket_arn
+}
+
+output "config_bucket_name" {
+  description = "Name of the S3 bucket for configuration (created or existing)"
+  value       = local.config_bucket_name
+}
+
+output "config_bucket_arn" {
+  description = "ARN of the S3 bucket for configuration (created or existing)"
+  value       = local.config_bucket_arn
+}
+
+output "config_bucket_created" {
+  description = "Whether config bucket was created by this module (true) or using existing (false)"
+  value       = var.create_config_bucket
 }
 
 output "iam_role_arn" {

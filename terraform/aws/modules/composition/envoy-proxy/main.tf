@@ -71,15 +71,50 @@ module "logs_bucket" {
 }
 
 # =========================================================================
+# S3 Bucket for Envoy Configuration (Optional - Create only if needed)
+# =========================================================================
+module "config_bucket" {
+  count  = var.create_config_bucket ? 1 : 0
+  source = "../../base/s3-bucket"
+
+  bucket_name       = "${local.name_prefix}-config-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
+  force_destroy     = var.environment != "prod" ? true : false
+  enable_versioning = true  # Enable versioning to track config changes
+
+  # Security best practices
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+
+  sse_algorithm = "AES256"
+
+  # Lifecycle rules for old versions
+  lifecycle_rules = [
+    {
+      id                             = "expire-old-config-versions"
+      enabled                        = true
+      prefix                         = ""
+      expiration_days                = null
+      noncurrent_version_expiration  = 90  # Keep old versions for 90 days
+      transition                     = []
+    }
+  ]
+
+  tags = local.common_tags
+}
+
+# =========================================================================
 # S3 Configuration Upload (Optional)
 # =========================================================================
 # Upload Envoy configuration files from local directory to S3 config bucket
 # Only if upload_config_to_s3 is true
+# Git is the source of truth - any changes to files will trigger re-upload
 
 resource "aws_s3_object" "envoy_config_files" {
   for_each = var.upload_config_to_s3 ? fileset(var.config_files_source_path, "**") : []
 
-  bucket = var.config_bucket_name
+  bucket = local.config_bucket_name
   key    = "envoy/${each.value}"
 
   # Use templated content for envoy.yaml, raw content for other files
@@ -118,8 +153,8 @@ module "envoy_iam_role" {
             "s3:GetBucketLocation"
           ]
           Resource = [
-            var.config_bucket_arn,
-            "${var.config_bucket_arn}/*"
+            local.config_bucket_arn,
+            "${local.config_bucket_arn}/*"
           ]
         }
       ]
@@ -185,24 +220,38 @@ module "lb_security_group" {
 
   ingress_rules = [
     {
-      description = "Allow HTTP from CloudFront/Internet"
+      description = "Allow HTTP from CloudFront/Internet (IPv4)"
       from_port   = var.alb_http_listener_port
       to_port     = var.alb_http_listener_port
       protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]  # CloudFront uses dynamic IPs, use prefix list if needed
+      cidr_blocks = ["0.0.0.0/0"]
     },
     {
-      description = "Allow HTTPS from CloudFront/Internet"
+      description      = "Allow HTTP from CloudFront/Internet (IPv6)"
+      from_port        = var.alb_http_listener_port
+      to_port          = var.alb_http_listener_port
+      protocol         = "tcp"
+      ipv6_cidr_blocks = ["::/0"]
+    },
+    {
+      description = "Allow HTTPS from CloudFront/Internet (IPv4)"
       from_port   = var.alb_https_listener_port
       to_port     = var.alb_https_listener_port
       protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]  # CloudFront uses dynamic IPs, use prefix list if needed
+      cidr_blocks = ["0.0.0.0/0"]
+    },
+    {
+      description      = "Allow HTTPS from CloudFront/Internet (IPv6)"
+      from_port        = var.alb_https_listener_port
+      to_port          = var.alb_https_listener_port
+      protocol         = "tcp"
+      ipv6_cidr_blocks = ["::/0"]
     }
   ]
 
   egress_rules = [
     {
-      description = "Allow traffic to Envoy ASG instances"
+      description = "Allow traffic to Envoy ASG instances on configured port"
       from_port   = var.envoy_traffic_port
       to_port     = var.envoy_traffic_port
       protocol    = "tcp"
@@ -244,36 +293,51 @@ module "asg_security_group" {
     ] : []
   )
 
-  egress_rules = [
-    {
-      description = "Allow traffic to Istio Internal LB"
-      from_port   = var.envoy_upstream_port
-      to_port     = var.envoy_upstream_port
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]  # Will be restricted by Istio ALB SG
-    },
-    {
-      description = "Allow HTTPS to S3 via VPC Gateway Endpoint"
-      from_port   = 443
-      to_port     = 443
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-    },
-    {
-      description = "Allow DNS UDP"
-      from_port   = 53
-      to_port     = 53
-      protocol    = "udp"
-      cidr_blocks = ["0.0.0.0/0"]
-    },
-    {
-      description = "Allow DNS TCP"
-      from_port   = 53
-      to_port     = 53
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-    }
-  ]
+  egress_rules = concat(
+    [
+      {
+        description = "Allow traffic to Istio Internal LB"
+        from_port   = var.envoy_upstream_port
+        to_port     = var.envoy_upstream_port
+        protocol    = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]  # Will be restricted by Istio ALB SG
+      },
+      {
+        description = "Allow DNS UDP"
+        from_port   = 53
+        to_port     = 53
+        protocol    = "udp"
+        cidr_blocks = ["0.0.0.0/0"]
+      },
+      {
+        description = "Allow DNS TCP"
+        from_port   = 53
+        to_port     = 53
+        protocol    = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+      }
+    ],
+    # Add S3 access rule - use VPC endpoint prefix list if provided, otherwise use 0.0.0.0/0
+    var.s3_vpc_endpoint_prefix_list_id != null ? [
+      {
+        description     = "Allow HTTPS to S3 via VPC Gateway Endpoint"
+        from_port       = 443
+        to_port         = 443
+        protocol        = "tcp"
+        prefix_list_ids = [var.s3_vpc_endpoint_prefix_list_id]
+        cidr_blocks     = []
+      }
+    ] : [
+      {
+        description     = "Allow HTTPS to S3"
+        from_port       = 443
+        to_port         = 443
+        protocol        = "tcp"
+        cidr_blocks     = ["0.0.0.0/0"]
+        prefix_list_ids = []
+      }
+    ]
+  )
 
   tags = local.common_tags
 }
@@ -349,7 +413,7 @@ module "target_group" {
 
   name        = "${local.name_prefix}-tg"
   port        = var.envoy_traffic_port
-  protocol    = "HTTP"  # ALB uses HTTP protocol
+  protocol    = var.target_group_protocol  # HTTP or HTTPS based on configuration
   vpc_id      = var.vpc_id
   target_type = "instance"
 
@@ -362,7 +426,7 @@ module "target_group" {
     timeout             = 5
     interval            = 30
     port                = tostring(var.envoy_health_check_port)  # Dedicated health check port
-    protocol            = "HTTP"
+    protocol            = "HTTP"  # Health check always uses HTTP
     path                = "/healthz"  # Envoy health check endpoint
     matcher             = "200"       # Expect 200 OK response
   }
@@ -373,13 +437,46 @@ module "target_group" {
 # =========================================================================
 # Load Balancer Listeners (Create only if creating new ALB)
 # =========================================================================
-# HTTP Listener - Main traffic from CloudFront
+
+# HTTP Listener - Conditional behavior based on HTTPS configuration
 resource "aws_lb_listener" "envoy_http" {
   count = var.create_lb ? 1 : 0
 
   load_balancer_arn = aws_lb.envoy[0].arn
   port              = var.alb_http_listener_port
   protocol          = "HTTP"
+
+  # If HTTPS is enabled and redirect is configured, redirect to HTTPS
+  # Otherwise, forward to target group
+  default_action {
+    type = var.enable_https_listener && var.enable_http_to_https_redirect ? "redirect" : "forward"
+
+    # Redirect configuration (only used if type = "redirect")
+    dynamic "redirect" {
+      for_each = var.enable_https_listener && var.enable_http_to_https_redirect ? [1] : []
+      content {
+        port        = tostring(var.alb_https_listener_port)
+        protocol    = "HTTPS"
+        status_code = "HTTP_301"
+      }
+    }
+
+    # Forward to target group (only used if type = "forward")
+    target_group_arn = var.enable_https_listener && var.enable_http_to_https_redirect ? null : (var.create_target_group ? module.target_group[0].tg_arn : var.existing_tg_arn)
+  }
+
+  tags = local.common_tags
+}
+
+# HTTPS Listener - SSL/TLS termination at ALB
+resource "aws_lb_listener" "envoy_https" {
+  count = var.create_lb && var.enable_https_listener ? 1 : 0
+
+  load_balancer_arn = aws_lb.envoy[0].arn
+  port              = var.alb_https_listener_port
+  protocol          = "HTTPS"
+  ssl_policy        = var.ssl_policy
+  certificate_arn   = var.ssl_certificate_arn
 
   default_action {
     type             = "forward"
@@ -389,24 +486,96 @@ resource "aws_lb_listener" "envoy_http" {
   tags = local.common_tags
 }
 
-# HTTPS Listener - Optional, requires SSL certificate
-# Uncomment if you want to terminate SSL at ALB
-# resource "aws_lb_listener" "envoy_https" {
-#   count = var.create_lb ? 1 : 0
-#
-#   load_balancer_arn = aws_lb.envoy[0].arn
-#   port              = var.alb_https_listener_port
-#   protocol          = "HTTPS"
-#   ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
-#   certificate_arn   = var.ssl_certificate_arn
-#
-#   default_action {
-#     type             = "forward"
-#     target_group_arn = var.create_target_group ? module.target_group[0].tg_arn : var.existing_tg_arn
-#   }
-#
-#   tags = local.common_tags
-# }
+# =========================================================================
+# Advanced Listener Rules (Header-based routing, path-based routing, etc.)
+# =========================================================================
+# Apply custom rules to HTTPS listener if enabled, otherwise to HTTP listener
+resource "aws_lb_listener_rule" "custom_rules" {
+  for_each = var.create_lb ? { for idx, rule in var.listener_rules : idx => rule } : {}
+
+  listener_arn = var.enable_https_listener ? aws_lb_listener.envoy_https[0].arn : aws_lb_listener.envoy_http[0].arn
+  priority     = each.value.priority
+
+  # Actions
+  dynamic "action" {
+    for_each = each.value.actions
+    content {
+      type             = action.value.type
+      target_group_arn = action.value.type == "forward" ? action.value.target_group_arn : null
+
+      # Redirect action
+      dynamic "redirect" {
+        for_each = action.value.type == "redirect" && action.value.redirect != null ? [action.value.redirect] : []
+        content {
+          port        = redirect.value.port
+          protocol    = redirect.value.protocol
+          status_code = redirect.value.status_code
+        }
+      }
+
+      # Fixed response action
+      dynamic "fixed_response" {
+        for_each = action.value.type == "fixed-response" && action.value.fixed_response != null ? [action.value.fixed_response] : []
+        content {
+          content_type = fixed_response.value.content_type
+          message_body = fixed_response.value.message_body
+          status_code  = fixed_response.value.status_code
+        }
+      }
+    }
+  }
+
+  # Conditions
+  dynamic "condition" {
+    for_each = each.value.conditions
+    content {
+      # Host header condition
+      dynamic "host_header" {
+        for_each = condition.value.host_header != null ? [condition.value.host_header] : []
+        content {
+          values = host_header.value.values
+        }
+      }
+
+      # HTTP header condition
+      dynamic "http_header" {
+        for_each = condition.value.http_header != null ? [condition.value.http_header] : []
+        content {
+          http_header_name = http_header.value.http_header_name
+          values           = http_header.value.values
+        }
+      }
+
+      # Path pattern condition
+      dynamic "path_pattern" {
+        for_each = condition.value.path_pattern != null ? [condition.value.path_pattern] : []
+        content {
+          values = path_pattern.value.values
+        }
+      }
+
+      # Source IP condition
+      dynamic "source_ip" {
+        for_each = condition.value.source_ip != null ? [condition.value.source_ip] : []
+        content {
+          values = source_ip.value.values
+        }
+      }
+    }
+  }
+
+  tags = local.common_tags
+}
+
+# =========================================================================
+# WAF Web ACL Association
+# =========================================================================
+resource "aws_wafv2_web_acl_association" "envoy_alb" {
+  count = var.create_lb && var.enable_waf ? 1 : 0
+
+  resource_arn = aws_lb.envoy[0].arn
+  web_acl_arn  = var.waf_web_acl_arn
+}
 
 # =========================================================================
 # Launch Template (Conditional - Create only if not using existing)
@@ -481,6 +650,8 @@ module "asg" {
   target_group_arns         = [var.create_target_group ? module.target_group[0].tg_arn : var.existing_tg_arn]
   health_check_type         = "ELB"
   health_check_grace_period = 300
+  termination_policies      = var.termination_policies
+  max_instance_lifetime     = var.max_instance_lifetime
 
   enabled_metrics = [
     "GroupMinSize",
@@ -489,6 +660,17 @@ module "asg" {
     "GroupInServiceInstances",
     "GroupTotalInstances"
   ]
+
+  # Mixed Instances Policy (Spot + On-Demand)
+  enable_mixed_instances_policy = var.enable_spot_instances
+  mixed_instances_policy = {
+    on_demand_base_capacity                  = var.on_demand_base_capacity
+    on_demand_percentage_above_base_capacity = 100 - var.spot_instance_percentage
+    spot_allocation_strategy                 = var.spot_allocation_strategy
+    spot_instance_pools                      = 2
+    spot_max_price                           = ""  # Use default (on-demand price)
+  }
+  capacity_rebalance = var.enable_capacity_rebalance
 
   # Instance Refresh Configuration
   enable_instance_refresh      = var.enable_instance_refresh

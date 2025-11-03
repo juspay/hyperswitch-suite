@@ -112,6 +112,91 @@ variable "envoy_upstream_port" {
   }
 }
 
+# =========================================================================
+# SSL/TLS Configuration
+# =========================================================================
+
+variable "enable_https_listener" {
+  description = "Enable HTTPS listener on port 443 with SSL/TLS termination"
+  type        = bool
+  default     = false
+}
+
+variable "ssl_certificate_arn" {
+  description = "ARN of SSL certificate for HTTPS listener (required if enable_https_listener = true)"
+  type        = string
+  default     = null
+}
+
+variable "ssl_policy" {
+  description = "SSL policy for HTTPS listener"
+  type        = string
+  default     = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+}
+
+variable "enable_http_to_https_redirect" {
+  description = "Enable automatic redirect from HTTP to HTTPS (requires enable_https_listener = true)"
+  type        = bool
+  default     = false
+}
+
+# =========================================================================
+# Advanced Listener Rules Configuration
+# =========================================================================
+
+variable "listener_rules" {
+  description = "Advanced listener rules for header-based routing, path-based routing, etc."
+  type = list(object({
+    priority = number
+    actions = list(object({
+      type             = string
+      target_group_arn = optional(string)
+      redirect = optional(object({
+        port        = string
+        protocol    = string
+        status_code = string
+      }))
+      fixed_response = optional(object({
+        content_type = string
+        message_body = optional(string)
+        status_code  = string
+      }))
+    }))
+    conditions = list(object({
+      host_header = optional(object({
+        values = list(string)
+      }))
+      http_header = optional(object({
+        http_header_name = string
+        values           = list(string)
+      }))
+      path_pattern = optional(object({
+        values = list(string)
+      }))
+      source_ip = optional(object({
+        values = list(string)
+      }))
+    }))
+  }))
+  default = []
+}
+
+# =========================================================================
+# WAF Configuration
+# =========================================================================
+
+variable "enable_waf" {
+  description = "Enable AWS WAF WebACL association with ALB"
+  type        = bool
+  default     = false
+}
+
+variable "waf_web_acl_arn" {
+  description = "ARN of AWS WAFv2 WebACL to associate with ALB (required if enable_waf = true)"
+  type        = string
+  default     = null
+}
+
 variable "ami_id" {
   description = "AMI ID for Envoy instances (ignored if use_existing_launch_template = true)"
   type        = string
@@ -200,14 +285,93 @@ variable "desired_capacity" {
   default     = 1
 }
 
-variable "config_bucket_name" {
-  description = "Name of S3 bucket containing Envoy configuration files"
+# =========================================================================
+# Spot Instance Configuration
+# =========================================================================
+
+variable "enable_spot_instances" {
+  description = "Enable mixed instances policy with spot instances for cost optimization"
+  type        = bool
+  default     = false
+}
+
+variable "spot_instance_percentage" {
+  description = "Percentage of spot instances in the ASG (0-100). Remaining will be on-demand."
+  type        = number
+  default     = 50
+
+  validation {
+    condition     = var.spot_instance_percentage >= 0 && var.spot_instance_percentage <= 100
+    error_message = "Spot instance percentage must be between 0 and 100"
+  }
+}
+
+variable "on_demand_base_capacity" {
+  description = "Minimum number of on-demand instances to maintain (useful for baseline capacity)"
+  type        = number
+  default     = 1
+}
+
+variable "spot_allocation_strategy" {
+  description = "Strategy for allocating spot instances (lowest-price, capacity-optimized, capacity-optimized-prioritized)"
   type        = string
+  default     = "capacity-optimized"
+
+  validation {
+    condition     = contains(["lowest-price", "capacity-optimized", "capacity-optimized-prioritized"], var.spot_allocation_strategy)
+    error_message = "Spot allocation strategy must be one of: lowest-price, capacity-optimized, capacity-optimized-prioritized"
+  }
+}
+
+variable "on_demand_allocation_strategy" {
+  description = "Strategy for allocating on-demand instances (prioritized)"
+  type        = string
+  default     = "prioritized"
+}
+
+variable "enable_capacity_rebalance" {
+  description = "Enable capacity rebalancing for spot instances (launches replacement before termination)"
+  type        = bool
+  default     = false
+}
+
+# =========================================================================
+# ASG Advanced Configuration
+# =========================================================================
+
+variable "termination_policies" {
+  description = "List of policies to use when selecting instances to terminate (OldestLaunchTemplate, OldestInstance, Default, etc.)"
+  type        = list(string)
+  default     = ["OldestLaunchTemplate", "OldestInstance", "Default"]
+}
+
+variable "max_instance_lifetime" {
+  description = "Maximum lifetime of instances in seconds (0 = no limit, min 86400 = 24 hours)"
+  type        = number
+  default     = 0
+
+  validation {
+    condition     = var.max_instance_lifetime == 0 || var.max_instance_lifetime >= 86400
+    error_message = "Maximum instance lifetime must be 0 (disabled) or at least 86400 seconds (24 hours)"
+  }
+}
+
+variable "create_config_bucket" {
+  description = "Whether to create a new S3 bucket for configuration files (if false, use existing bucket)"
+  type        = bool
+  default     = false
+}
+
+variable "config_bucket_name" {
+  description = "Name of S3 bucket containing Envoy configuration files (required if create_config_bucket=false)"
+  type        = string
+  default     = ""
 }
 
 variable "config_bucket_arn" {
-  description = "ARN of S3 bucket containing Envoy configuration files"
+  description = "ARN of S3 bucket containing Envoy configuration files (required if create_config_bucket=false)"
   type        = string
+  default     = ""
 }
 
 variable "upload_config_to_s3" {
@@ -262,6 +426,27 @@ variable "create_target_group" {
   description = "Whether to create a new target group"
   type        = bool
   default     = true
+}
+
+variable "target_group_protocol" {
+  description = "Protocol for target group (HTTP or HTTPS)"
+  type        = string
+  default     = "HTTP"
+
+  validation {
+    condition     = contains(["HTTP", "HTTPS"], var.target_group_protocol)
+    error_message = "Target group protocol must be either HTTP or HTTPS"
+  }
+}
+
+# =========================================================================
+# VPC Endpoint Configuration
+# =========================================================================
+
+variable "s3_vpc_endpoint_prefix_list_id" {
+  description = "Prefix list ID for S3 VPC endpoint (e.g., pl-6ea54007). If not provided, will use 0.0.0.0/0 for S3 access."
+  type        = string
+  default     = null
 }
 
 variable "existing_lb_arn" {

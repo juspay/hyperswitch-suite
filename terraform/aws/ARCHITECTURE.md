@@ -1,382 +1,238 @@
-# Architecture Documentation
+# Terraform Architecture Documentation
 
-## System Architecture Diagram
+Production-ready Terraform infrastructure for Hyperswitch proxy services with modular, three-layer architecture.
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                          AWS Cloud (eu-central-1)                        │
-│                                                                           │
-│  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │                            VPC                                   │   │
-│  │                                                                  │   │
-│  │  ┌──────────────────────────┐  ┌──────────────────────────┐   │   │
-│  │  │  Service Layer Subnets   │  │  Proxy Layer Subnets     │   │   │
-│  │  │                          │  │                          │   │   │
-│  │  │  ┌────────────────┐     │  │  ┌────────────────┐     │   │   │
-│  │  │  │ Squid NLB      │     │  │  │ Squid ASG      │     │   │   │
-│  │  │  │                │─────┼──┼─▶│                │     │   │   │
-│  │  │  │ Port: 3128     │     │  │  │ t3.small       │     │   │   │
-│  │  │  └────────────────┘     │  │  │ Min: 1 Max: 2  │     │   │   │
-│  │  │         │               │  │  └────────────────┘     │   │   │
-│  │  │         │               │  │         │               │   │   │
-│  │  │  ┌────────────────┐     │  │         │ NAT Gateway   │   │   │
-│  │  │  │ Envoy NLB      │     │  │         ▼               │   │   │
-│  │  │  │                │─────┼──┼──▶ Internet           │   │   │
-│  │  │  │ Port: 10000    │     │  │                         │   │   │
-│  │  │  └────────────────┘     │  │  ┌────────────────┐     │   │   │
-│  │  │         │               │  │  │ Envoy ASG      │     │   │   │
-│  │  │         └───────────────┼──┼─▶│                │     │   │   │
-│  │  │                         │  │  │ t3.small       │     │   │   │
-│  │  │  ┌────────────────┐     │  │  │ Min: 1 Max: 2  │     │   │   │
-│  │  │  │ EKS Cluster    │     │  │  └────────────────┘     │   │   │
-│  │  │  │                │     │  │                          │   │   │
-│  │  │  │ ┌────┐ ┌────┐ │     │  │                          │   │   │
-│  │  │  │ │Pod │ │Pod │ │     │  │                          │   │   │
-│  │  │  │ └─┬──┘ └──┬─┘ │     │  │                          │   │   │
-│  │  │  │   │       │   │     │  │                          │   │   │
-│  │  │  │   └───┬───┘   │     │  │                          │   │   │
-│  │  │  └───────┼───────┘     │  │                          │   │   │
-│  │  │          │             │  │                          │   │   │
-│  │  └──────────┼─────────────┘  └──────────────────────────┘   │   │
-│  │             │                                                 │   │
-│  └─────────────┼─────────────────────────────────────────────────┘   │
-│                │                                                       │
-│                └──▶ HTTP(S) Proxy Traffic                            │
-│                                                                       │
-│  ┌──────────────────────────────────────────────────────────────┐   │
-│  │                      Supporting Services                      │   │
-│  │                                                               │   │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │   │
-│  │  │ S3: Configs  │  │ S3: Squid    │  │ S3: Envoy    │      │   │
-│  │  │              │  │    Logs      │  │    Logs      │      │   │
-│  │  └──────────────┘  └──────────────┘  └──────────────┘      │   │
-│  │                                                               │   │
-│  │  ┌──────────────┐  ┌──────────────┐                         │   │
-│  │  │ CloudWatch   │  │ IAM Roles    │                         │   │
-│  │  │ Metrics/Logs │  │ & Policies   │                         │   │
-│  │  └──────────────┘  └──────────────┘                         │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-└───────────────────────────────────────────────────────────────────────┘
-```
+## Module Architecture
 
-## Module Dependency Graph
+### Layer 1: Base Modules (`modules/base/`)
+
+Atomic AWS resource wrappers - reusable building blocks:
+- `asg/` - Auto Scaling Group with health checks and instance refresh
+- `security-group/` - Dynamic ingress/egress rules with CIDR and SG support
+- `s3-bucket/` - Encryption, versioning, lifecycle policies
+- `iam-role/` - IAM roles with managed and inline policies
+- `target-group/` - Load balancer target groups with health checks
+- `launch-template/` - EC2 launch configurations
+
+### Layer 2: Composition Modules (`modules/composition/`)
+
+Service orchestration combining base modules:
+
+**squid-proxy/**
+- Components: NLB + ASG + S3 (config/logs) + Security Groups + IAM
+- Features: Domain whitelisting, S3 config templating, EKS CIDR support, instance refresh
+- Purpose: Outbound HTTP/HTTPS proxy with domain filtering
+
+**envoy-proxy/**
+- Components: ALB + ASG + S3 (config/logs) + Security Groups + IAM
+- Features: Envoy.yaml templating, SSL termination, advanced routing, instance refresh
+- Purpose: Ingress proxy for CloudFront traffic
+
+### Layer 3: Live Deployments (`live/`)
+
+Environment-specific configurations:
+- `dev/` - Public reference with masked values, local state
+- `integ/` - Integration/UAT, remote state (S3 + DynamoDB)
+- `prod/` - Production, encrypted remote state (S3 + DynamoDB + KMS)
+- `sandbox/` - Experimentation, ephemeral resources
+
+## System Architecture
+
+### Squid Proxy Flow
 
 ```
-┌────────────────────────────────────────────────────────────────┐
-│                     Base Modules (Atomic)                       │
-├────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  ┌─────────────┐  ┌──────────────┐  ┌────────────────┐       │
-│  │    ASG      │  │ Target Group │  │Security Group  │       │
-│  └─────────────┘  └──────────────┘  └────────────────┘       │
-│                                                                 │
-│  ┌─────────────┐  ┌──────────────┐  ┌────────────────┐       │
-│  │  IAM Role   │  │  S3 Bucket   │  │Launch Template │       │
-│  └─────────────┘  └──────────────┘  └────────────────┘       │
-│                                                                 │
-└────────────────────────────────────────────────────────────────┘
-                           │
-                           │ Used by
-                           ▼
-┌────────────────────────────────────────────────────────────────┐
-│               Composition Modules (Orchestration)               │
-├────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  ┌──────────────────────────────────────────────────────┐     │
-│  │              Squid Proxy Module                      │     │
-│  │                                                       │     │
-│  │  • Uses: ASG + Target Group + SG + IAM + S3 + LT    │     │
-│  │  • Creates: NLB, Listener, Userdata                  │     │
-│  │  • Outputs: NLB DNS, ASG Name, Bucket ARN           │     │
-│  └──────────────────────────────────────────────────────┘     │
-│                                                                 │
-│  ┌──────────────────────────────────────────────────────┐     │
-│  │              Envoy Proxy Module                      │     │
-│  │                                                       │     │
-│  │  • Uses: ASG + Target Group + SG + IAM + S3 + LT    │     │
-│  │  • Creates: NLB, Listener, Userdata                  │     │
-│  │  • Outputs: NLB DNS, ASG Name, Bucket ARN           │     │
-│  └──────────────────────────────────────────────────────┘     │
-│                                                                 │
-└────────────────────────────────────────────────────────────────┘
-                           │
-                           │ Deployed by
-                           ▼
-┌────────────────────────────────────────────────────────────────┐
-│                  Live Deployments (Root Modules)                │
-├────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  dev/eu-central-1/squid-proxy/     ← Local Backend            │
-│  dev/eu-central-1/envoy-proxy/     ← Local Backend            │
-│                                                                 │
-│  integ/eu-central-1/squid-proxy/   ← S3 Backend               │
-│  integ/eu-central-1/envoy-proxy/   ← S3 Backend               │
-│                                                                 │
-│  prod/eu-central-1/squid-proxy/    ← S3 Backend (TODO)        │
-│  prod/eu-central-1/envoy-proxy/    ← S3 Backend (TODO)        │
-│                                                                 │
-└────────────────────────────────────────────────────────────────┘
+EKS Pod (10.0.10.180)
+  ↓ HTTP_PROXY=http://nlb:80
+Network Load Balancer (TCP/80 → 3128)
+  ↓ Preserves source IP
+Squid ASG (port 3128)
+  ↓ Checks whitelist.txt
+Internet (whitelisted domains only)
 ```
 
-## Data Flow
+**Key Points:**
+- NLB preserves source IP, requires CIDR-based security group rules
+- TCP listener on port 80, forwards to Squid on port 3128
+- Domain whitelist enforced from `config/whitelist.txt`
+- Multi-AZ deployment for high availability
 
-### Request Flow (Squid Proxy)
-
-```
-┌──────┐      ┌──────────┐      ┌──────────┐      ┌──────────┐
-│ EKS  │─────▶│ Squid    │─────▶│ Target   │─────▶│  Squid   │
-│ Pod  │      │   NLB    │      │  Group   │      │ Instance │
-└──────┘      └──────────┘      └──────────┘      └──────────┘
-                                                         │
-                                                         ▼
-                                                   ┌──────────┐
-                                                   │ Internet │
-                                                   └──────────┘
-```
-
-### Configuration Flow
+### Envoy Proxy Flow
 
 ```
-┌──────────┐      ┌──────────┐      ┌──────────┐
-│ S3 Config│─────▶│ Instance │─────▶│  Squid/  │
-│  Bucket  │      │ Userdata │      │  Envoy   │
-└──────────┘      └──────────┘      └──────────┘
-                       │
-                       ▼
-                  ┌──────────┐
-                  │ Downloads│
-                  │  Config  │
-                  └──────────┘
+CloudFront
+  ↓
+External ALB (HTTP/HTTPS)
+  ↓ SSL termination
+Envoy ASG (ports 80, 9901)
+  ↓ Advanced routing
+Internal ALB
+  ↓
+EKS Cluster
 ```
 
-### Logging Flow
-
-```
-┌──────────┐      ┌──────────┐      ┌──────────┐
-│  Squid/  │─────▶│   S3     │      │CloudWatch│
-│  Envoy   │      │  Logs    │      │   Logs   │
-│ Instance │      │  Bucket  │      └──────────┘
-└──────────┘      └──────────┘            ▲
-                       │                   │
-                       └───────────────────┘
-                        (Both destinations)
-```
-
-## State File Architecture
-
-```
-S3: hyperswitch-terraform-state
-│
-├── dev/
-│   └── eu-central-1/
-│       ├── squid-proxy/terraform.tfstate   (Isolated)
-│       └── envoy-proxy/terraform.tfstate   (Isolated)
-│
-├── integ/
-│   └── eu-central-1/
-│       ├── squid-proxy/terraform.tfstate   (Isolated)
-│       └── envoy-proxy/terraform.tfstate   (Isolated)
-│
-└── prod/
-    └── eu-central-1/
-        ├── squid-proxy/terraform.tfstate   (Isolated)
-        └── envoy-proxy/terraform.tfstate   (Isolated)
-
-Benefits:
-✓ Each deployment has separate state
-✓ Blast radius contained
-✓ Teams can work in parallel
-✓ No state conflicts
-```
+**Key Points:**
+- ALB handles SSL termination
+- Envoy.yaml templating for CloudFront DNS and Internal ALB DNS
+- Header-based and path-based routing
 
 ## Security Architecture
 
 ### Network Security
 
+**Squid ASG Security Group:**
 ```
-┌─────────────────────────────────────────────────────┐
-│                  Security Groups                     │
-├─────────────────────────────────────────────────────┤
-│                                                      │
-│  EKS SG ────▶ NLB SG ────▶ ASG SG ────▶ Internet   │
-│                                                      │
-│  Ingress Rules:                                     │
-│  • NLB SG: Port 3128 from EKS SG                   │
-│  • ASG SG: Port 3128 from NLB SG                   │
-│                                                      │
-│  Egress Rules:                                      │
-│  • ASG SG: Port 80/443 to 0.0.0.0/0                │
-│                                                      │
-└─────────────────────────────────────────────────────┘
+Inbound:
+- TCP 3128 from EKS worker subnet CIDRs (10.0.8.0/22, 10.0.12.0/22)
+- TCP 3128 from NLB subnet CIDRs (10.0.30.0/24, 10.0.31.0/24) for health checks
+
+Outbound:
+- TCP 80, 443 to 0.0.0.0/0 (internet access)
 ```
+
+**Why CIDR Rules?**
+NLB preserves client source IP. Traffic from pod (10.0.10.180) appears with pod IP at Squid instance. Security group references alone don't work - must explicitly allow EKS worker subnet CIDRs.
 
 ### IAM Security
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                    IAM Structure                     │
-├─────────────────────────────────────────────────────┤
-│                                                      │
-│  Instance Profile                                   │
-│       │                                             │
-│       ├─▶ IAM Role                                  │
-│           │                                         │
-│           ├─▶ Managed Policies:                    │
-│           │   • AmazonSSMManagedInstanceCore       │
-│           │   • CloudWatchAgentServerPolicy        │
-│           │                                         │
-│           └─▶ Inline Policies:                     │
-│               • S3 Config Read (GetObject)         │
-│               • S3 Logs Write (PutObject)          │
-│                                                      │
-└─────────────────────────────────────────────────────┘
+Instance Profile → IAM Role
+  ├─ Managed Policies: SSM access, CloudWatch logs/metrics
+  └─ Inline Policies:
+     - S3 Config Bucket: s3:GetObject (read-only)
+     - S3 Logs Bucket: s3:PutObject (write-only)
 ```
 
-## Deployment Strategy
+Least privilege: scoped to specific bucket ARNs only.
 
-### Environment Progression
+### Data Encryption
 
-```
-┌─────────┐      ┌─────────┐      ┌─────────┐
-│   DEV   │─────▶│  INTEG  │─────▶│  PROD   │
-└─────────┘      └─────────┘      └─────────┘
-    │                │                 │
-    │                │                 │
-Local Backend    S3 Backend      S3 Backend
-Small Instances  Medium Inst.    Large Inst.
-Min: 1           Min: 1          Min: 2
-No Monitoring    Monitoring      Full Monitor
-Fast Iteration   Integration     Stable/HA
-```
+- S3: AES256 encryption at rest, versioning enabled, public access blocked
+- Terraform State: S3 backend with encryption, DynamoDB locking
+- Transit: Internal VPC traffic unencrypted, HTTPS to internet
 
-### Change Management
+## Configuration Management
+
+### Instance Refresh (Zero Downtime)
 
 ```
-1. Develop in feature branch
-2. Test in dev environment
-3. Create PR for review
-4. Deploy to integ for integration testing
-5. After approval, deploy to prod
-6. Monitor and rollback if needed
+1. Update config files or terraform.tfvars
+2. terraform apply updates launch template
+3. ASG starts instance refresh
+4. Checkpoint at 50% (5 min wait for validation)
+5. Auto-continues or manual cancel
+6. All instances replaced with zero downtime
 ```
 
-## Scaling Architecture
-
-### Auto Scaling Configuration
+### Config Upload Flow
 
 ```
-Environment │ Min │ Max │ Desired │ Scale Up │ Scale Down
-────────────┼─────┼─────┼─────────┼──────────┼───────────
-dev         │  1  │  2  │    1    │ CPU>70%  │ CPU<30%
-integ       │  1  │  3  │    2    │ CPU>70%  │ CPU<30%
-prod        │  2  │  6  │    2    │ CPU>60%  │ CPU<40%
+Local files (config/squid.conf, whitelist.txt)
+  ↓ terraform apply
+S3 Config Bucket (MD5 tracking)
+  ↓ Instance launch/refresh
+User Data Script downloads from S3
+  ↓ Apply and restart service
+Instance becomes healthy
 ```
 
-### Cost Optimization
+## State Management
+
+### Structure
 
 ```
-┌──────────────────────────────────────────────────┐
-│            Cost Optimization Strategy             │
-├──────────────────────────────────────────────────┤
-│                                                   │
-│  Dev:                                            │
-│  • Instance: t3.small ($0.0208/hr)              │
-│  • ASG: 1 instance                               │
-│  • Cost: ~$15/month                              │
-│                                                   │
-│  Integ:                                          │
-│  • Instance: t3.medium ($0.0416/hr)             │
-│  • ASG: 2 instances                              │
-│  • Cost: ~$60/month                              │
-│                                                   │
-│  Prod:                                           │
-│  • Instance: t3.large ($0.0832/hr)              │
-│  • ASG: 2-6 instances (avg 2)                   │
-│  • Reserved Instances: 30% savings               │
-│  • Cost: ~$115/month                             │
-│                                                   │
-└──────────────────────────────────────────────────┘
+S3: hyperswitch-terraform-state-{env}
+├── {env}/{region}/squid-proxy/terraform.tfstate
+└── {env}/{region}/envoy-proxy/terraform.tfstate
+
+DynamoDB: terraform-state-lock-{env}
 ```
+
+Benefits: Isolated state per service, parallel development, limited blast radius.
+
+### Remote Backend
+
+```hcl
+terraform {
+  backend "s3" {
+    bucket         = "hyperswitch-terraform-state-prod"
+    key            = "prod/eu-central-1/squid-proxy/terraform.tfstate"
+    region         = "eu-central-1"
+    encrypt        = true
+    dynamodb_table = "terraform-state-lock-prod"
+    kms_key_id     = "arn:aws:kms:REGION:ACCOUNT:key/KEY-ID"  # Prod only
+  }
+}
+```
+
+## Environment Configuration
+
+| Environment | Instance Type | Capacity | Monitoring | State Backend | Use Case |
+|-------------|---------------|----------|------------|---------------|----------|
+| dev | t3.small | 1 (min:1, max:2) | Basic | Local | Testing, reference |
+| integ | t3.medium | 1-2 (min:1, max:3) | Detailed | S3+DynamoDB | Integration, UAT |
+| prod | t3.medium+ | 2+ (min:2, max:6) | Detailed | S3+DynamoDB+KMS | Production workloads |
+| sandbox | t3.micro | 0-1 (min:0, max:2) | Basic | Local/S3 | Experimentation |
+
+## Monitoring
+
+### Key Metrics
+
+**ASG:** DesiredCapacity, InServiceInstances, health status
+
+**EC2:** CPUUtilization, NetworkIn/Out, StatusCheckFailed
+
+**NLB:** HealthyHostCount, ActiveConnectionCount, TargetResponseTime
+
+**ALB:** RequestCount, HTTPCode_Target_2XX/4XX/5XX, TargetResponseTime
+
+### Logging
+
+- Application logs (Squid/Envoy access logs) → S3 with lifecycle policies
+- System logs → CloudWatch Logs
+- Retention: 90 days (prod), 30 days (dev/integ)
 
 ## Disaster Recovery
 
+### Recovery Scenarios
+
+| Scenario | Detection | Recovery | RTO |
+|----------|-----------|----------|-----|
+| Instance failure | CloudWatch (1-2 min) | ASG auto-replace (3-5 min) | 6 min |
+| AZ failure | Health checks (2 min) | ASG launch in healthy AZ (5-10 min) | 12 min |
+| Config rollback | Manual | S3 version revert + instance refresh | 10 min |
+| Complete ASG failure | Manual (3 min) | terraform apply (10-15 min) | 18 min |
+
 ### Backup Strategy
 
-```
-┌──────────────────────────────────────────────────┐
-│              Backup & Recovery                    │
-├──────────────────────────────────────────────────┤
-│                                                   │
-│  Terraform State:                                │
-│  • S3 versioning enabled                         │
-│  • 30-day version retention                      │
-│  • Cross-region replication (optional)           │
-│                                                   │
-│  Configuration Files:                            │
-│  • Stored in S3 config bucket                    │
-│  • Versioning enabled                            │
-│  • Lifecycle: 90 days                            │
-│                                                   │
-│  Logs:                                           │
-│  • S3 logs bucket                                │
-│  • Intelligent Tiering                           │
-│  • 90-day retention (prod)                       │
-│  • 30-day retention (dev/integ)                  │
-│                                                   │
-└──────────────────────────────────────────────────┘
-```
+- Terraform state: S3 versioning enabled, 30-day retention
+- Config files: S3 versioning, 90-day retention
+- Logs: Lifecycle policies, Intelligent Tiering
 
-### Recovery Time Objective (RTO)
+## Cost Optimization
 
-```
-Failure Scenario      │ Detection │ Recovery │ Total RTO
-──────────────────────┼───────────┼──────────┼──────────
-Instance Failure      │  1 min    │  5 min   │  6 min
-AZ Failure           │  2 min    │  10 min  │  12 min
-Complete ASG Loss    │  3 min    │  15 min  │  18 min
-Region Failure       │  5 min    │  60 min  │  65 min
-```
+### Instance Costs (eu-central-1)
 
-## Monitoring & Observability
+| Instance | vCPU | Memory | Cost/Hour | Monthly (1 instance) |
+|----------|------|--------|-----------|---------------------|
+| t3.micro | 2 | 1 GB | $0.0104 | ~$7.50 |
+| t3.small | 2 | 2 GB | $0.0208 | ~$15 |
+| t3.medium | 2 | 4 GB | $0.0416 | ~$30 |
+| t3.large | 2 | 8 GB | $0.0832 | ~$60 |
 
-### Metrics Collected
+Additional: NLB $0.0225/hour + data transfer costs
 
-```
-┌──────────────────────────────────────────────────┐
-│              CloudWatch Metrics                   │
-├──────────────────────────────────────────────────┤
-│                                                   │
-│  ASG Metrics:                                    │
-│  • GroupMinSize, GroupMaxSize                    │
-│  • GroupDesiredCapacity                          │
-│  • GroupInServiceInstances                       │
-│                                                   │
-│  Instance Metrics:                               │
-│  • CPUUtilization                                │
-│  • NetworkIn/NetworkOut                          │
-│  • MemoryUtilization (custom)                    │
-│                                                   │
-│  NLB Metrics:                                    │
-│  • ActiveConnectionCount                         │
-│  • ProcessedBytes                                │
-│  • HealthyHostCount                              │
-│                                                   │
-│  Custom Metrics:                                 │
-│  • Squid: Request Rate, Cache Hit Ratio         │
-│  • Envoy: Connection Count, Latency             │
-│                                                   │
-└──────────────────────────────────────────────────┘
-```
+### Strategies
 
-## Summary
+- **Dev/Sandbox:** Scale down during off-hours, minimal monitoring
+- **Prod:** Reserved Instances (30-50% savings), S3 Intelligent Tiering
+- **All:** Right-size based on metrics, lifecycle policies for logs
 
-This architecture provides:
+## Architecture Benefits
 
-✅ **Modularity**: Base modules reused across services
-✅ **Isolation**: Separate state files per deployment
-✅ **Scalability**: Auto Scaling based on demand
-✅ **Security**: Least privilege IAM, encrypted data
-✅ **Observability**: Comprehensive logging and monitoring
-✅ **Cost-Effective**: Right-sized instances per environment
-✅ **Disaster Recovery**: Backups and quick recovery
-✅ **Multi-Environment**: Dev, Integ, Prod support
+- **Modularity:** Reusable components, update once apply everywhere
+- **Security:** Least privilege IAM, encryption, network isolation
+- **Reliability:** Multi-AZ, health checks, auto-recovery
+- **Scalability:** ASG-based, handles demand spikes
+- **Zero Downtime:** Instance refresh with checkpoints
+- **Cost Efficiency:** Right-sized resources, lifecycle policies
+- **Isolation:** Separate state per deployment (blast radius control)

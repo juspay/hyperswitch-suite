@@ -159,3 +159,42 @@ variable "instance_refresh_triggers" {
   type        = list(string)
   default     = []  # Empty - launch_template triggers are automatic
 }
+
+# =========================================================================
+# Mixed Instances Policy (Spot + On-Demand)
+# =========================================================================
+variable "enable_mixed_instances_policy" {
+  description = "Enable mixed instances policy for spot and on-demand instances"
+  type        = bool
+  default     = false
+}
+
+variable "mixed_instances_policy" {
+  description = "Configuration for mixed instances policy (spot + on-demand)"
+  type = object({
+    on_demand_base_capacity                  = optional(number, 0)
+    on_demand_percentage_above_base_capacity = optional(number, 50)
+    spot_allocation_strategy                 = optional(string, "capacity-optimized")
+    spot_instance_pools                      = optional(number, 2)
+    spot_max_price                           = optional(string, "")
+  })
+  default = {
+    on_demand_base_capacity                  = 0
+    on_demand_percentage_above_base_capacity = 50
+    spot_allocation_strategy                 = "capacity-optimized"
+    spot_instance_pools                      = 2
+    spot_max_price                           = ""
+  }
+}
+
+variable "max_instance_lifetime" {
+  description = "Maximum lifetime of instances in seconds (0 = no limit)"
+  type        = number
+  default     = 0
+}
+
+variable "capacity_rebalance" {
+  description = "Enable capacity rebalancing for spot instances"
+  type        = bool
+  default     = false
+}
