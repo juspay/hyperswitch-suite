@@ -1,0 +1,178 @@
+[sources.squid_logs]
+  type = "file"
+  include = ["/var/log/squid/access.log"]
+  read_from = "end"
+
+[sources.systems_metrics]
+type = "host_metrics"
+collectors = [
+  "cpu",
+  "disk",
+  "filesystem",
+  "load",
+  "host",
+  "memory",
+  "network"
+]
+
+namespace = "squid"
+scrape_interval_secs = 10
+
+[transforms.systems_metrics_with_tags]
+  type = "aws_ec2_metadata"
+  inputs = [ "systems_metrics" ]
+  endpoint = "http://169.254.169.254"
+  fields = [ "tags" ]
+  refresh_interval_secs = 10
+  refresh_timeout_secs = 1
+  tags = [ "aws:ec2launchtemplate:version" ]
+
+
+[transforms.systems_metrics_with_tags_fix]
+type = "remap"
+inputs = ["systems_metrics_with_tags"]
+source = """
+  .tags.ltversion = del(.tags."tags[aws:ec2launchtemplate:version]")
+"""
+
+# Disabled Squid Prometheus metrics source due to authentication issues
+# [sources.squid_prom_metrics]
+# type = "prometheus_scrape"
+# endpoints = [ "http://localhost:3128/squid-internal-mgr/info" ]
+# scrape_interval_secs = 30
+
+# [transforms.squid_prom_metrics_with_tags]
+#   type = "aws_ec2_metadata"
+#   inputs = [ "squid_prom_metrics" ]
+#   endpoint = "http://169.254.169.254"
+#   fields = [ "tags" ]
+#   refresh_interval_secs = 10
+#   refresh_timeout_secs = 1
+#   tags = [ "aws:ec2launchtemplate:version" ]
+
+# [transforms.squid_prom_metrics_with_tags_fix]
+# type = "remap"
+# inputs = ["squid_prom_metrics_with_tags"]
+# source = """
+#   .tags.ltversion = del(.tags."tags[aws:ec2launchtemplate:version]")
+# """
+
+[transforms.squid_logs_with_tags]
+  type = "aws_ec2_metadata"
+  inputs = [ "squid_logs" ]
+  endpoint = "http://169.254.169.254"
+  fields = [ "tags" ]
+  refresh_interval_secs = 10
+  refresh_timeout_secs = 1
+  tags = [ "aws:ec2launchtemplate:version" ]
+
+[transforms.squid_logs_with_tags_fix]
+type = "remap"
+inputs = ["squid_logs_with_tags"]
+source = """
+  .ltversion = del(.tags."aws:ec2launchtemplate:version")
+"""
+
+[transforms.squid_logs_kafka]
+  type = "remap"
+  inputs = ["squid_logs_with_tags_fix"]
+  source = """
+  # Updated regex pattern for Squid 6.13 access log format
+  . |= parse_regex!(.message, r'^(?P<timestamp>\\d+\\.\\d+)\\s+(?P<response_time>\\d+)\\s+(?P<ip_address>\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})\\s+(?P<cache_status>\\S+)\\s+(?P<status_code>\\d+)\\s+(?P<request_method>\\w+)\\s+(?P<url>\\S+)\\s+(?P<user>\\S+)\\s+(?P<destination>\\S+)\\s+(?P<content_type>\\S+)$')
+
+  del(.query_string)
+  del(.message)
+  del(.file)
+"""
+
+[transforms.modify_logs]
+  type = "remap"
+  inputs = ["squid_logs_with_tags_fix"]
+  source = """
+  # Enhanced regex pattern for better Squid 6.13 log parsing
+  . |= parse_regex!(.message, r'^(?P<timestamp>\\d+\\.\\d+)\\s+(?P<response_time>\\d+)\\s+(?P<ip_address>\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})\\s+(?P<cache_status>\\S+)\\s+(?P<status_code>\\d+)\\s+(?P<request_method>\\w+)\\s+(?P<url>\\S+)\\s+(?P<user>\\S+)\\s+(?P<destination>\\S+)\\s+(?P<content_type>\\S+)$')
+
+  # Convert timestamp to proper format
+  .timestamp = parse_timestamp!(.timestamp, format: "%s.%f")
+  
+  del(.message)
+"""
+
+[transforms.metrics]
+  type = "log_to_metric"
+  inputs = ["modify_logs"]
+
+# Enhanced metrics for Squid 6.13
+[[transforms.metrics.metrics]]
+type = "counter"
+field = "url"
+namespace = "squid_metrics"
+name = "requests_total"
+tags.url = "{{ .url }}"
+tags.response_time = "{{ .response_time }}"
+tags.ip_address = "{{ .ip_address }}"
+tags.cache_status = "{{ .cache_status }}"
+tags.status_code = "{{ .status_code }}"
+tags.request_method = "{{ .request_method }}"
+tags.user = "{{ .user }}"
+tags.destination = "{{ .destination }}"
+tags.content_type = "{{ .content_type }}"
+tags.ltversion = "{{ .ltversion }}"
+
+# Additional histogram metric for response times
+[[transforms.metrics.metrics]]
+type = "histogram"
+field = "response_time"
+namespace = "squid_metrics"
+name = "response_time_seconds"
+buckets = [0.001, 0.01, 0.1, 0.5, 1.0, 2.5, 5.0, 10.0]
+tags.cache_status = "{{ .cache_status }}"
+tags.status_code = "{{ .status_code }}"
+tags.request_method = "{{ .request_method }}"
+
+[sinks.prom]
+  type = "prometheus_exporter"
+  inputs = ["metrics","systems_metrics_with_tags_fix"]
+  buckets = [0.001, 0.01, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30, 60, 120, 220, 300]
+  address = "0.0.0.0:9273"
+  # Increased flush period for better performance
+  flush_period_secs = 15
+
+#[sinks.sink_elasticsearch]
+#type = "elasticsearch"
+#inputs = ["modify_logs"]
+#mode = "bulk"
+#endpoints = ["{{elasticsearch_endpoint}}"]
+#auth.strategy = "aws"
+#aws.region = "us-east-1"
+#bulk.action = "index"
+#bulk.index = "squid"
+#compression = "gzip"
+#batch.max_events = 100
+#batch.timeout_secs = 5
+
+#[sinks.sink_loki]
+#type = "loki"
+#inputs = [ "modify_logs" ]
+#endpoint = "{{loki_endpoint}}"
+#encoding.codec = "json"
+#labels.job = "external/squid"
+#labels.version = "6.13"
+#labels.os = "amazon-linux-2023"
+#batch.max_events = 100
+#batch.timeout_secs = 5
+
+[sinks.sink_s3]
+type = "aws_s3"
+inputs = [ "modify_logs" ]
+bucket = "{{squid_logs_bucket}}"
+key_prefix = "squid-logs/%Y/%m/%d/"
+compression = "gzip"
+encoding.codec = "json"
+encoding.timestamp_format = "rfc3339"
+batch.max_bytes = 10485760
+batch.timeout_secs = 300
+request.retry_attempts = 3
+request.retry_initial_backoff_secs = 1
+request.retry_max_duration_secs = 10
+request.timeout_secs = 60
