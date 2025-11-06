@@ -66,6 +66,11 @@ module "squid_proxy" {
   # EKS Configuration
   eks_worker_subnet_cidrs  = var.eks_worker_subnet_cidrs
 
+  # Optional Security Group Access
+  external_jumpbox_sg_id = var.external_jumpbox_sg_id
+  prometheus_sg_id       = var.prometheus_sg_id
+  prometheus_port        = var.prometheus_port
+
   # Squid configuration
   squid_port      = var.squid_port
   ami_id          = var.ami_id

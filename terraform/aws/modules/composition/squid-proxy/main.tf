@@ -278,6 +278,38 @@ resource "aws_security_group_rule" "eks_worker_subnets" {
   description = "Allow traffic from EKS worker subnet ${each.value}"
 }
 
+# =========================================================================
+# Allow SSH Access from External Jumpbox (Optional)
+# =========================================================================
+resource "aws_security_group_rule" "ssh_from_jumpbox" {
+  count = var.external_jumpbox_sg_id != null ? 1 : 0
+
+  type                     = "ingress"
+  from_port                = 22
+  to_port                  = 22
+  protocol                 = "tcp"
+  source_security_group_id = var.external_jumpbox_sg_id
+  security_group_id        = module.asg_security_group.sg_id
+
+  description = "Allow SSH access from external jumpbox"
+}
+
+# =========================================================================
+# Allow Prometheus Metrics Scraping (Optional)
+# =========================================================================
+resource "aws_security_group_rule" "prometheus_metrics" {
+  count = var.prometheus_sg_id != null ? 1 : 0
+
+  type                     = "ingress"
+  from_port                = var.prometheus_port
+  to_port                  = var.prometheus_port
+  protocol                 = "tcp"
+  source_security_group_id = var.prometheus_sg_id
+  security_group_id        = module.asg_security_group.sg_id
+
+  description = "Allow Prometheus metrics scraping on port ${var.prometheus_port}"
+}
+
 resource "aws_security_group_rule" "existing_lb_to_asg" {
   count = !var.create_nlb && var.existing_lb_security_group_id != null ? 1 : 0
 

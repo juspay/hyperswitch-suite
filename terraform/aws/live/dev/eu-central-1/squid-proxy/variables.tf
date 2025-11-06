@@ -37,6 +37,24 @@ variable "eks_worker_subnet_cidrs" {
   default     = []
 }
 
+variable "external_jumpbox_sg_id" {
+  description = "Security group ID of external jumpbox for SSH access (optional)"
+  type        = string
+  default     = null
+}
+
+variable "prometheus_sg_id" {
+  description = "Security group ID of external Prometheus for metrics scraping (optional)"
+  type        = string
+  default     = null
+}
+
+variable "prometheus_port" {
+  description = "Port for Prometheus metrics scraping"
+  type        = number
+  default     = 9273
+}
+
 variable "squid_port" {
   description = "Squid proxy port"
   type        = number
