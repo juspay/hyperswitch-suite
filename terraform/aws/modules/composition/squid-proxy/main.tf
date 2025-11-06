@@ -124,26 +124,21 @@ resource "aws_s3_object" "squid_config_files" {
 }
 
 # =========================================================================
-# IAM Role for Proxy Instances (Conditional - Create only if needed)
+# IAM Role for Squid Proxy Instances (Conditional - Create only if needed)
 # =========================================================================
-module "proxy_iam_role" {
+module "squid_iam_role" {
   count  = var.create_iam_role ? 1 : 0
   source = "../../base/iam-role"
 
-  name                    = "${var.environment}-${var.project_name}-proxy-role"
-  description             = "IAM role for proxy instances (Squid/Envoy)"
+  name                    = "${var.environment}-${var.project_name}-squid-role"
+  description             = "IAM role for Squid proxy instances"
   service_identifiers     = ["ec2.amazonaws.com"]
   create_instance_profile = true
-
-  # Attach AWS managed policy for SSM access only
-  managed_policy_arns = [
-    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"  # For SSM access
-  ]
 
   # Restrictive inline policies
   inline_policies = {
     # CloudWatch - Restricted to PutMetricData only
-    proxy-cloudwatch-metrics = jsonencode({
+    squid-cloudwatch-metrics = jsonencode({
       Version = "2012-10-17"
       Statement = [
         {
@@ -158,7 +153,7 @@ module "proxy_iam_role" {
     })
 
     # S3 Config Bucket - Read-only access
-    proxy-config-bucket-read = jsonencode({
+    squid-config-bucket-read = jsonencode({
       Version = "2012-10-17"
       Statement = [
         {
@@ -177,7 +172,7 @@ module "proxy_iam_role" {
     })
 
     # S3 Logs Bucket - Write access for log archival
-    proxy-logs-bucket-write = jsonencode({
+    squid-logs-bucket-write = jsonencode({
       Version = "2012-10-17"
       Statement = [
         {

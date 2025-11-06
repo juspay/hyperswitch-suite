@@ -104,11 +104,11 @@ egress_rules = [
   #   protocol    = "tcp"
   #   sg_id       = ["sg-XXXXXXXXXXXXX"]
   # },
-  # Example 3: Allow outbound HTTPS to specific payment gateway subnet
+  # Example 3: Allow outbound to custom application on non-standard port
   # {
-  #   description = "Payment gateway endpoint"
-  #   from_port   = 443
-  #   to_port     = 443
+  #   description = "Custom API endpoint"
+  #   from_port   = 8443
+  #   to_port     = 8443
   #   protocol    = "tcp"
   #   cidr        = ["192.168.1.0/24"]
   # },
@@ -310,8 +310,8 @@ upload_config_to_s3 = true  # Automatically uploads configs from ./config direct
 #
 # OPTION 1: Create New IAM Role + Instance Profile (Current Setting) - RECOMMENDED
 #   create_iam_role = true
-#   - Terraform creates a restrictive IAM role: "dev-hyperswitch-proxy-role"
-#   - Shared role for all proxy types (Squid, Envoy, etc.)
+#   - Terraform creates a restrictive IAM role: "dev-hyperswitch-squid-role"
+#   - Dedicated role for Squid proxy instances
 #   - Minimal permissions following least-privilege principle:
 #     ✓ SSM access (AmazonSSMManagedInstanceCore)
 #     ✓ CloudWatch metrics only (cloudwatch:PutMetricData)
@@ -322,16 +322,16 @@ upload_config_to_s3 = true  # Automatically uploads configs from ./config direct
 # OPTION 2: Use Existing IAM Role + Create New Instance Profile
 #   create_iam_role = false
 #   create_instance_profile = true
-#   existing_iam_role_name = "dev-hyperswitch-proxy-role"
-#   - Reuses the shared proxy role across environments
+#   existing_iam_role_name = "dev-hyperswitch-squid-role"
+#   - Reuses existing Squid role across environments
 #   - Creates a NEW instance profile for this deployment's launch template
-#   - Best for: Sharing IAM roles across Squid/Envoy while keeping launch templates separate
+#   - Best for: Sharing IAM roles across environments while keeping launch templates separate
 #
 # OPTION 3: Use Existing IAM Role + Existing Instance Profile
 #   create_iam_role = false
 #   create_instance_profile = false
-#   existing_iam_role_name = "dev-hyperswitch-proxy-role"
-#   existing_iam_instance_profile_name = "my-proxy-instance-profile"
+#   existing_iam_role_name = "dev-hyperswitch-squid-role"
+#   existing_iam_instance_profile_name = "dev-hyperswitch-squid-instance-profile"
 #   - Uses both existing IAM role and instance profile
 #   - ⚠️ Warning: Instance profile can only be used by ONE launch template
 #=======================================================================
@@ -339,13 +339,13 @@ upload_config_to_s3 = true  # Automatically uploads configs from ./config direct
 create_iam_role = true  # Set to false to use existing IAM role
 
 # Only used when create_iam_role = false
-# existing_iam_role_name = "dev-hyperswitch-proxy-role"
+# existing_iam_role_name = "dev-hyperswitch-squid-role"
 
 # Only used when create_iam_role = false
 create_instance_profile = true  # Set to false to use existing instance profile
 
 # Only used when create_iam_role = false AND create_instance_profile = false
-# existing_iam_instance_profile_name = "dev-hyperswitch-proxy-instance-profile"
+# existing_iam_instance_profile_name = "dev-hyperswitch-squid-instance-profile"
 
 #=======================================================================
 # Instance Refresh Configuration
