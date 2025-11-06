@@ -71,6 +71,9 @@ module "squid_proxy" {
   prometheus_sg_id       = var.prometheus_sg_id
   prometheus_port        = var.prometheus_port
 
+  # Additional Egress Rules (environment-specific)
+  additional_egress_rules = var.additional_egress_rules
+
   # Squid configuration
   squid_port      = var.squid_port
   ami_id          = var.ami_id

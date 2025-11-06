@@ -55,6 +55,18 @@ variable "prometheus_port" {
   default     = 9273
 }
 
+variable "additional_egress_rules" {
+  description = "Additional egress rules for environment-specific requirements (monitoring, security tools, etc.)"
+  type = list(object({
+    description = string
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    cidr_blocks = list(string)
+  }))
+  default = []
+}
+
 variable "squid_port" {
   description = "Squid proxy port"
   type        = number

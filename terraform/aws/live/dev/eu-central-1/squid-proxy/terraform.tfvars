@@ -16,20 +16,20 @@ project_name = "hyperswitch"
 # Network Configuration
 # ============================================================================
 # TODO: Replace with your actual VPC and subnet IDs
-vpc_id = "vpc-07937eeb0fa97fab7"  # Replace with your VPC ID
+vpc_id = "vpc-XXXXXXXXXXXXX"  # Replace with your VPC ID
 
 # Subnets where Squid proxy instances will run (private subnets with NAT/IGW)
 proxy_subnet_ids = [
-  "subnet-010120df461ac33e1",  # Private subnet AZ1
-  "subnet-0ae8d614cfc33159f",   # Private subnet AZ2
-  "subnet-0aaab4908f16a0592"
+  "subnet-XXXXXXXXXXXXX",  # Private subnet AZ1
+  "subnet-XXXXXXXXXXXXX",  # Private subnet AZ2
+  "subnet-XXXXXXXXXXXXX"   # Private subnet AZ3
 ]
 
 # Subnets where NLB will be placed (service/public subnets)
 lb_subnet_ids = [
-  "subnet-010120df461ac33e1",  # Private subnet AZ1
-  "subnet-0ae8d614cfc33159f",   # Private subnet AZ2
-  "subnet-0aaab4908f16a0592"
+  "subnet-XXXXXXXXXXXXX",  # Service subnet AZ1
+  "subnet-XXXXXXXXXXXXX",  # Service subnet AZ2
+  "subnet-XXXXXXXXXXXXX"   # Service subnet AZ3
 ]
 
 # EKS Worker Node Subnet CIDRs
@@ -39,8 +39,8 @@ lb_subnet_ids = [
 #   aws ec2 describe-subnets --filters "Name=vpc-id,Values=YOUR_VPC_ID" \
 #     --query 'Subnets[?contains(Tags[?Key==`Name`].Value|[0], `eks-worker`)].{CIDR:CidrBlock,Name:Tags[?Key==`Name`].Value|[0]}'
 eks_worker_subnet_cidrs = [
-  "10.0.32.0/21",   # eks-worker-nodes-one-zoneSubnet1 (AZ1) - Replace with your CIDR
-  "10.0.40.0/21"    # eks-worker-nodes-one-zoneSubnet2 (AZ2) - Replace with your CIDR
+  "10.0.X.0/21",   # eks-worker-nodes-one-zoneSubnet1 (AZ1) - Replace with your CIDR
+  "10.0.X.0/21"    # eks-worker-nodes-one-zoneSubnet2 (AZ2) - Replace with your CIDR
 ]
 
 # ============================================================================
@@ -48,12 +48,30 @@ eks_worker_subnet_cidrs = [
 # ============================================================================
 # SSH Access from External Jumpbox (Optional)
 # Uncomment and provide security group ID if you need SSH access to squid instances
-external_jumpbox_sg_id = "sg-01f89cd281d1c015d"  # Replace with your external jumpbox security group ID
+# external_jumpbox_sg_id = "sg-XXXXXXXXXXXXX"  # Replace with your external jumpbox security group ID
 
 # Prometheus Metrics Scraping (Optional)
 # Uncomment and provide security group ID if you want Prometheus to scrape metrics
-prometheus_sg_id = "sg-056ea63a24a4f8d63"  # Replace with your Prometheus security group ID
-prometheus_port  = 9273                # Port for Prometheus metrics (default: 9273)
+# prometheus_sg_id = "sg-XXXXXXXXXXXXX"  # Replace with your Prometheus security group ID
+# prometheus_port  = 9273                # Port for Prometheus metrics (default: 9273)
+
+# ============================================================================
+# Additional Egress Rules (Optional - Environment Specific)
+# ============================================================================
+# Use this to add environment-specific outbound rules for:
+# - Security/Monitoring tools (Wazuh, ClamAV)
+# - Application-specific endpoints (payment gateways, connectors)
+#
+# Example for Integration/Production environments:
+# additional_egress_rules = [
+#   {
+#     description = "description of rule"
+#     from_port   = 80
+#     to_port     = 80
+#     protocol    = "tcp"
+#     cidr_blocks = ["10.X.X.0/20"]
+#   },
+# ]
 
 # ============================================================================
 # Squid Proxy Configuration
@@ -98,7 +116,7 @@ use_existing_launch_template = false  # Set to true to use existing launch templ
 # EC2 Configuration (ignored if use_existing_launch_template = true)
 #=======================================================================
 # TODO: Replace with your actual AMI ID (Amazon Linux 2 or Ubuntu)
-ami_id        = "ami-08d31f74c5093410c"  # Replace with your Squid AMI ID
+ami_id        = "ami-XXXXXXXXXXXXXXXXX"  # Replace with your Squid AMI ID
 instance_type = "t3.small"                # Smaller instance for dev
 
 #=======================================================================

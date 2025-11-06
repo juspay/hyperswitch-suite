@@ -57,6 +57,36 @@ variable "prometheus_port" {
   default     = 9273
 }
 
+variable "additional_egress_rules" {
+  description = "Additional egress rules for environment-specific requirements (monitoring, security tools, etc.)"
+  type = list(object({
+    description = string
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    cidr_blocks = list(string)
+  }))
+  default = []
+
+  # Example:
+  # [
+  #   {
+  #     description = "Wazuh master"
+  #     from_port   = 1515
+  #     to_port     = 1515
+  #     protocol    = "tcp"
+  #     cidr_blocks = ["10.41.16.0/20"]
+  #   },
+  #   {
+  #     description = "ClamAV"
+  #     from_port   = 80
+  #     to_port     = 80
+  #     protocol    = "tcp"
+  #     cidr_blocks = ["10.41.16.0/20"]
+  #   }
+  # ]
+}
+
 variable "squid_port" {
   description = "Port for Squid proxy"
   type        = number

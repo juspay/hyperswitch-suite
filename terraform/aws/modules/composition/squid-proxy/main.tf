@@ -310,6 +310,25 @@ resource "aws_security_group_rule" "prometheus_metrics" {
   description = "Allow Prometheus metrics scraping on port ${var.prometheus_port}"
 }
 
+# =========================================================================
+# Additional Egress Rules (Optional - Environment Specific)
+# =========================================================================
+# These rules allow for environment-specific egress traffic such as:
+# - Monitoring tools (Wazuh, ClamAV, Prometheus)
+# - Application-specific endpoints (payment gateways, connectors)
+resource "aws_security_group_rule" "additional_egress" {
+  for_each = { for idx, rule in var.additional_egress_rules : idx => rule }
+
+  type              = "egress"
+  from_port         = each.value.from_port
+  to_port           = each.value.to_port
+  protocol          = each.value.protocol
+  cidr_blocks       = each.value.cidr_blocks
+  security_group_id = module.asg_security_group.sg_id
+
+  description = each.value.description
+}
+
 resource "aws_security_group_rule" "existing_lb_to_asg" {
   count = !var.create_nlb && var.existing_lb_security_group_id != null ? 1 : 0
 
