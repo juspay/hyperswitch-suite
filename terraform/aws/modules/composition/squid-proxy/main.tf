@@ -124,34 +124,49 @@ resource "aws_s3_object" "squid_config_files" {
 }
 
 # =========================================================================
-# IAM Role for Squid Instances (Conditional - Create only if needed)
+# IAM Role for Proxy Instances (Conditional - Create only if needed)
 # =========================================================================
-module "squid_iam_role" {
+module "proxy_iam_role" {
   count  = var.create_iam_role ? 1 : 0
   source = "../../base/iam-role"
 
-  name                    = "${local.name_prefix}-role"
-  description             = "IAM role for Squid proxy instances"
+  name                    = "${var.environment}-${var.project_name}-proxy-role"
+  description             = "IAM role for proxy instances (Squid/Envoy)"
   service_identifiers     = ["ec2.amazonaws.com"]
   create_instance_profile = true
 
-  # Attach AWS managed policies
+  # Attach AWS managed policy for SSM access only
   managed_policy_arns = [
-    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore", # For SSM access
-    "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"   # For CloudWatch metrics/logs
+    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"  # For SSM access
   ]
 
-  # Inline policies for S3 access
+  # Restrictive inline policies
   inline_policies = {
-    squid-config-bucket-read = jsonencode({
+    # CloudWatch - Restricted to PutMetricData only
+    proxy-cloudwatch-metrics = jsonencode({
       Version = "2012-10-17"
       Statement = [
         {
+          Sid    = "PutMetricData"
+          Effect = "Allow"
+          Action = [
+            "cloudwatch:PutMetricData"
+          ]
+          Resource = "*"
+        }
+      ]
+    })
+
+    # S3 Config Bucket - Read-only access
+    proxy-config-bucket-read = jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Sid    = "ConfigBucketRead"
           Effect = "Allow"
           Action = [
             "s3:GetObject",
-            "s3:ListBucket",
-            "s3:GetBucketLocation"
+            "s3:ListBucket"
           ]
           Resource = [
             local.config_bucket_arn,
@@ -161,17 +176,16 @@ module "squid_iam_role" {
       ]
     })
 
-    squid-logs-bucket-write = jsonencode({
+    # S3 Logs Bucket - Write access for log archival
+    proxy-logs-bucket-write = jsonencode({
       Version = "2012-10-17"
       Statement = [
         {
+          Sid    = "LogsBucketWrite"
           Effect = "Allow"
           Action = [
-            "s3:GetObject",
             "s3:PutObject",
-            "s3:DeleteObject",
-            "s3:ListBucket",
-            "s3:GetBucketLocation"
+            "s3:ListBucket"
           ]
           Resource = [
             local.logs_bucket_arn,

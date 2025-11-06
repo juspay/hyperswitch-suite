@@ -310,38 +310,42 @@ upload_config_to_s3 = true  # Automatically uploads configs from ./config direct
 #
 # OPTION 1: Create New IAM Role + Instance Profile (Current Setting) - RECOMMENDED
 #   create_iam_role = true
-#   - Terraform creates a new IAM role with required permissions
-#   - Includes S3 access for configs/logs, SSM, CloudWatch
+#   - Terraform creates a restrictive IAM role: "dev-hyperswitch-proxy-role"
+#   - Shared role for all proxy types (Squid, Envoy, etc.)
+#   - Minimal permissions following least-privilege principle:
+#     ✓ SSM access (AmazonSSMManagedInstanceCore)
+#     ✓ CloudWatch metrics only (cloudwatch:PutMetricData)
+#     ✓ S3 config bucket read-only (s3:GetObject, s3:ListBucket)
+#     ✓ S3 logs bucket write-only (s3:PutObject, s3:ListBucket)
 #   - Automatically creates instance profile
 #
-# OPTION 2: Use Existing IAM Role + Create New Instance Profile - RECOMMENDED for reusing roles
+# OPTION 2: Use Existing IAM Role + Create New Instance Profile
 #   create_iam_role = false
 #   create_instance_profile = true
-#   existing_iam_role_name = "my-existing-role"
-#   - Reuses an existing IAM role (with permissions already configured)
+#   existing_iam_role_name = "dev-hyperswitch-proxy-role"
+#   - Reuses the shared proxy role across environments
 #   - Creates a NEW instance profile for this deployment's launch template
-#   - Best for: Sharing IAM roles across deployments while keeping launch templates separate
+#   - Best for: Sharing IAM roles across Squid/Envoy while keeping launch templates separate
 #
 # OPTION 3: Use Existing IAM Role + Existing Instance Profile
 #   create_iam_role = false
 #   create_instance_profile = false
-#   existing_iam_role_name = "my-existing-role"
-#   existing_iam_instance_profile_name = "my-existing-instance-profile"
+#   existing_iam_role_name = "dev-hyperswitch-proxy-role"
+#   existing_iam_instance_profile_name = "my-proxy-instance-profile"
 #   - Uses both existing IAM role and instance profile
 #   - ⚠️ Warning: Instance profile can only be used by ONE launch template
-#   - Required permissions: S3 (config/logs buckets), SSM, CloudWatch
 #=======================================================================
 
 create_iam_role = true  # Set to false to use existing IAM role
 
 # Only used when create_iam_role = false
-# existing_iam_role_name = "hyperswitch-squid-role"
+# existing_iam_role_name = "dev-hyperswitch-proxy-role"
 
 # Only used when create_iam_role = false
 create_instance_profile = true  # Set to false to use existing instance profile
 
 # Only used when create_iam_role = false AND create_instance_profile = false
-# existing_iam_instance_profile_name = "my-squid-instance-profile"
+# existing_iam_instance_profile_name = "dev-hyperswitch-proxy-instance-profile"
 
 #=======================================================================
 # Instance Refresh Configuration

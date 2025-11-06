@@ -45,12 +45,12 @@ locals {
   # IAM role selection - use created or existing
   # Priority: 1) Created role+profile, 2) Created profile for existing role, 3) Existing profile
   instance_profile_name = (
-    var.create_iam_role ? module.squid_iam_role[0].instance_profile_name :
+    var.create_iam_role ? module.proxy_iam_role[0].instance_profile_name :
     var.create_instance_profile ? aws_iam_instance_profile.squid_profile[0].name :
     var.existing_iam_instance_profile_name
   )
-  iam_role_arn  = var.create_iam_role ? module.squid_iam_role[0].role_arn : data.aws_iam_role.existing_squid_role[0].arn
-  iam_role_name = var.create_iam_role ? module.squid_iam_role[0].role_name : data.aws_iam_role.existing_squid_role[0].name
+  iam_role_arn  = var.create_iam_role ? module.proxy_iam_role[0].role_arn : data.aws_iam_role.existing_squid_role[0].arn
+  iam_role_name = var.create_iam_role ? module.proxy_iam_role[0].role_name : data.aws_iam_role.existing_squid_role[0].name
 
   # Launch Template selection - use created or existing
   launch_template_id      = var.use_existing_launch_template ? var.existing_launch_template_id : module.launch_template[0].lt_id
