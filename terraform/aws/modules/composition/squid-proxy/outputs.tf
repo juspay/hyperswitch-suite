@@ -67,13 +67,18 @@ output "asg_security_group_id" {
 }
 
 output "logs_bucket_name" {
-  description = "Name of the S3 bucket for logs"
-  value       = module.logs_bucket.bucket_id
+  description = "Name of the S3 bucket for logs (created or existing)"
+  value       = local.logs_bucket_name
 }
 
 output "logs_bucket_arn" {
-  description = "ARN of the S3 bucket for logs"
-  value       = module.logs_bucket.bucket_arn
+  description = "ARN of the S3 bucket for logs (created or existing)"
+  value       = local.logs_bucket_arn
+}
+
+output "logs_bucket_created" {
+  description = "Whether logs bucket was created by this module (true) or using existing (false)"
+  value       = var.create_logs_bucket
 }
 
 output "config_bucket_name" {

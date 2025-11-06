@@ -21,6 +21,11 @@ locals {
     }
   )
 
+  # Logs bucket selection - use created or existing
+  logs_bucket_name = var.create_logs_bucket ? module.logs_bucket[0].bucket_name : var.logs_bucket_name
+  logs_bucket_arn  = var.create_logs_bucket ? module.logs_bucket[0].bucket_arn : var.logs_bucket_arn
+  logs_bucket_id   = var.create_logs_bucket ? module.logs_bucket[0].bucket_id : var.logs_bucket_name
+
   # Config bucket selection - use created or existing
   config_bucket_name = var.create_config_bucket ? module.config_bucket[0].bucket_name : var.config_bucket_name
   config_bucket_arn  = var.create_config_bucket ? module.config_bucket[0].bucket_arn : var.config_bucket_arn
@@ -32,7 +37,7 @@ locals {
         var.custom_userdata,
         "{{config_bucket}}", local.config_bucket_name
       ),
-      "{{logs_bucket}}", module.logs_bucket.bucket_id
+      "{{logs_bucket}}", local.logs_bucket_id
     ),
     "{{bucket-name}}", local.config_bucket_name
   )

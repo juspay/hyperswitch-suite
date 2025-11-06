@@ -47,9 +47,10 @@ resource "aws_ssm_parameter" "squid_private_key" {
 # If SSH is required, use the command above to retrieve the private key
 
 # =========================================================================
-# S3 Bucket for Squid Logs
+# S3 Bucket for Squid Logs (Optional - Create only if needed)
 # =========================================================================
 module "logs_bucket" {
+  count  = var.create_logs_bucket ? 1 : 0
   source = "../../base/s3-bucket"
 
   bucket_name       = "${local.name_prefix}-logs-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
@@ -173,8 +174,8 @@ module "squid_iam_role" {
             "s3:GetBucketLocation"
           ]
           Resource = [
-            module.logs_bucket.bucket_arn,
-            "${module.logs_bucket.bucket_arn}/*"
+            local.logs_bucket_arn,
+            "${local.logs_bucket_arn}/*"
           ]
         }
       ]
@@ -225,24 +226,9 @@ module "asg_security_group" {
   description = "Security group for Squid proxy ASG instances"
   vpc_id      = var.vpc_id
 
-  ingress_rules = [
-    {
-      description              = "Allow traffic from EKS cluster"
-      from_port                = var.squid_port
-      to_port                  = var.squid_port
-      protocol                 = "tcp"
-      source_security_group_id = var.eks_security_group_id
-    }
-  ]
+  ingress_rules = []
 
   egress_rules = [
-    {
-      description = "Allow HTTP to internet"
-      from_port   = 80
-      to_port     = 80
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-    },
     {
       description = "Allow HTTPS to internet"
       from_port   = 443
@@ -411,7 +397,7 @@ module "launch_template" {
 
   iam_instance_profile_name = local.instance_profile_name
 
-  user_data = base64encode(local.userdata_content)
+  user_data = local.userdata_content
 
   ebs_optimized     = true
   enable_monitoring = var.enable_detailed_monitoring

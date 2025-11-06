@@ -29,11 +29,6 @@ variable "lb_subnet_ids" {
   type        = list(string)
 }
 
-variable "eks_security_group_id" {
-  description = "Security group ID of the EKS cluster"
-  type        = string
-}
-
 variable "eks_worker_subnet_cidrs" {
   description = "List of CIDR blocks for EKS worker node subnets (required because NLB preserves source IP)"
   type        = list(string)
@@ -137,6 +132,24 @@ variable "desired_capacity" {
   description = "Desired number of instances in ASG"
   type        = number
   default     = 1
+}
+
+variable "create_logs_bucket" {
+  description = "Whether to create a new S3 bucket for logs (if false, use existing bucket)"
+  type        = bool
+  default     = true
+}
+
+variable "logs_bucket_name" {
+  description = "Name of existing S3 bucket for logs (required if create_logs_bucket=false)"
+  type        = string
+  default     = ""
+}
+
+variable "logs_bucket_arn" {
+  description = "ARN of existing S3 bucket for logs (required if create_logs_bucket=false)"
+  type        = string
+  default     = ""
 }
 
 variable "create_config_bucket" {

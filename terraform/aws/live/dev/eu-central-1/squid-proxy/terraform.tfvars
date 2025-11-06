@@ -30,10 +30,6 @@ lb_subnet_ids = [
   "subnet-XXXXXXXXXXXXX"   # Service subnet AZ2
 ]
 
-# EKS Configuration
-# TODO: Replace with your actual EKS worker security group ID
-eks_security_group_id = "sg-XXXXXXXXXXXXX"  # Replace with your EKS worker security group ID
-
 # EKS Worker Node Subnet CIDRs
 # IMPORTANT: NLB preserves source IP, so we need to allow traffic from EKS worker subnets
 # These are the subnets where your EKS worker nodes (and pods) run
@@ -98,11 +94,19 @@ min_size         = 1
 max_size         = 2
 desired_capacity = 1
 
-# S3 Configuration
+# S3 Logs Bucket Configuration
+# Create a new S3 bucket for logs (dev environment)
+create_logs_bucket = true  # Automatically creates bucket: dev-hyperswitch-squid-logs-<account-id>-eu-central-1
+
+# NOTE: If using existing logs bucket, set create_logs_bucket = false and provide:
+# logs_bucket_name = "app-proxy-logs-225681119357-eu-central-1"
+# logs_bucket_arn  = "arn:aws:s3:::app-proxy-logs-225681119357-eu-central-1"
+
+# S3 Config Bucket Configuration
 # Create a new S3 bucket for configuration files (dev environment)
 create_config_bucket = true  # Automatically creates bucket: dev-hyperswitch-squid-config-<account-id>-eu-central-1
 
-# NOTE: If using existing bucket, set create_config_bucket = false and provide:
+# NOTE: If using existing config bucket, set create_config_bucket = false and provide:
 # config_bucket_name = "app-proxy-config-225681119357-eu-central-1"
 # config_bucket_arn  = "arn:aws:s3:::app-proxy-config-225681119357-eu-central-1"
 

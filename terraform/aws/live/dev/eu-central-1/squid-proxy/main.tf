@@ -64,7 +64,6 @@ module "squid_proxy" {
   lb_subnet_ids    = var.lb_subnet_ids
 
   # EKS Configuration
-  eks_security_group_id    = var.eks_security_group_id
   eks_worker_subnet_cidrs  = var.eks_worker_subnet_cidrs
 
   # Squid configuration
@@ -78,6 +77,11 @@ module "squid_proxy" {
 
   # Userdata with templating ({{config_bucket}} and {{logs_bucket}} will be replaced)
   custom_userdata = file("${path.module}/templates/userdata.sh")
+
+  # S3 Logs Bucket - create or use existing
+  create_logs_bucket = var.create_logs_bucket
+  logs_bucket_name   = var.logs_bucket_name
+  logs_bucket_arn    = var.logs_bucket_arn
 
   # S3 Config Bucket - create or use existing
   create_config_bucket = var.create_config_bucket
@@ -104,7 +108,7 @@ module "squid_proxy" {
   # ========================================
   # MODE 1: Create New NLB
   #   create_nlb = true
-  #   eks_security_group_id is required (for LB security group ingress)
+  #   Communication is done via CIDR blocks (eks_worker_subnet_cidrs)
   #
   # MODE 2: Use Existing NLB (Current Setting)
   #   create_nlb = false
