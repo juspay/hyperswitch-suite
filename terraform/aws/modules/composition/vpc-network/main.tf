@@ -5,7 +5,7 @@ module "vpc" {
   source = "../../base/vpc"
 
   vpc_name = var.vpc_name
-  vpc_cidr = var.vpc_cidr~
+  vpc_cidr = var.vpc_cidr
 
   secondary_cidr_blocks = var.secondary_cidr_blocks
 
