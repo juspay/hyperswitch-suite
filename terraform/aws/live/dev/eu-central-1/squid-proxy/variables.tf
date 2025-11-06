@@ -31,38 +31,28 @@ variable "lb_subnet_ids" {
   type        = list(string)
 }
 
-variable "eks_worker_subnet_cidrs" {
-  description = "List of CIDR blocks for EKS worker node subnets (required because NLB preserves source IP)"
-  type        = list(string)
-  default     = []
-}
-
-variable "external_jumpbox_sg_id" {
-  description = "Security group ID of external jumpbox for SSH access (optional)"
-  type        = string
-  default     = null
-}
-
-variable "prometheus_sg_id" {
-  description = "Security group ID of external Prometheus for metrics scraping (optional)"
-  type        = string
-  default     = null
-}
-
-variable "prometheus_port" {
-  description = "Port for Prometheus metrics scraping"
-  type        = number
-  default     = 9273
-}
-
-variable "additional_egress_rules" {
-  description = "Additional egress rules for environment-specific requirements (monitoring, security tools, etc.)"
+variable "ingress_rules" {
+  description = "Ingress rules for ASG security group"
   type = list(object({
     description = string
     from_port   = number
     to_port     = number
     protocol    = string
-    cidr_blocks = list(string)
+    cidr        = optional(list(string))
+    sg_id       = optional(list(string))
+  }))
+  default = []
+}
+
+variable "egress_rules" {
+  description = "Egress rules for ASG security group"
+  type = list(object({
+    description = string
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    cidr        = optional(list(string))
+    sg_id       = optional(list(string))
   }))
   default = []
 }

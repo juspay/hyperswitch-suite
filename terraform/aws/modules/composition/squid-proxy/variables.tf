@@ -29,62 +29,46 @@ variable "lb_subnet_ids" {
   type        = list(string)
 }
 
-variable "eks_worker_subnet_cidrs" {
-  description = "List of CIDR blocks for EKS worker node subnets (required because NLB preserves source IP)"
-  type        = list(string)
-  default     = []
-
-  # Example: ["10.0.8.0/22", "10.0.12.0/22"]
-  # Note: These CIDRs are needed because Network Load Balancers preserve the client source IP,
-  # so traffic from EKS pods appears to come from the pod's IP address, not the security group.
-}
-
-variable "external_jumpbox_sg_id" {
-  description = "Security group ID of external jumpbox for SSH access (optional)"
-  type        = string
-  default     = null
-}
-
-variable "prometheus_sg_id" {
-  description = "Security group ID of external Prometheus for metrics scraping (optional)"
-  type        = string
-  default     = null
-}
-
-variable "prometheus_port" {
-  description = "Port for Prometheus metrics scraping"
-  type        = number
-  default     = 9273
-}
-
-variable "additional_egress_rules" {
-  description = "Additional egress rules for environment-specific requirements (monitoring, security tools, etc.)"
+variable "ingress_rules" {
+  description = "Ingress rules for ASG security group"
   type = list(object({
     description = string
     from_port   = number
     to_port     = number
     protocol    = string
-    cidr_blocks = list(string)
+    cidr        = optional(list(string))
+    sg_id       = optional(list(string))
   }))
   default = []
 
-  # Example:
-  # [
-  #   {
-  #     description = "Wazuh master"
-  #     from_port   = 1515
-  #     to_port     = 1515
-  #     protocol    = "tcp"
-  #     cidr_blocks = ["10.41.16.0/20"]
-  #   },
-  #   {
-  #     description = "ClamAV"
-  #     from_port   = 80
-  #     to_port     = 80
-  #     protocol    = "tcp"
-  #     cidr_blocks = ["10.41.16.0/20"]
-  #   }
-  # ]
+  validation {
+    condition = alltrue([
+      for rule in var.ingress_rules :
+      (rule.cidr != null && rule.sg_id == null) || (rule.cidr == null && rule.sg_id != null)
+    ])
+    error_message = "Each rule must have either 'cidr' or 'sg_id', but not both."
+  }
+}
+
+variable "egress_rules" {
+  description = "Egress rules for ASG security group"
+  type = list(object({
+    description = string
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    cidr        = optional(list(string))
+    sg_id       = optional(list(string))
+  }))
+  default = []
+
+  validation {
+    condition = alltrue([
+      for rule in var.egress_rules :
+      (rule.cidr != null && rule.sg_id == null) || (rule.cidr == null && rule.sg_id != null)
+    ])
+    error_message = "Each rule must have either 'cidr' or 'sg_id', but not both."
+  }
 }
 
 variable "squid_port" {
@@ -303,22 +287,6 @@ variable "existing_tg_arn" {
     error_message = "existing_tg_arn must be provided when create_target_group is false"
   }
 }
-
-variable "existing_lb_security_group_id" {
-  description = "Security group ID of existing load balancer (required if create_nlb=false). ASG instances will allow traffic from this SG."
-  type        = string
-  default     = null
-
-  validation {
-    condition     = var.create_nlb == true || var.existing_lb_security_group_id != null
-    error_message = "existing_lb_security_group_id must be provided when create_nlb is false"
-  }
-}
-
-# NOTE: Network Load Balancers don't support listener rules like ALBs do.
-# When using an existing NLB, you have two options:
-# 1. Manually update the existing listener's default action to forward to the target group created by this module
-# 2. Use the existing target group by setting create_target_group=false and providing existing_tg_arn
 
 # =========================================================================
 # NLB Listener Configuration (TCP and TLS)

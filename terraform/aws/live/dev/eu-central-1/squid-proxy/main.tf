@@ -41,16 +41,6 @@ data "aws_lb_listener" "existing" {
   port              = var.squid_port
 }
 
-# Get security groups attached to the existing NLB
-# Convert set to list to get first security group
-locals {
-  existing_lb_security_group_id = var.create_nlb ? null : (
-    length(data.aws_lb.existing[0].security_groups) > 0 ?
-    tolist(data.aws_lb.existing[0].security_groups)[0] :
-    null
-  )
-}
-
 # Squid Proxy Module - Using Existing LB
 module "squid_proxy" {
   source = "../../../../modules/composition/squid-proxy"
@@ -63,16 +53,9 @@ module "squid_proxy" {
   proxy_subnet_ids = var.proxy_subnet_ids
   lb_subnet_ids    = var.lb_subnet_ids
 
-  # EKS Configuration
-  eks_worker_subnet_cidrs  = var.eks_worker_subnet_cidrs
-
-  # Optional Security Group Access
-  external_jumpbox_sg_id = var.external_jumpbox_sg_id
-  prometheus_sg_id       = var.prometheus_sg_id
-  prometheus_port        = var.prometheus_port
-
-  # Additional Egress Rules (environment-specific)
-  additional_egress_rules = var.additional_egress_rules
+  # Security Group Rules (environment-specific)
+  ingress_rules = var.ingress_rules
+  egress_rules  = var.egress_rules
 
   # Squid configuration
   squid_port      = var.squid_port
@@ -116,19 +99,17 @@ module "squid_proxy" {
   # ========================================
   # MODE 1: Create New NLB
   #   create_nlb = true
-  #   Communication is done via CIDR blocks (eks_worker_subnet_cidrs)
   #
-  # MODE 2: Use Existing NLB (Current Setting)
+  # MODE 2: Use Existing NLB
   #   create_nlb = false
-  #   existing_lb_arn, existing_lb_listener_arn, existing_lb_security_group_id required
+  #   existing_lb_arn, existing_lb_listener_arn required
   # ========================================
 
-  create_nlb                     = var.create_nlb  # Set in terraform.tfvars
+  create_nlb = var.create_nlb  # Set in terraform.tfvars
 
   # Only used when create_nlb = false (Mode 2)
-  existing_lb_arn                = var.create_nlb ? null : data.aws_lb.existing[0].arn
-  existing_lb_listener_arn       = var.create_nlb ? null : data.aws_lb_listener.existing[0].arn
-  existing_lb_security_group_id  = local.existing_lb_security_group_id
+  existing_lb_arn          = var.create_nlb ? null : data.aws_lb.existing[0].arn
+  existing_lb_listener_arn = var.create_nlb ? null : data.aws_lb_listener.existing[0].arn
 
   # NOTE: When using existing NLB (create_nlb = false):
   # After terraform apply, manually update the existing NLB listener's default

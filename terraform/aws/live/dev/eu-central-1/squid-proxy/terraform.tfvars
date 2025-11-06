@@ -16,62 +16,103 @@ project_name = "hyperswitch"
 # Network Configuration
 # ============================================================================
 # TODO: Replace with your actual VPC and subnet IDs
-vpc_id = "vpc-XXXXXXXXXXXXX"  # Replace with your VPC ID
+vpc_id = "vpc-XXXXXXXXXXXXXXXXX"  # Replace with your VPC ID
 
 # Subnets where Squid proxy instances will run (private subnets with NAT/IGW)
 proxy_subnet_ids = [
-  "subnet-XXXXXXXXXXXXX",  # Private subnet AZ1
-  "subnet-XXXXXXXXXXXXX",  # Private subnet AZ2
-  "subnet-XXXXXXXXXXXXX"   # Private subnet AZ3
+  "subnet-XXXXXXXXXXXXXXXXX",  # Private subnet AZ1
+  "subnet-XXXXXXXXXXXXXXXXX",  # Private subnet AZ2
+  "subnet-XXXXXXXXXXXXXXXXX"   # Private subnet AZ3
 ]
 
 # Subnets where NLB will be placed (service/public subnets)
 lb_subnet_ids = [
-  "subnet-XXXXXXXXXXXXX",  # Service subnet AZ1
-  "subnet-XXXXXXXXXXXXX",  # Service subnet AZ2
-  "subnet-XXXXXXXXXXXXX"   # Service subnet AZ3
-]
-
-# EKS Worker Node Subnet CIDRs
-# IMPORTANT: NLB preserves source IP, so we need to allow traffic from EKS worker subnets
-# These are the subnets where your EKS worker nodes (and pods) run
-# To find these subnets:
-#   aws ec2 describe-subnets --filters "Name=vpc-id,Values=YOUR_VPC_ID" \
-#     --query 'Subnets[?contains(Tags[?Key==`Name`].Value|[0], `eks-worker`)].{CIDR:CidrBlock,Name:Tags[?Key==`Name`].Value|[0]}'
-eks_worker_subnet_cidrs = [
-  "10.0.X.0/21",   # eks-worker-nodes-one-zoneSubnet1 (AZ1) - Replace with your CIDR
-  "10.0.X.0/21"    # eks-worker-nodes-one-zoneSubnet2 (AZ2) - Replace with your CIDR
+  "subnet-XXXXXXXXXXXXXXXXX",  # Private subnet AZ1
+  "subnet-XXXXXXXXXXXXXXXXX",  # Private subnet AZ2
+  "subnet-XXXXXXXXXXXXXXXXX"   # Private subnet AZ3
 ]
 
 # ============================================================================
-# Optional Security Group Access
+# Security Group Rules (Environment Specific)
 # ============================================================================
-# SSH Access from External Jumpbox (Optional)
-# Uncomment and provide security group ID if you need SSH access to squid instances
-# external_jumpbox_sg_id = "sg-XXXXXXXXXXXXX"  # Replace with your external jumpbox security group ID
-
-# Prometheus Metrics Scraping (Optional)
-# Uncomment and provide security group ID if you want Prometheus to scrape metrics
-# prometheus_sg_id = "sg-XXXXXXXXXXXXX"  # Replace with your Prometheus security group ID
-# prometheus_port  = 9273                # Port for Prometheus metrics (default: 9273)
+# Define environment-specific ingress and egress rules
+# Each rule must have EITHER 'cidr' OR 'sg_id':
+#   - cidr: list(string) for CIDR blocks
+#   - sg_id: list(string) for Security Group IDs
+#
+# Note: The 'type' field is automatically set by the composition layer
+# (ingress_rules → type="ingress", egress_rules → type="egress")
 
 # ============================================================================
-# Additional Egress Rules (Optional - Environment Specific)
+# INGRESS RULES EXAMPLES
+# ============================================================================
+ingress_rules = [
+  {
+    description = "Allow traffic from EKS worker subnets"
+    from_port   = 3128
+    to_port     = 3128
+    protocol    = "tcp"
+    cidr        = ["10.X.X.0/21", "10.X.X.0/21"]  # Replace with your EKS worker subnet CIDRs
+  },
+  # Example 2: Allow SSH from jumpbox security group
+  # {
+  #   description = "Allow SSH access from external jumpbox"
+  #   from_port   = 22
+  #   to_port     = 22
+  #   protocol    = "tcp"
+  #   sg_id       = ["sg-XXXXXXXXXXXXX"]
+  # },
+  # Example 3: Allow Prometheus metrics scraping from Prometheus security group
+  # {
+  #   description = "Allow Prometheus metrics scraping"
+  #   from_port   = 9273
+  #   to_port     = 9273
+  #   protocol    = "tcp"
+  #   sg_id       = ["sg-XXXXXXXXXXXXX"]
+  # },
+]
+
+# ============================================================================
+# EGRESS RULES EXAMPLES
 # ============================================================================
 # Use this to add environment-specific outbound rules for:
-# - Security/Monitoring tools (Wazuh, ClamAV)
+# - Security/Monitoring tools (Wazuh, ClamAV, Prometheus)
 # - Application-specific endpoints (payment gateways, connectors)
 #
-# Example for Integration/Production environments:
-# additional_egress_rules = [
-#   {
-#     description = "description of rule"
-#     from_port   = 80
-#     to_port     = 80
-#     protocol    = "tcp"
-#     cidr_blocks = ["10.X.X.0/20"]
-#   },
-# ]
+egress_rules = [
+  # Allow HTTPS access to the internet
+  {
+    description = "Allow HTTPS to internet"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr        = ["0.0.0.0/0"]
+  },
+  # Example 1: Allow outbound to Wazuh master (CIDR blocks)
+  # {
+  #   description = "Wazuh master"
+  #   from_port   = 1515
+  #   to_port     = 1515
+  #   protocol    = "tcp"
+  #   cidr        = ["10.41.16.0/20"]
+  # },
+  # Example 2: Allow outbound to ClamAV (Security Group ID)
+  # {
+  #   description = "ClamAV antivirus service"
+  #   from_port   = 3310
+  #   to_port     = 3310
+  #   protocol    = "tcp"
+  #   sg_id       = ["sg-XXXXXXXXXXXXX"]
+  # },
+  # Example 3: Allow outbound HTTPS to specific payment gateway subnet
+  # {
+  #   description = "Payment gateway endpoint"
+  #   from_port   = 443
+  #   to_port     = 443
+  #   protocol    = "tcp"
+  #   cidr        = ["192.168.1.0/24"]
+  # },
+]
 
 # ============================================================================
 # Squid Proxy Configuration

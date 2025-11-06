@@ -226,17 +226,6 @@ module "asg_security_group" {
   description = "Security group for Squid proxy ASG instances"
   vpc_id      = var.vpc_id
 
-  ingress_rules = []
-
-  egress_rules = [
-    {
-      description = "Allow HTTPS to internet"
-      from_port   = 443
-      to_port     = 443
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-    }
-  ]
 
   tags = local.common_tags
 }
@@ -260,86 +249,31 @@ resource "aws_security_group_rule" "nlb_health_checks" {
 }
 
 # =========================================================================
-# Allow Traffic from EKS Worker Node Subnets
+# Ingress Rules (Environment Specific)
 # =========================================================================
-# NLB preserves the client source IP, so traffic from EKS pods appears to come
-# from the pod's actual IP address (in the EKS worker subnet), not from a security group.
-# Therefore, we need to explicitly allow traffic from EKS worker subnet CIDRs.
-resource "aws_security_group_rule" "eks_worker_subnets" {
-  for_each = toset(var.eks_worker_subnet_cidrs)
+# Use the base security-group-rules module for flexible ingress rules
+# Supports both CIDR blocks and Security Group IDs
+module "ingress_rules" {
+  source = "../../base/security-group-rules"
 
-  type              = "ingress"
-  from_port         = var.squid_port
-  to_port           = var.squid_port
-  protocol          = "tcp"
-  cidr_blocks       = [each.value]
   security_group_id = module.asg_security_group.sg_id
-
-  description = "Allow traffic from EKS worker subnet ${each.value}"
+  rules = [
+    for rule in var.ingress_rules : merge(rule, { type = "ingress" })
+  ]
 }
 
 # =========================================================================
-# Allow SSH Access from External Jumpbox (Optional)
+# Egress Rules (Environment Specific)
 # =========================================================================
-resource "aws_security_group_rule" "ssh_from_jumpbox" {
-  count = var.external_jumpbox_sg_id != null ? 1 : 0
+# Use the base security-group-rules module for flexible egress rules
+# Supports both CIDR blocks and Security Group IDs
+module "egress_rules" {
+  source = "../../base/security-group-rules"
 
-  type                     = "ingress"
-  from_port                = 22
-  to_port                  = 22
-  protocol                 = "tcp"
-  source_security_group_id = var.external_jumpbox_sg_id
-  security_group_id        = module.asg_security_group.sg_id
-
-  description = "Allow SSH access from external jumpbox"
-}
-
-# =========================================================================
-# Allow Prometheus Metrics Scraping (Optional)
-# =========================================================================
-resource "aws_security_group_rule" "prometheus_metrics" {
-  count = var.prometheus_sg_id != null ? 1 : 0
-
-  type                     = "ingress"
-  from_port                = var.prometheus_port
-  to_port                  = var.prometheus_port
-  protocol                 = "tcp"
-  source_security_group_id = var.prometheus_sg_id
-  security_group_id        = module.asg_security_group.sg_id
-
-  description = "Allow Prometheus metrics scraping on port ${var.prometheus_port}"
-}
-
-# =========================================================================
-# Additional Egress Rules (Optional - Environment Specific)
-# =========================================================================
-# These rules allow for environment-specific egress traffic such as:
-# - Monitoring tools (Wazuh, ClamAV, Prometheus)
-# - Application-specific endpoints (payment gateways, connectors)
-resource "aws_security_group_rule" "additional_egress" {
-  for_each = { for idx, rule in var.additional_egress_rules : idx => rule }
-
-  type              = "egress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  cidr_blocks       = each.value.cidr_blocks
   security_group_id = module.asg_security_group.sg_id
-
-  description = each.value.description
-}
-
-resource "aws_security_group_rule" "existing_lb_to_asg" {
-  count = !var.create_nlb && var.existing_lb_security_group_id != null ? 1 : 0
-
-  type                     = "egress"
-  from_port                = var.squid_port
-  to_port                  = var.squid_port
-  protocol                 = "tcp"
-  source_security_group_id = module.asg_security_group.sg_id
-  security_group_id        = var.existing_lb_security_group_id
-
-  description = "Allow traffic from existing LB to Squid ASG instances on port ${var.squid_port}"
+  rules = [
+    for rule in var.egress_rules : merge(rule, { type = "egress" })
+  ]
 }
 
 # =========================================================================
