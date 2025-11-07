@@ -41,13 +41,6 @@ variable "ingress_rules" {
   }))
   default = []
 
-  validation {
-    condition = alltrue([
-      for rule in var.ingress_rules :
-      (rule.cidr != null && rule.sg_id == null) || (rule.cidr == null && rule.sg_id != null)
-    ])
-    error_message = "Each rule must have either 'cidr' or 'sg_id', but not both."
-  }
 }
 
 variable "egress_rules" {
@@ -62,13 +55,6 @@ variable "egress_rules" {
   }))
   default = []
 
-  validation {
-    condition = alltrue([
-      for rule in var.egress_rules :
-      (rule.cidr != null && rule.sg_id == null) || (rule.cidr == null && rule.sg_id != null)
-    ])
-    error_message = "Each rule must have either 'cidr' or 'sg_id', but not both."
-  }
 }
 
 variable "squid_port" {
