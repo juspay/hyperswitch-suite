@@ -29,19 +29,32 @@ variable "lb_subnet_ids" {
   type        = list(string)
 }
 
-variable "eks_security_group_id" {
-  description = "Security group ID of the EKS cluster"
-  type        = string
+variable "ingress_rules" {
+  description = "Ingress rules for ASG security group"
+  type = list(object({
+    description = string
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    cidr        = optional(list(string))
+    sg_id       = optional(list(string))
+  }))
+  default = []
+
 }
 
-variable "eks_worker_subnet_cidrs" {
-  description = "List of CIDR blocks for EKS worker node subnets (required because NLB preserves source IP)"
-  type        = list(string)
-  default     = []
+variable "egress_rules" {
+  description = "Egress rules for ASG security group"
+  type = list(object({
+    description = string
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    cidr        = optional(list(string))
+    sg_id       = optional(list(string))
+  }))
+  default = []
 
-  # Example: ["10.0.8.0/22", "10.0.12.0/22"]
-  # Note: These CIDRs are needed because Network Load Balancers preserve the client source IP,
-  # so traffic from EKS pods appears to come from the pod's IP address, not the security group.
 }
 
 variable "squid_port" {
@@ -137,6 +150,24 @@ variable "desired_capacity" {
   description = "Desired number of instances in ASG"
   type        = number
   default     = 1
+}
+
+variable "create_logs_bucket" {
+  description = "Whether to create a new S3 bucket for logs (if false, use existing bucket)"
+  type        = bool
+  default     = true
+}
+
+variable "logs_bucket_name" {
+  description = "Name of existing S3 bucket for logs (required if create_logs_bucket=false)"
+  type        = string
+  default     = ""
+}
+
+variable "logs_bucket_arn" {
+  description = "ARN of existing S3 bucket for logs (required if create_logs_bucket=false)"
+  type        = string
+  default     = ""
 }
 
 variable "create_config_bucket" {
@@ -242,22 +273,6 @@ variable "existing_tg_arn" {
     error_message = "existing_tg_arn must be provided when create_target_group is false"
   }
 }
-
-variable "existing_lb_security_group_id" {
-  description = "Security group ID of existing load balancer (required if create_nlb=false). ASG instances will allow traffic from this SG."
-  type        = string
-  default     = null
-
-  validation {
-    condition     = var.create_nlb == true || var.existing_lb_security_group_id != null
-    error_message = "existing_lb_security_group_id must be provided when create_nlb is false"
-  }
-}
-
-# NOTE: Network Load Balancers don't support listener rules like ALBs do.
-# When using an existing NLB, you have two options:
-# 1. Manually update the existing listener's default action to forward to the target group created by this module
-# 2. Use the existing target group by setting create_target_group=false and providing existing_tg_arn
 
 # =========================================================================
 # NLB Listener Configuration (TCP and TLS)

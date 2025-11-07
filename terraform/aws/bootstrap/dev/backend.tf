@@ -36,7 +36,7 @@
 terraform {
   backend "s3" {
     bucket         = "hyperswitch-dev-terraform-state"
-    key            = "bootstrap/dev/terraform.tfstate"  # Special path for bootstrap
+    key            = "terraform-backend/terraform.tfstate"  # Special path for bootstrap
     region         = "eu-central-1"
     dynamodb_table = "hyperswitch-dev-terraform-state-lock"
     encrypt        = true
