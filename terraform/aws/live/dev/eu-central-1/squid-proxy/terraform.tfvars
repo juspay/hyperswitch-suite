@@ -166,7 +166,7 @@ instance_type = "t3.small"                # Smaller instance for dev
 # Auto Scaling Configuration
 # ============================================================================
 min_size         = 1
-max_size         = 4  # Increased to allow meaningful auto-scaling
+max_size         = 2
 desired_capacity = 1
 
 # ============================================================================
