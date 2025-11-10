@@ -162,10 +162,52 @@ instance_type = "t3.small"                # Smaller instance for dev
 
 #=======================================================================
 
+# ============================================================================
 # Auto Scaling Configuration
+# ============================================================================
 min_size         = 1
-max_size         = 2
+max_size         = 4  # Increased to allow meaningful auto-scaling
 desired_capacity = 1
+
+# ============================================================================
+# Auto Scaling Policies (CPU and Memory-based)
+# ============================================================================
+# Enable auto-scaling to automatically add/remove instances based on load
+# Uses AWS built-in metrics - no custom CloudWatch metrics needed
+#
+# How it works:
+# - CPU-based: Scales when average CPU across all instances exceeds target
+# - Memory-based: Scales when average memory usage exceeds target (requires CloudWatch agent)
+# - Target Tracking: AWS automatically creates scale-up AND scale-down policies
+# - Cooldown: Prevents rapid scaling (scale-out: 60s, scale-in: 300s by default)
+#
+# Example scenario with cpu_target_tracking at 70%:
+# - Current: 1 instance at 85% CPU → ASG adds 1 instance
+# - Result: 2 instances at ~42% CPU → Stable
+# - Later: 2 instances at 20% CPU → ASG removes 1 instance after 15 min
+#
+# Recommendation for dev:
+# - Start with CPU-based scaling only
+# - Monitor behavior, then add memory-based if needed
+# ============================================================================
+
+enable_autoscaling = true  # Set to false to disable auto-scaling
+
+scaling_policies = {
+  # CPU Target Tracking - Recommended for most workloads
+  cpu_target_tracking = {
+    enabled      = true
+    target_value = 70.0  # Scale when average CPU > 70%
+  }
+
+  # Memory Target Tracking - Optional (requires CloudWatch agent)
+  # Note: CloudWatch agent must be installed and configured on instances
+  # to publish memory metrics to CloudWatch under "CWAgent" namespace
+  memory_target_tracking = {
+    enabled      = false  # Set to true after installing CloudWatch agent
+    target_value = 70.0   # Scale when average memory > 70%
+  }
+}
 
 # S3 Logs Bucket Configuration
 # Create a new S3 bucket for logs (dev environment)

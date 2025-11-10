@@ -140,3 +140,42 @@ output "ssh_key_retrieval_command" {
   description = "Command to retrieve the private SSH key from Parameter Store (only if auto-generated)"
   value = var.generate_ssh_key ? "aws ssm get-parameter --name \"${aws_ssm_parameter.squid_private_key[0].name}\" --with-decryption --query 'Parameter.Value' --output text > ${aws_key_pair.squid_key_pair[0].key_name}.pem && chmod 400 ${aws_key_pair.squid_key_pair[0].key_name}.pem" : null
 }
+
+# =========================================================================
+# Auto Scaling Policy Outputs
+# =========================================================================
+
+output "autoscaling_enabled" {
+  description = "Whether auto-scaling policies are enabled"
+  value       = var.enable_autoscaling
+}
+
+output "cpu_scaling_policy_arn" {
+  description = "ARN of the CPU target tracking scaling policy (null if not enabled)"
+  value       = module.asg.cpu_scaling_policy_arn
+}
+
+output "cpu_scaling_policy_name" {
+  description = "Name of the CPU target tracking scaling policy (null if not enabled)"
+  value       = module.asg.cpu_scaling_policy_name
+}
+
+output "memory_scaling_policy_arn" {
+  description = "ARN of the memory target tracking scaling policy (null if not enabled)"
+  value       = module.asg.memory_scaling_policy_arn
+}
+
+output "memory_scaling_policy_name" {
+  description = "Name of the memory target tracking scaling policy (null if not enabled)"
+  value       = module.asg.memory_scaling_policy_name
+}
+
+output "scaling_policies_summary" {
+  description = "Summary of enabled scaling policies"
+  value = var.enable_autoscaling ? {
+    cpu_enabled    = var.scaling_policies.cpu_target_tracking.enabled
+    cpu_target     = var.scaling_policies.cpu_target_tracking.enabled ? "${var.scaling_policies.cpu_target_tracking.target_value}%" : null
+    memory_enabled = var.scaling_policies.memory_target_tracking.enabled
+    memory_target  = var.scaling_policies.memory_target_tracking.enabled ? "${var.scaling_policies.memory_target_tracking.target_value}%" : null
+  } : null
+}

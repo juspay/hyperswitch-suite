@@ -468,6 +468,10 @@ module "asg" {
   instance_refresh_preferences = var.instance_refresh_preferences
   instance_refresh_triggers    = var.instance_refresh_triggers
 
+  # Auto Scaling Policies
+  enable_scaling_policies = var.enable_autoscaling
+  scaling_policies        = var.scaling_policies
+
   tags          = local.common_tags
   instance_tags = local.instance_tags
 }

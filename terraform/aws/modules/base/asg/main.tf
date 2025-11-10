@@ -104,3 +104,50 @@ resource "aws_autoscaling_group" "this" {
     create_before_destroy = true
   }
 }
+
+# =========================================================================
+# Auto Scaling Policies - Target Tracking
+# =========================================================================
+
+# CPU Target Tracking Scaling Policy
+# Automatically scales to maintain target CPU utilization
+# AWS manages both scale-up and scale-down automatically
+resource "aws_autoscaling_policy" "cpu_target_tracking" {
+  count = var.enable_scaling_policies && var.scaling_policies.cpu_target_tracking.enabled ? 1 : 0
+
+  name                   = "${var.name}-cpu-target-tracking"
+  autoscaling_group_name = aws_autoscaling_group.this.name
+  policy_type            = "TargetTrackingScaling"
+
+  target_tracking_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ASGAverageCPUUtilization"
+    }
+    target_value = var.scaling_policies.cpu_target_tracking.target_value
+  }
+}
+
+# Memory Target Tracking Scaling Policy
+# Automatically scales to maintain target memory utilization
+# Note: Requires CloudWatch agent installed on instances to publish memory metrics
+resource "aws_autoscaling_policy" "memory_target_tracking" {
+  count = var.enable_scaling_policies && var.scaling_policies.memory_target_tracking.enabled ? 1 : 0
+
+  name                   = "${var.name}-memory-target-tracking"
+  autoscaling_group_name = aws_autoscaling_group.this.name
+  policy_type            = "TargetTrackingScaling"
+
+  target_tracking_configuration {
+    customized_metric_specification {
+      metric_name = "mem_used_percent"
+      namespace   = "CWAgent"
+      statistic   = "Average"
+
+      metric_dimension {
+        name  = "AutoScalingGroupName"
+        value = aws_autoscaling_group.this.name
+      }
+    }
+    target_value = var.scaling_policies.memory_target_tracking.target_value
+  }
+}

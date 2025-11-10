@@ -198,3 +198,39 @@ variable "capacity_rebalance" {
   type        = bool
   default     = false
 }
+
+# =========================================================================
+# Auto Scaling Policies
+# =========================================================================
+variable "enable_scaling_policies" {
+  description = "Enable auto-scaling policies for dynamic scaling based on CPU and Memory"
+  type        = bool
+  default     = false
+}
+
+variable "scaling_policies" {
+  description = "Configuration for auto-scaling policies using built-in AWS metrics"
+  type = object({
+    # CPU-based target tracking
+    cpu_target_tracking = optional(object({
+      enabled      = optional(bool, false)
+      target_value = optional(number, 70.0) # Target CPU utilization %
+    }), {})
+
+    # Memory-based target tracking (requires CloudWatch agent on instances)
+    memory_target_tracking = optional(object({
+      enabled      = optional(bool, false)
+      target_value = optional(number, 70.0) # Target Memory utilization %
+    }), {})
+  })
+  default = {
+    cpu_target_tracking = {
+      enabled      = false
+      target_value = 70.0
+    }
+    memory_target_tracking = {
+      enabled      = false
+      target_value = 70.0
+    }
+  }
+}

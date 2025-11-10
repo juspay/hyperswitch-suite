@@ -129,5 +129,9 @@ module "squid_proxy" {
   instance_refresh_preferences = var.instance_refresh_preferences
   instance_refresh_triggers    = var.instance_refresh_triggers
 
+  # Auto Scaling Policies
+  enable_autoscaling = var.enable_autoscaling
+  scaling_policies   = var.scaling_policies
+
   tags = var.common_tags
 }

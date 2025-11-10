@@ -32,3 +32,27 @@ output "asg_desired_capacity" {
   description = "The desired capacity of the Auto Scaling Group"
   value       = aws_autoscaling_group.this.desired_capacity
 }
+
+# =========================================================================
+# Auto Scaling Policy Outputs
+# =========================================================================
+
+output "cpu_scaling_policy_arn" {
+  description = "ARN of the CPU target tracking scaling policy"
+  value       = var.enable_scaling_policies && var.scaling_policies.cpu_target_tracking.enabled ? aws_autoscaling_policy.cpu_target_tracking[0].arn : null
+}
+
+output "cpu_scaling_policy_name" {
+  description = "Name of the CPU target tracking scaling policy"
+  value       = var.enable_scaling_policies && var.scaling_policies.cpu_target_tracking.enabled ? aws_autoscaling_policy.cpu_target_tracking[0].name : null
+}
+
+output "memory_scaling_policy_arn" {
+  description = "ARN of the memory target tracking scaling policy"
+  value       = var.enable_scaling_policies && var.scaling_policies.memory_target_tracking.enabled ? aws_autoscaling_policy.memory_target_tracking[0].arn : null
+}
+
+output "memory_scaling_policy_name" {
+  description = "Name of the memory target tracking scaling policy"
+  value       = var.enable_scaling_policies && var.scaling_policies.memory_target_tracking.enabled ? aws_autoscaling_policy.memory_target_tracking[0].name : null
+}
