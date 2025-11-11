@@ -14,17 +14,27 @@ variable "addon_version" {
   default     = null
 }
 
-variable "resolve_conflicts" {
-  description = "How to resolve parameter value conflicts. Valid values: OVERWRITE, NONE, PRESERVE"
+variable "resolve_conflicts_on_create" {
+  description = "How to resolve parameter value conflicts when creating the addon. Valid values: OVERWRITE, NONE, PRESERVE"
   type        = string
   default     = "OVERWRITE"
 
   validation {
-    condition     = contains(["OVERWRITE", "NONE", "PRESERVE"], var.resolve_conflicts)
-    error_message = "Resolve conflicts must be one of: OVERWRITE, NONE, PRESERVE"
+    condition     = contains(["OVERWRITE", "NONE", "PRESERVE"], var.resolve_conflicts_on_create)
+    error_message = "Resolve conflicts on create must be one of: OVERWRITE, NONE, PRESERVE"
   }
 }
 
+variable "resolve_conflicts_on_update" {
+  description = "How to resolve parameter value conflicts when updating the addon. Valid values: OVERWRITE, NONE, PRESERVE"
+  type        = string
+  default     = "OVERWRITE"
+
+  validation {
+    condition     = contains(["OVERWRITE", "NONE", "PRESERVE"], var.resolve_conflicts_on_update)
+    error_message = "Resolve conflicts on update must be one of: OVERWRITE, NONE, PRESERVE"
+  }
+}
 variable "service_account_role_arn" {
   description = "ARN of the IAM role for the addon's service account"
   type        = string
