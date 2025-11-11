@@ -48,7 +48,12 @@ resource "aws_eks_node_group" "this" {
     }
   }
 
-  tags = var.tags
+  tags = merge(
+    var.tags,
+    {
+      Name = var.node_group_name
+    }
+  )
 
   lifecycle {
     create_before_destroy = true

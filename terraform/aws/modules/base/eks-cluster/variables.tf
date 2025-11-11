@@ -62,6 +62,11 @@ variable "authentication_mode" {
   description = "Authentication mode for the cluster. Valid values are CONFIG_MAP, API or API_AND_CONFIG_MAP"
   type        = string
   default     = "API_AND_CONFIG_MAP"
+
+  validation {
+    condition     = contains(["CONFIG_MAP", "API", "API_AND_CONFIG_MAP"], var.authentication_mode)
+    error_message = "Authentication mode must be one of: CONFIG_MAP, API, API_AND_CONFIG_MAP"
+  }
 }
 
 variable "bootstrap_cluster_creator_admin_permissions" {

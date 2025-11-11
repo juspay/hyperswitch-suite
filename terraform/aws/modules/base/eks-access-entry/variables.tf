@@ -18,6 +18,11 @@ variable "type" {
   description = "Type of the access entry. Valid values: STANDARD, FARGATE_LINUX"
   type        = string
   default     = "STANDARD"
+
+  validation {
+    condition     = contains(["STANDARD", "FARGATE_LINUX"], var.type)
+    error_message = "Type must be either STANDARD or FARGATE_LINUX"
+  }
 }
 
 variable "user_name" {

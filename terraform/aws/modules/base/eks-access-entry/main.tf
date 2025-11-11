@@ -5,7 +5,12 @@ resource "aws_eks_access_entry" "this" {
   type              = var.type
   user_name         = var.user_name
 
-  tags = var.tags
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.cluster_name}-${var.principal_arn}"
+    }
+  )
 
   lifecycle {
     create_before_destroy = true

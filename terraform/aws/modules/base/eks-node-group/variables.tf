@@ -28,18 +28,33 @@ variable "desired_size" {
   description = "Desired number of worker nodes"
   type        = number
   default     = 2
+
+  validation {
+    condition     = var.desired_size >= 0
+    error_message = "Desired size must be >= 0"
+  }
 }
 
 variable "max_size" {
   description = "Maximum number of worker nodes"
   type        = number
   default     = 3
+
+  validation {
+    condition     = var.max_size >= 0
+    error_message = "Maximum size must be >= 0"
+  }
 }
 
 variable "min_size" {
   description = "Minimum number of worker nodes"
   type        = number
   default     = 1
+
+  validation {
+    condition     = var.min_size >= 0
+    error_message = "Minimum size must be >= 0"
+  }
 }
 
 variable "max_unavailable_percentage" {
@@ -58,6 +73,11 @@ variable "capacity_type" {
   description = "Type of capacity associated with the EKS Node Group. Valid values: ON_DEMAND, SPOT"
   type        = string
   default     = "ON_DEMAND"
+
+  validation {
+    condition     = contains(["ON_DEMAND", "SPOT"], var.capacity_type)
+    error_message = "Capacity type must be either ON_DEMAND or SPOT"
+  }
 }
 
 variable "disk_size" {

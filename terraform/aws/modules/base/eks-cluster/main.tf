@@ -28,7 +28,12 @@ resource "aws_eks_cluster" "this" {
     bootstrap_cluster_creator_admin_permissions = var.bootstrap_cluster_creator_admin_permissions
   }
 
-  tags = var.tags
+  tags = merge(
+    var.tags,
+    {
+      Name = var.name
+    }
+  )
 
   lifecycle {
     create_before_destroy = true

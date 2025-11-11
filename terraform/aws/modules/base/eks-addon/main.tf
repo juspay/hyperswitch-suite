@@ -7,7 +7,12 @@ resource "aws_eks_addon" "this" {
   configuration_values     = var.configuration_values
   preserve                 = var.preserve
 
-  tags = var.tags
+  tags = merge(
+    var.tags,
+    {
+      Name = var.addon_name
+    }
+  )
 
   lifecycle {
     create_before_destroy = true

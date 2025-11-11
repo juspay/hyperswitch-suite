@@ -18,6 +18,11 @@ variable "resolve_conflicts" {
   description = "How to resolve parameter value conflicts. Valid values: OVERWRITE, NONE, PRESERVE"
   type        = string
   default     = "OVERWRITE"
+
+  validation {
+    condition     = contains(["OVERWRITE", "NONE", "PRESERVE"], var.resolve_conflicts)
+    error_message = "Resolve conflicts must be one of: OVERWRITE, NONE, PRESERVE"
+  }
 }
 
 variable "service_account_role_arn" {
