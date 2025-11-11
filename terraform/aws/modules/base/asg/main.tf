@@ -95,8 +95,12 @@ resource "aws_autoscaling_group" "this" {
         standby_instances            = var.instance_refresh_preferences.standby_instances
       }
 
-      # Triggers that automatically start an instance refresh
-      triggers = var.instance_refresh_triggers
+      # Triggers - Note: In Terraform AWS Provider 5.0+, launch_template changes
+      # automatically trigger instance refresh, so we filter it out to avoid warnings
+      # Only add tag keys here if you want tag changes to trigger refresh
+      triggers = length(var.instance_refresh_triggers) > 0 ? [
+        for trigger in var.instance_refresh_triggers : trigger if trigger != "launch_template"
+      ] : []
     }
   }
 

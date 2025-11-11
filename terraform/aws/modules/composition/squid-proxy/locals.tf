@@ -53,6 +53,8 @@ locals {
   iam_role_name = var.create_iam_role ? module.squid_iam_role[0].role_name : data.aws_iam_role.existing_squid_role[0].name
 
   # Launch Template selection - use created or existing
+  # IMPORTANT: Use explicit version number instead of "$Latest" to ensure
+  # Terraform detects changes and triggers instance refresh automatically
   launch_template_id      = var.use_existing_launch_template ? var.existing_launch_template_id : module.launch_template[0].lt_id
-  launch_template_version = var.use_existing_launch_template ? var.existing_launch_template_version : "$Latest"
+  launch_template_version = var.use_existing_launch_template ? var.existing_launch_template_version : tostring(module.launch_template[0].lt_latest_version)
 }
