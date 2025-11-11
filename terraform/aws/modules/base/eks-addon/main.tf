@@ -1,0 +1,15 @@
+resource "aws_eks_addon" "this" {
+  cluster_name             = var.cluster_name
+  addon_name               = var.addon_name
+  addon_version            = var.addon_version
+  resolve_conflicts        = var.resolve_conflicts
+  service_account_role_arn = var.service_account_role_arn
+  configuration_values     = var.configuration_values
+  preserve                 = var.preserve
+
+  tags = var.tags
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
