@@ -29,18 +29,28 @@ output "internal_jump_private_ip" {
 }
 
 output "internal_jump_ssm_command" {
-  description = "AWS CLI command to connect to internal jump host via Session Manager"
-  value       = module.internal_jump_instance.ssm_session_command
+  description = "AWS CLI command to connect to internal jump host via Session Manager (DISABLED - use SSH from external jump)"
+  value       = "DISABLED - Internal jump has no SSM access. Connect via external jump using SSH."
 }
 
-output "iam_role_arn" {
-  description = "The ARN of the IAM role for jump hosts"
-  value       = module.jump_host_iam_role.role_arn
+output "internal_jump_ssh_key_ssm_path" {
+  description = "SSM Parameter Store path for internal jump SSH private key"
+  value       = module.internal_jump_ssh_key_parameter.parameter_name
 }
 
-output "iam_instance_profile_name" {
-  description = "The name of the IAM instance profile for jump hosts"
-  value       = module.jump_host_iam_role.instance_profile_name
+output "internal_jump_ssh_key_retrieval_command" {
+  description = "Command to retrieve internal jump SSH private key"
+  value       = "aws ssm get-parameter --name ${module.internal_jump_ssh_key_parameter.parameter_name} --with-decryption --query 'Parameter.Value' --output text"
+}
+
+output "external_iam_role_arn" {
+  description = "The ARN of the IAM role for external jump host"
+  value       = module.external_jump_iam_role.role_arn
+}
+
+output "internal_iam_role_arn" {
+  description = "The ARN of the IAM role for internal jump host"
+  value       = module.internal_jump_iam_role.role_arn
 }
 
 output "external_security_group_id" {
@@ -64,17 +74,38 @@ output "cloudwatch_log_groups" {
 output "connection_guide" {
   description = "Guide for connecting to jump hosts"
   value = <<-EOT
-    Connect to External Jump Host:
-      ${module.external_jump_instance.ssm_session_command}
+    ================================================================================
+    JUMP HOST CONNECTION GUIDE
+    ================================================================================
 
-    Connect to Internal Jump Host:
-      ${module.internal_jump_instance.ssm_session_command}
+    1. Connect to External Jump Host (via Session Manager):
+       ${module.external_jump_instance.ssm_session_command}
 
-    View Logs:
-      External: aws logs tail ${aws_cloudwatch_log_group.jump_host["external"].name} --follow
-      Internal: aws logs tail ${aws_cloudwatch_log_group.jump_host["internal"].name} --follow
+    2. From External Jump, SSH to Internal Jump:
+       ssh internal-jump
+       (SSH key is automatically configured in ec2-user's home directory)
 
-    Note: Ensure you have AWS Session Manager plugin installed:
-      https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html
+    3. Manual SSH to Internal Jump (if needed):
+       ssh -i /home/ec2-user/.ssh/internal_jump_key ec2-user@${module.internal_jump_instance.private_ip}
+
+    4. Retrieve Internal Jump SSH Key (from your local machine):
+       ${module.internal_jump_ssh_key_parameter.parameter_name}
+       aws ssm get-parameter --name ${module.internal_jump_ssh_key_parameter.parameter_name} --with-decryption --query 'Parameter.Value' --output text > internal_jump_key.pem
+       chmod 400 internal_jump_key.pem
+
+    5. View Logs:
+       External: aws logs tail ${aws_cloudwatch_log_group.jump_host["external"].name} --follow
+       Internal: aws logs tail ${aws_cloudwatch_log_group.jump_host["internal"].name} --follow
+
+    IMPORTANT NOTES:
+    - External Jump: Accessible via Session Manager (IAM-based auth)
+    - Internal Jump: NO Session Manager access (must SSH from external jump)
+    - Default user: ec2-user (Amazon Linux 2)
+    - SSH key stored in SSM Parameter Store: ${module.internal_jump_ssh_key_parameter.parameter_name}
+
+    Prerequisites:
+    - AWS Session Manager plugin: https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html
+    - IAM permissions for ssm:StartSession on external jump instance
+    ================================================================================
   EOT
 }
