@@ -203,6 +203,7 @@ module "internal_jump_sg_rules" {
         sg_id       = [module.external_jump_sg.sg_id]
       }
     ],
+    # TODO: Add only database and redis ports as egress rules after they are defined.
     [
       {
         type        = "egress"
