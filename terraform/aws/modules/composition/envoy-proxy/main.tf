@@ -47,9 +47,10 @@ resource "aws_ssm_parameter" "envoy_private_key" {
 # If SSH is required, use the command above to retrieve the private key
 
 # =========================================================================
-# S3 Bucket for Envoy Logs
+# S3 Bucket for Envoy Logs (Optional - Create only if needed)
 # =========================================================================
 module "logs_bucket" {
+  count  = var.create_logs_bucket ? 1 : 0
   source = "../../base/s3-bucket"
 
   bucket_name       = "${local.name_prefix}-logs-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
@@ -131,26 +132,38 @@ module "envoy_iam_role" {
   count  = var.create_iam_role ? 1 : 0
   source = "../../base/iam-role"
 
-  name                    = "${local.name_prefix}-role"
+  name                    = "${var.environment}-${var.project_name}-envoy-role"
   description             = "IAM role for Envoy proxy instances"
   service_identifiers     = ["ec2.amazonaws.com"]
   create_instance_profile = true
 
-  managed_policy_arns = [
-    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
-    "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
-  ]
-
+  # Restrictive inline policies
   inline_policies = {
+    # CloudWatch - Restricted to PutMetricData only
+    envoy-cloudwatch-metrics = jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Sid    = "PutMetricData"
+          Effect = "Allow"
+          Action = [
+            "cloudwatch:PutMetricData"
+          ]
+          Resource = "*"
+        }
+      ]
+    })
+
+    # S3 Config Bucket - Read-only access
     envoy-config-bucket-read = jsonencode({
       Version = "2012-10-17"
       Statement = [
         {
+          Sid    = "ConfigBucketRead"
           Effect = "Allow"
           Action = [
             "s3:GetObject",
-            "s3:ListBucket",
-            "s3:GetBucketLocation"
+            "s3:ListBucket"
           ]
           Resource = [
             local.config_bucket_arn,
@@ -160,37 +173,21 @@ module "envoy_iam_role" {
       ]
     })
 
+    # S3 Logs Bucket - Write access for log archival
     envoy-logs-bucket-write = jsonencode({
       Version = "2012-10-17"
       Statement = [
         {
+          Sid    = "LogsBucketWrite"
           Effect = "Allow"
           Action = [
-            "s3:GetObject",
             "s3:PutObject",
-            "s3:DeleteObject",
-            "s3:ListBucket",
-            "s3:GetBucketLocation"
+            "s3:ListBucket"
           ]
           Resource = [
-            module.logs_bucket.bucket_arn,
-            "${module.logs_bucket.bucket_arn}/*"
+            local.logs_bucket_arn,
+            "${local.logs_bucket_arn}/*"
           ]
-        }
-      ]
-    })
-
-    envoy-ssm-parameters = jsonencode({
-      Version = "2012-10-17"
-      Statement = [
-        {
-          Effect = "Allow"
-          Action = [
-            "ssm:GetParameter",
-            "ssm:GetParameters",
-            "ssm:GetParametersByPath"
-          ]
-          Resource = "*"
         }
       ]
     })
@@ -203,6 +200,22 @@ module "envoy_iam_role" {
 data "aws_iam_role" "existing_envoy_role" {
   count = var.create_iam_role ? 0 : 1
   name  = var.existing_iam_role_name
+}
+
+# Create a new instance profile for existing IAM role
+# This allows you to reuse an existing IAM role but create a fresh instance profile
+resource "aws_iam_instance_profile" "envoy_profile" {
+  count = !var.create_iam_role && var.create_instance_profile ? 1 : 0
+
+  name = "${local.name_prefix}-instance-profile"
+  role = data.aws_iam_role.existing_envoy_role[0].name
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-instance-profile"
+    }
+  )
 }
 
 # =========================================================================
@@ -218,48 +231,59 @@ module "lb_security_group" {
   description = "Security group for Envoy proxy Application Load Balancer"
   vpc_id      = var.vpc_id
 
-  ingress_rules = [
-    {
-      description = "Allow HTTP from CloudFront/Internet (IPv4)"
-      from_port   = var.alb_http_listener_port
-      to_port     = var.alb_http_listener_port
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-    },
-    {
-      description      = "Allow HTTP from CloudFront/Internet (IPv6)"
-      from_port        = var.alb_http_listener_port
-      to_port          = var.alb_http_listener_port
-      protocol         = "tcp"
-      ipv6_cidr_blocks = ["::/0"]
-    },
-    {
-      description = "Allow HTTPS from CloudFront/Internet (IPv4)"
-      from_port   = var.alb_https_listener_port
-      to_port     = var.alb_https_listener_port
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-    },
-    {
-      description      = "Allow HTTPS from CloudFront/Internet (IPv6)"
-      from_port        = var.alb_https_listener_port
-      to_port          = var.alb_https_listener_port
-      protocol         = "tcp"
-      ipv6_cidr_blocks = ["::/0"]
-    }
-  ]
+  tags = local.common_tags
+}
 
-  egress_rules = [
+# =========================================================================
+# Load Balancer Security Group - Ingress Rules (Environment Specific)
+# =========================================================================
+# All ingress rules are now defined in the live layer (terraform.tfvars)
+# No hardcoded defaults - full flexibility per environment
+module "lb_ingress_rules" {
+  count  = var.create_lb ? 1 : 0
+  source = "../../base/security-group-rules"
+
+  security_group_id = module.lb_security_group[0].sg_id
+  rules = [
+    for rule in var.lb_ingress_rules : merge(rule, { type = "ingress" })
+  ]
+}
+
+# =========================================================================
+# Load Balancer Security Group - Egress Rules (Environment Specific)
+# =========================================================================
+# All egress rules are now defined in the live layer (terraform.tfvars)
+# No hardcoded defaults - full flexibility per environment
+module "lb_egress_rules" {
+  count  = var.create_lb ? 1 : 0
+  source = "../../base/security-group-rules"
+
+  security_group_id = module.lb_security_group[0].sg_id
+  rules = [
+    for rule in var.lb_egress_rules : merge(rule, { type = "egress" })
+  ]
+}
+
+# =========================================================================
+# Load Balancer Security Group - Default Egress Rules (Automatic)
+# =========================================================================
+# Automatically allow traffic from LB to Envoy ASG on configured traffic port
+# This rule is essential for LB → ASG communication and is created automatically
+module "lb_default_egress_rules" {
+  count  = var.create_lb ? 1 : 0
+  source = "../../base/security-group-rules"
+
+  security_group_id = module.lb_security_group[0].sg_id
+  rules = [
     {
-      description = "Allow traffic to Envoy ASG instances on configured port"
+      type        = "egress"
+      description = "Allow traffic to Envoy ASG on traffic port"
       from_port   = var.envoy_traffic_port
       to_port     = var.envoy_traffic_port
       protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]  # Will be restricted by ASG SG
+      sg_id       = [module.asg_security_group.sg_id]
     }
   ]
-
-  tags = local.common_tags
 }
 
 # Security Group for Envoy ASG Instances
@@ -270,76 +294,121 @@ module "asg_security_group" {
   description = "Security group for Envoy proxy ASG instances"
   vpc_id      = var.vpc_id
 
-  ingress_rules = concat(
+  tags = local.common_tags
+}
+
+# =========================================================================
+# ASG Security Group - Default Ingress Rules
+# =========================================================================
+module "asg_default_ingress_rules" {
+  source = "../../base/security-group-rules"
+
+  security_group_id = module.asg_security_group.sg_id
+  rules = concat(
     [
       {
-        description              = "Allow traffic from ALB to Envoy"
-        from_port                = var.envoy_traffic_port
-        to_port                  = var.envoy_traffic_port
-        protocol                 = "tcp"
-        # Use existing LB SG if provided, otherwise use the newly created one
-        source_security_group_id = var.create_lb ? module.lb_security_group[0].sg_id : var.existing_lb_security_group_id
+        type        = "ingress"
+        description = "Allow traffic from ALB to Envoy"
+        from_port   = var.envoy_traffic_port
+        to_port     = var.envoy_traffic_port
+        protocol    = "tcp"
+        sg_id       = [var.create_lb ? module.lb_security_group[0].sg_id : var.existing_lb_security_group_id]
       }
     ],
     # Only add health check rule if port is different from traffic port
     var.envoy_health_check_port != var.envoy_traffic_port ? [
       {
-        description              = "Allow health checks from ALB"
-        from_port                = var.envoy_health_check_port
-        to_port                  = var.envoy_health_check_port
-        protocol                 = "tcp"
-        source_security_group_id = var.create_lb ? module.lb_security_group[0].sg_id : var.existing_lb_security_group_id
+        type        = "ingress"
+        description = "Allow health checks from ALB"
+        from_port   = var.envoy_health_check_port
+        to_port     = var.envoy_health_check_port
+        protocol    = "tcp"
+        sg_id       = [var.create_lb ? module.lb_security_group[0].sg_id : var.existing_lb_security_group_id]
       }
     ] : []
   )
+}
 
-  egress_rules = concat(
+# =========================================================================
+# ASG Security Group - Additional Ingress Rules (Environment Specific)
+# =========================================================================
+module "asg_ingress_rules" {
+  source = "../../base/security-group-rules"
+
+  security_group_id = module.asg_security_group.sg_id
+  rules = [
+    for rule in var.ingress_rules : merge(rule, { type = "ingress" })
+  ]
+}
+
+# =========================================================================
+# ASG Security Group - Default Egress Rules
+# =========================================================================
+module "asg_default_egress_rules" {
+  source = "../../base/security-group-rules"
+
+  security_group_id = module.asg_security_group.sg_id
+  rules = concat(
     [
       {
+        type        = "egress"
         description = "Allow traffic to Istio Internal LB"
         from_port   = var.envoy_upstream_port
         to_port     = var.envoy_upstream_port
         protocol    = "tcp"
-        cidr_blocks = ["0.0.0.0/0"]  # Will be restricted by Istio ALB SG
+        cidr        = ["0.0.0.0/0"]  # Will be restricted by Istio ALB SG
       },
       {
+        type        = "egress"
         description = "Allow DNS UDP"
         from_port   = 53
         to_port     = 53
         protocol    = "udp"
-        cidr_blocks = ["0.0.0.0/0"]
+        cidr        = ["0.0.0.0/0"]
       },
       {
+        type        = "egress"
         description = "Allow DNS TCP"
         from_port   = 53
         to_port     = 53
         protocol    = "tcp"
-        cidr_blocks = ["0.0.0.0/0"]
+        cidr        = ["0.0.0.0/0"]
       }
     ],
     # Add S3 access rule - use VPC endpoint prefix list if provided, otherwise use 0.0.0.0/0
     var.s3_vpc_endpoint_prefix_list_id != null ? [
       {
-        description     = "Allow HTTPS to S3 via VPC Gateway Endpoint"
-        from_port       = 443
-        to_port         = 443
-        protocol        = "tcp"
-        prefix_list_ids = [var.s3_vpc_endpoint_prefix_list_id]
-        cidr_blocks     = []
+        type        = "egress"
+        description = "Allow HTTPS to S3 via VPC Gateway Endpoint"
+        from_port   = 443
+        to_port     = 443
+        protocol    = "tcp"
+        cidr        = []
+        # Note: prefix_list_ids support needs to be added to the security-group-rules module
       }
     ] : [
       {
-        description     = "Allow HTTPS to S3"
-        from_port       = 443
-        to_port         = 443
-        protocol        = "tcp"
-        cidr_blocks     = ["0.0.0.0/0"]
-        prefix_list_ids = []
+        type        = "egress"
+        description = "Allow HTTPS to S3"
+        from_port   = 443
+        to_port     = 443
+        protocol    = "tcp"
+        cidr        = ["0.0.0.0/0"]
       }
     ]
   )
+}
 
-  tags = local.common_tags
+# =========================================================================
+# ASG Security Group - Additional Egress Rules (Environment Specific)
+# =========================================================================
+module "asg_egress_rules" {
+  source = "../../base/security-group-rules"
+
+  security_group_id = module.asg_security_group.sg_id
+  rules = [
+    for rule in var.egress_rules : merge(rule, { type = "egress" })
+  ]
 }
 
 # =========================================================================
@@ -676,6 +745,10 @@ module "asg" {
   enable_instance_refresh      = var.enable_instance_refresh
   instance_refresh_preferences = var.instance_refresh_preferences
   instance_refresh_triggers    = var.instance_refresh_triggers
+
+  # Auto Scaling Policies
+  enable_scaling_policies = var.enable_autoscaling
+  scaling_policies        = var.scaling_policies
 
   tags          = local.common_tags
   instance_tags = merge(

@@ -6,24 +6,248 @@ project_name = "hyperswitch"
 
 # Network Configuration
 # TODO: Replace with your actual VPC and subnet IDs
-vpc_id = "vpc-XXXXXXXXXXXXX"  # Replace with your VPC ID
+vpc_id = "vpc-XXXXXXXXXXXXXXXXX"  # Replace with your VPC ID
 proxy_subnet_ids = [
-  "subnet-XXXXXXXXXXXXX",  # Proxy subnet AZ1
-  "subnet-XXXXXXXXXXXXX"   # Proxy subnet AZ2
+  "subnet-XXXXXXXXXXXXXXXXX",  # Proxy subnet AZ1
+  "subnet-XXXXXXXXXXXXXXXXX",
+  "subnet-XXXXXXXXXXXXXXXXX"   # Proxy subnet AZ2
 ]
 lb_subnet_ids = [
-  "subnet-XXXXXXXXXXXXX",  # ALB subnet AZ1
-  "subnet-XXXXXXXXXXXXX"   # ALB subnet AZ2
+  "subnet-XXXXXXXXXXXXXXXXX",  # ALB subnet AZ1
+  "subnet-XXXXXXXXXXXXXXXXX",
+  "subnet-XXXXXXXXXXXXXXXXX"   # ALB subnet AZ2
 ]
 
 # NOTE: EKS Security Group ID is NOT needed for Envoy proxy
 # Traffic flow: CloudFront → External ALB → Envoy ASG → Internal ALB → EKS
 
-# Envoy Configuration
-envoy_admin_port    = 9901
-envoy_listener_port = 10000
-envoy_traffic_port      = 80
-envoy_health_check_port = 80 
+# ============================================================================
+# Security Group Rules (Environment Specific)
+# ============================================================================
+# Define environment-specific ingress and egress rules for ASG and External LB
+#
+# Each rule must have EXACTLY ONE of: 'cidr', 'ipv6_cidr', or 'sg_id':
+#   - cidr: list(string) for IPv4 CIDR blocks (e.g., ["10.0.0.0/16"] or ["0.0.0.0/0"])
+#   - ipv6_cidr: list(string) for IPv6 CIDR blocks (e.g., ["::/0"])
+#   - sg_id: list(string) for Security Group IDs (e.g., ["sg-xxxxx"])
+#
+# Note: The 'type' field is automatically set by the composition layer
+# (ingress_rules → type="ingress", egress_rules → type="egress")
+#
+# ============================================================================
+# IMPORTANT: Dynamic Security Group References
+# ============================================================================
+# When create_lb = true (creating new ALB), the ALB security group is created
+# dynamically. You can reference it using: module.envoy_proxy.alb_security_group_id
+#
+# However, on FIRST terraform apply, this output doesn't exist yet. So:
+#
+# OPTION 1: Two-step apply (Recommended for new deployments)
+#   Step 1: terraform apply (creates ALB with its security group)
+#   Step 2: Update ingress_rules to reference module.envoy_proxy.alb_security_group_id
+#   Step 3: terraform apply (adds ASG ingress rules from ALB SG)
+#
+# OPTION 2: Use existing ALB (create_lb = false)
+#   - Set create_lb = false
+#   - Provide existing_lb_arn and existing_lb_security_group_id
+#   - Reference existing_lb_security_group_id in ingress_rules
+#
+# OPTION 3: Temporary SG IDs (Current configuration)
+#   - Use temporary security group IDs for testing
+#   - Replace with actual SG IDs after first apply
+#
+# ============================================================================
+
+# ============================================================================
+# ASG INGRESS RULES
+# ============================================================================
+# Note: For dynamically created ALB security group, use:
+#   sg_id = [module.envoy_proxy.alb_security_group_id]
+# This will be available after first terraform apply when create_lb = true
+
+ingress_rules = [
+  # SSH access from external jumpbox
+  {
+    description = "Allow SSH access from external jumpbox"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    sg_id       = ["sg-01f89cd281d1c015d"]  # external-jumpbox-sg (temp for testing)
+  },
+  # HTTPS from Ingress LB (if using existing external LB, update this SG ID)
+  {
+    description = "Allow HTTPS from Ingress LB"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    sg_id       = ["sg-056ea63a24a4f8d63"]  # Ingress LB SG (temp for testing)
+    # Note: When create_lb = true, this rule may not be needed as ALB SG is auto-created
+  },
+  # Custom TCP 8443 from External LB
+  {
+    description = "Allow custom traffic on 8443 from External LB"
+    from_port   = 8443
+    to_port     = 8443
+    protocol    = "tcp"
+    sg_id       = ["sg-056ea63a24a4f8d63"]  # External LB SG (temp for testing)
+    # Note: When create_lb = true, update to use: module.envoy_proxy.alb_security_group_id
+  },
+  # DUPLICATE - COMMENTED OUT: HTTPS from External LB (same as line 78-85)
+  # {
+  #   description = "Allow HTTPS from External LB"
+  #   from_port   = 443
+  #   to_port     = 443
+  #   protocol    = "tcp"
+  #   sg_id       = ["sg-056ea63a24a4f8d63"]  # External LB SG (temp for testing)
+  # },
+  # Prometheus metrics scraping from external Prometheus
+  {
+    description = "Allow Prometheus metrics scraping (external)"
+    from_port   = 9901
+    to_port     = 9901
+    protocol    = "tcp"
+    sg_id       = ["sg-01f89cd281d1c015d"]  # external-prometheus-sg (temp for testing)
+  },
+  # Prometheus metrics from EKS monitoring
+  {
+    description = "Allow Prometheus metrics from EKS monitoring"
+    from_port   = 9273
+    to_port     = 9273
+    protocol    = "tcp"
+    sg_id       = ["sg-01f89cd281d1c015d"]  # eks-monitoring-sg (temp for testing)
+  },
+  # DUPLICATE - COMMENTED OUT: Metrics scrape from EKS worker nodes (same as line 104-110)
+  # {
+  #   description = "Allow metrics scrape from cluster"
+  #   from_port   = 9273
+  #   to_port     = 9273
+  #   protocol    = "tcp"
+  #   sg_id       = ["sg-01f89cd281d1c015d"]  # eks-worker-common-sg (temp for testing)
+  # },
+  # Custom TCP 8090 from EKS monitoring
+  {
+    description = "Allow custom traffic on 8090 from EKS monitoring"
+    from_port   = 8090
+    to_port     = 8090
+    protocol    = "tcp"
+    sg_id       = ["sg-01f89cd281d1c015d"]  # eks-monitoring-sg (temp for testing)
+  },
+]
+
+# ============================================================================
+# ASG EGRESS RULES
+# ============================================================================
+# Note: S3 access via VPC endpoint and upstream traffic rules are configured
+# separately in the composition layer. These are additional environment-specific rules.
+
+egress_rules = [
+  # HTTP to Internal ALB (EKS)
+  {
+    description = "Allow HTTP to Internal ALB (EKS)"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    sg_id       = ["sg-01f89cd281d1c015d"]  # k8s-elb (Internal ALB SG) - temp for testing
+  },
+  # Custom TCP 5000 to Beacon service
+  {
+    description = "Allow traffic to Beacon service"
+    from_port   = 5000
+    to_port     = 5000
+    protocol    = "tcp"
+    sg_id       = ["sg-056ea63a24a4f8d63"]  # beacon-sg - temp for testing
+  },
+  # All traffic to internet (fallback rule)
+  # Note: This is broad - consider restricting in production
+  {
+    description = "Allow all outbound traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr        = ["0.0.0.0/0"]
+  },
+]
+
+# ============================================================================
+# EXTERNAL LOAD BALANCER SECURITY GROUP RULES
+# ============================================================================
+# Ingress/egress rules for the external ALB security group
+# Only used when create_lb = true (creating new ALB)
+#
+# All rules are defined here for full control per environment.
+
+lb_ingress_rules = [
+  # HTTP from anywhere (IPv4)
+  {
+    description = "Allow HTTP from anywhere (IPv4)"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr        = ["0.0.0.0/0"]
+  },
+  # HTTP from anywhere (IPv6)
+  {
+    description = "Allow HTTP from anywhere (IPv6)"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    ipv6_cidr   = ["::/0"]
+  },
+  # HTTPS from anywhere (IPv4)
+  {
+    description = "Allow HTTPS from anywhere (IPv4)"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr        = ["0.0.0.0/0"]
+  },
+  # HTTPS from anywhere (IPv6)
+  {
+    description = "Allow HTTPS from anywhere (IPv6)"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    ipv6_cidr   = ["::/0"]
+  },
+  # Custom TCP 8443 from anywhere (IPv4)
+  {
+    description = "Allow custom traffic on 8443 from anywhere (IPv4)"
+    from_port   = 8443
+    to_port     = 8443
+    protocol    = "tcp"
+    cidr        = ["0.0.0.0/0"]
+  },
+  # Custom TCP 8443 from anywhere (IPv6)
+  {
+    description = "Allow custom traffic on 8443 from anywhere (IPv6)"
+    from_port   = 8443
+    to_port     = 8443
+    protocol    = "tcp"
+    ipv6_cidr   = ["::/0"]
+  },
+]
+
+lb_egress_rules = [
+  # Custom TCP 5000 to Beacon service
+  {
+    description = "Allow traffic to Beacon service"
+    from_port   = 5000
+    to_port     = 5000
+    protocol    = "tcp"
+    sg_id       = ["sg-056ea63a24a4f8d63"]  # beacon-sg - temp for testing
+  },
+  # Note: Traffic to Envoy ASG on envoy_traffic_port is automatically handled
+  # by the composition layer (creates egress rule to ASG security group dynamically)
+]
+
+# ============================================================================
+# Envoy Port Configuration
+# ============================================================================
+
+# Traffic flow: CloudFront → External ALB:80 → Envoy:80 → Internal ALB:80 → EKS
+
+envoy_traffic_port      = 80  # Target group port - ALB forwards traffic to this port on Envoy instances
+envoy_health_check_port = 80  # Health check port - ALB sends GET /healthz requests to this port 
 
 #=======================================================================
 # LAUNCH TEMPLATE CONFIGURATION
@@ -71,11 +295,59 @@ min_size         = 1
 max_size         = 2
 desired_capacity = 1
 
-# S3 Configuration
+# ============================================================================
+# Auto Scaling Policies (CPU and Memory-based)
+# ============================================================================
+# Enable auto-scaling to automatically add/remove instances based on load
+# Uses AWS built-in metrics - no custom CloudWatch metrics needed
+#
+# How it works:
+# - CPU-based: Scales when average CPU across all instances exceeds target
+# - Memory-based: Scales when average memory usage exceeds target (requires CloudWatch agent)
+# - Target Tracking: AWS automatically creates scale-up AND scale-down policies
+# - Cooldown: Prevents rapid scaling (scale-out: 60s, scale-in: 300s by default)
+#
+# Example scenario with cpu_target_tracking at 70%:
+# - Current: 1 instance at 85% CPU → ASG adds 1 instance
+# - Result: 2 instances at ~42% CPU → Stable
+# - Later: 2 instances at 20% CPU → ASG removes 1 instance after 15 min
+#
+# Recommendation for dev:
+# - Start with CPU-based scaling only
+# - Monitor behavior, then add memory-based if needed
+# ============================================================================
+
+enable_autoscaling = true  # Set to true to enable auto-scaling
+
+scaling_policies = {
+  # CPU Target Tracking - Recommended for most workloads
+  cpu_target_tracking = {
+    enabled      = true  # Set to true to enable
+    target_value = 70.0   # Scale when average CPU > 70%
+  }
+
+  # Memory Target Tracking - Optional (requires CloudWatch agent)
+  # Note: CloudWatch agent must be installed and configured on instances
+  # to publish memory metrics to CloudWatch under "CWAgent" namespace
+  memory_target_tracking = {
+    enabled      = false  # Set to true after installing CloudWatch agent
+    target_value = 70.0   # Scale when average memory > 70%
+  }
+}
+
+# S3 Logs Bucket Configuration
+# Create a new S3 bucket for logs (dev environment)
+create_logs_bucket = true  # Automatically creates bucket: dev-hyperswitch-envoy-logs-<account-id>-eu-central-1
+
+# NOTE: If using existing logs bucket, set create_logs_bucket = false and provide:
+# logs_bucket_name = "app-proxy-logs-225681119357-eu-central-1"
+# logs_bucket_arn  = "arn:aws:s3:::app-proxy-logs-225681119357-eu-central-1"
+
+# S3 Config Bucket Configuration
 # Create a new S3 bucket for configuration files (dev environment)
 create_config_bucket = true  # Automatically creates bucket: dev-hyperswitch-envoy-config-<account-id>-eu-central-1
 
-# NOTE: If using existing bucket, set create_config_bucket = false and provide:
+# NOTE: If using existing config bucket, set create_config_bucket = false and provide:
 # config_bucket_name = "app-proxy-config-225681119357-eu-central-1"
 # config_bucket_arn  = "arn:aws:s3:::app-proxy-config-225681119357-eu-central-1"
 
