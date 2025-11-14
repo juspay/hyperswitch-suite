@@ -16,20 +16,20 @@ project_name = "hyperswitch"
 # Network Configuration
 # ============================================================================
 # TODO: Replace with your actual VPC and subnet IDs
-vpc_id   = "vpc-xxx"  # Replace with your VPC ID
+vpc_id   = "vpc-xxxx"  # Replace with your VPC ID
 vpc_cidr = "10.0.0.0/16"            # Replace with your VPC CIDR block
 
 # Public subnet for external jump host (must have internet gateway)
-public_subnet_id = "subnet-xxx"  # Replace with your public(management) subnet ID
+public_subnet_id = "subnet-xxxx"  # Replace with your public(management) subnet ID
 
 # Private subnet for internal jump host
-private_subnet_id = "subnet-xxx"  # Replace with your private(Utils) subnet ID
+private_subnet_id = "subnet-xxxx"  # Replace with your private(Utils) subnet ID
 
 # ============================================================================
 # Instance Configuration
 # ============================================================================
 # Leave ami_id as null to automatically use latest Amazon Linux 2 AMI
-ami_id = "ami-xxx"  # Replace with your desired AMI ID or leave as null
+ami_id = "ami-xxxx"
 
 # Instance type - t3.micro is sufficient for jump hosts (2 vCPU, 1 GB RAM)
 # Upgrade to t3.small if needed (2 vCPU, 2 GB RAM)

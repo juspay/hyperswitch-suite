@@ -21,12 +21,14 @@ resource "tls_private_key" "internal_jump" {
 
 # Store private key in SSM Parameter Store
 module "internal_jump_ssh_key_parameter" {
-  source = "../../base/ssm-parameter"
+  source  = "terraform-aws-modules/ssm-parameter/aws"
+  version = "~> 1.0"
 
   name        = "/jump-host/${var.environment}/internal/ssh-private-key"
   description = "Private SSH key for accessing internal jump host from external jump"
   type        = "SecureString"
   value       = tls_private_key.internal_jump.private_key_pem
+  secure_type = true
 
   tags = merge(
     local.common_tags,
@@ -38,46 +40,52 @@ module "internal_jump_ssh_key_parameter" {
 
 # IAM Role for External Jump Host
 module "external_jump_iam_role" {
-  source = "../../base/iam-role"
+  source  = "terraform-aws-modules/iam/aws//modules/iam-role"
+  version = "~> 6.2"
 
   name                    = "${var.environment}-${var.project_name}-external-jump-role"
-  service_identifiers     = ["ec2.amazonaws.com"]
   create_instance_profile = true
 
-  managed_policy_arns = [
-    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
-    "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
-  ]
+  # Trust policy for EC2
+  trust_policy_permissions = {
+    EC2AssumeRole = {
+      actions = ["sts:AssumeRole"]
+      principals = [{
+        type        = "Service"
+        identifiers = ["ec2.amazonaws.com"]
+      }]
+    }
+  }
 
-  inline_policies = {
-    external-jump-cloudwatch-logs = jsonencode({
-      Version = "2012-10-17"
-      Statement = [
-        {
-          Effect = "Allow"
-          Action = [
-            "logs:CreateLogGroup",
-            "logs:CreateLogStream",
-            "logs:PutLogEvents",
-            "logs:DescribeLogStreams"
-          ]
-          Resource = "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/jump-host/${var.environment}/external*"
-        }
+  # Managed policies
+  policies = {
+    AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+    CloudWatchAgentServerPolicy  = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+  }
+
+  # Inline policies
+  create_inline_policy = true
+  inline_policy_permissions = {
+    CloudWatchLogs = {
+      sid    = "CloudWatchLogs"
+      effect = "Allow"
+      actions = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:DescribeLogStreams"
       ]
-    })
-    external-jump-ssm-parameters = jsonencode({
-      Version = "2012-10-17"
-      Statement = [
-        {
-          Effect = "Allow"
-          Action = [
-            "ssm:GetParameter",
-            "ssm:GetParameters"
-          ]
-          Resource = "arn:aws:ssm:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:parameter/jump-host/${var.environment}/internal/*"
-        }
+      resources = ["arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/jump-host/${var.environment}/external*"]
+    }
+    SSMParameters = {
+      sid    = "SSMParameters"
+      effect = "Allow"
+      actions = [
+        "ssm:GetParameter",
+        "ssm:GetParameters"
       ]
-    })
+      resources = ["arn:aws:ssm:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:parameter/jump-host/${var.environment}/internal/*"]
+    }
   }
 
   tags = local.common_tags
@@ -85,44 +93,85 @@ module "external_jump_iam_role" {
 
 # IAM Role for Internal Jump Host (No SSM Session Manager)
 module "internal_jump_iam_role" {
-  source = "../../base/iam-role"
+  source  = "terraform-aws-modules/iam/aws//modules/iam-role"
+  version = "~> 6.2"
 
   name                    = "${var.environment}-${var.project_name}-internal-jump-role"
-  service_identifiers     = ["ec2.amazonaws.com"]
   create_instance_profile = true
 
-  managed_policy_arns = [
-    "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
-  ]
+  # Trust policy for EC2
+  trust_policy_permissions = {
+    EC2AssumeRole = {
+      actions = ["sts:AssumeRole"]
+      principals = [{
+        type        = "Service"
+        identifiers = ["ec2.amazonaws.com"]
+      }]
+    }
+  }
 
-  inline_policies = {
-    internal-jump-cloudwatch-logs = jsonencode({
-      Version = "2012-10-17"
-      Statement = [
-        {
-          Effect = "Allow"
-          Action = [
-            "logs:CreateLogGroup",
-            "logs:CreateLogStream",
-            "logs:PutLogEvents",
-            "logs:DescribeLogStreams"
-          ]
-          Resource = "arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/jump-host/${var.environment}/internal*"
-        }
+  # Managed policies
+  policies = {
+    CloudWatchAgentServerPolicy = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+  }
+
+  # Inline policies
+  create_inline_policy = true
+  inline_policy_permissions = {
+    CloudWatchLogs = {
+      sid    = "CloudWatchLogs"
+      effect = "Allow"
+      actions = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:DescribeLogStreams"
       ]
-    })
+      resources = ["arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/jump-host/${var.environment}/internal*"]
+    }
   }
 
   tags = local.common_tags
 }
 
-# Security Group for External Jump Host
+# Security Group for External Jump Host (with rules)
 module "external_jump_sg" {
-  source = "../../base/security-group"
+  source  = "terraform-aws-modules/security-group/aws"
+  version = "~> 5.0"
 
-  name        = "${local.external_name_prefix}-sg"
-  description = "Security group for external jump host"
-  vpc_id      = var.vpc_id
+  name            = "${local.external_name_prefix}-sg"
+  use_name_prefix = false
+  description     = "Security group for external jump host"
+  vpc_id          = var.vpc_id
+
+  # Egress rule to internal jump host on SSH
+  egress_with_source_security_group_id = [
+    {
+      description              = "Allow SSH to internal jump host"
+      from_port                = 22
+      to_port                  = 22
+      protocol                 = "tcp"
+      source_security_group_id = module.internal_jump_sg.security_group_id
+    }
+  ]
+
+  # Egress rules with CIDR blocks
+  egress_with_cidr_blocks = [
+    {
+      description = "Allow HTTPS for Session Manager and package downloads"
+      from_port   = 443
+      to_port     = 443
+      protocol    = "tcp"
+      cidr_blocks = "0.0.0.0/0"
+    },
+    {
+      description = "Allow HTTP for package downloads"
+      from_port   = 80
+      to_port     = 80
+      protocol    = "tcp"
+      cidr_blocks = "0.0.0.0/0"
+    }
+  ]
 
   tags = merge(
     local.common_tags,
@@ -132,89 +181,44 @@ module "external_jump_sg" {
   )
 }
 
-# Security Group for Internal Jump Host
+# Security Group for Internal Jump Host (with rules)
 module "internal_jump_sg" {
-  source = "../../base/security-group"
+  source  = "terraform-aws-modules/security-group/aws"
+  version = "~> 5.0"
 
-  name        = "${local.internal_name_prefix}-sg"
-  description = "Security group for internal jump host"
-  vpc_id      = var.vpc_id
+  name            = "${local.internal_name_prefix}-sg"
+  use_name_prefix = false
+  description     = "Security group for internal jump host"
+  vpc_id          = var.vpc_id
+
+  # Ingress rule from external jump host on SSH
+  ingress_with_source_security_group_id = [
+    {
+      description              = "Allow SSH from external jump host only"
+      from_port                = 22
+      to_port                  = 22
+      protocol                 = "tcp"
+      source_security_group_id = module.external_jump_sg.security_group_id
+    }
+  ]
+
+  # TODO: Add only database and redis ports as egress rules after they are defined.
+  # Egress rule to allow all outbound traffic
+  egress_with_cidr_blocks = [
+    {
+      description = "Allow all outbound traffic"
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_blocks = "0.0.0.0/0"
+    }
+  ]
 
   tags = merge(
     local.common_tags,
     {
       Name = "${local.internal_name_prefix}-sg"
     }
-  )
-}
-
-# Security Group Rules for External Jump Host
-module "external_jump_sg_rules" {
-  source = "../../base/security-group-rules"
-
-  security_group_id = module.external_jump_sg.sg_id
-
-  rules = [
-    {
-      type        = "egress"
-      description = "Allow SSH to internal jump host"
-      from_port   = 22
-      to_port     = 22
-      protocol    = "tcp"
-      cidr        = null
-      sg_id       = [module.internal_jump_sg.sg_id]
-    },
-    {
-      type        = "egress"
-      description = "Allow HTTPS for Session Manager and package downloads"
-      from_port   = 443
-      to_port     = 443
-      protocol    = "tcp"
-      cidr        = ["0.0.0.0/0"]
-      sg_id       = null
-    },
-    {
-      type        = "egress"
-      description = "Allow HTTP for package downloads"
-      from_port   = 80
-      to_port     = 80
-      protocol    = "tcp"
-      cidr        = ["0.0.0.0/0"]
-      sg_id       = null
-    }
-  ]
-}
-
-# Security Group Rules for Internal Jump Host
-module "internal_jump_sg_rules" {
-  source = "../../base/security-group-rules"
-
-  security_group_id = module.internal_jump_sg.sg_id
-
-  rules = concat(
-    [
-      {
-        type        = "ingress"
-        description = "Allow SSH from external jump host only"
-        from_port   = 22
-        to_port     = 22
-        protocol    = "tcp"
-        cidr        = null
-        sg_id       = [module.external_jump_sg.sg_id]
-      }
-    ],
-    # TODO: Add only database and redis ports as egress rules after they are defined.
-    [
-      {
-        type        = "egress"
-        description = "Allow all outbound traffic"
-        from_port   = 0
-        to_port     = 0
-        protocol    = "-1"
-        cidr        = ["0.0.0.0/0"]
-        sg_id       = null
-      }
-    ]
   )
 }
 
@@ -233,22 +237,31 @@ resource "aws_key_pair" "internal_jump" {
 
 # Internal Jump Host Instance (must be created first to get its IP)
 module "internal_jump_instance" {
-  source = "../../base/ec2-instance"
+  source  = "terraform-aws-modules/ec2-instance/aws"
+  version = "~> 6.0"
 
-  name                        = local.internal_name_prefix
-  ami_id                      = local.ami_id
-  instance_type               = var.instance_type
-  subnet_id                   = var.private_subnet_id
-  security_group_ids          = [module.internal_jump_sg.sg_id]
-  iam_instance_profile_name   = module.internal_jump_iam_role.instance_profile_name
-  key_name                    = aws_key_pair.internal_jump.key_name
+  name = local.internal_name_prefix
+
+  ami                    = local.ami_id
+  instance_type          = var.instance_type
+  subnet_id              = var.private_subnet_id
+  vpc_security_group_ids = [module.internal_jump_sg.security_group_id]
+  iam_instance_profile   = module.internal_jump_iam_role.instance_profile_name
+  key_name               = aws_key_pair.internal_jump.key_name
+
   associate_public_ip_address = false
   monitoring                  = true
-  user_data                   = local.userdata_internal
+  user_data_base64            = base64encode(local.userdata_internal)
 
-  root_volume_size      = var.root_volume_size
-  root_volume_type      = var.root_volume_type
-  root_volume_encrypted = true
+  # Root volume configuration
+  root_block_device = {
+    size                  = var.root_volume_size
+    type                  = var.root_volume_type
+    encrypted             = true
+    delete_on_termination = true
+  }
+
+  # IMDSv2 is enabled by default in v5+
 
   tags = merge(
     local.common_tags,
@@ -266,26 +279,35 @@ module "internal_jump_instance" {
 
 # External Jump Host Instance (created after internal to get its IP)
 module "external_jump_instance" {
-  source = "../../base/ec2-instance"
+  source  = "terraform-aws-modules/ec2-instance/aws"
+  version = "~> 6.0"
 
-  name                        = local.external_name_prefix
-  ami_id                      = local.ami_id
-  instance_type               = var.instance_type
-  subnet_id                   = var.public_subnet_id
-  security_group_ids          = [module.external_jump_sg.sg_id]
-  iam_instance_profile_name   = module.external_jump_iam_role.instance_profile_name
+  name = local.external_name_prefix
+
+  ami                    = local.ami_id
+  instance_type          = var.instance_type
+  subnet_id              = var.public_subnet_id
+  vpc_security_group_ids = [module.external_jump_sg.security_group_id]
+  iam_instance_profile   = module.external_jump_iam_role.instance_profile_name
+
   associate_public_ip_address = true
   monitoring                  = true
-  user_data = templatefile("${path.module}/templates/userdata.sh", {
-    jump_type          = "external"
-    environment        = var.environment
-    cloudwatch_region  = data.aws_region.current.id
-    internal_jump_ip   = module.internal_jump_instance.private_ip
-  })
+  user_data_base64 = base64encode(templatefile("${path.module}/templates/userdata.sh", {
+    jump_type         = "external"
+    environment       = var.environment
+    cloudwatch_region = data.aws_region.current.id
+    internal_jump_ip  = module.internal_jump_instance.private_ip
+  }))
 
-  root_volume_size      = var.root_volume_size
-  root_volume_type      = var.root_volume_type
-  root_volume_encrypted = true
+  # Root volume configuration
+  root_block_device = {
+    size                  = var.root_volume_size
+    type                  = var.root_volume_type
+    encrypted             = true
+    delete_on_termination = true
+  }
+
+  # IMDSv2 is enabled by default in v5+
 
   tags = merge(
     local.common_tags,
