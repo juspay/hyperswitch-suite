@@ -214,16 +214,16 @@ scaling_policies = {
 create_logs_bucket = true  # Automatically creates bucket: dev-hyperswitch-squid-logs-<account-id>-eu-central-1
 
 # NOTE: If using existing logs bucket, set create_logs_bucket = false and provide:
-# logs_bucket_name = "app-proxy-logs-225681119357-eu-central-1"
-# logs_bucket_arn  = "arn:aws:s3:::app-proxy-logs-225681119357-eu-central-1"
+# logs_bucket_name = "app-proxy-logs-<account-id>-eu-central-1"
+# logs_bucket_arn  = "arn:aws:s3:::app-proxy-logs-<account-id>-eu-central-1"
 
 # S3 Config Bucket Configuration
 # Create a new S3 bucket for configuration files (dev environment)
 create_config_bucket = true  # Automatically creates bucket: dev-hyperswitch-squid-config-<account-id>-eu-central-1
 
 # NOTE: If using existing config bucket, set create_config_bucket = false and provide:
-# config_bucket_name = "app-proxy-config-225681119357-eu-central-1"
-# config_bucket_arn  = "arn:aws:s3:::app-proxy-config-225681119357-eu-central-1"
+# config_bucket_name = "app-proxy-config-<account-id>-eu-central-1"
+# config_bucket_arn  = "arn:aws:s3:::app-proxy-config-<account-id>-eu-central-1"
 
 # Monitoring
 enable_detailed_monitoring = false

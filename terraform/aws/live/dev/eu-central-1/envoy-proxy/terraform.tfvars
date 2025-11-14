@@ -6,16 +6,16 @@ project_name = "hyperswitch"
 
 # Network Configuration
 # TODO: Replace with your actual VPC and subnet IDs
-vpc_id = "vpc-XXXXXXXXXXXXXXXXX"  # Replace with your VPC ID
+vpc_id = "vpc-07937eeb0fa97fab7"  # Replace with your VPC ID
 proxy_subnet_ids = [
-  "subnet-XXXXXXXXXXXXXXXXX",  # Proxy subnet AZ1
-  "subnet-XXXXXXXXXXXXXXXXX",
-  "subnet-XXXXXXXXXXXXXXXXX"   # Proxy subnet AZ2
+  "subnet-045b6a1a8699fc87b",  # Proxy subnet AZ1
+  "subnet-08dbebc4cc5aa5bc9",
+  "subnet-0e2d497099421aab8"   # Proxy subnet AZ2
 ]
 lb_subnet_ids = [
-  "subnet-XXXXXXXXXXXXXXXXX",  # ALB subnet AZ1
-  "subnet-XXXXXXXXXXXXXXXXX",
-  "subnet-XXXXXXXXXXXXXXXXX"   # ALB subnet AZ2
+  "subnet-01c4c3c2ba9175c09",  # Proxy subnet AZ1
+  "subnet-0c46873a2cc8b0033",
+  "subnet-056649d8597207148"   # Proxy subnet AZ2
 ]
 
 # NOTE: EKS Security Group ID is NOT needed for Envoy proxy
@@ -247,7 +247,7 @@ lb_egress_rules = [
 # Traffic flow: CloudFront → External ALB:80 → Envoy:80 → Internal ALB:80 → EKS
 
 envoy_traffic_port      = 80  # Target group port - ALB forwards traffic to this port on Envoy instances
-envoy_health_check_port = 80  # Health check port - ALB sends GET /healthz requests to this port 
+envoy_health_check_port = 443  # Health check port - ALB sends GET /healthz requests to this port 
 
 #=======================================================================
 # LAUNCH TEMPLATE CONFIGURATION
@@ -287,7 +287,7 @@ use_existing_launch_template = false  # Set to true to use existing launch templ
 # EC2 Configuration (ignored if use_existing_launch_template = true)
 #=======================================================================
 # TODO: Replace with your actual AMI ID
-ami_id        = "ami-XXXXXXXXXXXXXXXXX"  # Replace with your Envoy AMI ID
+ami_id        = "ami-0d600a369f03fe0c7"  # Replace with your Envoy AMI ID
 instance_type = "t3.small"
 
 # Auto Scaling Configuration
@@ -340,16 +340,16 @@ scaling_policies = {
 create_logs_bucket = true  # Automatically creates bucket: dev-hyperswitch-envoy-logs-<account-id>-eu-central-1
 
 # NOTE: If using existing logs bucket, set create_logs_bucket = false and provide:
-# logs_bucket_name = "app-proxy-logs-225681119357-eu-central-1"
-# logs_bucket_arn  = "arn:aws:s3:::app-proxy-logs-225681119357-eu-central-1"
+# logs_bucket_name = "app-proxy-logs-<account-id>-eu-central-1"
+# logs_bucket_arn  = "arn:aws:s3:::app-proxy-logs-<account-id>-eu-central-1"
 
 # S3 Config Bucket Configuration
 # Create a new S3 bucket for configuration files (dev environment)
 create_config_bucket = true  # Automatically creates bucket: dev-hyperswitch-envoy-config-<account-id>-eu-central-1
 
 # NOTE: If using existing config bucket, set create_config_bucket = false and provide:
-# config_bucket_name = "app-proxy-config-225681119357-eu-central-1"
-# config_bucket_arn  = "arn:aws:s3:::app-proxy-config-225681119357-eu-central-1"
+# config_bucket_name = "app-proxy-config-<account-id>-eu-central-1"
+# config_bucket_arn  = "arn:aws:s3:::app-proxy-config-<account-id>-eu-central-1"
 
 # Monitoring
 enable_detailed_monitoring = false
@@ -477,11 +477,11 @@ create_target_group = true  # Set to true to create new target group
 
 # Required when using existing ALB (create_lb = false)
 # TODO: Replace with your actual external ALB ARN and security group ID
-# existing_lb_arn               = "arn:aws:elasticloadbalancing:eu-central-1:225681119357:loadbalancer/app/external-lb/a30fbd9d42141361"
+# existing_lb_arn               = "arn:aws:elasticloadbalancing:eu-central-1:<account-id>:loadbalancer/app/external-lb/a30fbd9d42141361"
 # existing_lb_security_group_id = "sg-04399aafbd3bb9a18"  # Security group ID (not ARN) of existing external ALB
 
 # Optional: Only needed if create_target_group = false (currently creating new target group)
-# existing_tg_arn = "arn:aws:elasticloadbalancing:eu-central-1:225681119357:targetgroup/your-envoy-tg/xxxxx"
+# existing_tg_arn = "arn:aws:elasticloadbalancing:eu-central-1:<account-id>:targetgroup/your-envoy-tg/xxxxx"
 
 #=======================================================================
 # IAM ROLE CONFIGURATION
