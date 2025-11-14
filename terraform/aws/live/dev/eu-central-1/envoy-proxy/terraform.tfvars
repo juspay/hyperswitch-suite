@@ -6,16 +6,16 @@ project_name = "hyperswitch"
 
 # Network Configuration
 # TODO: Replace with your actual VPC and subnet IDs
-vpc_id = "vpc-07937eeb0fa97fab7"  # Replace with your VPC ID
+vpc_id = "vpc-xxxxxxxxxxxxxxxxx"  # Replace with your VPC ID
 proxy_subnet_ids = [
-  "subnet-045b6a1a8699fc87b",  # Proxy subnet AZ1
-  "subnet-08dbebc4cc5aa5bc9",
-  "subnet-0e2d497099421aab8"   # Proxy subnet AZ2
+  "subnet-xxxxxxxxxxxxxxxxx",  # Private subnet AZ1
+  "subnet-yyyyyyyyyyyyyyyyy",  # Private subnet AZ2
+  "subnet-zzzzzzzzzzzzzzzzz"   # Private subnet AZ3
 ]
 lb_subnet_ids = [
-  "subnet-01c4c3c2ba9175c09",  # Proxy subnet AZ1
-  "subnet-0c46873a2cc8b0033",
-  "subnet-056649d8597207148"   # Proxy subnet AZ2
+  "subnet-aaaaaaaaaaaaaaa",  # Public subnet AZ1
+  "subnet-bbbbbbbbbbbbbbb",  # Public subnet AZ2
+  "subnet-ccccccccccccccc"   # Public subnet AZ3
 ]
 
 # NOTE: EKS Security Group ID is NOT needed for Envoy proxy
@@ -66,105 +66,102 @@ lb_subnet_ids = [
 # This will be available after first terraform apply when create_lb = true
 
 ingress_rules = [
-  # SSH access from external jumpbox
+  # Example: SSH access from jumpbox/bastion
   {
-    description = "Allow SSH access from external jumpbox"
+    description = "Allow SSH from jumpbox"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    sg_id       = ["sg-01f89cd281d1c015d"]  # external-jumpbox-sg (temp for testing)
+    sg_id       = ["sg-xxxxxxxxxxxxx"]  # Replace with your jumpbox security group ID
   },
-  # HTTPS from Ingress LB (if using existing external LB, update this SG ID)
+  # Example: Prometheus metrics scraping
   {
-    description = "Allow HTTPS from Ingress LB"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    sg_id       = ["sg-056ea63a24a4f8d63"]  # Ingress LB SG (temp for testing)
-    # Note: When create_lb = true, this rule may not be needed as ALB SG is auto-created
-  },
-  # Custom TCP 8443 from External LB
-  {
-    description = "Allow custom traffic on 8443 from External LB"
-    from_port   = 8443
-    to_port     = 8443
-    protocol    = "tcp"
-    sg_id       = ["sg-056ea63a24a4f8d63"]  # External LB SG (temp for testing)
-    # Note: When create_lb = true, update to use: module.envoy_proxy.alb_security_group_id
-  },
-  # DUPLICATE - COMMENTED OUT: HTTPS from External LB (same as line 78-85)
-  # {
-  #   description = "Allow HTTPS from External LB"
-  #   from_port   = 443
-  #   to_port     = 443
-  #   protocol    = "tcp"
-  #   sg_id       = ["sg-056ea63a24a4f8d63"]  # External LB SG (temp for testing)
-  # },
-  # Prometheus metrics scraping from external Prometheus
-  {
-    description = "Allow Prometheus metrics scraping (external)"
+    description = "Allow Prometheus metrics scraping"
     from_port   = 9901
     to_port     = 9901
     protocol    = "tcp"
-    sg_id       = ["sg-01f89cd281d1c015d"]  # external-prometheus-sg (temp for testing)
+    sg_id       = ["sg-yyyyyyyyyyyyyyy"]  # Replace with your monitoring SG ID
   },
-  # Prometheus metrics from EKS monitoring
-  {
-    description = "Allow Prometheus metrics from EKS monitoring"
-    from_port   = 9273
-    to_port     = 9273
-    protocol    = "tcp"
-    sg_id       = ["sg-01f89cd281d1c015d"]  # eks-monitoring-sg (temp for testing)
-  },
-  # DUPLICATE - COMMENTED OUT: Metrics scrape from EKS worker nodes (same as line 104-110)
-  # {
-  #   description = "Allow metrics scrape from cluster"
-  #   from_port   = 9273
-  #   to_port     = 9273
-  #   protocol    = "tcp"
-  #   sg_id       = ["sg-01f89cd281d1c015d"]  # eks-worker-common-sg (temp for testing)
-  # },
-  # Custom TCP 8090 from EKS monitoring
-  {
-    description = "Allow custom traffic on 8090 from EKS monitoring"
-    from_port   = 8090
-    to_port     = 8090
-    protocol    = "tcp"
-    sg_id       = ["sg-01f89cd281d1c015d"]  # eks-monitoring-sg (temp for testing)
-  },
+  # Add more ingress rules as needed for your environment
 ]
 
 # ============================================================================
 # ASG EGRESS RULES
 # ============================================================================
-# Note: S3 access via VPC endpoint and upstream traffic rules are configured
-# separately in the composition layer. These are additional environment-specific rules.
+# All egress rules including DNS, S3, and application traffic
+# These rules are environment-specific and fully customizable
 
 egress_rules = [
+  # -------------------------------------------------------------------------
+  # DNS Resolution (Required)
+  # -------------------------------------------------------------------------
+  {
+    description = "Allow DNS UDP"
+    from_port   = 53
+    to_port     = 53
+    protocol    = "udp"
+    cidr        = ["0.0.0.0/0"]
+  },
+  {
+    description = "Allow DNS TCP"
+    from_port   = 53
+    to_port     = 53
+    protocol    = "tcp"
+    cidr        = ["0.0.0.0/0"]
+  },
+
+  # -------------------------------------------------------------------------
+  # S3 Access (Required for config/logs)
+  # -------------------------------------------------------------------------
+  # Option 1: Via VPC Endpoint (Recommended - uncomment and set prefix list ID)
+  # {
+  #   description     = "Allow HTTPS to S3 via VPC Gateway Endpoint"
+  #   from_port       = 443
+  #   to_port         = 443
+  #   protocol        = "tcp"
+  #   prefix_list_ids = ["pl-6xxxxxxx7"]  # S3 prefix list for eu-central-1
+  # },
+
+  # Option 2: Via Internet (Current - fallback)
+  {
+    description = "Allow HTTPS to S3"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr        = ["0.0.0.0/0"]
+  },
+
+  # -------------------------------------------------------------------------
+  # Upstream Traffic (Application-Specific)
+  # -------------------------------------------------------------------------
+  # Traffic to Istio Internal LB / EKS
+  {
+    description = "Allow traffic to Istio Internal LB"
+    from_port   = 80  # var.envoy_upstream_port - adjust as needed
+    to_port     = 80
+    protocol    = "tcp"
+    cidr        = ["0.0.0.0/0"]  # Will be restricted by destination ALB SG
+  },
+
   # HTTP to Internal ALB (EKS)
   {
     description = "Allow HTTP to Internal ALB (EKS)"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    sg_id       = ["sg-01f89cd281d1c015d"]  # k8s-elb (Internal ALB SG) - temp for testing
+    sg_id       = ["sg-xxxxxxxxxxxxxxxxxx"]  # k8s-elb (Internal ALB SG) - temp for testing
   },
+
+  # -------------------------------------------------------------------------
+  # Environment-Specific Services
+  # -------------------------------------------------------------------------
   # Custom TCP 5000 to Beacon service
   {
     description = "Allow traffic to Beacon service"
     from_port   = 5000
     to_port     = 5000
     protocol    = "tcp"
-    sg_id       = ["sg-056ea63a24a4f8d63"]  # beacon-sg - temp for testing
-  },
-  # All traffic to internet (fallback rule)
-  # Note: This is broad - consider restricting in production
-  {
-    description = "Allow all outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr        = ["0.0.0.0/0"]
+    sg_id       = ["sg-xxxxxxxxxxxxxxxxx"]  # beacon-sg - temp for testing
   },
 ]
 
@@ -177,7 +174,7 @@ egress_rules = [
 # All rules are defined here for full control per environment.
 
 lb_ingress_rules = [
-  # HTTP from anywhere (IPv4)
+  # Example: HTTP from anywhere (IPv4)
   {
     description = "Allow HTTP from anywhere (IPv4)"
     from_port   = 80
@@ -185,15 +182,7 @@ lb_ingress_rules = [
     protocol    = "tcp"
     cidr        = ["0.0.0.0/0"]
   },
-  # HTTP from anywhere (IPv6)
-  {
-    description = "Allow HTTP from anywhere (IPv6)"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    ipv6_cidr   = ["::/0"]
-  },
-  # HTTPS from anywhere (IPv4)
+  # Example: HTTPS from anywhere (IPv4)
   {
     description = "Allow HTTPS from anywhere (IPv4)"
     from_port   = 443
@@ -201,40 +190,25 @@ lb_ingress_rules = [
     protocol    = "tcp"
     cidr        = ["0.0.0.0/0"]
   },
-  # HTTPS from anywhere (IPv6)
-  {
-    description = "Allow HTTPS from anywhere (IPv6)"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    ipv6_cidr   = ["::/0"]
-  },
-  # Custom TCP 8443 from anywhere (IPv4)
-  {
-    description = "Allow custom traffic on 8443 from anywhere (IPv4)"
-    from_port   = 8443
-    to_port     = 8443
-    protocol    = "tcp"
-    cidr        = ["0.0.0.0/0"]
-  },
-  # Custom TCP 8443 from anywhere (IPv6)
-  {
-    description = "Allow custom traffic on 8443 from anywhere (IPv6)"
-    from_port   = 8443
-    to_port     = 8443
-    protocol    = "tcp"
-    ipv6_cidr   = ["::/0"]
-  },
+  # Example: IPv6 support (optional - uncomment if needed)
+  # {
+  #   description = "Allow HTTP from anywhere (IPv6)"
+  #   from_port   = 80
+  #   to_port     = 80
+  #   protocol    = "tcp"
+  #   ipv6_cidr   = ["::/0"]
+  # },
+  # Add more ALB ingress rules as needed for your environment
 ]
 
 lb_egress_rules = [
-  # Custom TCP 5000 to Beacon service
+  # Example: Traffic to backend service
   {
-    description = "Allow traffic to Beacon service"
+    description = "Allow traffic to backend service"
     from_port   = 5000
     to_port     = 5000
     protocol    = "tcp"
-    sg_id       = ["sg-056ea63a24a4f8d63"]  # beacon-sg - temp for testing
+    sg_id       = ["sg-xxxxxxxxxxxxx"]  # Replace with your backend service SG ID
   },
   # Note: Traffic to Envoy ASG on envoy_traffic_port is automatically handled
   # by the composition layer (creates egress rule to ASG security group dynamically)
@@ -246,35 +220,57 @@ lb_egress_rules = [
 
 # Traffic flow: CloudFront → External ALB:80 → Envoy:80 → Internal ALB:80 → EKS
 
-envoy_traffic_port      = 80  # Target group port - ALB forwards traffic to this port on Envoy instances
+envoy_traffic_port      = 443  # Target group port - ALB forwards traffic to this port on Envoy instances
 envoy_health_check_port = 443  # Health check port - ALB sends GET /healthz requests to this port 
 
 #=======================================================================
 # LAUNCH TEMPLATE CONFIGURATION
 #=======================================================================
-# Two options available:
+# This module supports THREE flexible scenarios:
 #
-# OPTION 1: Create New Launch Template (Current Default)
-#   use_existing_launch_template = false
-#   - Module creates a new launch template with specified AMI, instance type, etc.
-#   - Uses ami_id, instance_type, key_name, root_volume_* below
+# ┌─────────────────────────────────────────────────────────────────────┐
+# │ SCENARIO 1: Create New Launch Template (Current Default)           │
+# ├─────────────────────────────────────────────────────────────────────┤
+# │ use_existing_launch_template = false                                │
+# │ enable_spot_instances = false                                       │
+# │                                                                     │
+# │ ✅ Module creates launch template from ami_id, instance_type, etc. │
+# │ ✅ Best for: Standard on-demand deployments                        │
+# │ ✅ Uses: All configuration from terraform.tfvars                   │
+# └─────────────────────────────────────────────────────────────────────┘
 #
-# OPTION 2: Use Existing Launch Template
-#   use_existing_launch_template = true
-#   existing_launch_template_id = "lt-0123456789abcdef0"
-#   existing_launch_template_version = "$Latest"
-#   - Use this if you have a pre-configured launch template
-#   - The following variables will be IGNORED (taken from launch template):
-#     ❌ ami_id
-#     ❌ instance_type
-#     ❌ key_name (if specified in launch template)
-#     ❌ root_volume_size (if specified in launch template)
-#     ❌ root_volume_type (if specified in launch template)
+# ┌─────────────────────────────────────────────────────────────────────┐
+# │ SCENARIO 2: Use Existing Launch Template                           │
+# ├─────────────────────────────────────────────────────────────────────┤
+# │ use_existing_launch_template = true                                 │
+# │ existing_launch_template_id = "lt-0123456789abcdef0"                │
+# │ existing_launch_template_version = "$Latest"                        │
+# │                                                                     │
+# │ ✅ Best for: Pre-configured templates, compliance requirements     │
+# │ ⚠️  The following variables are IGNORED (from launch template):    │
+# │     • ami_id                                                        │
+# │     • instance_type                                                 │
+# │     • key_name (if specified in LT)                                 │
+# │     • root_volume_size (if specified in LT)                         │
+# │     • root_volume_type (if specified in LT)                         │
+# │     • enable_detailed_monitoring (if specified in LT)               │
+# └─────────────────────────────────────────────────────────────────────┘
 #
-# Version Options:
-#   - "$Latest" = Always use the latest version (auto-updates)
+# ┌─────────────────────────────────────────────────────────────────────┐
+# │ SCENARIO 3: Spot Instances (Module Creates LT + Mixed Policy)      │
+# ├─────────────────────────────────────────────────────────────────────┤
+# │ use_existing_launch_template = false                                │
+# │ enable_spot_instances = true                                        │
+# │                                                                     │
+# │ ✅ Module creates launch template with spot configuration          │
+# │ ✅ Best for: Cost optimization with spot instances                 │
+# │ ✅ Supports: Mix of spot and on-demand instances                   │
+# └─────────────────────────────────────────────────────────────────────┘
+#
+# Version Options (for existing launch template):
+#   - "$Latest"  = Always use the latest version (auto-updates)
 #   - "$Default" = Use the default version (manually set in AWS)
-#   - "1", "2", etc. = Pin to specific version number
+#   - "1", "2"   = Pin to specific version number
 #=======================================================================
 
 use_existing_launch_template = false  # Set to true to use existing launch template
@@ -287,7 +283,7 @@ use_existing_launch_template = false  # Set to true to use existing launch templ
 # EC2 Configuration (ignored if use_existing_launch_template = true)
 #=======================================================================
 # TODO: Replace with your actual AMI ID
-ami_id        = "ami-0d600a369f03fe0c7"  # Replace with your Envoy AMI ID
+ami_id        = "ami-xxxxxxxxxxxxxxxxx"  # Replace with your Envoy AMI ID
 instance_type = "t3.small"
 
 # Auto Scaling Configuration

@@ -41,6 +41,14 @@ variable "ingress_rules" {
     sg_id       = optional(list(string))  # Security Group IDs
   }))
   default = []
+  validation {
+    condition = alltrue([
+      for rule in var.rules :
+      # Must have exactly one of: cidr, ipv6_cidr, or sg_id
+      (rule.cidr != null ? 1 : 0) + (rule.ipv6_cidr != null ? 1 : 0) + (rule.sg_id != null ? 1 : 0) == 1
+    ])
+    error_message = "Each rule must have exactly one of 'cidr' (IPv4), 'ipv6_cidr' (IPv6), or 'sg_id' (Security Group)."
+  }
 }
 
 variable "egress_rules" {
@@ -55,6 +63,14 @@ variable "egress_rules" {
     sg_id       = optional(list(string))  # Security Group IDs
   }))
   default = []
+  validation {
+    condition = alltrue([
+      for rule in var.rules :
+      # Must have exactly one of: cidr, ipv6_cidr, or sg_id
+      (rule.cidr != null ? 1 : 0) + (rule.ipv6_cidr != null ? 1 : 0) + (rule.sg_id != null ? 1 : 0) == 1
+    ])
+    error_message = "Each rule must have exactly one of 'cidr' (IPv4), 'ipv6_cidr' (IPv6), or 'sg_id' (Security Group)."
+  }
 }
 
 variable "lb_ingress_rules" {
@@ -83,17 +99,6 @@ variable "lb_egress_rules" {
     sg_id       = optional(list(string))  # Security Group IDs
   }))
   default = []
-}
-
-# NOTE: eks_security_group_id is NOT needed for Envoy proxy
-# Traffic flow: CloudFront → External ALB → Envoy → Internal ALB → EKS
-# EKS does not initiate connections to Envoy, so EKS SG is not required
-# (This is different from Squid proxy where EKS → Squid → Internet)
-# Variable kept for backward compatibility but not used anywhere
-variable "eks_security_group_id" {
-  description = "DEPRECATED: Not used. Kept for backward compatibility only."
-  type        = string
-  default     = null
 }
 
 # =========================================================================
