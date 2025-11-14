@@ -234,9 +234,9 @@ envoy_health_check_port = 443  # Health check port - ALB sends GET /healthz requ
 # │ use_existing_launch_template = false                                │
 # │ enable_spot_instances = false                                       │
 # │                                                                     │
-# │ ✅ Module creates launch template from ami_id, instance_type, etc. │
-# │ ✅ Best for: Standard on-demand deployments                        │
-# │ ✅ Uses: All configuration from terraform.tfvars                   │
+# │  Module creates launch template from ami_id, instance_type, etc. │
+# │  Best for: Standard on-demand deployments                        │
+# │  Uses: All configuration from terraform.tfvars                   │
 # └─────────────────────────────────────────────────────────────────────┘
 #
 # ┌─────────────────────────────────────────────────────────────────────┐
@@ -246,8 +246,8 @@ envoy_health_check_port = 443  # Health check port - ALB sends GET /healthz requ
 # │ existing_launch_template_id = "lt-0123456789abcdef0"                │
 # │ existing_launch_template_version = "$Latest"                        │
 # │                                                                     │
-# │ ✅ Best for: Pre-configured templates, compliance requirements     │
-# │ ⚠️  The following variables are IGNORED (from launch template):    │
+# │  Best for: Pre-configured templates, compliance requirements     │
+# │   The following variables are IGNORED (from launch template):    │
 # │     • ami_id                                                        │
 # │     • instance_type                                                 │
 # │     • key_name (if specified in LT)                                 │
@@ -262,9 +262,9 @@ envoy_health_check_port = 443  # Health check port - ALB sends GET /healthz requ
 # │ use_existing_launch_template = false                                │
 # │ enable_spot_instances = true                                        │
 # │                                                                     │
-# │ ✅ Module creates launch template with spot configuration          │
-# │ ✅ Best for: Cost optimization with spot instances                 │
-# │ ✅ Supports: Mix of spot and on-demand instances                   │
+# │  Module creates launch template with spot configuration          │
+# │  Best for: Cost optimization with spot instances                 │
+# │  Supports: Mix of spot and on-demand instances                   │
 # └─────────────────────────────────────────────────────────────────────┘
 #
 # Version Options (for existing launch template):
