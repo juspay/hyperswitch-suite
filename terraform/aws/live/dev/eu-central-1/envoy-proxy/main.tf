@@ -15,17 +15,21 @@ module "envoy_proxy" {
   lb_subnet_ids    = var.lb_subnet_ids
   # Note: eks_security_group_id not needed - Envoy receives traffic from ALB, not from EKS
 
+  # Security Group Rules (environment-specific)
+  ingress_rules    = var.ingress_rules
+  egress_rules     = var.egress_rules
+  lb_ingress_rules = var.lb_ingress_rules
+  lb_egress_rules  = var.lb_egress_rules
+
   # Envoy configuration
-  envoy_listener_port = var.envoy_listener_port
-  envoy_admin_port    = var.envoy_admin_port
-  ami_id              = var.ami_id
-  instance_type       = var.instance_type
+  ami_id        = var.ami_id
+  instance_type = var.instance_type
 
   # Port Configuration (Environment-specific)
   alb_http_listener_port  = var.alb_http_listener_port
   alb_https_listener_port = var.alb_https_listener_port
-  envoy_traffic_port      = var.envoy_traffic_port
-  envoy_health_check_port = var.envoy_health_check_port
+  envoy_traffic_port      = var.envoy_traffic_port      # ALB forwards traffic to this port on Envoy instances
+  envoy_health_check_port = var.envoy_health_check_port # ALB sends GET /healthz requests to this port
   envoy_upstream_port     = var.envoy_upstream_port
 
   # SSH Key Configuration
@@ -41,6 +45,11 @@ module "envoy_proxy" {
   # Template variables for envoy.yaml
   hyperswitch_cloudfront_dns = var.hyperswitch_cloudfront_dns
   internal_loadbalancer_dns  = var.internal_loadbalancer_dns
+
+  # S3 Logs Bucket - create or use existing
+  create_logs_bucket = var.create_logs_bucket
+  logs_bucket_name   = var.logs_bucket_name
+  logs_bucket_arn    = var.logs_bucket_arn
 
   # S3 Config Bucket - create or use existing
   create_config_bucket     = var.create_config_bucket
@@ -93,8 +102,18 @@ module "envoy_proxy" {
   termination_policies  = var.termination_policies
   max_instance_lifetime = var.max_instance_lifetime
 
+  # IAM Role Configuration
+  create_iam_role                    = var.create_iam_role
+  existing_iam_role_name             = var.existing_iam_role_name
+  create_instance_profile            = var.create_instance_profile
+  existing_iam_instance_profile_name = var.existing_iam_instance_profile_name
+
   # Instance Refresh (automatic rolling updates when config changes)
   enable_instance_refresh = var.enable_instance_refresh
+
+  # Auto Scaling Policies
+  enable_autoscaling = var.enable_autoscaling
+  scaling_policies   = var.scaling_policies
 
   # Monitoring
   enable_detailed_monitoring = var.enable_detailed_monitoring

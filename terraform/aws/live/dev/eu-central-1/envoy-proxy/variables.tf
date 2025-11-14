@@ -31,21 +31,65 @@ variable "lb_subnet_ids" {
   type        = list(string)
 }
 
+variable "ingress_rules" {
+  description = "Ingress rules for ASG security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, or 'sg_id' for security groups"
+  type = list(object({
+    description = string
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    cidr        = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
+    ipv6_cidr   = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
+    sg_id       = optional(list(string))  # Security Group IDs
+  }))
+  default = []
+}
+
+variable "egress_rules" {
+  description = "Egress rules for ASG security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, or 'sg_id' for security groups"
+  type = list(object({
+    description = string
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    cidr        = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
+    ipv6_cidr   = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
+    sg_id       = optional(list(string))  # Security Group IDs
+  }))
+  default = []
+}
+
+variable "lb_ingress_rules" {
+  description = "Additional ingress rules for external load balancer security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, or 'sg_id' for security groups"
+  type = list(object({
+    description = string
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    cidr        = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
+    ipv6_cidr   = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
+    sg_id       = optional(list(string))  # Security Group IDs
+  }))
+  default = []
+}
+
+variable "lb_egress_rules" {
+  description = "Additional egress rules for external load balancer security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, or 'sg_id' for security groups"
+  type = list(object({
+    description = string
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    cidr        = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
+    ipv6_cidr   = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
+    sg_id       = optional(list(string))  # Security Group IDs
+  }))
+  default = []
+}
+
 # NOTE: eks_security_group_id is NOT needed for Envoy proxy
 # Traffic flow: CloudFront → External ALB → Envoy → Internal ALB → EKS
 # (Different from Squid where EKS → Squid → Internet)
-
-variable "envoy_admin_port" {
-  description = "Envoy admin port"
-  type        = number
-  default     = 9901
-}
-
-variable "envoy_listener_port" {
-  description = "Envoy listener port"
-  type        = number
-  default     = 10000
-}
 
 # =========================================================================
 # Port Configuration Variables (Environment-specific)
@@ -64,15 +108,15 @@ variable "alb_https_listener_port" {
 }
 
 variable "envoy_traffic_port" {
-  description = "Port where Envoy listens for traffic from ALB"
+  description = "Port where Envoy instances listen for traffic from ALB (target group port) - ALB forwards traffic to this port"
   type        = number
   default     = 80  # Dev uses port 80
 }
 
 variable "envoy_health_check_port" {
-  description = "Port for Envoy health check endpoint"
+  description = "Port for Envoy health check endpoint - ALB sends GET /healthz requests to this port"
   type        = number
-  default     = 8081
+  default     = 80
 }
 
 variable "envoy_upstream_port" {
@@ -133,6 +177,24 @@ variable "desired_capacity" {
   description = "Desired ASG capacity"
   type        = number
   default     = 1
+}
+
+variable "create_logs_bucket" {
+  description = "Whether to create a new S3 bucket for logs"
+  type        = bool
+  default     = true
+}
+
+variable "logs_bucket_name" {
+  description = "S3 bucket name for logs (required if create_logs_bucket=false)"
+  type        = string
+  default     = ""
+}
+
+variable "logs_bucket_arn" {
+  description = "S3 bucket ARN for logs (required if create_logs_bucket=false)"
+  type        = string
+  default     = ""
 }
 
 variable "create_config_bucket" {
@@ -408,6 +470,40 @@ variable "max_instance_lifetime" {
   description = "Maximum lifetime of instances in seconds (0 = no limit)"
   type        = number
   default     = 0
+}
+
+# =========================================================================
+# Auto Scaling Policies Configuration
+# =========================================================================
+
+variable "enable_autoscaling" {
+  description = "Enable auto-scaling policies for the ASG"
+  type        = bool
+  default     = false
+}
+
+variable "scaling_policies" {
+  description = "Configuration for auto-scaling policies"
+  type = object({
+    cpu_target_tracking = optional(object({
+      enabled      = optional(bool, false)
+      target_value = optional(number, 70.0)
+    }), {})
+    memory_target_tracking = optional(object({
+      enabled      = optional(bool, false)
+      target_value = optional(number, 70.0)
+    }), {})
+  })
+  default = {
+    cpu_target_tracking = {
+      enabled      = false
+      target_value = 70.0
+    }
+    memory_target_tracking = {
+      enabled      = false
+      target_value = 70.0
+    }
+  }
 }
 
 variable "common_tags" {

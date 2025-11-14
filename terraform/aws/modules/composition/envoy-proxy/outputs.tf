@@ -1,21 +1,21 @@
 output "lb_arn" {
   description = "ARN of the Load Balancer"
-  value       = var.create_lb ? aws_lb.envoy[0].arn : var.existing_lb_arn
+  value       = var.create_lb ? module.alb[0].arn : var.existing_lb_arn
 }
 
 output "lb_dns_name" {
   description = "DNS name of the Load Balancer (null if using existing LB)"
-  value       = var.create_lb ? aws_lb.envoy[0].dns_name : null
+  value       = var.create_lb ? module.alb[0].dns_name : null
 }
 
 output "lb_zone_id" {
   description = "Zone ID of the Load Balancer (null if using existing LB)"
-  value       = var.create_lb ? aws_lb.envoy[0].zone_id : null
+  value       = var.create_lb ? module.alb[0].zone_id : null
 }
 
 output "target_group_arn" {
   description = "ARN of the target group"
-  value       = var.create_target_group ? module.target_group[0].tg_arn : var.existing_tg_arn
+  value       = var.create_target_group ? aws_lb_target_group.envoy[0].arn : var.existing_tg_arn
 }
 
 output "launch_template_id" {
@@ -35,32 +35,37 @@ output "launch_template_created" {
 
 output "asg_id" {
   description = "ID of the Auto Scaling Group"
-  value       = module.asg.asg_id
+  value       = module.asg.autoscaling_group_id
 }
 
 output "asg_name" {
   description = "Name of the Auto Scaling Group"
-  value       = module.asg.asg_name
+  value       = module.asg.autoscaling_group_name
 }
 
 output "asg_security_group_id" {
   description = "Security group ID for ASG instances"
-  value       = module.asg_security_group.sg_id
+  value       = module.asg_security_group.security_group_id
 }
 
 output "lb_security_group_id" {
   description = "Security group ID for load balancer (null if using existing LB)"
-  value       = var.create_lb ? module.lb_security_group[0].sg_id : null
+  value       = var.create_lb ? module.lb_security_group[0].security_group_id : null
 }
 
 output "logs_bucket_name" {
-  description = "Name of the S3 bucket for logs"
-  value       = module.logs_bucket.bucket_id
+  description = "Name of the S3 bucket for logs (created or existing)"
+  value       = local.logs_bucket_name
 }
 
 output "logs_bucket_arn" {
-  description = "ARN of the S3 bucket for logs"
-  value       = module.logs_bucket.bucket_arn
+  description = "ARN of the S3 bucket for logs (created or existing)"
+  value       = local.logs_bucket_arn
+}
+
+output "logs_bucket_created" {
+  description = "Whether logs bucket was created by this module (true) or using existing (false)"
+  value       = var.create_logs_bucket
 }
 
 output "config_bucket_name" {
@@ -100,7 +105,7 @@ output "iam_instance_profile_name" {
 
 output "ssh_key_name" {
   description = "Name of the SSH key pair"
-  value       = var.generate_ssh_key ? aws_key_pair.envoy_key_pair[0].key_name : var.key_name
+  value       = var.generate_ssh_key ? module.key_pair[0].key_pair_name : var.key_name
 }
 
 output "ssh_key_generated" {
@@ -115,12 +120,12 @@ output "ssh_key_parameter_name" {
 
 output "ssh_key_pair_id" {
   description = "EC2 Key Pair ID (only if auto-generated)"
-  value       = var.generate_ssh_key ? aws_key_pair.envoy_key_pair[0].key_pair_id : null
+  value       = var.generate_ssh_key ? module.key_pair[0].key_pair_id : null
 }
 
 output "ssh_key_retrieval_command" {
   description = "Command to retrieve the private SSH key from Parameter Store (only if auto-generated)"
-  value = var.generate_ssh_key ? "aws ssm get-parameter --name \"${aws_ssm_parameter.envoy_private_key[0].name}\" --with-decryption --query 'Parameter.Value' --output text > ${aws_key_pair.envoy_key_pair[0].key_name}.pem && chmod 400 ${aws_key_pair.envoy_key_pair[0].key_name}.pem" : null
+  value = var.generate_ssh_key ? "aws ssm get-parameter --name \"${aws_ssm_parameter.envoy_private_key[0].name}\" --with-decryption --query 'Parameter.Value' --output text > ${module.key_pair[0].key_pair_name}.pem && chmod 400 ${module.key_pair[0].key_pair_name}.pem" : null
 }
 
 output "config_version" {
