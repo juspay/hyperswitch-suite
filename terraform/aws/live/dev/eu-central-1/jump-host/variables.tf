@@ -86,3 +86,30 @@ variable "common_tags" {
   type        = map(string)
   default     = {}
 }
+
+# ============================================================================
+# Security Group Rules Configuration
+# ============================================================================
+variable "external_jump_egress_sg_ids" {
+  description = "List of additional security group IDs for external jump host egress (beyond the hardcoded internal jump SSH access)"
+  type = list(object({
+    description = string
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    sg_id       = string
+  }))
+  default = []
+}
+
+variable "internal_jump_egress_sg_ids" {
+  description = "List of security group IDs for internal jump host egress (e.g., RDS, ElastiCache, etc.)"
+  type = list(object({
+    description = string
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    sg_id       = string
+  }))
+  default = []
+}

@@ -28,13 +28,17 @@ module "jump_host" {
   private_subnet_id = var.private_subnet_id
 
   # Instance Configuration
-  ami_id         = var.ami_id
-  instance_type  = var.instance_type
+  ami_id           = var.ami_id
+  instance_type    = var.instance_type
   root_volume_size = var.root_volume_size
   root_volume_type = var.root_volume_type
 
   # Logging Configuration
   log_retention_days = var.log_retention_days
+
+  # Security Group Rules Configuration
+  external_jump_egress_sg_ids  = var.external_jump_egress_sg_ids
+  internal_jump_egress_sg_ids = var.internal_jump_egress_sg_ids
 
   # Tags
   tags = var.common_tags

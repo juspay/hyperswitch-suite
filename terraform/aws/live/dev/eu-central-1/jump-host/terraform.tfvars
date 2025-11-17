@@ -56,3 +56,47 @@ common_tags = {
   Region      = "eu-central-1"
 }
 
+# ============================================================================
+# Security Group Rules Configuration
+# ============================================================================
+# Configure additional egress rules for jump hosts using security group IDs
+# Note: SSH from external jump to internal jump is hardcoded in the module
+
+# External Jump Host - Additional Egress (beyond internal jump SSH)
+# Uncomment and configure if you need external jump to access other services
+# external_jump_egress_sg_ids = [
+#   {
+#     description = "Allow access to VPC endpoints"
+#     from_port   = 443
+#     to_port     = 443
+#     protocol    = "tcp"
+#     sg_id       = "sg-xxxxx"  # VPC endpoint security group
+#   }
+# ]
+
+# Internal Jump Host - Egress to Backend Services
+# Configure to allow access to RDS, ElastiCache, or other services
+# internal_jump_egress_sg_ids = [
+#   {
+#     description = "Allow PostgreSQL access"
+#     from_port   = 5432
+#     to_port     = 5432
+#     protocol    = "tcp"
+#     sg_id       = "sg-xxxxx"  # RDS PostgreSQL security group
+#   },
+#   {
+#     description = "Allow Redis access"
+#     from_port   = 6379
+#     to_port     = 6379
+#     protocol    = "tcp"
+#     sg_id       = "sg-xxxxx"  # ElastiCache Redis security group
+#   },
+#   {
+#     description = "Allow MySQL access"
+#     from_port   = 3306
+#     to_port     = 3306
+#     protocol    = "tcp"
+#     sg_id       = "sg-xxxxx"  # RDS MySQL security group
+#   }
+# ]
+
