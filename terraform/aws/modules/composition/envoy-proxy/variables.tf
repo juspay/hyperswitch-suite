@@ -43,7 +43,7 @@ variable "ingress_rules" {
   default = []
   validation {
     condition = alltrue([
-      for rule in var.rules :
+      for rule in var.ingress_rules :
       # Must have exactly one of: cidr, ipv6_cidr, or sg_id
       (rule.cidr != null ? 1 : 0) + (rule.ipv6_cidr != null ? 1 : 0) + (rule.sg_id != null ? 1 : 0) == 1
     ])
@@ -65,7 +65,7 @@ variable "egress_rules" {
   default = []
   validation {
     condition = alltrue([
-      for rule in var.rules :
+      for rule in var.egress_rules :
       # Must have exactly one of: cidr, ipv6_cidr, or sg_id
       (rule.cidr != null ? 1 : 0) + (rule.ipv6_cidr != null ? 1 : 0) + (rule.sg_id != null ? 1 : 0) == 1
     ])
