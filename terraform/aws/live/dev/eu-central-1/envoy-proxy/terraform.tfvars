@@ -6,51 +6,271 @@ project_name = "hyperswitch"
 
 # Network Configuration
 # TODO: Replace with your actual VPC and subnet IDs
-vpc_id = "vpc-XXXXXXXXXXXXX"  # Replace with your VPC ID
+vpc_id = "vpc-xxxxxxxxxxxxxxxxx"  # Replace with your VPC ID
 proxy_subnet_ids = [
-  "subnet-XXXXXXXXXXXXX",  # Proxy subnet AZ1
-  "subnet-XXXXXXXXXXXXX"   # Proxy subnet AZ2
+  "subnet-xxxxxxxxxxxxxxxxx",  # Private subnet AZ1
+  "subnet-yyyyyyyyyyyyyyyyy",  # Private subnet AZ2
+  "subnet-zzzzzzzzzzzzzzzzz"   # Private subnet AZ3
 ]
 lb_subnet_ids = [
-  "subnet-XXXXXXXXXXXXX",  # ALB subnet AZ1
-  "subnet-XXXXXXXXXXXXX"   # ALB subnet AZ2
+  "subnet-aaaaaaaaaaaaaaa",  # Public subnet AZ1
+  "subnet-bbbbbbbbbbbbbbb",  # Public subnet AZ2
+  "subnet-ccccccccccccccc"   # Public subnet AZ3
 ]
 
 # NOTE: EKS Security Group ID is NOT needed for Envoy proxy
 # Traffic flow: CloudFront → External ALB → Envoy ASG → Internal ALB → EKS
 
-# Envoy Configuration
-envoy_admin_port    = 9901
-envoy_listener_port = 10000
-envoy_traffic_port      = 80
-envoy_health_check_port = 80 
+# ============================================================================
+# Security Group Rules (Environment Specific)
+# ============================================================================
+# Define environment-specific ingress and egress rules for ASG and External LB
+#
+# Each rule must have EXACTLY ONE of: 'cidr', 'ipv6_cidr', or 'sg_id':
+#   - cidr: list(string) for IPv4 CIDR blocks (e.g., ["10.0.0.0/16"] or ["0.0.0.0/0"])
+#   - ipv6_cidr: list(string) for IPv6 CIDR blocks (e.g., ["::/0"])
+#   - sg_id: list(string) for Security Group IDs (e.g., ["sg-xxxxx"])
+#
+# Note: The 'type' field is automatically set by the composition layer
+# (ingress_rules → type="ingress", egress_rules → type="egress")
+#
+# ============================================================================
+# IMPORTANT: Dynamic Security Group References
+# ============================================================================
+# When create_lb = true (creating new ALB), the ALB security group is created
+# dynamically. You can reference it using: module.envoy_proxy.alb_security_group_id
+#
+# However, on FIRST terraform apply, this output doesn't exist yet. So:
+#
+# OPTION 1: Two-step apply (Recommended for new deployments)
+#   Step 1: terraform apply (creates ALB with its security group)
+#   Step 2: Update ingress_rules to reference module.envoy_proxy.alb_security_group_id
+#   Step 3: terraform apply (adds ASG ingress rules from ALB SG)
+#
+# OPTION 2: Use existing ALB (create_lb = false)
+#   - Set create_lb = false
+#   - Provide existing_lb_arn and existing_lb_security_group_id
+#   - Reference existing_lb_security_group_id in ingress_rules
+#
+# OPTION 3: Temporary SG IDs (Current configuration)
+#   - Use temporary security group IDs for testing
+#   - Replace with actual SG IDs after first apply
+#
+# ============================================================================
+
+# ============================================================================
+# ASG INGRESS RULES
+# ============================================================================
+# Note: For dynamically created ALB security group, use:
+#   sg_id = [module.envoy_proxy.alb_security_group_id]
+# This will be available after first terraform apply when create_lb = true
+
+ingress_rules = [
+  # Example: SSH access from jumpbox/bastion
+  {
+    description = "Allow SSH from jumpbox"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    sg_id       = ["sg-xxxxxxxxxxxxx"]  # Replace with your jumpbox security group ID
+  },
+  # Example: Prometheus metrics scraping
+  {
+    description = "Allow Prometheus metrics scraping"
+    from_port   = 9901
+    to_port     = 9901
+    protocol    = "tcp"
+    sg_id       = ["sg-yyyyyyyyyyyyyyy"]  # Replace with your monitoring SG ID
+  },
+  # Add more ingress rules as needed for your environment
+]
+
+# ============================================================================
+# ASG EGRESS RULES
+# ============================================================================
+# All egress rules including DNS, S3, and application traffic
+# These rules are environment-specific and fully customizable
+
+egress_rules = [
+  # -------------------------------------------------------------------------
+  # DNS Resolution (Required)
+  # -------------------------------------------------------------------------
+  {
+    description = "Allow DNS UDP"
+    from_port   = 53
+    to_port     = 53
+    protocol    = "udp"
+    cidr        = ["0.0.0.0/0"]
+  },
+  {
+    description = "Allow DNS TCP"
+    from_port   = 53
+    to_port     = 53
+    protocol    = "tcp"
+    cidr        = ["0.0.0.0/0"]
+  },
+
+  # -------------------------------------------------------------------------
+  # S3 Access (Required for config/logs)
+  # -------------------------------------------------------------------------
+  # Option 1: Via VPC Endpoint (Recommended - uncomment and set prefix list ID)
+  # {
+  #   description     = "Allow HTTPS to S3 via VPC Gateway Endpoint"
+  #   from_port       = 443
+  #   to_port         = 443
+  #   protocol        = "tcp"
+  #   prefix_list_ids = ["pl-6xxxxxxx7"]  # S3 prefix list for eu-central-1
+  # },
+
+  # Option 2: Via Internet (Current - fallback)
+  {
+    description = "Allow HTTPS to S3"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr        = ["0.0.0.0/0"]
+  },
+
+  # -------------------------------------------------------------------------
+  # Upstream Traffic (Application-Specific)
+  # -------------------------------------------------------------------------
+  # Traffic to Istio Internal LB / EKS
+  {
+    description = "Allow traffic to Istio Internal LB"
+    from_port   = 80  # var.envoy_upstream_port - adjust as needed
+    to_port     = 80
+    protocol    = "tcp"
+    cidr        = ["0.0.0.0/0"]  # Will be restricted by destination ALB SG
+  },
+
+  # HTTP to Internal ALB (EKS)
+  {
+    description = "Allow HTTP to Internal ALB (EKS)"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    sg_id       = ["sg-xxxxxxxxxxxxxxxxxx"]  # k8s-elb (Internal ALB SG) - temp for testing
+  },
+
+  # -------------------------------------------------------------------------
+  # Environment-Specific Services
+  # -------------------------------------------------------------------------
+  # Custom TCP 5000 to Beacon service
+  {
+    description = "Allow traffic to Beacon service"
+    from_port   = 5000
+    to_port     = 5000
+    protocol    = "tcp"
+    sg_id       = ["sg-xxxxxxxxxxxxxxxxx"]  # beacon-sg - temp for testing
+  },
+]
+
+# ============================================================================
+# EXTERNAL LOAD BALANCER SECURITY GROUP RULES
+# ============================================================================
+# Ingress/egress rules for the external ALB security group
+# Only used when create_lb = true (creating new ALB)
+#
+# All rules are defined here for full control per environment.
+
+lb_ingress_rules = [
+  # Example: HTTP from anywhere (IPv4)
+  {
+    description = "Allow HTTP from anywhere (IPv4)"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr        = ["0.0.0.0/0"]
+  },
+  # Example: HTTPS from anywhere (IPv4)
+  {
+    description = "Allow HTTPS from anywhere (IPv4)"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr        = ["0.0.0.0/0"]
+  },
+  # Example: IPv6 support (optional - uncomment if needed)
+  # {
+  #   description = "Allow HTTP from anywhere (IPv6)"
+  #   from_port   = 80
+  #   to_port     = 80
+  #   protocol    = "tcp"
+  #   ipv6_cidr   = ["::/0"]
+  # },
+  # Add more ALB ingress rules as needed for your environment
+]
+
+lb_egress_rules = [
+  # Example: Traffic to backend service
+  {
+    description = "Allow traffic to backend service"
+    from_port   = 5000
+    to_port     = 5000
+    protocol    = "tcp"
+    sg_id       = ["sg-xxxxxxxxxxxxx"]  # Replace with your backend service SG ID
+  },
+  # Note: Traffic to Envoy ASG on envoy_traffic_port is automatically handled
+  # by the composition layer (creates egress rule to ASG security group dynamically)
+]
+
+# ============================================================================
+# Envoy Port Configuration
+# ============================================================================
+
+# Traffic flow: CloudFront → External ALB:80 → Envoy:80 → Internal ALB:80 → EKS
+
+envoy_traffic_port      = 443  # Target group port - ALB forwards traffic to this port on Envoy instances
+envoy_health_check_port = 443  # Health check port - ALB sends GET /healthz requests to this port 
 
 #=======================================================================
 # LAUNCH TEMPLATE CONFIGURATION
 #=======================================================================
-# Two options available:
+# This module supports THREE flexible scenarios:
 #
-# OPTION 1: Create New Launch Template (Current Default)
-#   use_existing_launch_template = false
-#   - Module creates a new launch template with specified AMI, instance type, etc.
-#   - Uses ami_id, instance_type, key_name, root_volume_* below
+# ┌─────────────────────────────────────────────────────────────────────┐
+# │ SCENARIO 1: Create New Launch Template (Current Default)           │
+# ├─────────────────────────────────────────────────────────────────────┤
+# │ use_existing_launch_template = false                                │
+# │ enable_spot_instances = false                                       │
+# │                                                                     │
+# │  Module creates launch template from ami_id, instance_type, etc. │
+# │  Best for: Standard on-demand deployments                        │
+# │  Uses: All configuration from terraform.tfvars                   │
+# └─────────────────────────────────────────────────────────────────────┘
 #
-# OPTION 2: Use Existing Launch Template
-#   use_existing_launch_template = true
-#   existing_launch_template_id = "lt-0123456789abcdef0"
-#   existing_launch_template_version = "$Latest"
-#   - Use this if you have a pre-configured launch template
-#   - The following variables will be IGNORED (taken from launch template):
-#     ❌ ami_id
-#     ❌ instance_type
-#     ❌ key_name (if specified in launch template)
-#     ❌ root_volume_size (if specified in launch template)
-#     ❌ root_volume_type (if specified in launch template)
+# ┌─────────────────────────────────────────────────────────────────────┐
+# │ SCENARIO 2: Use Existing Launch Template                           │
+# ├─────────────────────────────────────────────────────────────────────┤
+# │ use_existing_launch_template = true                                 │
+# │ existing_launch_template_id = "lt-0123456789abcdef0"                │
+# │ existing_launch_template_version = "$Latest"                        │
+# │                                                                     │
+# │  Best for: Pre-configured templates, compliance requirements     │
+# │   The following variables are IGNORED (from launch template):    │
+# │     • ami_id                                                        │
+# │     • instance_type                                                 │
+# │     • key_name (if specified in LT)                                 │
+# │     • root_volume_size (if specified in LT)                         │
+# │     • root_volume_type (if specified in LT)                         │
+# │     • enable_detailed_monitoring (if specified in LT)               │
+# └─────────────────────────────────────────────────────────────────────┘
 #
-# Version Options:
-#   - "$Latest" = Always use the latest version (auto-updates)
+# ┌─────────────────────────────────────────────────────────────────────┐
+# │ SCENARIO 3: Spot Instances (Module Creates LT + Mixed Policy)      │
+# ├─────────────────────────────────────────────────────────────────────┤
+# │ use_existing_launch_template = false                                │
+# │ enable_spot_instances = true                                        │
+# │                                                                     │
+# │  Module creates launch template with spot configuration          │
+# │  Best for: Cost optimization with spot instances                 │
+# │  Supports: Mix of spot and on-demand instances                   │
+# └─────────────────────────────────────────────────────────────────────┘
+#
+# Version Options (for existing launch template):
+#   - "$Latest"  = Always use the latest version (auto-updates)
 #   - "$Default" = Use the default version (manually set in AWS)
-#   - "1", "2", etc. = Pin to specific version number
+#   - "1", "2"   = Pin to specific version number
 #=======================================================================
 
 use_existing_launch_template = false  # Set to true to use existing launch template
@@ -63,7 +283,7 @@ use_existing_launch_template = false  # Set to true to use existing launch templ
 # EC2 Configuration (ignored if use_existing_launch_template = true)
 #=======================================================================
 # TODO: Replace with your actual AMI ID
-ami_id        = "ami-XXXXXXXXXXXXXXXXX"  # Replace with your Envoy AMI ID
+ami_id        = "ami-xxxxxxxxxxxxxxxxx"  # Replace with your Envoy AMI ID
 instance_type = "t3.small"
 
 # Auto Scaling Configuration
@@ -71,13 +291,61 @@ min_size         = 1
 max_size         = 2
 desired_capacity = 1
 
-# S3 Configuration
+# ============================================================================
+# Auto Scaling Policies (CPU and Memory-based)
+# ============================================================================
+# Enable auto-scaling to automatically add/remove instances based on load
+# Uses AWS built-in metrics - no custom CloudWatch metrics needed
+#
+# How it works:
+# - CPU-based: Scales when average CPU across all instances exceeds target
+# - Memory-based: Scales when average memory usage exceeds target (requires CloudWatch agent)
+# - Target Tracking: AWS automatically creates scale-up AND scale-down policies
+# - Cooldown: Prevents rapid scaling (scale-out: 60s, scale-in: 300s by default)
+#
+# Example scenario with cpu_target_tracking at 70%:
+# - Current: 1 instance at 85% CPU → ASG adds 1 instance
+# - Result: 2 instances at ~42% CPU → Stable
+# - Later: 2 instances at 20% CPU → ASG removes 1 instance after 15 min
+#
+# Recommendation for dev:
+# - Start with CPU-based scaling only
+# - Monitor behavior, then add memory-based if needed
+# ============================================================================
+
+enable_autoscaling = true  # Set to true to enable auto-scaling
+
+scaling_policies = {
+  # CPU Target Tracking - Recommended for most workloads
+  cpu_target_tracking = {
+    enabled      = true  # Set to true to enable
+    target_value = 70.0   # Scale when average CPU > 70%
+  }
+
+  # Memory Target Tracking - Optional (requires CloudWatch agent)
+  # Note: CloudWatch agent must be installed and configured on instances
+  # to publish memory metrics to CloudWatch under "CWAgent" namespace
+  memory_target_tracking = {
+    enabled      = false  # Set to true after installing CloudWatch agent
+    target_value = 70.0   # Scale when average memory > 70%
+  }
+}
+
+# S3 Logs Bucket Configuration
+# Create a new S3 bucket for logs (dev environment)
+create_logs_bucket = true  # Automatically creates bucket: dev-hyperswitch-envoy-logs-<account-id>-eu-central-1
+
+# NOTE: If using existing logs bucket, set create_logs_bucket = false and provide:
+# logs_bucket_name = "app-proxy-logs-<account-id>-eu-central-1"
+# logs_bucket_arn  = "arn:aws:s3:::app-proxy-logs-<account-id>-eu-central-1"
+
+# S3 Config Bucket Configuration
 # Create a new S3 bucket for configuration files (dev environment)
 create_config_bucket = true  # Automatically creates bucket: dev-hyperswitch-envoy-config-<account-id>-eu-central-1
 
-# NOTE: If using existing bucket, set create_config_bucket = false and provide:
-# config_bucket_name = "app-proxy-config-225681119357-eu-central-1"
-# config_bucket_arn  = "arn:aws:s3:::app-proxy-config-225681119357-eu-central-1"
+# NOTE: If using existing config bucket, set create_config_bucket = false and provide:
+# config_bucket_name = "app-proxy-config-<account-id>-eu-central-1"
+# config_bucket_arn  = "arn:aws:s3:::app-proxy-config-<account-id>-eu-central-1"
 
 # Monitoring
 enable_detailed_monitoring = false
@@ -205,11 +473,11 @@ create_target_group = true  # Set to true to create new target group
 
 # Required when using existing ALB (create_lb = false)
 # TODO: Replace with your actual external ALB ARN and security group ID
-# existing_lb_arn               = "arn:aws:elasticloadbalancing:eu-central-1:225681119357:loadbalancer/app/external-lb/a30fbd9d42141361"
+# existing_lb_arn               = "arn:aws:elasticloadbalancing:eu-central-1:<account-id>:loadbalancer/app/external-lb/a30fbd9d42141361"
 # existing_lb_security_group_id = "sg-04399aafbd3bb9a18"  # Security group ID (not ARN) of existing external ALB
 
 # Optional: Only needed if create_target_group = false (currently creating new target group)
-# existing_tg_arn = "arn:aws:elasticloadbalancing:eu-central-1:225681119357:targetgroup/your-envoy-tg/xxxxx"
+# existing_tg_arn = "arn:aws:elasticloadbalancing:eu-central-1:<account-id>:targetgroup/your-envoy-tg/xxxxx"
 
 #=======================================================================
 # IAM ROLE CONFIGURATION

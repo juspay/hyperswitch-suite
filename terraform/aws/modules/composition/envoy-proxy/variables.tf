@@ -29,27 +29,76 @@ variable "lb_subnet_ids" {
   type        = list(string)
 }
 
-# NOTE: eks_security_group_id is NOT needed for Envoy proxy
-# Traffic flow: CloudFront → External ALB → Envoy → Internal ALB → EKS
-# EKS does not initiate connections to Envoy, so EKS SG is not required
-# (This is different from Squid proxy where EKS → Squid → Internet)
-# Variable kept for backward compatibility but not used anywhere
-variable "eks_security_group_id" {
-  description = "DEPRECATED: Not used. Kept for backward compatibility only."
-  type        = string
-  default     = null
+variable "ingress_rules" {
+  description = "Ingress rules for ASG security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, or 'sg_id' for security groups"
+  type = list(object({
+    description = string
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    cidr        = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
+    ipv6_cidr   = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
+    sg_id       = optional(list(string))  # Security Group IDs
+  }))
+  default = []
+  validation {
+    condition = alltrue([
+      for rule in var.ingress_rules :
+      # Must have exactly one of: cidr, ipv6_cidr, or sg_id
+      (rule.cidr != null ? 1 : 0) + (rule.ipv6_cidr != null ? 1 : 0) + (rule.sg_id != null ? 1 : 0) == 1
+    ])
+    error_message = "Each rule must have exactly one of 'cidr' (IPv4), 'ipv6_cidr' (IPv6), or 'sg_id' (Security Group)."
+  }
 }
 
-variable "envoy_admin_port" {
-  description = "Port for Envoy admin interface (localhost only, not exposed externally)"
-  type        = number
-  default     = 9901
+variable "egress_rules" {
+  description = "Egress rules for ASG security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, or 'sg_id' for security groups"
+  type = list(object({
+    description = string
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    cidr        = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
+    ipv6_cidr   = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
+    sg_id       = optional(list(string))  # Security Group IDs
+  }))
+  default = []
+  validation {
+    condition = alltrue([
+      for rule in var.egress_rules :
+      # Must have exactly one of: cidr, ipv6_cidr, or sg_id
+      (rule.cidr != null ? 1 : 0) + (rule.ipv6_cidr != null ? 1 : 0) + (rule.sg_id != null ? 1 : 0) == 1
+    ])
+    error_message = "Each rule must have exactly one of 'cidr' (IPv4), 'ipv6_cidr' (IPv6), or 'sg_id' (Security Group)."
+  }
 }
 
-variable "envoy_listener_port" {
-  description = "Port for Envoy listener"
-  type        = number
-  default     = 10000
+variable "lb_ingress_rules" {
+  description = "Additional ingress rules for external load balancer security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, or 'sg_id' for security groups"
+  type = list(object({
+    description = string
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    cidr        = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
+    ipv6_cidr   = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
+    sg_id       = optional(list(string))  # Security Group IDs
+  }))
+  default = []
+}
+
+variable "lb_egress_rules" {
+  description = "Additional egress rules for external load balancer security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, or 'sg_id' for security groups"
+  type = list(object({
+    description = string
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    cidr        = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
+    ipv6_cidr   = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
+    sg_id       = optional(list(string))  # Security Group IDs
+  }))
+  default = []
 }
 
 # =========================================================================
@@ -80,7 +129,7 @@ variable "alb_https_listener_port" {
 }
 
 variable "envoy_traffic_port" {
-  description = "Port where Envoy instances listen for traffic from ALB (target group port)"
+  description = "Port where Envoy instances listen for traffic from ALB (target group port) - ALB forwards traffic to this port"
   type        = number
   default     = 80
 
@@ -91,9 +140,9 @@ variable "envoy_traffic_port" {
 }
 
 variable "envoy_health_check_port" {
-  description = "Port for Envoy health check endpoint"
+  description = "Port for Envoy health check endpoint - ALB sends GET /healthz requests to this port"
   type        = number
-  default     = 8081
+  default     = 80
 
   validation {
     condition     = var.envoy_health_check_port >= 1 && var.envoy_health_check_port <= 65535
@@ -251,8 +300,14 @@ variable "existing_iam_role_name" {
   default     = null
 }
 
+variable "create_instance_profile" {
+  description = "Whether to create a new instance profile for existing IAM role (only relevant when create_iam_role = false)"
+  type        = bool
+  default     = true
+}
+
 variable "existing_iam_instance_profile_name" {
-  description = "Name of existing IAM instance profile to use (only if create_iam_role = false)"
+  description = "Name of existing IAM instance profile to use (only if create_iam_role = false AND create_instance_profile = false)"
   type        = string
   default     = null
 }
@@ -354,6 +409,24 @@ variable "max_instance_lifetime" {
     condition     = var.max_instance_lifetime == 0 || var.max_instance_lifetime >= 86400
     error_message = "Maximum instance lifetime must be 0 (disabled) or at least 86400 seconds (24 hours)"
   }
+}
+
+variable "create_logs_bucket" {
+  description = "Whether to create a new S3 bucket for logs (if false, use existing bucket)"
+  type        = bool
+  default     = true
+}
+
+variable "logs_bucket_name" {
+  description = "Name of existing S3 bucket for logs (required if create_logs_bucket=false)"
+  type        = string
+  default     = ""
+}
+
+variable "logs_bucket_arn" {
+  description = "ARN of existing S3 bucket for logs (required if create_logs_bucket=false)"
+  type        = string
+  default     = ""
 }
 
 variable "create_config_bucket" {
@@ -511,6 +584,42 @@ variable "instance_refresh_triggers" {
   description = "List of triggers that will start an instance refresh. Note: launch_template changes always trigger refresh automatically."
   type        = list(string)
   default     = []  # Empty - launch_template triggers are automatic
+}
+
+# =========================================================================
+# Auto Scaling Policies Configuration
+# =========================================================================
+variable "enable_autoscaling" {
+  description = "Enable auto-scaling policies for the ASG based on CPU and memory metrics"
+  type        = bool
+  default     = false
+}
+
+variable "scaling_policies" {
+  description = "Configuration for auto-scaling policies using built-in AWS metrics"
+  type = object({
+    # CPU-based target tracking
+    cpu_target_tracking = optional(object({
+      enabled      = optional(bool, false)
+      target_value = optional(number, 70.0) # Target CPU utilization %
+    }), {})
+
+    # Memory-based target tracking (requires CloudWatch agent on instances)
+    memory_target_tracking = optional(object({
+      enabled      = optional(bool, false)
+      target_value = optional(number, 70.0) # Target Memory utilization %
+    }), {})
+  })
+  default = {
+    cpu_target_tracking = {
+      enabled      = false
+      target_value = 70.0
+    }
+    memory_target_tracking = {
+      enabled      = false
+      target_value = 70.0
+    }
+  }
 }
 
 variable "tags" {
