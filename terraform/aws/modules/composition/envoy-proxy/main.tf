@@ -252,6 +252,7 @@ resource "aws_security_group_rule" "lb_ingress_rules" {
   cidr_blocks              = try(each.value.cidr, null)
   ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
   source_security_group_id = try(each.value.sg_id[0], null)
+  prefix_list_ids          = try(each.value.prefix_list_ids, null)
 }
 
 # =========================================================================
@@ -272,6 +273,7 @@ resource "aws_security_group_rule" "lb_egress_rules" {
   cidr_blocks              = try(each.value.cidr, null)
   ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
   source_security_group_id = try(each.value.sg_id[0], null)
+  prefix_list_ids          = try(each.value.prefix_list_ids, null)
 }
 
 # =========================================================================
@@ -310,8 +312,10 @@ module "asg_security_group" {
 # =========================================================================
 # ASG Security Group - Default Ingress Rules
 # =========================================================================
-# Allow traffic from ALB to Envoy
+# Allow traffic from ALB to Envoy (only if ALB security group is known)
 resource "aws_security_group_rule" "asg_ingress_from_alb_traffic" {
+  count = var.create_lb || var.existing_lb_security_group_id != null ? 1 : 0
+
   security_group_id        = module.asg_security_group.security_group_id
   type                     = "ingress"
   from_port                = var.envoy_traffic_port
@@ -321,9 +325,9 @@ resource "aws_security_group_rule" "asg_ingress_from_alb_traffic" {
   description              = "Allow traffic from ALB to Envoy"
 }
 
-# Allow health checks from ALB (only if different port)
+# Allow health checks from ALB (only if different port and ALB security group is known)
 resource "aws_security_group_rule" "asg_ingress_from_alb_healthcheck" {
-  count = var.envoy_health_check_port != var.envoy_traffic_port ? 1 : 0
+  count = (var.create_lb || var.existing_lb_security_group_id != null) && var.envoy_health_check_port != var.envoy_traffic_port ? 1 : 0
 
   security_group_id        = module.asg_security_group.security_group_id
   type                     = "ingress"
@@ -350,6 +354,7 @@ resource "aws_security_group_rule" "asg_ingress_rules" {
   cidr_blocks              = try(each.value.cidr, null)
   ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
   source_security_group_id = try(each.value.sg_id[0], null)
+  prefix_list_ids          = try(each.value.prefix_list_ids, null)
 }
 
 # =========================================================================
@@ -378,10 +383,11 @@ resource "aws_security_group_rule" "asg_egress_rules" {
 # =========================================================================
 # When using an existing ALB, add egress rules to the existing ALB's security group
 # to allow traffic to the new ASG security group
+# Only created if existing_lb_security_group_id is provided
 
 # Rule for traffic to Envoy ASG
 resource "aws_security_group_rule" "existing_lb_to_asg_traffic" {
-  count = var.create_lb ? 0 : 1 # Only create when using existing ALB
+  count = !var.create_lb && var.existing_lb_security_group_id != null ? 1 : 0
 
   type                     = "egress"
   from_port                = var.envoy_traffic_port
@@ -395,7 +401,7 @@ resource "aws_security_group_rule" "existing_lb_to_asg_traffic" {
 
 # Rule for health checks (only if different port)
 resource "aws_security_group_rule" "existing_lb_to_asg_healthcheck" {
-  count = var.create_lb ? 0 : (var.envoy_health_check_port != var.envoy_traffic_port ? 1 : 0)
+  count = !var.create_lb && var.existing_lb_security_group_id != null && var.envoy_health_check_port != var.envoy_traffic_port ? 1 : 0
 
   type                     = "egress"
   from_port                = var.envoy_health_check_port

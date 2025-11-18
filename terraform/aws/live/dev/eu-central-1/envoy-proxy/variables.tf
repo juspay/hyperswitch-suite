@@ -32,57 +32,61 @@ variable "lb_subnet_ids" {
 }
 
 variable "ingress_rules" {
-  description = "Ingress rules for ASG security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, or 'sg_id' for security groups"
+  description = "Ingress rules for ASG security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, 'sg_id' for security groups, or 'prefix_list_ids' for VPC endpoints"
   type = list(object({
-    description = string
-    from_port   = number
-    to_port     = number
-    protocol    = string
-    cidr        = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
-    ipv6_cidr   = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
-    sg_id       = optional(list(string))  # Security Group IDs
+    description     = string
+    from_port       = number
+    to_port         = number
+    protocol        = string
+    cidr            = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
+    ipv6_cidr       = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
+    sg_id           = optional(list(string))  # Security Group IDs
+    prefix_list_ids = optional(list(string))  # VPC Endpoint Prefix Lists (e.g., ["pl-6ea54007"])
   }))
   default = []
 }
 
 variable "egress_rules" {
-  description = "Egress rules for ASG security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, or 'sg_id' for security groups"
+  description = "Egress rules for ASG security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, 'sg_id' for security groups, or 'prefix_list_ids' for VPC endpoints"
   type = list(object({
-    description = string
-    from_port   = number
-    to_port     = number
-    protocol    = string
-    cidr        = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
-    ipv6_cidr   = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
-    sg_id       = optional(list(string))  # Security Group IDs
+    description     = string
+    from_port       = number
+    to_port         = number
+    protocol        = string
+    cidr            = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
+    ipv6_cidr       = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
+    sg_id           = optional(list(string))  # Security Group IDs
+    prefix_list_ids = optional(list(string))  # VPC Endpoint Prefix Lists (e.g., ["pl-6ea54007"])
   }))
   default = []
 }
 
 variable "lb_ingress_rules" {
-  description = "Additional ingress rules for external load balancer security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, or 'sg_id' for security groups"
+  description = "Additional ingress rules for external load balancer security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, 'sg_id' for security groups, or 'prefix_list_ids' for VPC endpoints"
   type = list(object({
-    description = string
-    from_port   = number
-    to_port     = number
-    protocol    = string
-    cidr        = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
-    ipv6_cidr   = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
-    sg_id       = optional(list(string))  # Security Group IDs
+    description     = string
+    from_port       = number
+    to_port         = number
+    protocol        = string
+    cidr            = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
+    ipv6_cidr       = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
+    sg_id           = optional(list(string))  # Security Group IDs
+    prefix_list_ids = optional(list(string))  # VPC Endpoint Prefix Lists (e.g., ["pl-6ea54007"])
   }))
   default = []
 }
 
 variable "lb_egress_rules" {
-  description = "Additional egress rules for external load balancer security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, or 'sg_id' for security groups"
+  description = "Additional egress rules for external load balancer security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, 'sg_id' for security groups, or 'prefix_list_ids' for VPC endpoints"
   type = list(object({
-    description = string
-    from_port   = number
-    to_port     = number
-    protocol    = string
-    cidr        = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
-    ipv6_cidr   = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
-    sg_id       = optional(list(string))  # Security Group IDs
+    description     = string
+    from_port       = number
+    to_port         = number
+    protocol        = string
+    cidr            = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
+    ipv6_cidr       = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
+    sg_id           = optional(list(string))  # Security Group IDs
+    prefix_list_ids = optional(list(string))  # VPC Endpoint Prefix Lists (e.g., ["pl-6ea54007"])
   }))
   default = []
 }
