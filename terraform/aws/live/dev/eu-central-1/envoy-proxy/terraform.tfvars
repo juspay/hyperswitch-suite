@@ -570,7 +570,7 @@ target_group_deregistration_delay = 30
 
 health_check = {
   enabled             = true
-  port                = 443         # Health check port (matches envoy_traffic_port)
+  port                = 80        # Health check port (matches envoy_traffic_port)
   path                = "/healthz"  # Dev: /healthz, Staging: /health, Production: /ready
   protocol            = "HTTP"      # HTTP or HTTPS
   matcher             = "200"       # "200" (exact), "200-299" (range), "200,202" (multiple)
