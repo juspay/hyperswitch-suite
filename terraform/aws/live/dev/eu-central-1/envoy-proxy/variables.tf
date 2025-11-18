@@ -426,52 +426,28 @@ variable "target_group_deregistration_delay" {
 # Health Check Configuration (Environment-specific)
 # =========================================================================
 
-variable "health_check_enabled" {
-  description = "Enable health checks for target group"
-  type        = bool
-  default     = true
-}
-
-variable "health_check_path" {
-  description = "Health check endpoint path (e.g., /healthz, /health, /ready)"
-  type        = string
-  default     = "/healthz"
-}
-
-variable "health_check_protocol" {
-  description = "Protocol for health checks (HTTP or HTTPS)"
-  type        = string
-  default     = "HTTP"
-}
-
-variable "health_check_matcher" {
-  description = "HTTP status codes to consider healthy (e.g., '200', '200-299', '200,202')"
-  type        = string
-  default     = "200"
-}
-
-variable "health_check_interval" {
-  description = "Interval between health checks in seconds (5-300)"
-  type        = number
-  default     = 30
-}
-
-variable "health_check_timeout" {
-  description = "Health check timeout in seconds (2-120, must be less than interval)"
-  type        = number
-  default     = 5
-}
-
-variable "health_check_healthy_threshold" {
-  description = "Number of consecutive successful health checks before considering target healthy (2-10)"
-  type        = number
-  default     = 2
-}
-
-variable "health_check_unhealthy_threshold" {
-  description = "Number of consecutive failed health checks before considering target unhealthy (2-10)"
-  type        = number
-  default     = 2
+variable "health_check" {
+  description = "Health check configuration for target group"
+  type = object({
+    enabled             = optional(bool, true)
+    path                = optional(string, "/healthz")
+    protocol            = optional(string, "HTTP")
+    matcher             = optional(string, "200")
+    interval            = optional(number, 30)
+    timeout             = optional(number, 5)
+    healthy_threshold   = optional(number, 2)
+    unhealthy_threshold = optional(number, 2)
+  })
+  default = {
+    enabled             = true
+    path                = "/healthz"
+    protocol            = "HTTP"
+    matcher             = "200"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+  }
 }
 
 # =========================================================================

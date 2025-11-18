@@ -458,15 +458,15 @@ resource "aws_lb_target_group" "envoy" {
   deregistration_delay = var.target_group_deregistration_delay
 
   health_check {
-    enabled             = var.health_check_enabled
-    healthy_threshold   = var.health_check_healthy_threshold
-    unhealthy_threshold = var.health_check_unhealthy_threshold
-    timeout             = var.health_check_timeout
-    interval            = var.health_check_interval
+    enabled             = var.health_check.enabled
+    healthy_threshold   = var.health_check.healthy_threshold
+    unhealthy_threshold = var.health_check.unhealthy_threshold
+    timeout             = var.health_check.timeout
+    interval            = var.health_check.interval
     port                = tostring(var.envoy_health_check_port) # Dedicated health check port
-    protocol            = var.health_check_protocol             # HTTP or HTTPS
-    path                = var.health_check_path                 # Environment-specific health check endpoint
-    matcher             = var.health_check_matcher              # HTTP status codes to consider healthy
+    protocol            = var.health_check.protocol             # HTTP or HTTPS
+    path                = var.health_check.path                 # Environment-specific health check endpoint
+    matcher             = var.health_check.matcher              # HTTP status codes to consider healthy
   }
 
   tags = merge(

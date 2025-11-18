@@ -568,35 +568,16 @@ target_group_deregistration_delay = 30
 # Configure health check parameters for the target group
 # These settings determine how ALB checks if Envoy instances are healthy
 
-# Enable/disable health checks
-health_check_enabled = true
-
-# Health check endpoint path (must match Envoy's admin listener configuration)
-# Dev: /healthz, Staging: /health, Production: /ready
-health_check_path = "/healthz"
-
-# Protocol for health checks (HTTP or HTTPS)
-health_check_protocol = "HTTP"
-
-# HTTP status codes to consider healthy
-# Examples: "200" (exact match), "200-299" (range), "200,202" (multiple)
-health_check_matcher = "200"
-
-# Interval between health checks (5-300 seconds)
-# Shorter intervals = faster failure detection but more overhead
-health_check_interval = 30
-
-# Health check timeout (2-120 seconds, must be < interval)
-# How long to wait for a response before considering it failed
-health_check_timeout = 5
-
-# Number of consecutive successful checks before marking healthy (2-10)
-# Higher values = more conservative, takes longer to mark healthy
-health_check_healthy_threshold = 2
-
-# Number of consecutive failed checks before marking unhealthy (2-10)
-# Lower values = faster failure detection but more sensitive to transient issues
-health_check_unhealthy_threshold = 2
+health_check = {
+  enabled             = true
+  path                = "/healthz"  # Dev: /healthz, Staging: /health, Production: /ready
+  protocol            = "HTTP"      # HTTP or HTTPS
+  matcher             = "200"       # "200" (exact), "200-299" (range), "200,202" (multiple)
+  interval            = 30          # Interval between checks (5-300 seconds)
+  timeout             = 5           # Timeout per check (2-120 seconds, must be < interval)
+  healthy_threshold   = 2           # Consecutive successes to mark healthy (2-10)
+  unhealthy_threshold = 2           # Consecutive failures to mark unhealthy (2-10)
+}
 
 #=======================================================================
 # S3 VPC ENDPOINT (Optional)
