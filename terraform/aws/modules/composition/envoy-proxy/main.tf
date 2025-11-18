@@ -740,14 +740,6 @@ module "asg" {
     override = []
   } : null
 
-  # =========================================================================
-  # Instance Parameters - Not Used
-  # =========================================================================
-  # Since we're providing our own launch template (create_launch_template = false),
-  # the ASG module doesn't need any instance parameters. All configuration comes
-  # from the launch template (either existing or aws_launch_template.envoy[0]).
-  # =========================================================================
-  # No instance parameters needed - all config is in the launch template
 
   # VPC and networking
   vpc_zone_identifier = var.proxy_subnet_ids
