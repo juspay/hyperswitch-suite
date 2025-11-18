@@ -107,18 +107,6 @@ module "config_bucket" {
     }
   }
 
-  # Lifecycle rules for old versions
-  lifecycle_rule = [
-    {
-      id      = "expire-old-config-versions"
-      enabled = true
-
-      noncurrent_version_expiration = {
-        days = 90 # Keep old versions for 90 days
-      }
-    }
-  ]
-
   tags = local.common_tags
 }
 
