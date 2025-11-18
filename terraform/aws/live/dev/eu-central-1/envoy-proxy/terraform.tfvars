@@ -221,8 +221,8 @@ lb_egress_rules = [
 
 # Traffic flow: CloudFront → External ALB:80 → Envoy:80 → Internal ALB:80 → EKS
 
-envoy_traffic_port      = 443  # Target group port - ALB forwards traffic to this port on Envoy instances
-envoy_health_check_port = 443  # Health check port - ALB sends GET /healthz requests to this port 
+envoy_traffic_port = 443  # Target group port - ALB forwards traffic to this port on Envoy instances
+# Health check port is now configured in the health_check object below 
 
 #=======================================================================
 # LAUNCH TEMPLATE CONFIGURATION
@@ -570,6 +570,7 @@ target_group_deregistration_delay = 30
 
 health_check = {
   enabled             = true
+  port                = 443         # Health check port (matches envoy_traffic_port)
   path                = "/healthz"  # Dev: /healthz, Staging: /health, Production: /ready
   protocol            = "HTTP"      # HTTP or HTTPS
   matcher             = "200"       # "200" (exact), "200-299" (range), "200,202" (multiple)

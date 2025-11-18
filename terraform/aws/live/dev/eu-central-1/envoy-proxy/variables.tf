@@ -117,11 +117,6 @@ variable "envoy_traffic_port" {
   default     = 80  # Dev uses port 80
 }
 
-variable "envoy_health_check_port" {
-  description = "Port for Envoy health check endpoint - ALB sends GET /healthz requests to this port"
-  type        = number
-  default     = 80
-}
 
 variable "envoy_upstream_port" {
   description = "Port for Envoy to forward traffic to upstream"
@@ -430,6 +425,7 @@ variable "health_check" {
   description = "Health check configuration for target group"
   type = object({
     enabled             = optional(bool, true)
+    port                = optional(number, 80)
     path                = optional(string, "/healthz")
     protocol            = optional(string, "HTTP")
     matcher             = optional(string, "200")
@@ -440,6 +436,7 @@ variable "health_check" {
   })
   default = {
     enabled             = true
+    port                = 80
     path                = "/healthz"
     protocol            = "HTTP"
     matcher             = "200"

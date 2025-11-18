@@ -143,17 +143,6 @@ variable "envoy_traffic_port" {
   }
 }
 
-variable "envoy_health_check_port" {
-  description = "Port for Envoy health check endpoint - ALB sends GET /healthz requests to this port"
-  type        = number
-  default     = 80
-
-  validation {
-    condition     = var.envoy_health_check_port >= 1 && var.envoy_health_check_port <= 65535
-    error_message = "Envoy health check port must be between 1 and 65535"
-  }
-}
-
 variable "envoy_upstream_port" {
   description = "Port for Envoy to forward traffic to upstream (e.g., Internal ALB/Istio)"
   type        = number
@@ -550,6 +539,7 @@ variable "health_check" {
   description = "Health check configuration for target group"
   type = object({
     enabled             = optional(bool, true)
+    port                = optional(number, 80)
     path                = optional(string, "/healthz")
     protocol            = optional(string, "HTTP")
     matcher             = optional(string, "200")
@@ -560,6 +550,7 @@ variable "health_check" {
   })
   default = {
     enabled             = true
+    port                = 80
     path                = "/healthz"
     protocol            = "HTTP"
     matcher             = "200"

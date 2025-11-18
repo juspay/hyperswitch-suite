@@ -28,8 +28,7 @@ module "envoy_proxy" {
   # Port Configuration (Environment-specific)
   alb_http_listener_port  = var.alb_http_listener_port
   alb_https_listener_port = var.alb_https_listener_port
-  envoy_traffic_port      = var.envoy_traffic_port      # ALB forwards traffic to this port on Envoy instances
-  envoy_health_check_port = var.envoy_health_check_port # ALB sends GET /healthz requests to this port
+  envoy_traffic_port      = var.envoy_traffic_port   # ALB forwards traffic to this port on Envoy instances
   envoy_upstream_port     = var.envoy_upstream_port
 
   # SSH Key Configuration
