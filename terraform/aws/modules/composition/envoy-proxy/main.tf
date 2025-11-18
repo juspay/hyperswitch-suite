@@ -724,6 +724,7 @@ module "asg" {
 
   # Always use a launch template (either existing or our created one)
   # This prevents the ASG module from creating its own launch template
+  create_launch_template  = false
   launch_template_id      = local.launch_template_id
   launch_template_version = local.launch_template_version
 
@@ -740,29 +741,13 @@ module "asg" {
   } : null
 
   # =========================================================================
-  # Instance Parameters
+  # Instance Parameters - Not Used
   # =========================================================================
-  # Since we ALWAYS provide a launch_template_id to the ASG module (either from
-  # an existing template or our created aws_launch_template.envoy resource),
-  # we must set all instance parameters to null/empty to prevent the ASG module
-  # from creating a duplicate launch template.
-  #
-  # The launch template (existing or created) contains all instance configuration:
-  # - AMI ID, instance type, key name
-  # - Security groups, IAM instance profile
-  # - User data, EBS settings, monitoring
-  # - Metadata options
+  # Since we're providing our own launch template (create_launch_template = false),
+  # the ASG module doesn't need any instance parameters. All configuration comes
+  # from the launch template (either existing or aws_launch_template.envoy[0]).
   # =========================================================================
-  image_id                  = null
-  instance_type             = null
-  key_name                  = null
-  security_groups           = null
-  iam_instance_profile_name = null
-  user_data                 = null
-  ebs_optimized             = null
-  enable_monitoring         = null
-  block_device_mappings     = []
-  metadata_options          = {}
+  # No instance parameters needed - all config is in the launch template
 
   # VPC and networking
   vpc_zone_identifier = var.proxy_subnet_ids
