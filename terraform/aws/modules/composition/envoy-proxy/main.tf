@@ -455,18 +455,18 @@ resource "aws_lb_target_group" "envoy" {
   protocol             = var.target_group_protocol # HTTP or HTTPS based on configuration
   vpc_id               = var.vpc_id
   target_type          = "instance"
-  deregistration_delay = 30
+  deregistration_delay = var.target_group_deregistration_delay
 
   health_check {
-    enabled             = true
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 5
-    interval            = 30
+    enabled             = var.health_check_enabled
+    healthy_threshold   = var.health_check_healthy_threshold
+    unhealthy_threshold = var.health_check_unhealthy_threshold
+    timeout             = var.health_check_timeout
+    interval            = var.health_check_interval
     port                = tostring(var.envoy_health_check_port) # Dedicated health check port
-    protocol            = "HTTP"                                # Health check always uses HTTP
-    path                = "/healthz"                            # Envoy health check endpoint
-    matcher             = "200"                                 # Expect 200 OK response
+    protocol            = var.health_check_protocol             # HTTP or HTTPS
+    path                = var.health_check_path                 # Environment-specific health check endpoint
+    matcher             = var.health_check_matcher              # HTTP status codes to consider healthy
   }
 
   tags = merge(

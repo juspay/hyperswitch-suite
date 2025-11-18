@@ -536,6 +536,89 @@ variable "target_group_protocol" {
   }
 }
 
+variable "target_group_deregistration_delay" {
+  description = "Time to wait before deregistering a target in seconds"
+  type        = number
+  default     = 30
+}
+
+# =========================================================================
+# Health Check Configuration (Environment-specific)
+# =========================================================================
+
+variable "health_check_enabled" {
+  description = "Enable health checks for target group"
+  type        = bool
+  default     = true
+}
+
+variable "health_check_path" {
+  description = "Health check endpoint path (e.g., /healthz, /health, /ready)"
+  type        = string
+  default     = "/healthz"
+}
+
+variable "health_check_protocol" {
+  description = "Protocol for health checks (HTTP or HTTPS)"
+  type        = string
+  default     = "HTTP"
+
+  validation {
+    condition     = contains(["HTTP", "HTTPS"], var.health_check_protocol)
+    error_message = "Health check protocol must be either HTTP or HTTPS"
+  }
+}
+
+variable "health_check_matcher" {
+  description = "HTTP status codes to consider healthy (e.g., '200', '200-299', '200,202')"
+  type        = string
+  default     = "200"
+}
+
+variable "health_check_interval" {
+  description = "Interval between health checks in seconds (5-300)"
+  type        = number
+  default     = 30
+
+  validation {
+    condition     = var.health_check_interval >= 5 && var.health_check_interval <= 300
+    error_message = "Health check interval must be between 5 and 300 seconds"
+  }
+}
+
+variable "health_check_timeout" {
+  description = "Health check timeout in seconds (2-120, must be less than interval)"
+  type        = number
+  default     = 5
+
+  validation {
+    condition     = var.health_check_timeout >= 2 && var.health_check_timeout <= 120
+    error_message = "Health check timeout must be between 2 and 120 seconds"
+  }
+}
+
+variable "health_check_healthy_threshold" {
+  description = "Number of consecutive successful health checks before considering target healthy (2-10)"
+  type        = number
+  default     = 2
+
+  validation {
+    condition     = var.health_check_healthy_threshold >= 2 && var.health_check_healthy_threshold <= 10
+    error_message = "Healthy threshold must be between 2 and 10"
+  }
+}
+
+variable "health_check_unhealthy_threshold" {
+  description = "Number of consecutive failed health checks before considering target unhealthy (2-10)"
+  type        = number
+  default     = 2
+
+  validation {
+    condition     = var.health_check_unhealthy_threshold >= 2 && var.health_check_unhealthy_threshold <= 10
+    error_message = "Unhealthy threshold must be between 2 and 10"
+  }
+}
+
 # =========================================================================
 # VPC Endpoint Configuration
 # =========================================================================

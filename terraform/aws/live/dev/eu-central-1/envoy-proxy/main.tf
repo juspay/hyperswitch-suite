@@ -87,7 +87,18 @@ module "envoy_proxy" {
   waf_web_acl_arn = var.waf_web_acl_arn
 
   # Target Group Configuration
-  target_group_protocol = var.target_group_protocol
+  target_group_protocol            = var.target_group_protocol
+  target_group_deregistration_delay = var.target_group_deregistration_delay
+
+  # Health Check Configuration
+  health_check_enabled             = var.health_check_enabled
+  health_check_path                = var.health_check_path
+  health_check_protocol            = var.health_check_protocol
+  health_check_matcher             = var.health_check_matcher
+  health_check_interval            = var.health_check_interval
+  health_check_timeout             = var.health_check_timeout
+  health_check_healthy_threshold   = var.health_check_healthy_threshold
+  health_check_unhealthy_threshold = var.health_check_unhealthy_threshold
 
   # S3 VPC Endpoint
   s3_vpc_endpoint_prefix_list_id = var.s3_vpc_endpoint_prefix_list_id
