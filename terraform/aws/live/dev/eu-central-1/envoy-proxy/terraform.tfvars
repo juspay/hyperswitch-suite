@@ -409,12 +409,22 @@ generate_ssh_key = true  # Set to false to use existing key
 # Git is the source of truth - any changes to files will trigger re-upload
 upload_config_to_s3 = true  # Automatically uploads configs from ./config directory
 
+# Specify the main Envoy config filename (receives template substitution)
+# Different environments can use different filenames:
+#   - Dev: envoy_config_filename = "envoy.yaml" (default)
+#   - Staging: envoy_config_filename = "envoy-staging.yaml"
+#   - Production: envoy_config_filename = "envoy-prod.yaml"
+envoy_config_filename = "envoy.yaml"
+
 # How it works:
-# 1. Config files in ./config/ directory (envoy.yaml, etc.)
+# 1. Config files in ./config/ directory (envoy.yaml, envoy-staging.yaml, etc.)
 # 2. When you run terraform apply, configs are uploaded to S3
-# 3. Changes to config files trigger automatic re-upload
-# 4. Userdata script downloads them during instance initialization
-# 5. Git is the source of truth for all configuration files
+# 3. The file specified in envoy_config_filename receives template substitution
+# 4. Placeholders like {{hyperswitch_cloudfront_dns}} are replaced with actual values
+# 5. Other files are uploaded as-is without substitution
+# 6. Changes to config files trigger automatic re-upload
+# 7. Userdata script downloads them during instance initialization
+# 8. Git is the source of truth for all configuration files
 
 #=======================================================================
 # ENVOY CONFIGURATION TEMPLATING
@@ -429,18 +439,6 @@ internal_loadbalancer_dns  = "your-internal-alb-XXXXXXXXXX.eu-central-1.elb.amaz
 # {{hyperswitch_cloudfront_dns}} - Replaced with above value
 # {{internal_loadbalancer_dns}}  - Replaced with above value
 # {{eks_cluster_name}}           - Replaced with "dev-hyperswitch-cluster"
-
-#=======================================================================
-# INSTANCE REFRESH (Automatic Rolling Updates)
-#=======================================================================
-# Enable automatic instance refresh when envoy.yaml changes
-enable_instance_refresh = true
-
-# How it works:
-# 1. You update config/envoy.yaml
-# 2. Run terraform apply
-# 3. ASG automatically replaces instances one-by-one (zero downtime)
-# 4. Keeps 50% instances healthy during update
 
 #=======================================================================
 # LOAD BALANCER CONFIGURATION

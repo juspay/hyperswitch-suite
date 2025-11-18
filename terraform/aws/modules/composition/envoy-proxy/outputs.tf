@@ -129,11 +129,6 @@ output "ssh_key_retrieval_command" {
 }
 
 output "config_version" {
-  description = "Current configuration version hash (changes trigger instance refresh)"
+  description = "Current configuration version hash"
   value       = substr(md5(local.envoy_config_content), 0, 8)
-}
-
-output "instance_refresh_enabled" {
-  description = "Whether automatic instance refresh is enabled"
-  value       = var.enable_instance_refresh
 }

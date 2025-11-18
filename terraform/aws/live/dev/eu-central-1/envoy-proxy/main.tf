@@ -59,6 +59,7 @@ module "envoy_proxy" {
   # S3 Config Upload (optional)
   upload_config_to_s3      = var.upload_config_to_s3
   config_files_source_path = "${path.module}/config"
+  envoy_config_filename    = var.envoy_config_filename
 
   # ASG configuration
   min_size         = var.min_size
@@ -107,9 +108,6 @@ module "envoy_proxy" {
   existing_iam_role_name             = var.existing_iam_role_name
   create_instance_profile            = var.create_instance_profile
   existing_iam_instance_profile_name = var.existing_iam_instance_profile_name
-
-  # Instance Refresh (automatic rolling updates when config changes)
-  enable_instance_refresh = var.enable_instance_refresh
 
   # Auto Scaling Policies
   enable_autoscaling = var.enable_autoscaling

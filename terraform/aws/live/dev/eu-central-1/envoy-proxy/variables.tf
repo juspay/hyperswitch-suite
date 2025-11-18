@@ -245,6 +245,12 @@ variable "upload_config_to_s3" {
   default     = false
 }
 
+variable "envoy_config_filename" {
+  description = "Name of the main Envoy config file that receives template variable substitution (e.g., 'envoy.yaml', 'envoy-dev.yaml')"
+  type        = string
+  default     = "envoy.yaml"
+}
+
 variable "hyperswitch_cloudfront_dns" {
   description = "CloudFront DNS for Hyperswitch (for envoy.yaml templating)"
   type        = string
@@ -285,12 +291,6 @@ variable "existing_lb_security_group_id" {
   description = "Security group ID of existing ALB (required when create_lb = false)"
   type        = string
   default     = null
-}
-
-variable "enable_instance_refresh" {
-  description = "Enable automatic instance refresh when config changes"
-  type        = bool
-  default     = true
 }
 
 variable "create_iam_role" {

@@ -318,8 +318,15 @@ variable "custom_userdata" {
 }
 
 variable "envoy_config_template" {
-  description = "Envoy configuration template (envoy.yaml content). This should be environment-specific and loaded from the live layer (e.g., file(\"$${path.module}/config/envoy.yaml\"))"
+  description = <<-EOT
+    Envoy configuration template content. This is environment-specific and flexible:
+    - Load from file: file("$${path.module}/config/my-envoy-config.yaml")
+    - Load from any path: file("/path/to/envoy.yaml")
+    - Provide inline: "admin: { ... }"
+    - Use try() for optional: try(file("$${path.module}/config/envoy.yaml"), "")
+  EOT
   type        = string
+  default     = ""
 }
 
 variable "min_size" {
@@ -459,6 +466,19 @@ variable "config_files_source_path" {
   default     = "./config"
 }
 
+variable "envoy_config_filename" {
+  description = <<-EOT
+    Name of the main Envoy config file (relative to config_files_source_path).
+    This file will receive template variable substitution when uploaded to S3.
+    Different environments can use different filenames:
+    - Dev: "envoy.yaml" or "envoy-dev.yaml"
+    - Staging: "envoy-staging.yaml"
+    - Production: "envoy-prod.yaml" or "proxy-config.yaml"
+  EOT
+  type        = string
+  default     = "envoy.yaml"
+}
+
 variable "hyperswitch_cloudfront_dns" {
   description = "CloudFront distribution DNS for Hyperswitch (for envoy.yaml templating)"
   type        = string
@@ -550,40 +570,6 @@ variable "existing_tg_arn" {
     condition     = var.create_target_group == true || var.existing_tg_arn != null
     error_message = "existing_tg_arn must be provided when create_target_group is false"
   }
-}
-
-variable "enable_instance_refresh" {
-  description = "Enable automatic instance refresh when launch template changes. When enabled, ASG will automatically replace instances with manual checkpoints for validation."
-  type        = bool
-  default     = false
-}
-
-variable "instance_refresh_preferences" {
-  description = "Preferences for instance refresh behavior. Defines how instances are replaced during a refresh."
-  type = object({
-    min_healthy_percentage       = optional(number, 50)
-    instance_warmup              = optional(number, 300)
-    max_healthy_percentage       = optional(number, 100)
-    checkpoint_percentages       = optional(list(number), [50])
-    checkpoint_delay             = optional(number, 300)
-    scale_in_protected_instances = optional(string, "Ignore")
-    standby_instances            = optional(string, "Ignore")
-  })
-  default = {
-    min_healthy_percentage       = 50
-    instance_warmup              = 300
-    max_healthy_percentage       = 100
-    checkpoint_percentages       = [50]
-    checkpoint_delay             = 300
-    scale_in_protected_instances = "Ignore"
-    standby_instances            = "Ignore"
-  }
-}
-
-variable "instance_refresh_triggers" {
-  description = "List of triggers that will start an instance refresh. Note: launch_template changes always trigger refresh automatically."
-  type        = list(string)
-  default     = []  # Empty - launch_template triggers are automatic
 }
 
 # =========================================================================

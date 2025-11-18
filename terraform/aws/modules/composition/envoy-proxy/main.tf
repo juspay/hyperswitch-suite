@@ -135,9 +135,9 @@ resource "aws_s3_object" "envoy_config_files" {
   bucket = local.config_bucket_name
   key    = "envoy/${each.value}"
 
-  # Use templated content for envoy.yaml, raw content for other files
-  content = each.value == "envoy.yaml" ? local.envoy_config_content : file("${var.config_files_source_path}/${each.value}")
-  etag    = each.value == "envoy.yaml" ? md5(local.envoy_config_content) : filemd5("${var.config_files_source_path}/${each.value}")
+  # Use templated content for the specified config file, raw content for other files
+  content = each.value == var.envoy_config_filename ? local.envoy_config_content : file("${var.config_files_source_path}/${each.value}")
+  etag    = each.value == var.envoy_config_filename ? md5(local.envoy_config_content) : filemd5("${var.config_files_source_path}/${each.value}")
 
   tags = local.common_tags
 }
@@ -797,32 +797,10 @@ module "asg" {
     "GroupTotalInstances"
   ]
 
-  # Instance Refresh Configuration
-  instance_refresh = var.enable_instance_refresh ? {
-    strategy = "Rolling"
-    preferences = {
-      min_healthy_percentage       = var.instance_refresh_preferences.min_healthy_percentage
-      instance_warmup              = var.instance_refresh_preferences.instance_warmup
-      max_healthy_percentage       = var.instance_refresh_preferences.max_healthy_percentage
-      checkpoint_percentages       = var.instance_refresh_preferences.checkpoint_percentages
-      checkpoint_delay             = var.instance_refresh_preferences.checkpoint_delay
-      scale_in_protected_instances = var.instance_refresh_preferences.scale_in_protected_instances
-      standby_instances            = var.instance_refresh_preferences.standby_instances
-    }
-    triggers = length(var.instance_refresh_triggers) > 0 ? [
-      for trigger in var.instance_refresh_triggers : trigger if trigger != "launch_template"
-    ] : null
-  } : null
-
   # Scaling policies - Created separately below
 
   # Tags
-  tags = merge(
-    local.common_tags,
-    {
-      ConfigVersion = substr(md5(local.envoy_config_content), 0, 8)
-    }
-  )
+  tags = local.common_tags
 }
 
 # =========================================================================
@@ -874,28 +852,3 @@ resource "aws_autoscaling_policy" "memory_target_tracking" {
   }
 }
 
-# =========================================================================
-# Instance Refresh Configuration
-# =========================================================================
-# This resource triggers rolling replacement of instances when config changes
-# Note: ConfigVersion tag is now set directly in the ASG module above
-
-# Enable instance refresh on the ASG
-resource "null_resource" "enable_instance_refresh" {
-  count = var.enable_instance_refresh ? 1 : 0
-
-  triggers = {
-    config_version = substr(md5(local.envoy_config_content), 0, 8)
-  }
-
-  provisioner "local-exec" {
-    command = <<-EOT
-      aws autoscaling start-instance-refresh \
-        --auto-scaling-group-name ${module.asg.autoscaling_group_name} \
-        --preferences '{"MinHealthyPercentage":50,"InstanceWarmup":60}' \
-        --region ${data.aws_region.current.name} || true
-    EOT
-  }
-
-  depends_on = [module.asg]
-}
