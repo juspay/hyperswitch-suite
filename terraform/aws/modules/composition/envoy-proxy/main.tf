@@ -798,7 +798,7 @@ module "asg" {
   ]
 
   # Instance Refresh Configuration
-  instance_refresh = var.enable_instance_refresh ? {
+  instance_refresh = !var.enable_instance_refresh ? null : {
     strategy = "Rolling"
     preferences = {
       min_healthy_percentage       = var.instance_refresh_preferences.min_healthy_percentage
@@ -812,7 +812,7 @@ module "asg" {
     triggers = length(var.instance_refresh_triggers) > 0 ? [
       for trigger in var.instance_refresh_triggers : trigger if trigger != "launch_template"
     ] : null
-  } : {}
+  }
 
   # Scaling policies - Created separately below
 
