@@ -109,9 +109,6 @@ module "envoy_proxy" {
   create_instance_profile            = var.create_instance_profile
   existing_iam_instance_profile_name = var.existing_iam_instance_profile_name
 
-  # Instance Refresh (automatic rolling updates when config changes)
-  enable_instance_refresh = var.enable_instance_refresh
-
   # Auto Scaling Policies
   enable_autoscaling = var.enable_autoscaling
   scaling_policies   = var.scaling_policies
