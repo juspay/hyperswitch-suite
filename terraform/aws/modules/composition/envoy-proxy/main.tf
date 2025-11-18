@@ -107,18 +107,6 @@ module "config_bucket" {
     }
   }
 
-  # Lifecycle rules for old versions
-  lifecycle_rule = [
-    {
-      id      = "expire-old-config-versions"
-      enabled = true
-
-      noncurrent_version_expiration = {
-        days = 90 # Keep old versions for 90 days
-      }
-    }
-  ]
-
   tags = local.common_tags
 }
 
@@ -264,6 +252,7 @@ resource "aws_security_group_rule" "lb_ingress_rules" {
   cidr_blocks              = try(each.value.cidr, null)
   ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
   source_security_group_id = try(each.value.sg_id[0], null)
+  prefix_list_ids          = try(each.value.prefix_list_ids, null)
 }
 
 # =========================================================================
@@ -284,6 +273,7 @@ resource "aws_security_group_rule" "lb_egress_rules" {
   cidr_blocks              = try(each.value.cidr, null)
   ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
   source_security_group_id = try(each.value.sg_id[0], null)
+  prefix_list_ids          = try(each.value.prefix_list_ids, null)
 }
 
 # =========================================================================
@@ -322,8 +312,10 @@ module "asg_security_group" {
 # =========================================================================
 # ASG Security Group - Default Ingress Rules
 # =========================================================================
-# Allow traffic from ALB to Envoy
+# Allow traffic from ALB to Envoy (only if ALB security group is known)
 resource "aws_security_group_rule" "asg_ingress_from_alb_traffic" {
+  count = var.create_lb || var.existing_lb_security_group_id != null ? 1 : 0
+
   security_group_id        = module.asg_security_group.security_group_id
   type                     = "ingress"
   from_port                = var.envoy_traffic_port
@@ -333,9 +325,9 @@ resource "aws_security_group_rule" "asg_ingress_from_alb_traffic" {
   description              = "Allow traffic from ALB to Envoy"
 }
 
-# Allow health checks from ALB (only if different port)
+# Allow health checks from ALB (only if different port and ALB security group is known)
 resource "aws_security_group_rule" "asg_ingress_from_alb_healthcheck" {
-  count = var.envoy_health_check_port != var.envoy_traffic_port ? 1 : 0
+  count = (var.create_lb || var.existing_lb_security_group_id != null) && var.envoy_health_check_port != var.envoy_traffic_port ? 1 : 0
 
   security_group_id        = module.asg_security_group.security_group_id
   type                     = "ingress"
@@ -362,6 +354,7 @@ resource "aws_security_group_rule" "asg_ingress_rules" {
   cidr_blocks              = try(each.value.cidr, null)
   ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
   source_security_group_id = try(each.value.sg_id[0], null)
+  prefix_list_ids          = try(each.value.prefix_list_ids, null)
 }
 
 # =========================================================================
@@ -390,10 +383,11 @@ resource "aws_security_group_rule" "asg_egress_rules" {
 # =========================================================================
 # When using an existing ALB, add egress rules to the existing ALB's security group
 # to allow traffic to the new ASG security group
+# Only created if existing_lb_security_group_id is provided
 
 # Rule for traffic to Envoy ASG
 resource "aws_security_group_rule" "existing_lb_to_asg_traffic" {
-  count = var.create_lb ? 0 : 1 # Only create when using existing ALB
+  count = !var.create_lb && var.existing_lb_security_group_id != null ? 1 : 0
 
   type                     = "egress"
   from_port                = var.envoy_traffic_port
@@ -407,7 +401,7 @@ resource "aws_security_group_rule" "existing_lb_to_asg_traffic" {
 
 # Rule for health checks (only if different port)
 resource "aws_security_group_rule" "existing_lb_to_asg_healthcheck" {
-  count = var.create_lb ? 0 : (var.envoy_health_check_port != var.envoy_traffic_port ? 1 : 0)
+  count = !var.create_lb && var.existing_lb_security_group_id != null && var.envoy_health_check_port != var.envoy_traffic_port ? 1 : 0
 
   type                     = "egress"
   from_port                = var.envoy_health_check_port
@@ -712,18 +706,21 @@ module "asg" {
   # =========================================================================
   # Three scenarios to handle:
   # 1. Using existing launch template (var.use_existing_launch_template = true)
-  #    - Use launch_template_id + launch_template_version regardless of spot setting
-  # 2. Spot instances enabled (var.enable_spot_instances = true)
-  #    - Use our created launch template with mixed instances policy
-  # 3. On-demand only (both false)
-  #    - Let ASG module create its own launch template from instance parameters
+  #    - Use external launch_template_id + launch_template_version
+  # 2. Creating new launch template (var.use_existing_launch_template = false)
+  #    - Use our created launch template (aws_launch_template.envoy[0])
+  #    - Works for both on-demand and spot instances
+  # 3. Spot instances (var.enable_spot_instances = true)
+  #    - Use mixed instances policy with our created launch template
   # =========================================================================
 
   use_mixed_instances_policy = var.enable_spot_instances
 
-  # Use external launch template if: existing OR spot enabled
-  launch_template_id      = (var.use_existing_launch_template || var.enable_spot_instances) ? local.launch_template_id : null
-  launch_template_version = (var.use_existing_launch_template || var.enable_spot_instances) ? local.launch_template_version : null
+  # Always use a launch template (either existing or our created one)
+  # This prevents the ASG module from creating its own launch template
+  create_launch_template  = false
+  launch_template_id      = local.launch_template_id
+  launch_template_version = local.launch_template_version
 
   # For mixed instances policy (spot enabled)
   mixed_instances_policy = var.enable_spot_instances ? {
@@ -737,35 +734,6 @@ module "asg" {
     override = []
   } : null
 
-  # Only provide these when NOT using any external launch template
-  # (i.e., when both use_existing_launch_template and enable_spot_instances are false)
-  image_id                  = (var.use_existing_launch_template || var.enable_spot_instances) ? null : var.ami_id
-  instance_type             = (var.use_existing_launch_template || var.enable_spot_instances) ? null : var.instance_type
-  key_name                  = (var.use_existing_launch_template || var.enable_spot_instances) ? null : (var.generate_ssh_key ? module.key_pair[0].key_pair_name : var.key_name)
-  security_groups           = (var.use_existing_launch_template || var.enable_spot_instances) ? null : [module.asg_security_group.security_group_id]
-  iam_instance_profile_name = (var.use_existing_launch_template || var.enable_spot_instances) ? null : local.instance_profile_name
-  user_data                 = (var.use_existing_launch_template || var.enable_spot_instances) ? null : base64encode(local.userdata_content)
-  ebs_optimized             = (var.use_existing_launch_template || var.enable_spot_instances) ? null : true
-  enable_monitoring         = (var.use_existing_launch_template || var.enable_spot_instances) ? null : var.enable_detailed_monitoring
-
-  block_device_mappings = (var.use_existing_launch_template || var.enable_spot_instances) ? [] : [
-    {
-      device_name = "/dev/xvda"
-      ebs = {
-        volume_size           = var.root_volume_size
-        volume_type           = var.root_volume_type
-        delete_on_termination = true
-        encrypted             = true
-      }
-    }
-  ]
-
-  metadata_options = (var.use_existing_launch_template || var.enable_spot_instances) ? {} : {
-    http_endpoint               = "enabled"
-    http_tokens                 = "required"
-    http_put_response_hop_limit = 1
-    instance_metadata_tags      = "enabled"
-  }
 
   # VPC and networking
   vpc_zone_identifier = var.proxy_subnet_ids

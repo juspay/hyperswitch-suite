@@ -26,10 +26,11 @@ lb_subnet_ids = [
 # ============================================================================
 # Define environment-specific ingress and egress rules for ASG and External LB
 #
-# Each rule must have EXACTLY ONE of: 'cidr', 'ipv6_cidr', or 'sg_id':
+# Each rule must have EXACTLY ONE of: 'cidr', 'ipv6_cidr', 'sg_id', or 'prefix_list_ids':
 #   - cidr: list(string) for IPv4 CIDR blocks (e.g., ["10.0.0.0/16"] or ["0.0.0.0/0"])
 #   - ipv6_cidr: list(string) for IPv6 CIDR blocks (e.g., ["::/0"])
 #   - sg_id: list(string) for Security Group IDs (e.g., ["sg-xxxxx"])
+#   - prefix_list_ids: list(string) for VPC Endpoint Prefix Lists (e.g., ["pl-6ea54007"] for S3)
 #
 # Note: The 'type' field is automatically set by the composition layer
 # (ingress_rules → type="ingress", egress_rules → type="egress")

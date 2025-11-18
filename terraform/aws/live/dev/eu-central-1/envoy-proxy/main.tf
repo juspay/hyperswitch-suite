@@ -40,7 +40,7 @@ module "envoy_proxy" {
   custom_userdata = file("${path.module}/templates/userdata.sh")
 
   # Envoy config template ({{hyperswitch_cloudfront_dns}}, {{internal_loadbalancer_dns}}, {{eks_cluster_name}} replaced)
-  envoy_config_template = file("${path.module}/config/envoy.yaml")
+  envoy_config_template = file("${path.module}/config/${var.envoy_config_filename}")
 
   # Template variables for envoy.yaml
   hyperswitch_cloudfront_dns = var.hyperswitch_cloudfront_dns
