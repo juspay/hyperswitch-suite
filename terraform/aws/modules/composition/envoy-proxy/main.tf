@@ -712,18 +712,20 @@ module "asg" {
   # =========================================================================
   # Three scenarios to handle:
   # 1. Using existing launch template (var.use_existing_launch_template = true)
-  #    - Use launch_template_id + launch_template_version regardless of spot setting
-  # 2. Spot instances enabled (var.enable_spot_instances = true)
-  #    - Use our created launch template with mixed instances policy
-  # 3. On-demand only (both false)
-  #    - Let ASG module create its own launch template from instance parameters
+  #    - Use external launch_template_id + launch_template_version
+  # 2. Creating new launch template (var.use_existing_launch_template = false)
+  #    - Use our created launch template (aws_launch_template.envoy[0])
+  #    - Works for both on-demand and spot instances
+  # 3. Spot instances (var.enable_spot_instances = true)
+  #    - Use mixed instances policy with our created launch template
   # =========================================================================
 
   use_mixed_instances_policy = var.enable_spot_instances
 
-  # Use external launch template if: existing OR spot enabled
-  launch_template_id      = (var.use_existing_launch_template || var.enable_spot_instances) ? local.launch_template_id : null
-  launch_template_version = (var.use_existing_launch_template || var.enable_spot_instances) ? local.launch_template_version : null
+  # Always use a launch template (either existing or our created one)
+  # This prevents the ASG module from creating its own launch template
+  launch_template_id      = local.launch_template_id
+  launch_template_version = local.launch_template_version
 
   # For mixed instances policy (spot enabled)
   mixed_instances_policy = var.enable_spot_instances ? {
@@ -737,35 +739,30 @@ module "asg" {
     override = []
   } : null
 
-  # Only provide these when NOT using any external launch template
-  # (i.e., when both use_existing_launch_template and enable_spot_instances are false)
-  image_id                  = (var.use_existing_launch_template || var.enable_spot_instances) ? null : var.ami_id
-  instance_type             = (var.use_existing_launch_template || var.enable_spot_instances) ? null : var.instance_type
-  key_name                  = (var.use_existing_launch_template || var.enable_spot_instances) ? null : (var.generate_ssh_key ? module.key_pair[0].key_pair_name : var.key_name)
-  security_groups           = (var.use_existing_launch_template || var.enable_spot_instances) ? null : [module.asg_security_group.security_group_id]
-  iam_instance_profile_name = (var.use_existing_launch_template || var.enable_spot_instances) ? null : local.instance_profile_name
-  user_data                 = (var.use_existing_launch_template || var.enable_spot_instances) ? null : base64encode(local.userdata_content)
-  ebs_optimized             = (var.use_existing_launch_template || var.enable_spot_instances) ? null : true
-  enable_monitoring         = (var.use_existing_launch_template || var.enable_spot_instances) ? null : var.enable_detailed_monitoring
-
-  block_device_mappings = (var.use_existing_launch_template || var.enable_spot_instances) ? [] : [
-    {
-      device_name = "/dev/xvda"
-      ebs = {
-        volume_size           = var.root_volume_size
-        volume_type           = var.root_volume_type
-        delete_on_termination = true
-        encrypted             = true
-      }
-    }
-  ]
-
-  metadata_options = (var.use_existing_launch_template || var.enable_spot_instances) ? {} : {
-    http_endpoint               = "enabled"
-    http_tokens                 = "required"
-    http_put_response_hop_limit = 1
-    instance_metadata_tags      = "enabled"
-  }
+  # =========================================================================
+  # Instance Parameters
+  # =========================================================================
+  # Since we ALWAYS provide a launch_template_id to the ASG module (either from
+  # an existing template or our created aws_launch_template.envoy resource),
+  # we must set all instance parameters to null/empty to prevent the ASG module
+  # from creating a duplicate launch template.
+  #
+  # The launch template (existing or created) contains all instance configuration:
+  # - AMI ID, instance type, key name
+  # - Security groups, IAM instance profile
+  # - User data, EBS settings, monitoring
+  # - Metadata options
+  # =========================================================================
+  image_id                  = null
+  instance_type             = null
+  key_name                  = null
+  security_groups           = null
+  iam_instance_profile_name = null
+  user_data                 = null
+  ebs_optimized             = null
+  enable_monitoring         = null
+  block_device_mappings     = []
+  metadata_options          = {}
 
   # VPC and networking
   vpc_zone_identifier = var.proxy_subnet_ids
