@@ -28,8 +28,7 @@ module "envoy_proxy" {
   # Port Configuration (Environment-specific)
   alb_http_listener_port  = var.alb_http_listener_port
   alb_https_listener_port = var.alb_https_listener_port
-  envoy_traffic_port      = var.envoy_traffic_port      # ALB forwards traffic to this port on Envoy instances
-  envoy_health_check_port = var.envoy_health_check_port # ALB sends GET /healthz requests to this port
+  envoy_traffic_port      = var.envoy_traffic_port   # ALB forwards traffic to this port on Envoy instances
   envoy_upstream_port     = var.envoy_upstream_port
 
   # SSH Key Configuration
@@ -87,7 +86,11 @@ module "envoy_proxy" {
   waf_web_acl_arn = var.waf_web_acl_arn
 
   # Target Group Configuration
-  target_group_protocol = var.target_group_protocol
+  target_group_protocol             = var.target_group_protocol
+  target_group_deregistration_delay = var.target_group_deregistration_delay
+
+  # Health Check Configuration
+  health_check = var.health_check
 
   # S3 VPC Endpoint
   s3_vpc_endpoint_prefix_list_id = var.s3_vpc_endpoint_prefix_list_id

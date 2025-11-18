@@ -143,17 +143,6 @@ variable "envoy_traffic_port" {
   }
 }
 
-variable "envoy_health_check_port" {
-  description = "Port for Envoy health check endpoint - ALB sends GET /healthz requests to this port"
-  type        = number
-  default     = 80
-
-  validation {
-    condition     = var.envoy_health_check_port >= 1 && var.envoy_health_check_port <= 65535
-    error_message = "Envoy health check port must be between 1 and 65535"
-  }
-}
-
 variable "envoy_upstream_port" {
   description = "Port for Envoy to forward traffic to upstream (e.g., Internal ALB/Istio)"
   type        = number
@@ -533,6 +522,67 @@ variable "target_group_protocol" {
   validation {
     condition     = contains(["HTTP", "HTTPS"], var.target_group_protocol)
     error_message = "Target group protocol must be either HTTP or HTTPS"
+  }
+}
+
+variable "target_group_deregistration_delay" {
+  description = "Time to wait before deregistering a target in seconds"
+  type        = number
+  default     = 30
+}
+
+# =========================================================================
+# Health Check Configuration (Environment-specific)
+# =========================================================================
+
+variable "health_check" {
+  description = "Health check configuration for target group"
+  type = object({
+    enabled             = optional(bool, true)
+    port                = optional(number, 80)
+    path                = optional(string, "/healthz")
+    protocol            = optional(string, "HTTP")
+    matcher             = optional(string, "200")
+    interval            = optional(number, 30)
+    timeout             = optional(number, 5)
+    healthy_threshold   = optional(number, 2)
+    unhealthy_threshold = optional(number, 2)
+  })
+  default = {
+    enabled             = true
+    port                = 80
+    path                = "/healthz"
+    protocol            = "HTTP"
+    matcher             = "200"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+  }
+
+  validation {
+    condition     = contains(["HTTP", "HTTPS"], var.health_check.protocol)
+    error_message = "Health check protocol must be either HTTP or HTTPS"
+  }
+
+  validation {
+    condition     = var.health_check.interval >= 5 && var.health_check.interval <= 300
+    error_message = "Health check interval must be between 5 and 300 seconds"
+  }
+
+  validation {
+    condition     = var.health_check.timeout >= 2 && var.health_check.timeout <= 120
+    error_message = "Health check timeout must be between 2 and 120 seconds"
+  }
+
+  validation {
+    condition     = var.health_check.healthy_threshold >= 2 && var.health_check.healthy_threshold <= 10
+    error_message = "Healthy threshold must be between 2 and 10"
+  }
+
+  validation {
+    condition     = var.health_check.unhealthy_threshold >= 2 && var.health_check.unhealthy_threshold <= 10
+    error_message = "Unhealthy threshold must be between 2 and 10"
   }
 }
 

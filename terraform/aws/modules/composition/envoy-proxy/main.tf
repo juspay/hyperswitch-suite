@@ -327,12 +327,12 @@ resource "aws_security_group_rule" "asg_ingress_from_alb_traffic" {
 
 # Allow health checks from ALB (only if different port and ALB security group is known)
 resource "aws_security_group_rule" "asg_ingress_from_alb_healthcheck" {
-  count = (var.create_lb || var.existing_lb_security_group_id != null) && var.envoy_health_check_port != var.envoy_traffic_port ? 1 : 0
+  count = (var.create_lb || var.existing_lb_security_group_id != null) && var.health_check.port != var.envoy_traffic_port ? 1 : 0
 
   security_group_id        = module.asg_security_group.security_group_id
   type                     = "ingress"
-  from_port                = var.envoy_health_check_port
-  to_port                  = var.envoy_health_check_port
+  from_port                = var.health_check.port
+  to_port                  = var.health_check.port
   protocol                 = "tcp"
   source_security_group_id = var.create_lb ? module.lb_security_group[0].security_group_id : var.existing_lb_security_group_id
   description              = "Allow health checks from ALB"
@@ -401,11 +401,11 @@ resource "aws_security_group_rule" "existing_lb_to_asg_traffic" {
 
 # Rule for health checks (only if different port)
 resource "aws_security_group_rule" "existing_lb_to_asg_healthcheck" {
-  count = !var.create_lb && var.existing_lb_security_group_id != null && var.envoy_health_check_port != var.envoy_traffic_port ? 1 : 0
+  count = !var.create_lb && var.existing_lb_security_group_id != null && var.health_check.port != var.envoy_traffic_port ? 1 : 0
 
   type                     = "egress"
-  from_port                = var.envoy_health_check_port
-  to_port                  = var.envoy_health_check_port
+  from_port                = var.health_check.port
+  to_port                  = var.health_check.port
   protocol                 = "tcp"
   source_security_group_id = module.asg_security_group.security_group_id
   security_group_id        = var.existing_lb_security_group_id
@@ -455,18 +455,18 @@ resource "aws_lb_target_group" "envoy" {
   protocol             = var.target_group_protocol # HTTP or HTTPS based on configuration
   vpc_id               = var.vpc_id
   target_type          = "instance"
-  deregistration_delay = 30
+  deregistration_delay = var.target_group_deregistration_delay
 
   health_check {
-    enabled             = true
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 5
-    interval            = 30
-    port                = tostring(var.envoy_health_check_port) # Dedicated health check port
-    protocol            = "HTTP"                                # Health check always uses HTTP
-    path                = "/healthz"                            # Envoy health check endpoint
-    matcher             = "200"                                 # Expect 200 OK response
+    enabled             = var.health_check.enabled
+    port                = tostring(var.health_check.port)
+    path                = var.health_check.path
+    protocol            = var.health_check.protocol
+    matcher             = var.health_check.matcher
+    interval            = var.health_check.interval
+    timeout             = var.health_check.timeout
+    healthy_threshold   = var.health_check.healthy_threshold
+    unhealthy_threshold = var.health_check.unhealthy_threshold
   }
 
   tags = merge(
