@@ -59,6 +59,7 @@ module "envoy_proxy" {
   # S3 Config Upload (optional)
   upload_config_to_s3      = var.upload_config_to_s3
   config_files_source_path = "${path.module}/config"
+  envoy_config_filename    = var.envoy_config_filename
 
   # ASG configuration
   min_size         = var.min_size

@@ -135,9 +135,9 @@ resource "aws_s3_object" "envoy_config_files" {
   bucket = local.config_bucket_name
   key    = "envoy/${each.value}"
 
-  # Use templated content for envoy.yaml, raw content for other files
-  content = each.value == "envoy.yaml" ? local.envoy_config_content : file("${var.config_files_source_path}/${each.value}")
-  etag    = each.value == "envoy.yaml" ? md5(local.envoy_config_content) : filemd5("${var.config_files_source_path}/${each.value}")
+  # Use templated content for the main envoy config file, raw content for other files
+  content = each.value == var.envoy_config_filename ? local.envoy_config_content : file("${var.config_files_source_path}/${each.value}")
+  etag    = each.value == var.envoy_config_filename ? md5(local.envoy_config_content) : filemd5("${var.config_files_source_path}/${each.value}")
 
   tags = local.common_tags
 }
@@ -812,7 +812,7 @@ module "asg" {
     triggers = length(var.instance_refresh_triggers) > 0 ? [
       for trigger in var.instance_refresh_triggers : trigger if trigger != "launch_template"
     ] : null
-  } : null
+  } : {}
 
   # Scaling policies - Created separately below
 

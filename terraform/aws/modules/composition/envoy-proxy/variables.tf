@@ -318,8 +318,15 @@ variable "custom_userdata" {
 }
 
 variable "envoy_config_template" {
-  description = "Envoy configuration template (envoy.yaml content). This should be environment-specific and loaded from the live layer (e.g., file(\"$${path.module}/config/envoy.yaml\"))"
+  description = <<-EOT
+    Envoy configuration template content. This is environment-specific and flexible:
+    - Load from file: file("$${path.module}/config/my-envoy-config.yaml")
+    - Load from any path: file("/path/to/envoy.yaml")
+    - Provide inline: "admin: { ... }"
+    - Use try() for optional: try(file("$${path.module}/config/envoy.yaml"), "")
+  EOT
   type        = string
+  default     = ""
 }
 
 variable "min_size" {
@@ -457,6 +464,16 @@ variable "config_files_source_path" {
   description = "Local path to envoy config files to upload to S3 (only used if upload_config_to_s3=true)"
   type        = string
   default     = "./config"
+}
+
+variable "envoy_config_filename" {
+  description = <<-EOT
+    Name of the main Envoy config file (relative to config_files_source_path).
+    This file will receive template variable substitution when uploaded to S3.
+    Examples: "envoy.yaml", "envoy-prod.yaml", "proxy-config.yaml"
+  EOT
+  type        = string
+  default     = "envoy.yaml"
 }
 
 variable "hyperswitch_cloudfront_dns" {

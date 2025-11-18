@@ -409,12 +409,20 @@ generate_ssh_key = true  # Set to false to use existing key
 # Git is the source of truth - any changes to files will trigger re-upload
 upload_config_to_s3 = true  # Automatically uploads configs from ./config directory
 
+# Specify the main Envoy config filename (receives template substitution)
+# Examples:
+#   - envoy_config_filename = "envoy.yaml"       # Default
+#   - envoy_config_filename = "envoy-dev.yaml"   # Dev-specific
+#   - envoy_config_filename = "proxy-config.yaml" # Custom name
+envoy_config_filename = "envoy.yaml"
+
 # How it works:
 # 1. Config files in ./config/ directory (envoy.yaml, etc.)
 # 2. When you run terraform apply, configs are uploaded to S3
-# 3. Changes to config files trigger automatic re-upload
-# 4. Userdata script downloads them during instance initialization
-# 5. Git is the source of truth for all configuration files
+# 3. The file specified in envoy_config_filename receives template substitution
+# 4. Other files are uploaded as-is (e.g., additional config files)
+# 5. Changes to config files trigger automatic re-upload
+# 6. Userdata script downloads them during instance initialization
 
 #=======================================================================
 # ENVOY CONFIGURATION TEMPLATING

@@ -245,6 +245,12 @@ variable "upload_config_to_s3" {
   default     = false
 }
 
+variable "envoy_config_filename" {
+  description = "Name of the main Envoy config file (e.g., 'envoy.yaml', 'envoy-dev.yaml'). This file receives template variable substitution."
+  type        = string
+  default     = "envoy.yaml"
+}
+
 variable "hyperswitch_cloudfront_dns" {
   description = "CloudFront DNS for Hyperswitch (for envoy.yaml templating)"
   type        = string
