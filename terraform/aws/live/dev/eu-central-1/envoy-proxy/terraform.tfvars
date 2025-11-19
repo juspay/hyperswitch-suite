@@ -221,7 +221,7 @@ lb_egress_rules = [
 
 # Traffic flow: CloudFront → External ALB:80 → Envoy:80 → Internal ALB:80 → EKS
 
-envoy_traffic_port = 443  # Target group port - ALB forwards traffic to this port on Envoy instances
+envoy_traffic_port = 80  # Target group port - ALB forwards traffic to this port on Envoy instances
 # Health check port is now configured in the health_check object below 
 
 #=======================================================================
