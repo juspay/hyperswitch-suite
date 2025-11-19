@@ -450,7 +450,7 @@ module "alb" {
 resource "aws_lb_target_group" "envoy" {
   count = var.create_target_group ? 1 : 0
 
-  name                 = "${local.name_prefix}-tg"
+  name                 = "${local.name_prefix}-tg-${substr(md5("${var.target_group_protocol}-${var.envoy_traffic_port}"), 0, 6)}"
   port                 = var.envoy_traffic_port
   protocol             = var.target_group_protocol # HTTP or HTTPS based on configuration
   vpc_id               = var.vpc_id
