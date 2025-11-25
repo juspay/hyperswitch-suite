@@ -649,11 +649,15 @@ resource "aws_launch_template" "envoy" {
     enabled = var.enable_detailed_monitoring
   }
 
-  metadata_options {
-    http_endpoint               = var.imds_http_endpoint
-    http_tokens                 = var.imds_http_tokens
-    http_put_response_hop_limit = var.imds_http_put_response_hop_limit
-    instance_metadata_tags      = var.imds_instance_metadata_tags
+  # Only include metadata_options if at least one IMDS setting is configured
+  dynamic "metadata_options" {
+    for_each = var.imds_http_endpoint != null || var.imds_http_tokens != null || var.imds_http_put_response_hop_limit != null || var.imds_instance_metadata_tags != null ? [1] : []
+    content {
+      http_endpoint               = var.imds_http_endpoint
+      http_tokens                 = var.imds_http_tokens
+      http_put_response_hop_limit = var.imds_http_put_response_hop_limit
+      instance_metadata_tags      = var.imds_instance_metadata_tags
+    }
   }
 
   # Conditional block device mapping - only add if enabled

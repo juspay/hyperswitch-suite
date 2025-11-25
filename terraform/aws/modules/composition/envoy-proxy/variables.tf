@@ -314,46 +314,46 @@ variable "root_volume_type" {
 }
 
 variable "imds_http_tokens" {
-  description = "Whether IMDS requires session tokens (IMDSv2). Set to 'required' for IMDSv2, 'optional' for IMDSv1 (ignored if use_existing_launch_template = true)"
+  description = "Whether IMDS requires session tokens (IMDSv2). Set to 'required' for IMDSv2, 'optional' for IMDSv1/v2, or null to use AWS default (ignored if use_existing_launch_template = true)"
   type        = string
-  default     = "required"
+  default     = null
 
   validation {
-    condition     = contains(["required", "optional"], var.imds_http_tokens)
-    error_message = "imds_http_tokens must be either 'required' (IMDSv2) or 'optional' (IMDSv1/v2)"
+    condition     = var.imds_http_tokens == null || contains(["required", "optional"], var.imds_http_tokens)
+    error_message = "imds_http_tokens must be either 'required' (IMDSv2), 'optional' (IMDSv1/v2), or null (AWS default)"
   }
 }
 
 variable "imds_http_endpoint" {
-  description = "Enable or disable the IMDS HTTP endpoint. Set to 'enabled' or 'disabled' (ignored if use_existing_launch_template = true)"
+  description = "Enable or disable the IMDS HTTP endpoint. Set to 'enabled', 'disabled', or null to use AWS default (ignored if use_existing_launch_template = true)"
   type        = string
-  default     = "enabled"
+  default     = null
 
   validation {
-    condition     = contains(["enabled", "disabled"], var.imds_http_endpoint)
-    error_message = "imds_http_endpoint must be either 'enabled' or 'disabled'"
+    condition     = var.imds_http_endpoint == null || contains(["enabled", "disabled"], var.imds_http_endpoint)
+    error_message = "imds_http_endpoint must be either 'enabled', 'disabled', or null (AWS default)"
   }
 }
 
 variable "imds_http_put_response_hop_limit" {
-  description = "Desired HTTP PUT response hop limit for instance metadata requests (1-64) (ignored if use_existing_launch_template = true)"
+  description = "Desired HTTP PUT response hop limit for instance metadata requests (1-64), or null to use AWS default (ignored if use_existing_launch_template = true)"
   type        = number
-  default     = 1
+  default     = null
 
   validation {
-    condition     = var.imds_http_put_response_hop_limit >= 1 && var.imds_http_put_response_hop_limit <= 64
-    error_message = "imds_http_put_response_hop_limit must be between 1 and 64"
+    condition     = var.imds_http_put_response_hop_limit == null || (var.imds_http_put_response_hop_limit >= 1 && var.imds_http_put_response_hop_limit <= 64)
+    error_message = "imds_http_put_response_hop_limit must be between 1 and 64, or null (AWS default)"
   }
 }
 
 variable "imds_instance_metadata_tags" {
-  description = "Enable instance metadata tags. Set to 'enabled' or 'disabled' (ignored if use_existing_launch_template = true)"
+  description = "Enable instance metadata tags. Set to 'enabled', 'disabled', or null to use AWS default (ignored if use_existing_launch_template = true)"
   type        = string
-  default     = "enabled"
+  default     = null
 
   validation {
-    condition     = contains(["enabled", "disabled"], var.imds_instance_metadata_tags)
-    error_message = "imds_instance_metadata_tags must be either 'enabled' or 'disabled'"
+    condition     = var.imds_instance_metadata_tags == null || contains(["enabled", "disabled"], var.imds_instance_metadata_tags)
+    error_message = "imds_instance_metadata_tags must be either 'enabled', 'disabled', or null (AWS default)"
   }
 }
 
