@@ -269,6 +269,94 @@ variable "existing_launch_template_version" {
   default     = "$Latest"
 }
 
+# =========================================================================
+# Launch Template Advanced Configuration (ignored if use_existing_launch_template = true)
+# =========================================================================
+
+variable "ebs_optimized" {
+  description = "Enable EBS optimization for instances (ignored if use_existing_launch_template = true)"
+  type        = bool
+  default     = true
+}
+
+variable "ebs_encrypted" {
+  description = "Enable EBS encryption for root volume (ignored if use_existing_launch_template = true or enable_ebs_block_device = false)"
+  type        = bool
+  default     = true
+}
+
+variable "enable_ebs_block_device" {
+  description = "Enable EBS block device mapping in launch template. Set to false if AMI already has storage configured (ignored if use_existing_launch_template = true)"
+  type        = bool
+  default     = true
+}
+
+variable "root_volume_size" {
+  description = "Root volume size in GB (ignored if use_existing_launch_template = true or enable_ebs_block_device = false)"
+  type        = number
+  default     = 20
+
+  validation {
+    condition     = var.root_volume_size >= 8 && var.root_volume_size <= 16384
+    error_message = "Root volume size must be between 8 and 16384 GB"
+  }
+}
+
+variable "root_volume_type" {
+  description = "Root volume type: gp2, gp3, io1, io2, st1, sc1 (ignored if use_existing_launch_template = true or enable_ebs_block_device = false)"
+  type        = string
+  default     = "gp3"
+
+  validation {
+    condition     = contains(["gp2", "gp3", "io1", "io2", "st1", "sc1"], var.root_volume_type)
+    error_message = "Root volume type must be one of: gp2, gp3, io1, io2, st1, sc1"
+  }
+}
+
+variable "imds_http_tokens" {
+  description = "Whether IMDS requires session tokens (IMDSv2). Set to 'required' for IMDSv2, 'optional' for IMDSv1 (ignored if use_existing_launch_template = true)"
+  type        = string
+  default     = "required"
+
+  validation {
+    condition     = contains(["required", "optional"], var.imds_http_tokens)
+    error_message = "imds_http_tokens must be either 'required' (IMDSv2) or 'optional' (IMDSv1/v2)"
+  }
+}
+
+variable "imds_http_endpoint" {
+  description = "Enable or disable the IMDS HTTP endpoint. Set to 'enabled' or 'disabled' (ignored if use_existing_launch_template = true)"
+  type        = string
+  default     = "enabled"
+
+  validation {
+    condition     = contains(["enabled", "disabled"], var.imds_http_endpoint)
+    error_message = "imds_http_endpoint must be either 'enabled' or 'disabled'"
+  }
+}
+
+variable "imds_http_put_response_hop_limit" {
+  description = "Desired HTTP PUT response hop limit for instance metadata requests (1-64) (ignored if use_existing_launch_template = true)"
+  type        = number
+  default     = 1
+
+  validation {
+    condition     = var.imds_http_put_response_hop_limit >= 1 && var.imds_http_put_response_hop_limit <= 64
+    error_message = "imds_http_put_response_hop_limit must be between 1 and 64"
+  }
+}
+
+variable "imds_instance_metadata_tags" {
+  description = "Enable instance metadata tags. Set to 'enabled' or 'disabled' (ignored if use_existing_launch_template = true)"
+  type        = string
+  default     = "enabled"
+
+  validation {
+    condition     = contains(["enabled", "disabled"], var.imds_instance_metadata_tags)
+    error_message = "imds_instance_metadata_tags must be either 'enabled' or 'disabled'"
+  }
+}
+
 variable "key_name" {
   description = "SSH key pair name (ignored if generate_ssh_key=true)"
   type        = string
@@ -485,21 +573,9 @@ variable "internal_loadbalancer_dns" {
 }
 
 variable "enable_detailed_monitoring" {
-  description = "Enable detailed CloudWatch monitoring"
+  description = "Enable detailed CloudWatch monitoring (ignored if use_existing_launch_template = true)"
   type        = bool
   default     = true
-}
-
-variable "root_volume_size" {
-  description = "Size of root EBS volume in GB"
-  type        = number
-  default     = 30
-}
-
-variable "root_volume_type" {
-  description = "Type of root EBS volume"
-  type        = string
-  default     = "gp3"
 }
 
 variable "create_lb" {
