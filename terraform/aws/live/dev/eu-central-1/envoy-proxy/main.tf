@@ -25,6 +25,22 @@ module "envoy_proxy" {
   ami_id        = var.ami_id
   instance_type = var.instance_type
 
+  # Launch Template Configuration
+  use_existing_launch_template      = var.use_existing_launch_template
+  existing_launch_template_id       = var.existing_launch_template_id
+  existing_launch_template_version  = var.existing_launch_template_version
+
+  # Launch Template Advanced Configuration
+  ebs_optimized                     = var.ebs_optimized
+  ebs_encrypted                     = var.ebs_encrypted
+  enable_ebs_block_device           = var.enable_ebs_block_device
+  root_volume_size                  = var.root_volume_size
+  root_volume_type                  = var.root_volume_type
+  imds_http_tokens                  = var.imds_http_tokens
+  imds_http_endpoint                = var.imds_http_endpoint
+  imds_http_put_response_hop_limit  = var.imds_http_put_response_hop_limit
+  imds_instance_metadata_tags       = var.imds_instance_metadata_tags
+
   # Port Configuration (Environment-specific)
   alb_http_listener_port  = var.alb_http_listener_port
   alb_https_listener_port = var.alb_https_listener_port
@@ -118,8 +134,6 @@ module "envoy_proxy" {
 
   # Monitoring
   enable_detailed_monitoring = var.enable_detailed_monitoring
-  root_volume_size           = var.root_volume_size
-  root_volume_type           = var.root_volume_type
 
   tags = var.common_tags
 }

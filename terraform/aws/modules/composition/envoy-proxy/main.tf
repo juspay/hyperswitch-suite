@@ -637,7 +637,7 @@ resource "aws_launch_template" "envoy" {
   instance_type          = var.instance_type
   key_name               = var.generate_ssh_key ? module.key_pair[0].key_pair_name : var.key_name
   vpc_security_group_ids = [module.asg_security_group.security_group_id]
-  ebs_optimized          = true
+  ebs_optimized          = var.ebs_optimized
   user_data              = base64encode(local.userdata_content)
   update_default_version = true
 
@@ -650,20 +650,25 @@ resource "aws_launch_template" "envoy" {
   }
 
   metadata_options {
-    http_endpoint               = "enabled"
-    http_tokens                 = "required"
-    http_put_response_hop_limit = 1
-    instance_metadata_tags      = "enabled"
+    http_endpoint               = var.imds_http_endpoint
+    http_tokens                 = var.imds_http_tokens
+    http_put_response_hop_limit = var.imds_http_put_response_hop_limit
+    instance_metadata_tags      = var.imds_instance_metadata_tags
   }
 
-  block_device_mappings {
-    device_name = "/dev/xvda"
+  # Conditional block device mapping - only add if enabled
+  # If your AMI already has storage configured, set enable_ebs_block_device = false
+  dynamic "block_device_mappings" {
+    for_each = var.enable_ebs_block_device ? [1] : []
+    content {
+      device_name = "/dev/xvda"
 
-    ebs {
-      volume_size           = var.root_volume_size
-      volume_type           = var.root_volume_type
-      delete_on_termination = true
-      encrypted             = true
+      ebs {
+        volume_size           = var.root_volume_size
+        volume_type           = var.root_volume_type
+        delete_on_termination = true
+        encrypted             = var.ebs_encrypted
+      }
     }
   }
 

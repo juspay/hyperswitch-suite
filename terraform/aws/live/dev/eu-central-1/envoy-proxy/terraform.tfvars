@@ -281,6 +281,48 @@ use_existing_launch_template = false  # Set to true to use existing launch templ
 # existing_launch_template_version = "$Latest"  # or "$Default" or "1", "2", etc.
 
 #=======================================================================
+# LAUNCH TEMPLATE ADVANCED CONFIGURATION
+#=======================================================================
+# These settings control the launch template behavior
+# (ignored if use_existing_launch_template = true)
+#
+# IMPORTANT: IMDSv2 vs IMDSv1
+# - IMDSv2 (imds_http_tokens = "required"): More secure, session-based metadata access
+# - IMDSv1 (imds_http_tokens = "optional"): Legacy mode, simpler but less secure
+#
+# If experiencing instance restart issues with IMDSv2, test with IMDSv1:
+#   imds_http_tokens = "optional"
+#
+# EBS Optimization:
+# - true: Better EBS performance (recommended for production)
+# - false: Standard performance (use for testing/debugging)
+#
+# EBS Encryption:
+# - true: Encrypt root volume (recommended for production)
+# - false: Unencrypted root volume (use for testing/debugging)
+#
+# EBS Block Device:
+# - enable_ebs_block_device = true: Add EBS volume configuration to launch template
+# - enable_ebs_block_device = false: Don't configure EBS in launch template (use if AMI already has storage)
+#=======================================================================
+
+# EBS Configuration
+ebs_optimized = false  # Set to false for testing (true for production)
+ebs_encrypted = false  # Set to false for testing (true for production)
+
+# EBS Block Device Mapping
+# Set to false if your AMI already has storage configured (e.g., 100GB in the AMI itself)
+enable_ebs_block_device = true   # true = configure EBS, false = use AMI's existing storage
+root_volume_size        = 20     # Only used if enable_ebs_block_device = true
+root_volume_type        = "gp3"  # Only used if enable_ebs_block_device = true
+
+# IMDS Configuration - Use IMDSv1 for testing
+imds_http_tokens                 = "optional"  # "optional" = IMDSv1 (less restrictive), "required" = IMDSv2
+imds_http_endpoint               = "enabled"   # "enabled" or "disabled"
+imds_http_put_response_hop_limit = 1           # 1-64, increase for containers/proxies
+imds_instance_metadata_tags      = "enabled"   # "enabled" or "disabled"
+
+#=======================================================================
 # EC2 Configuration (ignored if use_existing_launch_template = true)
 #=======================================================================
 # TODO: Replace with your actual AMI ID
@@ -348,12 +390,8 @@ create_config_bucket = true  # Automatically creates bucket: dev-hyperswitch-env
 # config_bucket_name = "app-proxy-config-<account-id>-eu-central-1"
 # config_bucket_arn  = "arn:aws:s3:::app-proxy-config-<account-id>-eu-central-1"
 
-# Monitoring
-enable_detailed_monitoring = false
-
-# Storage (ignored if use_existing_launch_template = true)
-root_volume_size = 20
-root_volume_type = "gp3"
+# Monitoring (ignored if use_existing_launch_template = true)
+enable_detailed_monitoring = true  # Set to true for detailed CloudWatch metrics
 
 #=======================================================================
 # SSH KEY CONFIGURATION

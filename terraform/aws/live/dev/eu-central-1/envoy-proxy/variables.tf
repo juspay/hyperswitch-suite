@@ -154,6 +154,64 @@ variable "existing_launch_template_version" {
   default     = "$Latest"
 }
 
+# =========================================================================
+# Launch Template Advanced Configuration (ignored if use_existing_launch_template = true)
+# =========================================================================
+
+variable "ebs_optimized" {
+  description = "Enable EBS optimization for instances (ignored if use_existing_launch_template = true)"
+  type        = bool
+  default     = true
+}
+
+variable "ebs_encrypted" {
+  description = "Enable EBS encryption for root volume (ignored if use_existing_launch_template = true or enable_ebs_block_device = false)"
+  type        = bool
+  default     = true
+}
+
+variable "enable_ebs_block_device" {
+  description = "Enable EBS block device mapping in launch template. Set to false if AMI already has storage configured (ignored if use_existing_launch_template = true)"
+  type        = bool
+  default     = true
+}
+
+variable "root_volume_size" {
+  description = "Root volume size in GB (ignored if use_existing_launch_template = true or enable_ebs_block_device = false)"
+  type        = number
+  default     = 20
+}
+
+variable "root_volume_type" {
+  description = "Root volume type: gp2, gp3, io1, io2, st1, sc1 (ignored if use_existing_launch_template = true or enable_ebs_block_device = false)"
+  type        = string
+  default     = "gp3"
+}
+
+variable "imds_http_tokens" {
+  description = "Whether IMDS requires session tokens (IMDSv2). Set to 'required' for IMDSv2, 'optional' for IMDSv1 (ignored if use_existing_launch_template = true)"
+  type        = string
+  default     = "required"
+}
+
+variable "imds_http_endpoint" {
+  description = "Enable or disable the IMDS HTTP endpoint. Set to 'enabled' or 'disabled' (ignored if use_existing_launch_template = true)"
+  type        = string
+  default     = "enabled"
+}
+
+variable "imds_http_put_response_hop_limit" {
+  description = "Desired HTTP PUT response hop limit for instance metadata requests (1-64) (ignored if use_existing_launch_template = true)"
+  type        = number
+  default     = 1
+}
+
+variable "imds_instance_metadata_tags" {
+  description = "Enable instance metadata tags. Set to 'enabled' or 'disabled' (ignored if use_existing_launch_template = true)"
+  type        = string
+  default     = "enabled"
+}
+
 variable "key_name" {
   description = "SSH key pair name"
   type        = string
@@ -218,18 +276,6 @@ variable "enable_detailed_monitoring" {
   description = "Enable detailed monitoring"
   type        = bool
   default     = false
-}
-
-variable "root_volume_size" {
-  description = "Root volume size in GB"
-  type        = number
-  default     = 20
-}
-
-variable "root_volume_type" {
-  description = "Root volume type"
-  type        = string
-  default     = "gp3"
 }
 
 variable "generate_ssh_key" {
