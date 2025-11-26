@@ -1,0 +1,238 @@
+# Production VPC Configuration
+# Copy this file to terraform.tfvars and customize
+
+aws_region = "eu-central-1"
+
+# Production VPC - Using recommended CIDR strategy
+# Primary: 10.0.0.0/16 for infrastructure (65,536 IPs)
+# Secondary: For EKS pod networking and future expansion
+vpc_cidr = "10.0.0.0/16"
+
+secondary_cidr_blocks = [
+  "10.1.0.0/16",  # EKS pod CIDR - 65,536 IPs for extensive pod scaling
+  "10.2.0.0/16",  # Additional EKS cluster or expansion
+  "10.3.0.0/16"   # Future expansion
+]
+
+# IMPORTANT: For production, use one NAT gateway per AZ for high availability
+single_nat_gateway = false
+
+# VPC Endpoints - ENABLED for production
+# Reduces NAT gateway costs and improves security
+enable_vpc_endpoints = true
+
+# VPC Flow Logs - REQUIRED for production security monitoring
+enable_flow_logs           = true
+flow_logs_destination_type = "s3"
+flow_logs_destination_arn  = "arn:aws:s3:::your-vpc-flow-logs-bucket-prod"
+
+# Production subnet allocation
+# Following the design for extensive service coverage
+
+# Public subnets remain smaller - only for load balancers
+public_subnet_cidrs = [
+  "10.0.0.0/24",   # AZ-A: 256 IPs
+  "10.0.1.0/24",   # AZ-B: 256 IPs
+  "10.0.2.0/24"    # AZ-C: 256 IPs
+]
+
+# Private subnets for EKS workers - larger for production scale
+private_subnet_cidrs = [
+  "10.0.8.0/21",   # AZ-A: 2,048 IPs for extensive EKS workers
+  "10.0.16.0/21",  # AZ-B: 2,048 IPs for extensive EKS workers
+  "10.0.24.0/21"   # AZ-C: 2,048 IPs for extensive EKS workers
+]
+
+# Database subnets - adequate for RDS/Aurora multi-AZ
+database_subnet_cidrs = [
+  "10.0.64.0/24",  # AZ-A: 256 IPs
+  "10.0.65.0/24",  # AZ-B: 256 IPs
+  "10.0.66.0/24"   # AZ-C: 256 IPs
+]
+
+# ElastiCache subnets
+elasticache_subnet_cidrs = [
+  "10.0.72.0/24",  # AZ-A: 256 IPs
+  "10.0.73.0/24",  # AZ-B: 256 IPs
+  "10.0.74.0/24"   # AZ-C: 256 IPs
+]
+
+# Custom subnet groups for production services
+custom_subnet_groups = {
+  # Outgoing proxy layer (3 AZs for HA)
+  "outgoing-proxy-a" = {
+    cidr_block        = "10.0.48.0/26"
+    availability_zone = "eu-central-1a"
+    tier              = "proxy"
+    type              = "private-nat"
+    create_nat_route  = true
+  }
+  "outgoing-proxy-b" = {
+    cidr_block        = "10.0.48.64/26"
+    availability_zone = "eu-central-1b"
+    tier              = "proxy"
+    type              = "private-nat"
+    create_nat_route  = true
+  }
+  "outgoing-proxy-c" = {
+    cidr_block        = "10.0.48.128/26"
+    availability_zone = "eu-central-1c"
+    tier              = "proxy"
+    type              = "private-nat"
+    create_nat_route  = true
+  }
+
+  # Incoming proxy/Envoy layer
+  "incoming-envoy-a" = {
+    cidr_block        = "10.0.49.0/26"
+    availability_zone = "eu-central-1a"
+    tier              = "incoming-proxy"
+    type              = "private-isolated"
+  }
+  "incoming-envoy-b" = {
+    cidr_block        = "10.0.49.64/26"
+    availability_zone = "eu-central-1b"
+    tier              = "incoming-proxy"
+    type              = "private-isolated"
+  }
+  "incoming-envoy-c" = {
+    cidr_block        = "10.0.49.128/26"
+    availability_zone = "eu-central-1c"
+    tier              = "incoming-proxy"
+    type              = "private-isolated"
+  }
+
+  # Management/Bastion layer (limited public access)
+  "management-a" = {
+    cidr_block        = "10.0.80.0/26"
+    availability_zone = "eu-central-1a"
+    tier              = "management"
+    type              = "public"
+    create_igw_route  = true
+  }
+  "management-b" = {
+    cidr_block        = "10.0.80.64/26"
+    availability_zone = "eu-central-1b"
+    tier              = "management"
+    type              = "public"
+    create_igw_route  = true
+  }
+
+  # EKS Control Plane subnets (3 AZs)
+  "eks-control-plane-a" = {
+    cidr_block        = "10.0.56.0/26"
+    availability_zone = "eu-central-1a"
+    tier              = "eks-control-plane"
+    type              = "private-isolated"
+  }
+  "eks-control-plane-b" = {
+    cidr_block        = "10.0.56.64/26"
+    availability_zone = "eu-central-1b"
+    tier              = "eks-control-plane"
+    type              = "private-isolated"
+  }
+  "eks-control-plane-c" = {
+    cidr_block        = "10.0.56.128/26"
+    availability_zone = "eu-central-1c"
+    tier              = "eks-control-plane"
+    type              = "private-isolated"
+  }
+
+  # Service Layer (microservices not in EKS)
+  "service-layer-a" = {
+    cidr_block        = "10.0.32.0/24"
+    availability_zone = "eu-central-1a"
+    tier              = "service"
+    type              = "private-nat"
+    create_nat_route  = true
+  }
+  "service-layer-b" = {
+    cidr_block        = "10.0.33.0/24"
+    availability_zone = "eu-central-1b"
+    tier              = "service"
+    type              = "private-nat"
+    create_nat_route  = true
+  }
+  "service-layer-c" = {
+    cidr_block        = "10.0.34.0/24"
+    availability_zone = "eu-central-1c"
+    tier              = "service"
+    type              = "private-nat"
+    create_nat_route  = true
+  }
+
+  # Data Stack (Kafka, Kinesis, Analytics)
+  "data-stack-a" = {
+    cidr_block        = "10.0.88.0/24"
+    availability_zone = "eu-central-1a"
+    tier              = "data"
+    type              = "private-isolated"
+  }
+  "data-stack-b" = {
+    cidr_block        = "10.0.89.0/24"
+    availability_zone = "eu-central-1b"
+    tier              = "data"
+    type              = "private-isolated"
+  }
+  "data-stack-c" = {
+    cidr_block        = "10.0.90.0/24"
+    availability_zone = "eu-central-1c"
+    tier              = "data"
+    type              = "private-isolated"
+  }
+
+  # Locker service (PCI-DSS compliant layer)
+  "locker-server-a" = {
+    cidr_block        = "10.0.96.0/26"
+    availability_zone = "eu-central-1a"
+    tier              = "locker"
+    type              = "private-isolated"
+  }
+  "locker-server-b" = {
+    cidr_block        = "10.0.96.64/26"
+    availability_zone = "eu-central-1b"
+    tier              = "locker"
+    type              = "private-isolated"
+  }
+
+  # Locker database (separate from main DB)
+  "locker-database-a" = {
+    cidr_block        = "10.0.97.0/26"
+    availability_zone = "eu-central-1a"
+    tier              = "locker-db"
+    type              = "private-isolated"
+  }
+  "locker-database-b" = {
+    cidr_block        = "10.0.97.64/26"
+    availability_zone = "eu-central-1b"
+    tier              = "locker-db"
+    type              = "private-isolated"
+  }
+
+  # Utils/Lambda layer
+  "utils-a" = {
+    cidr_block        = "10.0.40.0/24"
+    availability_zone = "eu-central-1a"
+    tier              = "utils"
+    type              = "private-nat"
+    create_nat_route  = true
+  }
+  "utils-b" = {
+    cidr_block        = "10.0.41.0/24"
+    availability_zone = "eu-central-1b"
+    tier              = "utils"
+    type              = "private-nat"
+    create_nat_route  = true
+  }
+}
+
+# Production tags
+tags = {
+  Environment = "production"
+  Team        = "DevOps"
+  CostCenter  = "Engineering"
+  ManagedBy   = "Terraform"
+  Project     = "hyperswitch"
+  Compliance  = "PCI-DSS"
+  Backup      = "required"
+}
