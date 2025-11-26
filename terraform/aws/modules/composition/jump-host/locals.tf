@@ -12,7 +12,8 @@ locals {
     }
   )
 
-  ami_id = var.ami_id != null ? var.ami_id : data.aws_ami.amazon_linux_2[0].id
+  external_ami_id = var.external_jump_ami_id != null ? var.external_jump_ami_id : data.aws_ami.amazon_linux_2[0].id
+  internal_ami_id = var.internal_jump_ami_id != null ? var.internal_jump_ami_id : data.aws_ami.amazon_linux_2[0].id
 
   userdata_internal = templatefile("${path.module}/templates/userdata.sh", {
     jump_type         = "internal"

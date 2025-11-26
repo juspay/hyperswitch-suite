@@ -16,20 +16,23 @@ project_name = "hyperswitch"
 # Network Configuration
 # ============================================================================
 # TODO: Replace with your actual VPC and subnet IDs
-vpc_id   = "vpc-xxxx"  # Replace with your VPC ID
-vpc_cidr = "10.0.0.0/16"            # Replace with your VPC CIDR block
+vpc_id = "vpc-xxxxxxxxxxxxxxxxx"  # Replace with your VPC ID
 
 # Public subnet for external jump host (must have internet gateway)
-public_subnet_id = "subnet-xxxx"  # Replace with your public(management) subnet ID
+public_subnet_id = "subnet-xxxxxxxxxxxxxxxxx"  # Replace with your public(management) subnet ID
 
 # Private subnet for internal jump host
-private_subnet_id = "subnet-xxxx"  # Replace with your private(Utils) subnet ID
+private_subnet_id = "subnet-xxxxxxxxxxxxxxxxx"  # Replace with your private(Utils) subnet ID
 
 # ============================================================================
 # Instance Configuration
 # ============================================================================
-# Leave ami_id as null to automatically use latest Amazon Linux 2 AMI
-ami_id = "ami-xxxx"
+# Leave ami_ids as null to automatically use latest Amazon Linux 2 AMI
+# External Jump Host AMI (public subnet)
+external_jump_ami_id = "ami-xxxxxxxxxxxxxxxxx"
+
+# Internal Jump Host AMI (private subnet)
+internal_jump_ami_id = "ami-xxxxxxxxxxxxxxxxx"
 
 # Instance type - t3.micro is sufficient for jump hosts (2 vCPU, 1 GB RAM)
 # Upgrade to t3.small if needed (2 vCPU, 2 GB RAM)
@@ -59,44 +62,75 @@ common_tags = {
 # ============================================================================
 # Security Group Rules Configuration
 # ============================================================================
-# Configure additional egress rules for jump hosts using security group IDs
-# Note: SSH from external jump to internal jump is hardcoded in the module
+# Configure security group rules for jump hosts
+# Default rules (always applied):
+#   - External Jump: SSH to internal jump (22), HTTPS (443), HTTP (80) egress
+#   - Internal Jump: SSH ingress from external jump (22)
+# Additional rules below are environment-specific
 
-# External Jump Host - Additional Egress (beyond internal jump SSH)
-# Uncomment and configure if you need external jump to access other services
-# external_jump_egress_sg_ids = [
-#   {
-#     description = "Allow access to VPC endpoints"
-#     from_port   = 443
-#     to_port     = 443
-#     protocol    = "tcp"
-#     sg_id       = "sg-xxxxx"  # VPC endpoint security group
-#   }
-# ]
+# ----------------------------------------------------------------------------
+# External Jump Host - Ingress Rules
+# ----------------------------------------------------------------------------
+# Allow access from VPN IPs or specific CIDR blocks
+# Example: CIDR-based ingress rule
+external_jump_ingress_rules = [
+  {
+    description = "VPN/Office IP - SSH/SSM access"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr        = ["x.x.x.x/32"]  # Replace with your VPN/office IP
+  }
+]
 
-# Internal Jump Host - Egress to Backend Services
-# Configure to allow access to RDS, ElastiCache, or other services
-# internal_jump_egress_sg_ids = [
-#   {
-#     description = "Allow PostgreSQL access"
-#     from_port   = 5432
-#     to_port     = 5432
-#     protocol    = "tcp"
-#     sg_id       = "sg-xxxxx"  # RDS PostgreSQL security group
-#   },
-#   {
-#     description = "Allow Redis access"
-#     from_port   = 6379
-#     to_port     = 6379
-#     protocol    = "tcp"
-#     sg_id       = "sg-xxxxx"  # ElastiCache Redis security group
-#   },
-#   {
-#     description = "Allow MySQL access"
-#     from_port   = 3306
-#     to_port     = 3306
-#     protocol    = "tcp"
-#     sg_id       = "sg-xxxxx"  # RDS MySQL security group
-#   }
-# ]
+# ----------------------------------------------------------------------------
+# External Jump Host - Egress Rules
+# ----------------------------------------------------------------------------
+# Allow external jump to access additional services (beyond defaults)
+# Examples: Security group-based and CIDR-based egress rules
+external_jump_egress_rules = [
+  {
+    description = "SSH to application servers"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    sg_id       = ["sg-xxxxxxxxxxxxxxxxx"]  # Replace with target security group ID
+  },
+  {
+    description = "Monitoring system access"
+    from_port   = 1514
+    to_port     = 1514
+    protocol    = "tcp"
+    cidr        = ["10.0.0.0/16"]  # Replace with your VPC CIDR or monitoring subnet
+  }
+]
+
+# ----------------------------------------------------------------------------
+# Internal Jump Host - Egress Rules
+# ----------------------------------------------------------------------------
+# Allow internal jump to access backend services (databases, caches, etc.)
+# Examples: Security group, CIDR, and prefix list-based egress rules
+internal_jump_egress_rules = [
+  {
+    description = "Database access (PostgreSQL/MySQL)"
+    from_port   = 3306
+    to_port     = 3306
+    protocol    = "tcp"
+    sg_id       = ["sg-xxxxxxxxxxxxxxxxx"]  # Replace with database security group ID
+  },
+  {
+    description = "S3 VPC endpoint access"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    prefix_list_ids = ["pl-xxxxxxxx"]  # Replace with S3 prefix list for your region
+  },
+  {
+    description = "Allow all outbound traffic"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr        = ["0.0.0.0/0"]
+  }
+]
 
