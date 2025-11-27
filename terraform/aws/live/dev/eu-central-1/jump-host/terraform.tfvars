@@ -126,11 +126,11 @@ internal_jump_egress_rules = [
     prefix_list_ids = ["pl-xxxxxxxx"]  # Replace with S3 prefix list for your region
   },
   {
-    description = "Allow all outbound traffic"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr        = ["0.0.0.0/0"]
+    description = "HTTP/HTTPS to VPC CIDR on custom ports"
+    from_port   = 1514
+    to_port     = 1514
+    protocol    = "tcp"
+    cidr        = ["10.X.X.0/16"]  # Replace with your VPC CIDR
   }
 ]
 

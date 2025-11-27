@@ -222,17 +222,6 @@ resource "aws_security_group_rule" "external_jump_default_egress_https" {
   description       = "Allow HTTPS for Session Manager and package downloads"
 }
 
-# Default egress for HTTP (package downloads)
-resource "aws_security_group_rule" "external_jump_default_egress_http" {
-  security_group_id = module.external_jump_sg.security_group_id
-  type              = "egress"
-  from_port         = 80
-  to_port           = 80
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  description       = "Allow HTTP for package downloads"
-}
-
 # =========================================================================
 # External Jump Host - Additional Egress Rules (Environment Specific)
 # =========================================================================
