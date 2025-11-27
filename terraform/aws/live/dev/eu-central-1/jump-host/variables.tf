@@ -27,11 +27,6 @@ variable "vpc_id" {
   type        = string
 }
 
-variable "vpc_cidr" {
-  description = "VPC CIDR block for security group rules"
-  type        = string
-}
-
 variable "public_subnet_id" {
   description = "Public subnet ID for external jump host"
   type        = string
@@ -45,8 +40,14 @@ variable "private_subnet_id" {
 # ============================================================================
 # Instance Configuration
 # ============================================================================
-variable "ami_id" {
-  description = "AMI ID for jump hosts (defaults to latest Amazon Linux 2 if not provided)"
+variable "external_jump_ami_id" {
+  description = "AMI ID for external jump host (defaults to latest Amazon Linux 2 if not provided)"
+  type        = string
+  default     = null
+}
+
+variable "internal_jump_ami_id" {
+  description = "AMI ID for internal jump host (defaults to latest Amazon Linux 2 if not provided)"
   type        = string
   default     = null
 }
@@ -90,26 +91,51 @@ variable "common_tags" {
 # ============================================================================
 # Security Group Rules Configuration
 # ============================================================================
-variable "external_jump_egress_sg_ids" {
-  description = "List of additional security group IDs for external jump host egress (beyond the hardcoded internal jump SSH access)"
+
+# External Jump Host - Ingress Rules
+variable "external_jump_ingress_rules" {
+  description = "Ingress rules for external jump host security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, 'sg_id' for security groups, or 'prefix_list_ids' for VPC endpoints"
   type = list(object({
-    description = string
-    from_port   = number
-    to_port     = number
-    protocol    = string
-    sg_id       = string
+    description     = string
+    from_port       = number
+    to_port         = number
+    protocol        = string
+    cidr            = optional(list(string))  # IPv4 CIDR blocks (e.g., ["13.232.74.226/32"])
+    ipv6_cidr       = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
+    sg_id           = optional(list(string))  # Security Group IDs
+    prefix_list_ids = optional(list(string))  # VPC Endpoint Prefix Lists (e.g., ["pl-6ea54007"])
   }))
   default = []
 }
 
-variable "internal_jump_egress_sg_ids" {
-  description = "List of security group IDs for internal jump host egress (e.g., RDS, ElastiCache, etc.)"
+# External Jump Host - Egress Rules
+variable "external_jump_egress_rules" {
+  description = "Egress rules for external jump host security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, 'sg_id' for security groups, or 'prefix_list_ids' for VPC endpoints"
   type = list(object({
-    description = string
-    from_port   = number
-    to_port     = number
-    protocol    = string
-    sg_id       = string
+    description     = string
+    from_port       = number
+    to_port         = number
+    protocol        = string
+    cidr            = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
+    ipv6_cidr       = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
+    sg_id           = optional(list(string))  # Security Group IDs
+    prefix_list_ids = optional(list(string))  # VPC Endpoint Prefix Lists (e.g., ["pl-6ea54007"])
+  }))
+  default = []
+}
+
+# Internal Jump Host - Egress Rules
+variable "internal_jump_egress_rules" {
+  description = "Egress rules for internal jump host security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, 'sg_id' for security groups, or 'prefix_list_ids' for VPC endpoints"
+  type = list(object({
+    description     = string
+    from_port       = number
+    to_port         = number
+    protocol        = string
+    cidr            = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
+    ipv6_cidr       = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
+    sg_id           = optional(list(string))  # Security Group IDs
+    prefix_list_ids = optional(list(string))  # VPC Endpoint Prefix Lists (e.g., ["pl-6ea54007"])
   }))
   default = []
 }

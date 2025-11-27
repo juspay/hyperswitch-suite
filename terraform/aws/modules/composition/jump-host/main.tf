@@ -134,7 +134,7 @@ module "internal_jump_iam_role" {
   tags = local.common_tags
 }
 
-# Security Group for External Jump Host (with rules)
+# Security Group for External Jump Host
 module "external_jump_sg" {
   source  = "terraform-aws-modules/security-group/aws"
   version = "~> 5.0"
@@ -144,34 +144,9 @@ module "external_jump_sg" {
   description     = "Security group for external jump host"
   vpc_id          = var.vpc_id
 
-  # Egress rule to internal jump host on SSH
-  egress_with_source_security_group_id = [
-    {
-      description              = "Allow SSH to internal jump host"
-      from_port                = 22
-      to_port                  = 22
-      protocol                 = "tcp"
-      source_security_group_id = module.internal_jump_sg.security_group_id
-    }
-  ]
-
-  # Egress rules with CIDR blocks
-  egress_with_cidr_blocks = [
-    {
-      description = "Allow HTTPS for Session Manager and package downloads"
-      from_port   = 443
-      to_port     = 443
-      protocol    = "tcp"
-      cidr_blocks = "0.0.0.0/0"
-    },
-    {
-      description = "Allow HTTP for package downloads"
-      from_port   = 80
-      to_port     = 80
-      protocol    = "tcp"
-      cidr_blocks = "0.0.0.0/0"
-    }
-  ]
+  # Rules are managed separately below
+  egress_rules  = []
+  ingress_rules = []
 
   tags = merge(
     local.common_tags,
@@ -181,7 +156,7 @@ module "external_jump_sg" {
   )
 }
 
-# Security Group for Internal Jump Host (with rules)
+# Security Group for Internal Jump Host
 module "internal_jump_sg" {
   source  = "terraform-aws-modules/security-group/aws"
   version = "~> 5.0"
@@ -191,28 +166,9 @@ module "internal_jump_sg" {
   description     = "Security group for internal jump host"
   vpc_id          = var.vpc_id
 
-  # Ingress rule from external jump host on SSH
-  ingress_with_source_security_group_id = [
-    {
-      description              = "Allow SSH from external jump host only"
-      from_port                = 22
-      to_port                  = 22
-      protocol                 = "tcp"
-      source_security_group_id = module.external_jump_sg.security_group_id
-    }
-  ]
-
-  # TODO: Add only database and redis ports as egress rules after they are defined.
-  # Egress rule to allow all outbound traffic
-  egress_with_cidr_blocks = [
-    {
-      description = "Allow all outbound traffic"
-      from_port   = 0
-      to_port     = 0
-      protocol    = "-1"
-      cidr_blocks = "0.0.0.0/0"
-    }
-  ]
+  # Rules are managed separately below
+  egress_rules  = []
+  ingress_rules = []
 
   tags = merge(
     local.common_tags,
@@ -220,6 +176,102 @@ module "internal_jump_sg" {
       Name = "${local.internal_name_prefix}-sg"
     }
   )
+}
+
+# =========================================================================
+# External Jump Host - Ingress Rules (Environment Specific)
+# =========================================================================
+resource "aws_security_group_rule" "external_jump_ingress_rules" {
+  for_each = { for idx, rule in var.external_jump_ingress_rules : idx => rule }
+
+  security_group_id = module.external_jump_sg.security_group_id
+  type              = "ingress"
+  from_port         = each.value.from_port
+  to_port           = each.value.to_port
+  protocol          = each.value.protocol
+  description       = each.value.description
+
+  cidr_blocks              = try(each.value.cidr, null)
+  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
+  source_security_group_id = try(each.value.sg_id[0], null)
+  prefix_list_ids          = try(each.value.prefix_list_ids, null)
+}
+
+# =========================================================================
+# External Jump Host - Default Egress Rules (Automatic)
+# =========================================================================
+# Default egress to internal jump on SSH
+resource "aws_security_group_rule" "external_jump_default_egress_to_internal" {
+  security_group_id        = module.external_jump_sg.security_group_id
+  type                     = "egress"
+  from_port                = 22
+  to_port                  = 22
+  protocol                 = "tcp"
+  source_security_group_id = module.internal_jump_sg.security_group_id
+  description              = "Allow SSH to internal jump host"
+}
+
+# Default egress for HTTPS (Session Manager, package downloads)
+resource "aws_security_group_rule" "external_jump_default_egress_https" {
+  security_group_id = module.external_jump_sg.security_group_id
+  type              = "egress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  description       = "Allow HTTPS for Session Manager and package downloads"
+}
+
+# =========================================================================
+# External Jump Host - Additional Egress Rules (Environment Specific)
+# =========================================================================
+resource "aws_security_group_rule" "external_jump_egress_rules" {
+  for_each = { for idx, rule in var.external_jump_egress_rules : idx => rule }
+
+  security_group_id = module.external_jump_sg.security_group_id
+  type              = "egress"
+  from_port         = each.value.from_port
+  to_port           = each.value.to_port
+  protocol          = each.value.protocol
+  description       = each.value.description
+
+  cidr_blocks              = try(each.value.cidr, null)
+  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
+  source_security_group_id = try(each.value.sg_id[0], null)
+  prefix_list_ids          = try(each.value.prefix_list_ids, null)
+}
+
+# =========================================================================
+# Internal Jump Host - Default Ingress Rules (Automatic)
+# =========================================================================
+# Default ingress from external jump on SSH
+resource "aws_security_group_rule" "internal_jump_default_ingress_from_external" {
+  security_group_id        = module.internal_jump_sg.security_group_id
+  type                     = "ingress"
+  from_port                = 22
+  to_port                  = 22
+  protocol                 = "tcp"
+  source_security_group_id = module.external_jump_sg.security_group_id
+  description              = "Allow SSH from external jump host only"
+}
+
+# =========================================================================
+# Internal Jump Host - Egress Rules (Environment Specific)
+# =========================================================================
+resource "aws_security_group_rule" "internal_jump_egress_rules" {
+  for_each = { for idx, rule in var.internal_jump_egress_rules : idx => rule }
+
+  security_group_id = module.internal_jump_sg.security_group_id
+  type              = "egress"
+  from_port         = each.value.from_port
+  to_port           = each.value.to_port
+  protocol          = each.value.protocol
+  description       = each.value.description
+
+  cidr_blocks              = try(each.value.cidr, null)
+  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
+  source_security_group_id = try(each.value.sg_id[0], null)
+  prefix_list_ids          = try(each.value.prefix_list_ids, null)
 }
 
 # Create AWS key pair for internal jump (public key only)
@@ -242,12 +294,14 @@ module "internal_jump_instance" {
 
   name = local.internal_name_prefix
 
-  ami                    = local.ami_id
+  ami                    = local.internal_ami_id
   instance_type          = var.instance_type
   subnet_id              = var.private_subnet_id
   vpc_security_group_ids = [module.internal_jump_sg.security_group_id]
   iam_instance_profile   = module.internal_jump_iam_role.instance_profile_name
   key_name               = aws_key_pair.internal_jump.key_name
+
+  create_security_group = false
 
   associate_public_ip_address = false
   monitoring                  = true
@@ -284,11 +338,13 @@ module "external_jump_instance" {
 
   name = local.external_name_prefix
 
-  ami                    = local.ami_id
+  ami                    = local.external_ami_id
   instance_type          = var.instance_type
   subnet_id              = var.public_subnet_id
   vpc_security_group_ids = [module.external_jump_sg.security_group_id]
   iam_instance_profile   = module.external_jump_iam_role.instance_profile_name
+
+  create_security_group = false
 
   associate_public_ip_address = true
   monitoring                  = true

@@ -23,22 +23,23 @@ module "jump_host" {
 
   # Network Configuration
   vpc_id            = var.vpc_id
-  vpc_cidr          = var.vpc_cidr
   public_subnet_id  = var.public_subnet_id
   private_subnet_id = var.private_subnet_id
 
   # Instance Configuration
-  ami_id           = var.ami_id
-  instance_type    = var.instance_type
-  root_volume_size = var.root_volume_size
-  root_volume_type = var.root_volume_type
+  external_jump_ami_id = var.external_jump_ami_id
+  internal_jump_ami_id = var.internal_jump_ami_id
+  instance_type        = var.instance_type
+  root_volume_size     = var.root_volume_size
+  root_volume_type     = var.root_volume_type
 
   # Logging Configuration
   log_retention_days = var.log_retention_days
 
   # Security Group Rules Configuration
-  external_jump_egress_sg_ids  = var.external_jump_egress_sg_ids
-  internal_jump_egress_sg_ids = var.internal_jump_egress_sg_ids
+  external_jump_ingress_rules = var.external_jump_ingress_rules
+  external_jump_egress_rules  = var.external_jump_egress_rules
+  internal_jump_egress_rules  = var.internal_jump_egress_rules
 
   # Tags
   tags = var.common_tags
