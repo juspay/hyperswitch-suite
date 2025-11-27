@@ -73,15 +73,15 @@ common_tags = {
 # ----------------------------------------------------------------------------
 # Allow access from VPN IPs or specific CIDR blocks
 # Example: CIDR-based ingress rule
-external_jump_ingress_rules = [
-  {
-    description = "VPN/Office IP - SSH/SSM access"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr        = ["x.x.x.x/32"]  # Replace with your VPN/office IP
-  }
-]
+# external_jump_ingress_rules = [
+#   {
+#     description = "VPN/Office IP - SSH/SSM access"
+#     from_port   = 22
+#     to_port     = 22
+#     protocol    = "tcp"
+#     cidr        = ["x.x.x.x/32"]  # Replace with your VPN/office IP
+#   }
+# ]
 
 # ----------------------------------------------------------------------------
 # External Jump Host - Egress Rules
