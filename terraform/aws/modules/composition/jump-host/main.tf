@@ -86,6 +86,33 @@ module "external_jump_iam_role" {
       ]
       resources = ["arn:aws:ssm:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:parameter/jump-host/${var.environment}/internal/*"]
     }
+    SSMCommands = {
+      sid    = "SSMCommands"
+      effect = "Allow"
+      actions = [
+        "ssm:DescribeInstanceInformation",
+        "ssm:SendCommand",
+        "ssm:GetCommandInvocation",
+        "ssm:ListCommandInvocations"
+      ]
+      resources = ["*"]
+    }
+    S3PackerMigration = {
+      sid    = "S3PackerMigration"
+      effect = "Allow"
+      actions = [
+        "s3:CreateBucket",
+        "s3:DeleteBucket",
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:DeleteObject",
+        "s3:ListBucket"
+      ]
+      resources = [
+        "arn:aws:s3:::packer-migration-temp-*",
+        "arn:aws:s3:::packer-migration-temp-*/*"
+      ]
+    }
   }
 
   tags = local.common_tags
