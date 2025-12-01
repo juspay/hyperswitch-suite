@@ -1,0 +1,19 @@
+# Packer build artifacts
+packer-manifest.json
+packer_cache/
+crash.log
+
+# Packer logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+
+# SSH keys (if any are temporarily placed here)
+*.pem
+*.key
+
+# OS files
+.DS_Store
+Thumbs.db
