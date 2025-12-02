@@ -124,6 +124,22 @@ module "external_jump_iam_role" {
         "arn:aws:kms:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:key/*"
       ]
     }
+    SSMSessionLogging = {
+      sid    = "SSMSessionLogging"
+      effect = "Allow"
+      actions = [
+        "s3:PutObject"
+      ]
+      resources = [
+        "arn:aws:s3:::*/*"
+      ]
+    }
+    SSMSessionLoggingEncryption = {
+      sid       = "SSMSessionLoggingEncryption"
+      effect    = "Allow"
+      actions   = ["s3:GetEncryptionConfiguration"]
+      resources = ["*"]
+    }
   }
 
   tags = local.common_tags
