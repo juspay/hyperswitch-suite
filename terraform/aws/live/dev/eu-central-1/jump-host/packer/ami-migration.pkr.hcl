@@ -85,26 +85,26 @@ build {
   # Step 2: Upload migration scripts
   provisioner "file" {
     source      = "${path.root}/scripts/export-users.sh"
-    destination = "/tmp/export-users.sh"
+    destination = "/home/ubuntu/export-users.sh"
   }
 
   provisioner "file" {
     source      = "${path.root}/scripts/import-users.sh"
-    destination = "/tmp/import-users.sh"
+    destination = "/home/ubuntu/import-users.sh"
   }
 
   provisioner "file" {
     source      = "${path.root}/scripts/migrate-via-ssm.sh"
-    destination = "/tmp/migrate-via-ssm.sh"
+    destination = "/home/ubuntu/migrate-via-ssm.sh"
   }
 
   # Step 3: Make scripts executable
   provisioner "shell" {
     remote_folder = "/home/ubuntu"
     inline = [
-      "chmod +x /tmp/export-users.sh",
-      "chmod +x /tmp/import-users.sh",
-      "chmod +x /tmp/migrate-via-ssm.sh",
+      "chmod +x /home/ubuntu/export-users.sh",
+      "chmod +x /home/ubuntu/import-users.sh",
+      "chmod +x /home/ubuntu/migrate-via-ssm.sh",
       "echo '✓ Scripts prepared'"
     ]
   }
@@ -118,7 +118,7 @@ build {
     ]
     inline = [
       "echo '=== Starting SSM-based user migration ==='",
-      "sudo -E /tmp/migrate-via-ssm.sh",
+      "sudo -E /home/ubuntu/migrate-via-ssm.sh",
       "echo '✓ User migration completed'"
     ]
   }
@@ -139,7 +139,7 @@ build {
     remote_folder = "/home/ubuntu"
     inline = [
       "echo '=== Cleaning up ==='",
-      "sudo rm -f /tmp/export-users.sh /tmp/import-users.sh /tmp/migrate-via-ssm.sh",
+      "sudo rm -f /home/ubuntu/export-users.sh /home/ubuntu/import-users.sh /home/ubuntu/migrate-via-ssm.sh",
       "sudo rm -f /tmp/user-export-*.tar.gz",
       "sudo rm -f /var/log/ssm-migration.log",
       "sudo rm -f /var/log/user-export.log",
