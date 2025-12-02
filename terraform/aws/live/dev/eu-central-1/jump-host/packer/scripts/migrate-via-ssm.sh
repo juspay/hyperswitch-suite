@@ -29,8 +29,8 @@ log "Old Instance ID: $OLD_INSTANCE_ID"
 log "AWS Region: $AWS_REGION"
 
 # Ensure scripts are in place
-if [ ! -f "/tmp/export-users.sh" ] || [ ! -f "/tmp/import-users.sh" ]; then
-    log "ERROR: Export/Import scripts not found in /tmp/"
+if [ ! -f "/home/ubuntu/export-users.sh" ] || [ ! -f "/home/ubuntu/import-users.sh" ]; then
+    log "ERROR: Export/Import scripts not found in /home/ubuntu/"
     exit 1
 fi
 
@@ -60,7 +60,7 @@ log "✓ UFW disabled (if it was enabled)"
 
 # Step 3: Transfer export script to old instance
 log "Step 3: Transferring export script to old instance..."
-EXPORT_SCRIPT_CONTENT=$(cat /tmp/export-users.sh | base64)
+EXPORT_SCRIPT_CONTENT=$(cat /home/ubuntu/export-users.sh | base64)
 
 COMMAND_ID=$(aws ssm send-command \
     --region "$AWS_REGION" \
@@ -176,7 +176,7 @@ log "✓ Tarball transferred successfully (Size: $TARBALL_SIZE)"
 
 # Step 6: Import users on current instance
 log "Step 6: Importing users on current instance..."
-if sudo /tmp/import-users.sh "/tmp/$TARBALL_NAME" 2>&1 | tee -a "$LOG_FILE"; then
+if sudo /home/ubuntu/import-users.sh "/tmp/$TARBALL_NAME" 2>&1 | tee -a "$LOG_FILE"; then
     log "✓ User import completed successfully"
 else
     log "ERROR: User import failed"
@@ -206,7 +206,7 @@ log "✓ UFW re-enabled (if applicable)"
 
 # Cleanup on current instance
 log "Cleaning up current instance..."
-rm -f "/tmp/$TARBALL_NAME" /tmp/export-users.sh /tmp/import-users.sh
+rm -f "/tmp/$TARBALL_NAME" /home/ubuntu/export-users.sh /home/ubuntu/import-users.sh
 log "✓ Cleanup completed on current instance"
 
 log ""
