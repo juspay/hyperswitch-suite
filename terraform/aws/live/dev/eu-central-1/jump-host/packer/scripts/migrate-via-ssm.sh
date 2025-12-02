@@ -126,6 +126,25 @@ log "✓ Export completed. Tarball: $TARBALL_NAME"
 # Step 5: Transfer tarball via S3 (SSM output limit is too small for large tarballs)
 log "Step 5: Transferring user data tarball via S3..."
 
+# Install AWS CLI on old instance if not present
+log "  Ensuring AWS CLI is installed on old instance..."
+INSTALL_CMD_ID=$(aws ssm send-command \
+    --region "$AWS_REGION" \
+    --instance-ids "$OLD_INSTANCE_ID" \
+    --document-name "AWS-RunShellScript" \
+    --parameters 'commands=["if ! command -v aws &> /dev/null; then sudo snap install aws-cli --classic || sudo apt-get install -y awscli; fi && aws --version"]' \
+    --query 'Command.CommandId' \
+    --output text)
+
+aws ssm wait command-executed \
+    --region "$AWS_REGION" \
+    --command-id "$INSTALL_CMD_ID" \
+    --instance-id "$OLD_INSTANCE_ID" 2>>"$LOG_FILE" || {
+    log "ERROR: Failed to install AWS CLI on old instance"
+    exit 1
+}
+log "✓ AWS CLI is available on old instance"
+
 # Create a temporary S3 bucket name (using instance ID and timestamp for uniqueness)
 S3_BUCKET="packer-migration-temp-$(echo $OLD_INSTANCE_ID | tr -d '-')-$(date +%s)"
 S3_KEY="$TARBALL_NAME"
@@ -142,6 +161,7 @@ UPLOAD_CMD_ID=$(aws ssm send-command \
     --region "$AWS_REGION" \
     --instance-ids "$OLD_INSTANCE_ID" \
     --document-name "AWS-RunShellScript" \
+    --timeout-seconds 600 \
     --parameters "commands=[\"cd /tmp && aws s3 cp $TARBALL_NAME s3://$S3_BUCKET/$S3_KEY --region $AWS_REGION\"]" \
     --query 'Command.CommandId' \
     --output text)
@@ -151,6 +171,14 @@ aws ssm wait command-executed \
     --command-id "$UPLOAD_CMD_ID" \
     --instance-id "$OLD_INSTANCE_ID" 2>>"$LOG_FILE" || {
     log "ERROR: Failed to upload tarball to S3"
+    log "Command ID: $UPLOAD_CMD_ID"
+    log "Getting command output for debugging..."
+    aws ssm get-command-invocation \
+        --region "$AWS_REGION" \
+        --command-id "$UPLOAD_CMD_ID" \
+        --instance-id "$OLD_INSTANCE_ID" \
+        --query '[StandardOutputContent,StandardErrorContent]' \
+        --output text 2>&1 | tee -a "$LOG_FILE"
     aws s3 rb "s3://$S3_BUCKET" --force --region "$AWS_REGION" 2>>"$LOG_FILE"
     exit 1
 }
@@ -193,16 +221,6 @@ aws ssm send-command \
     --output text >> "$LOG_FILE" 2>&1
 log "✓ Cleanup completed on old instance"
 
-# Step 8: Re-enable UFW on old instance (if it was disabled)
-log "Step 8: Re-enabling UFW on old instance..."
-aws ssm send-command \
-    --region "$AWS_REGION" \
-    --instance-ids "$OLD_INSTANCE_ID" \
-    --document-name "AWS-RunShellScript" \
-    --parameters 'commands=["sudo ufw --force enable 2>/dev/null || echo UFW not available"]' \
-    --output text >> "$LOG_FILE" 2>&1
-sleep 2
-log "✓ UFW re-enabled (if applicable)"
 
 # Cleanup on current instance
 log "Cleaning up current instance..."

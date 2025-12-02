@@ -144,7 +144,7 @@ build {
       "sudo rm -f /var/log/ssm-migration.log",
       "sudo rm -f /var/log/user-export.log",
       "sudo rm -f /var/log/user-import.log",
-      "history -c",
+      "history -c 2>/dev/null || true",
       "echo '✓ Cleanup complete'"
     ]
   }
