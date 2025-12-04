@@ -576,6 +576,15 @@ index c3e061816..091c27d96 100644
 - Added validation for name and description in routing ([#3805](https://github.com/juspay/hyperswitch-control-center/pull/3805))
 - Auto retry toggle not working fix ([#3838](https://github.com/juspay/hyperswitch-control-center/pull/3838))
 
+#### Compatibility
+This version of the Hyperswitch Control Center is compatible with the following versions of other components:
+
+- App Server Version: [v1.120.0](https://github.com/juspay/hyperswitch/releases/tag/v1.120.0)
+- Web Client Version: [v0.127.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.127.0)
+- WooCommerce Plugin Version: [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)
+- Card Vault Version: [v0.6.5](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.6.5)
+- Key Manager: [v0.1.8](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.8)
+
 
 **Full Changelog**: https://github.com/juspay/hyperswitch-control-center/compare/v1.37.7...v1.37.8
 
