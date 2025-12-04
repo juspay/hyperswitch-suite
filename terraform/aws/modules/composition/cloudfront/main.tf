@@ -136,7 +136,17 @@ module "cloudfront" {
     minimum_protocol_version       = "TLSv1.2_2021"
   }
 
-  tags = local.common_tags
+  # Disable automatic OAC creation by the module
+  # OACs are managed at the composition level instead
+  origin_access_control = {}
+
+  # Add distribution-specific name to tags
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${var.project_name}-${each.key}-${var.environment}"
+    }
+  )
 }
 
 # CloudFront Functions
@@ -174,8 +184,11 @@ resource "aws_cloudfront_response_headers_policy" "this" {
       access_control_allow_origins {
         items = cors_config.value.access_control_allow_origins
       }
-      access_control_expose_headers {
-        items = cors_config.value.access_control_expose_headers
+      dynamic "access_control_expose_headers" {
+        for_each = length(lookup(cors_config.value, "access_control_expose_headers", [])) > 0 ? [cors_config.value.access_control_expose_headers] : []
+        content {
+          items = access_control_expose_headers.value
+        }
       }
       access_control_max_age_sec = cors_config.value.access_control_max_age_sec
     }
@@ -183,7 +196,7 @@ resource "aws_cloudfront_response_headers_policy" "this" {
 
   # Security headers configuration
   dynamic "security_headers_config" {
-    for_each = [lookup(var.response_headers_policies[count.index], "security_headers_config", {})]
+    for_each = lookup(var.response_headers_policies[count.index], "security_headers_config", null) != null ? [var.response_headers_policies[count.index].security_headers_config] : []
 
     content {
       dynamic "content_security_policy" {

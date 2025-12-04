@@ -50,7 +50,7 @@ module "cloudfront" {
   log_bucket        = local.log_bucket_config
 
   # Origin Access Controls from config.yaml
-  origin_access_controls = local.config.origin_access_controls
+  origin_access_controls = lookup(local.config, "origin_access_controls", [])
 
   # CloudFront Functions from config.yaml
   cloudfront_functions = local.config.cloudfront_functions

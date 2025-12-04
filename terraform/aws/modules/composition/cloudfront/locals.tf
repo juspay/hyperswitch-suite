@@ -20,6 +20,12 @@ locals {
   # Distribution name prefix
   name_prefix = "${var.project_name}-cloudfront-${var.environment}"
 
+  # Origin Access Controls map (needs to be defined before processed_origins)
+  origin_access_controls_map = {
+    for idx, oac in var.origin_access_controls :
+    oac.name => aws_cloudfront_origin_access_control.this[idx].id
+  }
+
   # Process origins based on type
   processed_origins = {
     for dist_name, dist_config in var.distributions :
@@ -30,7 +36,16 @@ locals {
         resolved_domain_name = origin.type == "s3" && lookup(origin, "s3_bucket_domain_name", null) != null ? origin.s3_bucket_domain_name : origin.domain_name
 
         # Set origin access control ID for S3 origins
-        origin_access_control_id = origin.type == "s3" && lookup(origin, "origin_access_control_id", null) == null ? try(aws_cloudfront_origin_access_control.this["${dist_name}-${origin.origin_id}"].id, null) : origin.origin_access_control_id
+        # If origin_access_control_id is provided as a name, look it up in the map
+        # Otherwise try to auto-generate using the pattern, or use the provided ID directly
+        origin_access_control_id = origin.type == "s3" ? (
+          lookup(origin, "origin_access_control_id", null) != null ? (
+            # Check if it's a name reference (exists in our map)
+            contains(keys(local.origin_access_controls_map), origin.origin_access_control_id) ? 
+              local.origin_access_controls_map[origin.origin_access_control_id] : 
+              origin.origin_access_control_id
+          ) : try(aws_cloudfront_origin_access_control.this["${dist_name}-${origin.origin_id}"].id, null)
+        ) : null
 
         # Set custom origin config for ALB/custom origins
         custom_origin_config = origin.type == "alb" || origin.type == "custom" ? lookup(origin, "custom_origin_config", {
@@ -149,11 +164,5 @@ locals {
   response_headers_policies_map = {
     for policy in var.response_headers_policies :
     policy.name => policy
-  }
-
-  # Origin Access Controls map
-  origin_access_controls_map = {
-    for oac in var.origin_access_controls :
-    oac.name => oac
   }
 }

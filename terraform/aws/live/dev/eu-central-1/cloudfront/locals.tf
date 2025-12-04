@@ -23,8 +23,8 @@ locals {
       cached_methods         = ["GET", "HEAD"]
       viewer_protocol_policy = "redirect-to-https"
       compress               = true
-      cache_policy_id        = "Managed-CachingOptimized"
-      response_headers_policy_id = "Managed-SecurityHeadersPolicy"
+      cache_policy_id        = data.aws_cloudfront_cache_policy.caching_optimized.id
+      response_headers_policy_id = data.aws_cloudfront_response_headers_policy.security_headers.id
       ttl = {
         min_ttl    = 86400
         default_ttl = 31536000
@@ -38,8 +38,8 @@ locals {
       cached_methods         = ["GET", "HEAD", "OPTIONS"]
       viewer_protocol_policy = "redirect-to-https"
       compress               = true
-      cache_policy_id        = "Managed-CachingDisabled"
-      response_headers_policy_id = "Managed-CORS-S3OriginPolicy"
+      cache_policy_id        = data.aws_cloudfront_cache_policy.caching_disabled.id
+      response_headers_policy_id = data.aws_cloudfront_response_headers_policy.cors_with_preflight.id
       ttl = {
         min_ttl    = 0
         default_ttl = 300
@@ -53,8 +53,8 @@ locals {
       cached_methods         = ["GET", "HEAD"]
       viewer_protocol_policy = "redirect-to-https"
       compress               = false
-      cache_policy_id        = "Managed-CachingDisabled"
-      response_headers_policy_id = "Managed-SecurityHeadersPolicy"
+      cache_policy_id        = data.aws_cloudfront_cache_policy.caching_disabled.id
+      response_headers_policy_id = data.aws_cloudfront_response_headers_policy.security_headers.id
       ttl = {
         min_ttl    = 0
         default_ttl = 0
@@ -68,8 +68,8 @@ locals {
       cached_methods         = ["GET", "HEAD"]
       viewer_protocol_policy = "redirect-to-https"
       compress               = false
-      cache_policy_id        = "Managed-CachingOptimized"
-      response_headers_policy_id = "Managed-SecurityHeadersPolicy"
+      cache_policy_id        = data.aws_cloudfront_cache_policy.caching_optimized.id
+      response_headers_policy_id = data.aws_cloudfront_response_headers_policy.security_headers.id
       ttl = {
         min_ttl    = 86400
         default_ttl = 86400
@@ -83,8 +83,8 @@ locals {
       cached_methods         = ["GET", "HEAD", "OPTIONS"]
       viewer_protocol_policy = "redirect-to-https"
       compress               = true
-      cache_policy_id        = "Managed-CachingDisabled"
-      response_headers_policy_id = "Managed-CORS-S3OriginPolicy"
+      cache_policy_id        = data.aws_cloudfront_cache_policy.caching_disabled.id
+      response_headers_policy_id = data.aws_cloudfront_response_headers_policy.cors_with_preflight.id
       ttl = {
         min_ttl    = 0
         default_ttl = 180
