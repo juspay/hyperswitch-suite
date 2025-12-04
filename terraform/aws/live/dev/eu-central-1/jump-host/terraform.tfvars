@@ -55,6 +55,22 @@ log_retention_days = 30
 # Set to true to allow direct SSM access to internal jump host
 enable_internal_jump_ssm = false
 
+# Migration Mode Configuration
+# ============================================================================
+# Enable SSM SendCommand permissions for Packer AMI migration (SECURITY RISK)
+# This grants sudo-level access via SSM commands and should ONLY be enabled
+# during active Packer migrations. Set to false after migration is complete.
+#
+# Permissions affected:
+#   - ssm:DescribeInstanceInformation
+#   - ssm:SendCommand
+#   - ssm:GetCommandInvocation
+#   - ssm:ListCommandInvocations
+#
+# Default: false (secure)
+# Set to true only when running Packer migration, then immediately revert to false
+enable_migration_mode = false
+
 # ============================================================================
 # Tags
 # ============================================================================

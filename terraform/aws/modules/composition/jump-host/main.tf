@@ -65,82 +65,86 @@ module "external_jump_iam_role" {
 
   # Inline policies
   create_inline_policy = true
-  inline_policy_permissions = {
-    CloudWatchLogs = {
-      sid    = "CloudWatchLogs"
-      effect = "Allow"
-      actions = [
-        "logs:CreateLogGroup",
-        "logs:CreateLogStream",
-        "logs:PutLogEvents",
-        "logs:DescribeLogStreams"
-      ]
-      resources = ["arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/jump-host/${var.environment}/external*"]
-    }
-    SSMParameters = {
-      sid    = "SSMParameters"
-      effect = "Allow"
-      actions = [
-        "ssm:GetParameter",
-        "ssm:GetParameters"
-      ]
-      resources = ["arn:aws:ssm:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:parameter/jump-host/${var.environment}/internal/*"]
-    }
-    SSMCommands = {
-      sid    = "SSMCommands"
-      effect = "Allow"
-      actions = [
-        "ssm:DescribeInstanceInformation",
-        "ssm:SendCommand",
-        "ssm:GetCommandInvocation",
-        "ssm:ListCommandInvocations"
-      ]
-      resources = ["*"]
-    }
-    S3PackerMigration = {
-      sid    = "S3PackerMigration"
-      effect = "Allow"
-      actions = [
-        "s3:CreateBucket",
-        "s3:DeleteBucket",
-        "s3:PutObject",
-        "s3:GetObject",
-        "s3:DeleteObject",
-        "s3:ListBucket"
-      ]
-      resources = [
-        "arn:aws:s3:::packer-migration-temp-*",
-        "arn:aws:s3:::packer-migration-temp-*/*"
-      ]
-    }
-    KMSSessionEncryption = {
-      sid    = "KMSSessionEncryption"
-      effect = "Allow"
-      actions = [
-        "kms:Decrypt",
-        "kms:GenerateDataKey"
-      ]
-      resources = [
-        "arn:aws:kms:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:key/*"
-      ]
-    }
-    SSMSessionLogging = {
-      sid    = "SSMSessionLogging"
-      effect = "Allow"
-      actions = [
-        "s3:PutObject"
-      ]
-      resources = [
-        "arn:aws:s3:::*/*"
-      ]
-    }
-    SSMSessionLoggingEncryption = {
-      sid       = "SSMSessionLoggingEncryption"
-      effect    = "Allow"
-      actions   = ["s3:GetEncryptionConfiguration"]
-      resources = ["*"]
-    }
-  }
+  inline_policy_permissions = merge(
+    {
+      CloudWatchLogs = {
+        sid    = "CloudWatchLogs"
+        effect = "Allow"
+        actions = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogStreams"
+        ]
+        resources = ["arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/jump-host/${var.environment}/external*"]
+      }
+      SSMParameters = {
+        sid    = "SSMParameters"
+        effect = "Allow"
+        actions = [
+          "ssm:GetParameter",
+          "ssm:GetParameters"
+        ]
+        resources = ["arn:aws:ssm:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:parameter/jump-host/${var.environment}/internal/*"]
+      }
+      S3PackerMigration = {
+        sid    = "S3PackerMigration"
+        effect = "Allow"
+        actions = [
+          "s3:CreateBucket",
+          "s3:DeleteBucket",
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:DeleteObject",
+          "s3:ListBucket"
+        ]
+        resources = [
+          "arn:aws:s3:::packer-migration-temp-*",
+          "arn:aws:s3:::packer-migration-temp-*/*"
+        ]
+      }
+      KMSSessionEncryption = {
+        sid    = "KMSSessionEncryption"
+        effect = "Allow"
+        actions = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey"
+        ]
+        resources = [
+          "arn:aws:kms:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:key/*"
+        ]
+      }
+      SSMSessionLogging = {
+        sid    = "SSMSessionLogging"
+        effect = "Allow"
+        actions = [
+          "s3:PutObject"
+        ]
+        resources = [
+          "arn:aws:s3:::*/*"
+        ]
+      }
+      SSMSessionLoggingEncryption = {
+        sid       = "SSMSessionLoggingEncryption"
+        effect    = "Allow"
+        actions   = ["s3:GetEncryptionConfiguration"]
+        resources = ["*"]
+      }
+    },
+    var.enable_migration_mode ? {
+      SSMCommands = {
+        sid    = "SSMCommands"
+        effect = "Allow"
+        actions = [
+          "ssm:DescribeInstanceInformation",
+          "ssm:SendCommand",
+          "ssm:GetCommandInvocation",
+          "ssm:ListCommandInvocations"
+        ]
+        resources = ["*"]
+      }
+    } : {}
+  )
 
   tags = local.common_tags
 }

@@ -80,6 +80,15 @@ variable "log_retention_days" {
 }
 
 # ============================================================================
+# Migration Mode Configuration
+# ============================================================================
+variable "enable_migration_mode" {
+  description = "Enable SSM SendCommand permissions for Packer migration. Should be disabled after migration is complete for security. Only affects: ssm:DescribeInstanceInformation, ssm:SendCommand, ssm:GetCommandInvocation, ssm:ListCommandInvocations"
+  type        = bool
+  default     = false
+}
+
+# ============================================================================
 # Tags
 # ============================================================================
 variable "common_tags" {
