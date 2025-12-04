@@ -1015,6 +1015,15 @@ index d48ab2d148..c3e0618166 100644
 - Permissions fix for profile level users ([#3772](https://github.com/juspay/hyperswitch-control-center/pull/3772))
 - Organization manage deprecated permission changes ([#3779](https://github.com/juspay/hyperswitch-control-center/pull/3779))
 
+#### Compatibility
+This version of the Hyperswitch Control Center is compatible with the following versions of other components:
+
+- App Server Version: [v1.119.0](https://github.com/juspay/hyperswitch/releases/tag/v1.119.0)
+- Web Client Version: [v0.127.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.127.0)
+- WooCommerce Plugin Version: [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)
+- Card Vault Version: [v0.6.5](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.6.5)
+- Key Manager: [v0.1.8](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.8)
+
 
 **Full Changelog**: https://github.com/juspay/hyperswitch-control-center/compare/v1.37.6...v1.37.7
 
