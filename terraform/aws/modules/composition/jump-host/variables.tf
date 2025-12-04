@@ -70,6 +70,12 @@ variable "tags" {
   default     = {}
 }
 
+variable "enable_migration_mode" {
+  description = "Enable SSM SendCommand permissions for Packer migration. Should be disabled after migration is complete for security. Only affects: ssm:DescribeInstanceInformation, ssm:SendCommand, ssm:GetCommandInvocation, ssm:ListCommandInvocations"
+  type        = bool
+  default     = false
+}
+
 # =========================================================================
 # Security Group Rules Configuration
 # =========================================================================
