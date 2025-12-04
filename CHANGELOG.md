@@ -179,7 +179,7 @@ All notable changes to Hyperswitch will be documented here.
 - Add support to trigger payout sync if source verification is false ([#10199](https://github.com/juspay/hyperswitch/pull/10199))
 
 
-##3# Miscellaneous Tasks
+#### Miscellaneous Tasks
 
 - **connector:** [tesouro] enable hyperswitch decrypted flow for google pay ([#9970](https://github.com/juspay/hyperswitch/pull/9970))
 - **router:**
