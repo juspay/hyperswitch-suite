@@ -36,6 +36,9 @@ module "jump_host" {
   # Logging Configuration
   log_retention_days = var.log_retention_days
 
+  # SSM Configuration
+  enable_internal_jump_ssm = var.enable_internal_jump_ssm
+
   # Security Group Rules Configuration
   external_jump_ingress_rules = var.external_jump_ingress_rules
   external_jump_egress_rules  = var.external_jump_egress_rules

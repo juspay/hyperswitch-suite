@@ -139,3 +139,12 @@ variable "internal_jump_egress_rules" {
   }))
   default = []
 }
+
+# ============================================================================
+# SSM Session Manager Configuration
+# ============================================================================
+variable "enable_internal_jump_ssm" {
+  description = "Enable SSM Session Manager access for internal jump host. When true, SSM policies will be dynamically attached to the internal jump IAM role"
+  type        = bool
+  default     = false
+}

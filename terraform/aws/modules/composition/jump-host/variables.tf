@@ -145,3 +145,9 @@ variable "internal_jump_egress_rules" {
     error_message = "Each rule must have exactly one of 'cidr' (IPv4), 'ipv6_cidr' (IPv6), 'sg_id' (Security Group), or 'prefix_list_ids' (VPC Endpoint)."
   }
 }
+
+variable "enable_internal_jump_ssm" {
+  description = "Enable SSM Session Manager access for internal jump host. When true, adds SSM policies to internal jump IAM role"
+  type        = bool
+  default     = false
+}
