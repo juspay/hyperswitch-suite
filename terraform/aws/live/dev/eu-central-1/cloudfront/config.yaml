@@ -1,0 +1,350 @@
+# ============================================================================
+# CloudFront Configuration - Dev Environment
+# ============================================================================
+# This configuration demonstrates the template-based approach
+# for managing multiple distributions with multiple cache behaviors
+
+distributions:
+  # Web Application Distribution
+  # Handles static assets, API calls, and admin interface
+  web-app:
+    comment: "Main web application CDN"
+
+    origins:
+      # S3 bucket for static assets (CSS, JS, images, etc.)
+      - origin_id: "s3-assets"
+        type: "s3"
+        s3_bucket_domain_name: "hyperswitch-web-assets-dev.s3.eu-central-1.amazonaws.com"
+        s3_bucket_id: "hyperswitch-web-assets-dev"
+        s3_bucket_arn: "arn:aws:s3:::hyperswitch-web-assets-dev"
+        origin_access_control_id: "hyperswitch-s3-assets-oac"
+        apply_bucket_policy: true
+
+      # API v1 endpoint
+      - origin_id: "api-v1"
+        type: "alb"
+        domain_name: "dev-hyperswitch-api-v1-123456789.eu-central-1.elb.amazonaws.com"
+        custom_origin_config:
+          http_port: 80
+          https_port: 443
+          origin_protocol_policy: "https-only"
+
+      # Admin interface
+      - origin_id: "admin-api"
+        type: "alb"
+        domain_name: "dev-hyperswitch-admin-api-987654321.eu-central-1.elb.amazonaws.com"
+        custom_origin_config:
+          http_port: 80
+          https_port: 443
+          origin_protocol_policy: "https-only"
+
+    # Default cache behavior serves from S3
+    default_cache_behavior:
+      target_origin_id: "s3-assets"
+      allowed_methods: ["GET", "HEAD", "OPTIONS"]
+      cached_methods: ["GET", "HEAD"]
+      viewer_protocol_policy: "redirect-to-https"
+      ttl:
+        min_ttl: 0
+        default_ttl: 3600
+        max_ttl: 86400
+      compress: true
+
+    # Ordered cache behaviors for path-based routing
+    ordered_cache_behaviors:
+      # Static CSS files - aggressive caching
+      - template: "static_assets"
+        path_pattern: "/css/*"
+        target_origin_id: "s3-assets"
+
+      # Static JavaScript files - aggressive caching
+      - template: "static_assets"
+        path_pattern: "/js/*"
+        target_origin_id: "s3-assets"
+
+      # Static image files - aggressive caching
+      - template: "static_assets"
+        path_pattern: "/images/*"
+        target_origin_id: "s3-assets"
+
+      # Font files - aggressive caching
+      - template: "static_assets"
+        path_pattern: "/fonts/*"
+        target_origin_id: "s3-assets"
+
+      # API v1 endpoints - no caching
+      - template: "api"
+        path_pattern: "/api/v1/*"
+        target_origin_id: "api-v1"
+        response_headers_policy_id: "api-cors-policy"
+
+      # Admin interface - no caching, custom headers
+      - template: "admin"
+        path_pattern: "/admin/*"
+        target_origin_id: "admin-api"
+
+      # Media files (images, videos) - long TTL
+      - template: "media"
+        path_pattern: "/media/*"
+        target_origin_id: "s3-assets"
+
+      # Manifest and service worker - no caching
+      - template: "static_assets"
+        path_pattern: "/manifest.json"
+        target_origin_id: "s3-assets"
+        ttl:
+          min_ttl: 0
+          default_ttl: 0
+          max_ttl: 0
+
+      - template: "static_assets"
+        path_pattern: "/sw.js"
+        target_origin_id: "s3-assets"
+        ttl:
+          min_ttl: 0
+          default_ttl: 0
+          max_ttl: 0
+
+    # Custom error responses for SPA routing
+    custom_error_responses:
+      - error_code: 403
+        error_caching_min_ttl: 300
+        response_code: 200
+        response_page_path: "/index.html"
+      - error_code: 404
+        error_caching_min_ttl: 300
+        response_code: 200
+        response_page_path: "/index.html"
+
+    # Invalidation configuration
+    invalidation:
+      enabled: true
+      version: "v1.2.3"
+      paths:
+        - "/*"
+        - "/index.html"
+        - "/manifest.json"
+        - "/sw.js"
+
+  # API CDN Distribution
+  # Dedicated CDN for API endpoints with Lambda@Edge
+  api-cdn:
+    comment: "API CDN with Lambda@Edge authentication"
+
+    origins:
+      - origin_id: "api-v1"
+        type: "alb"
+        domain_name: "dev-hyperswitch-api-v1-123456789.eu-central-1.elb.amazonaws.com"
+        custom_origin_config:
+          http_port: 80
+          https_port: 443
+          origin_protocol_policy: "https-only"
+
+      - origin_id: "api-v2"
+        type: "alb"
+        domain_name: "dev-hyperswitch-api-v2-555666777.eu-central-1.elb.amazonaws.com"
+        custom_origin_config:
+          http_port: 80
+          https_port: 443
+          origin_protocol_policy: "https-only"
+
+    default_cache_behavior:
+      target_origin_id: "api-v2"
+      allowed_methods: ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+      cached_methods: ["GET", "HEAD", "OPTIONS"]
+      viewer_protocol_policy: "redirect-to-https"
+      ttl:
+        min_ttl: 0
+        default_ttl: 300
+        max_ttl: 3600
+      compress: true
+
+    ordered_cache_behaviors:
+      # API v1 - with Lambda@Edge
+      - template: "api"
+        path_pattern: "/api/v1/*"
+        target_origin_id: "api-v1"
+        lambda_function_associations:
+          - event_type: "viewer-request"
+            lambda_arn: "arn:aws:lambda:eu-central-1:123456789012:function:api-auth"
+            include_body: false
+          - event_type: "viewer-response"
+            lambda_arn: "arn:aws:lambda:eu-central-1:123456789012:function:remove-headers"
+            include_body: false
+
+      # Health check endpoint - no caching
+      - template: "api"
+        path_pattern: "/health"
+        target_origin_id: "api-v1"
+        ttl:
+          min_ttl: 0
+          default_ttl: 0
+          max_ttl: 0
+
+      # Metrics endpoint
+      - template: "api_v2"
+        path_pattern: "/metrics/*"
+        target_origin_id: "api-v2"
+        ttl:
+          min_ttl: 0
+          default_ttl: 60
+          max_ttl: 300
+
+    invalidation:
+      enabled: true
+      version: "v1.0.5"
+      paths:
+        - "/*"
+
+  # Media Distribution
+  # Optimized for streaming media and large file downloads
+  media-cdn:
+    comment: "Media streaming CDN"
+
+    origins:
+      - origin_id: "media-s3"
+        type: "s3"
+        s3_bucket_domain_name: "hyperswitch-media-dev.s3.eu-central-1.amazonaws.com"
+        s3_bucket_id: "hyperswitch-media-dev"
+        s3_bucket_arn: "arn:aws:s3:::hyperswitch-media-dev"
+        origin_access_control_id: "hyperswitch-media-oac"
+
+      - origin_id: "media-api"
+        type: "custom"
+        domain_name: "media-api.dev.hyperswitch.com"
+        custom_origin_config:
+          http_port: 80
+          https_port: 443
+          origin_protocol_policy: "https-only"
+
+    default_cache_behavior:
+      target_origin_id: "media-s3"
+      allowed_methods: ["GET", "HEAD", "OPTIONS"]
+      cached_methods: ["GET", "HEAD"]
+      viewer_protocol_policy: "redirect-to-https"
+      ttl:
+        min_ttl: 86400
+        default_ttl: 86400
+        max_ttl: 31536000
+      compress: false
+
+    ordered_cache_behaviors:
+      # Video streaming
+      - template: "media"
+        path_pattern: "/videos/*"
+        target_origin_id: "media-s3"
+
+      # Audio files
+      - template: "media"
+        path_pattern: "/audio/*"
+        target_origin_id: "media-s3"
+
+      # Image thumbnails
+      - template: "media"
+        path_pattern: "/thumbnails/*"
+        target_origin_id: "media-s3"
+        ttl:
+          min_ttl: 3600
+          default_ttl: 86400
+          max_ttl: 86400
+
+      # Media metadata API
+      - template: "api"
+        path_pattern: "/metadata/*"
+        target_origin_id: "media-api"
+
+# Origin Access Controls
+origin_access_controls:
+  - name: "hyperswitch-s3-assets-oac"
+    description: "OAC for S3 static assets bucket"
+    origin_access_control_origin_type: "s3"
+    signing_behavior: "always"
+    signing_protocol: "sigv4"
+
+  - name: "hyperswitch-media-oac"
+    description: "OAC for S3 media bucket"
+    origin_access_control_origin_type: "s3"
+    signing_behavior: "always"
+    signing_protocol: "sigv4"
+
+# Response Headers Policies
+response_headers_policies:
+  - name: "api-cors-policy"
+    comment: "CORS policy for API endpoints"
+    cors_config:
+      access_control_allow_credentials: true
+      access_control_allow_headers:
+        items: ["Authorization", "Content-Type", "X-Requested-With", "X-API-Key"]
+      access_control_allow_methods:
+        items: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]
+      access_control_allow_origins:
+        items: ["https://dev.hyperswitch.com", "https://*.dev.hyperswitch.com"]
+      access_control_max_age_sec: 86400
+
+  - name: "admin-cors-policy"
+    comment: "CORS policy for admin interface"
+    cors_config:
+      access_control_allow_credentials: true
+      access_control_allow_headers:
+        items: ["Authorization", "Content-Type", "X-Admin-Token"]
+      access_control_allow_methods:
+        items: ["GET", "POST", "PUT", "DELETE"]
+      access_control_allow_origins:
+        items: ["https://admin.dev.hyperswitch.com"]
+      access_control_max_age_sec: 3600
+
+  - name: "media-cors-policy"
+    comment: "CORS policy for media streaming"
+    cors_config:
+      access_control_allow_credentials: false
+      access_control_allow_headers:
+        items: ["Range", "Accept"]
+      access_control_allow_methods:
+        items: ["GET", "HEAD", "OPTIONS"]
+      access_control_allow_origins:
+        items: ["*"]
+      access_control_max_age_sec: 3600
+
+# CloudFront Functions
+cloudfront_functions:
+  - name: "redirect-to-login"
+    runtime: "cloudfront-js-1.0"
+    comment: "Redirect unauthenticated users to login page"
+    code: |
+      function handler(event) {
+          var request = event.request;
+          var response = event.response;
+
+          // Check if user is authenticated
+          if (!request.headers.authorization) {
+              // Redirect to login
+              return {
+                  statusCode: 302,
+                  statusDescription: 'Found',
+                  headers: {
+                      location: { value: '/login.html' }
+                  }
+              };
+          }
+
+          return request;
+      }
+    publish: true
+
+  - name: "add-security-headers"
+    runtime: "cloudfront-js-1.0"
+    comment: "Add security headers to all responses"
+    code: |
+      function handler(event) {
+          var response = event.response;
+          var headers = response.headers;
+
+          // Add security headers
+          headers['strict-transport-security'] = { value: 'max-age=63072000; includeSubdomains; preload' };
+          headers['x-content-type-options'] = { value: 'nosniff' };
+          headers['x-frame-options'] = { value: 'DENY' };
+          headers['x-xss-protection'] = { value: '1; mode=block' };
+
+          return response;
+      }
+    publish: true
