@@ -208,21 +208,36 @@ variable "enable_logging" {
 }
 
 variable "create_log_bucket" {
-  description = "Create S3 bucket for CloudFront logs"
+  description = "Create S3 bucket for CloudFront logs (only used if enable_logging=true and log_bucket_arn is null)"
   type        = bool
   default     = false
+
+  validation {
+    condition     = !var.create_log_bucket || var.enable_logging
+    error_message = "create_log_bucket can only be true when enable_logging is true."
+  }
 }
 
-variable "log_bucket" {
-  description = "Existing S3 bucket for CloudFront access logs (if create_log_bucket is false)"
-  type = object({
-    bucket_name = string
-    bucket_arn  = string
-    bucket_domain_name = string
-    bucket_regional_domain_name = optional(string)
-    prefix      = optional(string)
-  })
-  default = null
+variable "log_bucket_arn" {
+  description = "ARN of existing S3 bucket for CloudFront logs. If provided, this takes precedence over create_log_bucket."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.log_bucket_arn == null || can(regex("^arn:aws:s3:::[a-z0-9][a-z0-9\\.-]*[a-z0-9]$", var.log_bucket_arn))
+    error_message = "log_bucket_arn must be a valid S3 bucket ARN."
+  }
+
+  validation {
+    condition     = var.log_bucket_arn == null || var.enable_logging
+    error_message = "log_bucket_arn should only be provided when enable_logging is true."
+  }
+}
+
+variable "log_prefix" {
+  description = "Prefix for CloudFront log files in the S3 bucket"
+  type        = string
+  default     = "cloudfront/"
 }
 
 # ============================================================================

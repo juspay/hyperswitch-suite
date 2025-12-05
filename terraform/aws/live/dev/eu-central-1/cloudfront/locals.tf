@@ -201,16 +201,4 @@ locals {
       } : {}
     )
   ]
-
-  # Log bucket configuration
-  log_bucket_config = var.enable_logging ? (
-    var.log_bucket != null ? var.log_bucket : (
-      var.create_log_bucket ? {
-        bucket_name = "${var.project_name}-cloudfront-logs-${var.environment}-${var.region}"
-        bucket_arn  = "arn:aws:s3:::${var.project_name}-cloudfront-logs-${var.environment}-${var.region}"
-        bucket_domain_name = "${var.project_name}-cloudfront-logs-${var.environment}-${var.region}.s3.${var.region}.amazonaws.com"
-        prefix      = "cloudfront/"
-      } : null
-    )
-  ) : null
 }

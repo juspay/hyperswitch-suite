@@ -17,21 +17,26 @@ common_tags = {
   Region      = "eu-central-1"
 }
 
-# Logging configuration
-# Option 1: Let Terraform auto-create the bucket (RECOMMENDED for testing)
-enable_logging = false 
-create_log_bucket = false
-# Comment out log_bucket to let Terraform auto-generate the bucket name
-# log_bucket = {
-#   bucket_name = "hyperswitch-cloudfront-logs-dev-eu-central-1"
-#   bucket_arn = "arn:aws:s3:::hyperswitch-cloudfront-logs-dev-eu-central-1"
-#   bucket_domain_name = "hyperswitch-cloudfront-logs-dev-eu-central-1.s3.eu-central-1.amazonaws.com"
-#   prefix = "cloudfront/"
-# }
+# ============================================================================
+# Logging Configuration
+# ============================================================================
+# Choose ONE of the following options:
 
-# Option 2: Disable logging temporarily for testing
-# enable_logging = false
-# create_log_bucket = false
+# Option 1: Use existing S3 bucket for logs
+# enable_logging = true
+# log_bucket_arn = "arn:aws:s3:::my-existing-cloudfront-logs-bucket"
+# log_prefix = "cloudfront/dev/"
+
+# Option 2: Create new S3 bucket for logs (auto-generated name)
+# enable_logging = true
+# create_log_bucket = true
+# log_prefix = "cloudfront/"
+
+# Option 3: Disable logging (CURRENT - for testing)
+enable_logging = false
+create_log_bucket = false
+log_bucket_arn = null
+log_prefix = "cloudfront/"
 
 # Note: The following are now configured in config.yaml:
 # - distributions: All CloudFront distributions with origins and cache behaviors

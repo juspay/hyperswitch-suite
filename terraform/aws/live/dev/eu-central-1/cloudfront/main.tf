@@ -51,7 +51,8 @@ module "cloudfront" {
   # Logging configuration
   enable_logging    = var.enable_logging
   create_log_bucket = var.create_log_bucket
-  log_bucket        = local.log_bucket_config
+  log_bucket_arn    = var.log_bucket_arn
+  log_prefix        = var.log_prefix
 
   # Origin Access Controls from config.yaml
   origin_access_controls = lookup(local.config, "origin_access_controls", [])

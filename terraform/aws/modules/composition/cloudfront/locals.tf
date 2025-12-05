@@ -132,12 +132,20 @@ locals {
   }
 
   # Logging bucket configuration
+  # Priority: 1. Existing bucket ARN, 2. Create new bucket, 3. Null (logging disabled)
   log_bucket_config = var.enable_logging ? (
-    var.log_bucket != null ? var.log_bucket : (
+    var.log_bucket_arn != null ? {
+      # Extract bucket name from ARN
+      bucket_name        = replace(var.log_bucket_arn, "arn:aws:s3:::", "")
+      bucket_arn         = var.log_bucket_arn
+      bucket_domain_name = "${replace(var.log_bucket_arn, "arn:aws:s3:::", "")}.s3.amazonaws.com"
+      prefix             = var.log_prefix
+    } : (
       var.create_log_bucket ? {
-        bucket_name = "${local.name_prefix}-logs-${data.aws_caller_identity.current[0].account_id}-${data.aws_region.current[0].id}"
-        bucket_arn  = "arn:aws:s3:::${local.name_prefix}-logs-${data.aws_caller_identity.current[0].account_id}-${data.aws_region.current[0].id}"
+        bucket_name        = "${local.name_prefix}-logs-${data.aws_caller_identity.current[0].account_id}-${data.aws_region.current[0].id}"
+        bucket_arn         = "arn:aws:s3:::${local.name_prefix}-logs-${data.aws_caller_identity.current[0].account_id}-${data.aws_region.current[0].id}"
         bucket_domain_name = "${local.name_prefix}-logs-${data.aws_caller_identity.current[0].account_id}-${data.aws_region.current[0].id}.s3.${data.aws_region.current[0].id}.amazonaws.com"
+        prefix             = var.log_prefix
       } : null
     )
   ) : null

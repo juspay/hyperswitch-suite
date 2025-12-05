@@ -112,7 +112,7 @@ module "cloudfront" {
   # Logging configuration
   logging_config = var.enable_logging && local.log_bucket_config != null ? {
     bucket          = local.log_bucket_config.bucket_domain_name
-    prefix          = lookup(var.log_bucket, "prefix", "cloudfront/")
+    prefix          = lookup(local.log_bucket_config, "prefix", "cloudfront/")
     include_cookies = false
   } : {}
 

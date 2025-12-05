@@ -185,7 +185,6 @@ output "log_bucket_domain_name" {
 }
 
 # Invalidation Commands
-# Invalidation Commands
 output "invalidation_commands" {
   description = "Commands to manually invalidate CloudFront caches"
   value = local.create ? {
