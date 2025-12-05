@@ -335,19 +335,6 @@ multi-origin:
 ### Issue: CORS errors
 **Solution:** Add CORS config to response_headers_policies
 
-## Commands
-
-```bash
-# Deploy
-terraform apply
-
-# View state
-terraform state list
-
-# Manual invalidation
-aws cloudfront create-invalidation --distribution-id ID --paths "/*"
-```
-
 
 ## Best Practices
 
