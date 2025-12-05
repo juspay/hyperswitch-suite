@@ -13,12 +13,12 @@ variable "create" {
 # ============================================================================
 
 variable "environment" {
-  description = "Environment name (dev, integ, prod, sandbox)"
+  description = "Environment name (dev, integ, prod, sbx)"
   type        = string
 
   validation {
-    condition     = contains(["dev", "integ", "prod", "sandbox"], var.environment)
-    error_message = "Environment must be one of: dev, integ, prod, sandbox."
+    condition     = contains(["dev", "integ", "prod", "sbx"], var.environment)
+    error_message = "Environment must be one of: dev, integ, prod, sbx."
   }
 }
 
@@ -149,6 +149,16 @@ variable "distributions" {
     price_class        = optional(string, "PriceClass_All")
     enabled            = optional(bool, true)
     comment            = optional(string)
+
+    # Domain aliases (CNAMEs)
+    aliases = optional(list(string), [])
+
+    # Viewer certificate configuration
+    viewer_certificate = optional(object({
+      acm_certificate_arn      = string
+      ssl_support_method       = optional(string, "sni-only")
+      minimum_protocol_version = optional(string, "TLSv1.2_2021")
+    }), null)
 
     # Geo restrictions
     geo_restriction = optional(object({

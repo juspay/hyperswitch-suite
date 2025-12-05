@@ -36,6 +36,10 @@ module "cloudfront" {
       enabled            = dist.enabled
       comment            = dist.comment
 
+      # Domain aliases and viewer certificate
+      aliases            = dist.aliases
+      viewer_certificate = dist.viewer_certificate
+
       # Geo restrictions
       geo_restriction = dist.geo_restriction
 

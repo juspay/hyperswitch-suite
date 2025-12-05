@@ -9,6 +9,18 @@ distributions:
   # Handles static assets, API calls, and admin interface
   web-app:
     comment: "Main web application CDN"
+    
+    # Domain aliases (CNAMEs) - uncomment and configure when using custom domain
+    # aliases:
+    #   - "dev.hyperswitch.com"
+    #   - "*.dev.hyperswitch.com"
+    
+    # Viewer certificate - uncomment when using custom domain with ACM certificate
+    # Note: ACM certificate must be in us-east-1 region for CloudFront
+    # viewer_certificate:
+    #   acm_certificate_arn: "arn:aws:acm:us-east-1:123456789012:certificate/abc-123-def-456"
+    #   ssl_support_method: "sni-only"
+    #   minimum_protocol_version: "TLSv1.2_2021"
 
     origins:
       # S3 bucket for static assets (CSS, JS, images, etc.) - COMMENTED OUT FOR OAC TESTING

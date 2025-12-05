@@ -130,8 +130,17 @@ module "cloudfront" {
   # Web ACL
   web_acl_id = lookup(each.value, "web_acl_id", null)
 
-  # Viewer certificate (use default CloudFront certificate for now)
-  viewer_certificate = {
+  # Domain aliases
+  aliases = lookup(each.value, "aliases", [])
+
+  # Viewer certificate configuration
+  # Use custom certificate if provided, otherwise use CloudFront default
+  viewer_certificate = lookup(each.value, "viewer_certificate", null) != null ? {
+    acm_certificate_arn      = each.value.viewer_certificate.acm_certificate_arn
+    ssl_support_method       = lookup(each.value.viewer_certificate, "ssl_support_method", "sni-only")
+    minimum_protocol_version = lookup(each.value.viewer_certificate, "minimum_protocol_version", "TLSv1.2_2021")
+    cloudfront_default_certificate = false
+  } : {
     cloudfront_default_certificate = true
     minimum_protocol_version       = "TLSv1.2_2021"
   }

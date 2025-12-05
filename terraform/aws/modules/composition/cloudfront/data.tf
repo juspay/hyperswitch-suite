@@ -44,12 +44,6 @@ data "aws_cloudfront_origin_request_policy" "all_viewer" {
   name   = "Managed-AllViewer"
 }
 
-# Note: This policy doesn't exist - wrong name
-# data "aws_cloudfront_origin_request_policy" "all_viewer_and_whitelist_cookies" {
-#   count = var.create ? 1 : 0
-#   name   = "Managed-AllViewerAndWhitelistCloudFrontHeaders"
-# }
-
 data "aws_cloudfront_origin_request_policy" "cors_s3_origin" {
   count = var.create ? 1 : 0
   name   = "Managed-CORS-S3Origin"
@@ -70,12 +64,6 @@ data "aws_cloudfront_response_headers_policy" "cors_with_preflight_and_security_
   count = var.create ? 1 : 0
   name   = "Managed-CORS-with-preflight-and-SecurityHeadersPolicy"
 }
-
-# Note: This policy doesn't exist
-# data "aws_cloudfront_response_headers_policy" "cors_s3_origin" {
-#   count = var.create ? 1 : 0
-#   name   = "Managed-CORS-S3Origin"
-# }
 
 data "aws_cloudfront_response_headers_policy" "simple_cors" {
   count = var.create ? 1 : 0

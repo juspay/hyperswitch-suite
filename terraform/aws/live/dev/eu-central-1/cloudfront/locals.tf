@@ -102,6 +102,10 @@ locals {
       default_root_object = lookup(dist_config, "default_root_object", "index.html")
       price_class         = lookup(dist_config, "price_class", "PriceClass_All")
       
+      # Domain aliases and viewer certificate
+      aliases            = lookup(dist_config, "aliases", [])
+      viewer_certificate = lookup(dist_config, "viewer_certificate", null)
+      
       # Process origins
       origins = dist_config.origins
 
