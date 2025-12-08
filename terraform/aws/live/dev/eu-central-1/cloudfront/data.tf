@@ -34,7 +34,3 @@ data "aws_cloudfront_response_headers_policy" "cors_with_preflight" {
   name = "Managed-CORS-with-preflight-and-SecurityHeadersPolicy"
 }
 
-data "aws_cloudfront_response_headers_policy" "cors_s3_origin" {
-  name = "Managed-CORS-S3Origin"
-}
-
