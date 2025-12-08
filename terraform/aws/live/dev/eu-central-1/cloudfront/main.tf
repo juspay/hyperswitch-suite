@@ -62,4 +62,10 @@ module "cloudfront" {
 
   # Response Headers Policies from config.yaml (transformed)
   response_headers_policies = local.transformed_response_headers_policies
+
+  # Cache Policies from config.yaml (transformed)
+  cache_policies = local.transformed_cache_policies
+
+  # Origin Request Policies from config.yaml (transformed)
+  origin_request_policies = local.transformed_origin_request_policies
 }

@@ -295,6 +295,118 @@ resource "aws_cloudfront_response_headers_policy" "this" {
 
 }
 
+# Cache Policies
+resource "aws_cloudfront_cache_policy" "this" {
+  count = local.create ? length(var.cache_policies) : 0
+
+  name        = var.cache_policies[count.index].name
+  comment     = lookup(var.cache_policies[count.index], "comment", null)
+  default_ttl = lookup(var.cache_policies[count.index], "default_ttl", null)
+  max_ttl     = lookup(var.cache_policies[count.index], "max_ttl", null)
+  min_ttl     = lookup(var.cache_policies[count.index], "min_ttl", null)
+
+  dynamic "parameters_in_cache_key_and_forwarded_to_origin" {
+    for_each = lookup(var.cache_policies[count.index], "parameters_in_cache_key_and_forwarded_to_origin", null) != null ? [var.cache_policies[count.index].parameters_in_cache_key_and_forwarded_to_origin] : []
+
+    content {
+      enable_accept_encoding_brotli = lookup(parameters_in_cache_key_and_forwarded_to_origin.value, "enable_accept_encoding_brotli", null)
+      enable_accept_encoding_gzip   = lookup(parameters_in_cache_key_and_forwarded_to_origin.value, "enable_accept_encoding_gzip", null)
+
+      dynamic "headers_config" {
+        for_each = lookup(parameters_in_cache_key_and_forwarded_to_origin.value, "headers_config", null) != null ? [parameters_in_cache_key_and_forwarded_to_origin.value.headers_config] : []
+
+        content {
+          header_behavior = headers_config.value.header_behavior
+          dynamic "headers" {
+            for_each = lookup(headers_config.value, "headers", null) != null ? [headers_config.value.headers] : []
+            content {
+              items = headers.value
+            }
+          }
+        }
+      }
+
+      dynamic "cookies_config" {
+        for_each = lookup(parameters_in_cache_key_and_forwarded_to_origin.value, "cookies_config", null) != null ? [parameters_in_cache_key_and_forwarded_to_origin.value.cookies_config] : []
+
+        content {
+          cookie_behavior = cookies_config.value.cookie_behavior
+          dynamic "cookies" {
+            for_each = lookup(cookies_config.value, "cookies", null) != null ? [cookies_config.value.cookies] : []
+            content {
+              items = cookies.value
+            }
+          }
+        }
+      }
+
+      dynamic "query_strings_config" {
+        for_each = lookup(parameters_in_cache_key_and_forwarded_to_origin.value, "query_strings_config", null) != null ? [parameters_in_cache_key_and_forwarded_to_origin.value.query_strings_config] : []
+
+        content {
+          query_string_behavior = query_strings_config.value.query_string_behavior
+          dynamic "query_strings" {
+            for_each = lookup(query_strings_config.value, "query_strings", null) != null ? [query_strings_config.value.query_strings] : []
+            content {
+              items = query_strings.value
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+# Origin Request Policies
+resource "aws_cloudfront_origin_request_policy" "this" {
+  count = local.create ? length(var.origin_request_policies) : 0
+
+  name    = var.origin_request_policies[count.index].name
+  comment = lookup(var.origin_request_policies[count.index], "comment", null)
+
+  dynamic "headers_config" {
+    for_each = lookup(var.origin_request_policies[count.index], "headers_config", null) != null ? [var.origin_request_policies[count.index].headers_config] : []
+
+    content {
+      header_behavior = headers_config.value.header_behavior
+      dynamic "headers" {
+        for_each = lookup(headers_config.value, "headers", null) != null ? [headers_config.value.headers] : []
+        content {
+          items = headers.value
+        }
+      }
+    }
+  }
+
+  dynamic "cookies_config" {
+    for_each = lookup(var.origin_request_policies[count.index], "cookies_config", null) != null ? [var.origin_request_policies[count.index].cookies_config] : []
+
+    content {
+      cookie_behavior = cookies_config.value.cookie_behavior
+      dynamic "cookies" {
+        for_each = lookup(cookies_config.value, "cookies", null) != null ? [cookies_config.value.cookies] : []
+        content {
+          items = cookies.value
+        }
+      }
+    }
+  }
+
+  dynamic "query_strings_config" {
+    for_each = lookup(var.origin_request_policies[count.index], "query_strings_config", null) != null ? [var.origin_request_policies[count.index].query_strings_config] : []
+
+    content {
+      query_string_behavior = query_strings_config.value.query_string_behavior
+      dynamic "query_strings" {
+        for_each = lookup(query_strings_config.value, "query_strings", null) != null ? [query_strings_config.value.query_strings] : []
+        content {
+          items = query_strings.value
+        }
+      }
+    }
+  }
+}
+
 # ============================================================================
 # S3 Bucket Policies for OAC
 # ============================================================================

@@ -342,3 +342,60 @@ variable "response_headers_policies" {
   }))
   default = []
 }
+
+variable "cache_policies" {
+  description = "Map of cache policies to create"
+  type = list(object({
+    name        = string
+    comment     = optional(string)
+    default_ttl = optional(number)
+    max_ttl     = optional(number)
+    min_ttl     = optional(number)
+
+    parameters_in_cache_key_and_forwarded_to_origin = optional(object({
+      enable_accept_encoding_brotli = optional(bool)
+      enable_accept_encoding_gzip   = optional(bool)
+
+      headers_config = optional(object({
+        header_behavior = string
+        headers         = optional(list(string))
+      }))
+
+      cookies_config = optional(object({
+        cookie_behavior = string
+        cookies         = optional(list(string))
+      }))
+
+      query_strings_config = optional(object({
+        query_string_behavior = string
+        query_strings         = optional(list(string))
+      }))
+    }))
+  }))
+  default = []
+}
+
+variable "origin_request_policies" {
+  description = "Map of origin request policies to create"
+  type = list(object({
+    name    = string
+    comment = optional(string)
+
+    headers_config = optional(object({
+      header_behavior = string
+      headers         = optional(list(string))
+    }))
+
+    cookies_config = optional(object({
+      cookie_behavior = string
+      cookies         = optional(list(string))
+    }))
+
+    query_strings_config = optional(object({
+      query_string_behavior = string
+      query_strings         = optional(list(string))
+    }))
+  }))
+  default = []
+}
+

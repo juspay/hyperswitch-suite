@@ -201,4 +201,10 @@ locals {
       } : {}
     )
   ]
+
+  # Transform cache policies from YAML to module format
+  transformed_cache_policies = lookup(local.config, "cache_policies", [])
+
+  # Transform origin request policies from YAML to module format
+  transformed_origin_request_policies = lookup(local.config, "origin_request_policies", [])
 }
