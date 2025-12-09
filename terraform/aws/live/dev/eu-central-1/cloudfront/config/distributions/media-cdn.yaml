@@ -1,0 +1,62 @@
+# Media Distribution
+# Optimized for streaming media and large file downloads
+
+comment: "Media streaming CDN"
+
+origins:
+  # Using API v1 as origin for during testing
+  - origin_id: "api-v1"
+    type: "alb"
+    domain_name: "dev-hyperswitch-envoy-alb-1381992561.eu-central-1.elb.amazonaws.com"
+    custom_origin_config:
+      http_port: 80
+      https_port: 443
+      origin_protocol_policy: "http-only"
+
+  # S3 bucket - COMMENTED OUT FOR OAC TESTING
+  # - origin_id: "media-s3"
+  #   type: "s3"
+  #   s3_bucket_domain_name: "dev-hyperswitch-envoy-config-2xxxxxxxxxx7-eu-central-1.s3.eu-central-1.amazonaws.com"
+  #   s3_bucket_id: "dev-hyperswitch-envoy-config-2xxxxxxxxxx7-eu-central-1"
+  #   s3_bucket_arn: "arn:aws:s3:::dev-hyperswitch-envoy-config-2xxxxxxxxxx7-eu-central-1"
+  #   origin_access_control_id: "hyperswitch-media-s3-oac"
+  #   apply_bucket_policy: true
+
+  # Media API - COMMENTED OUT FOR NOW
+  # - origin_id: "media-api"
+  #   type: "custom"
+  #   domain_name: "dev-hyperswitch-api-v1-123456789.eu-central-1.elb.amazonaws.com"
+  #   custom_origin_config:
+  #     http_port: 80
+  #     https_port: 443
+  #     origin_protocol_policy: "http-only"
+
+default_cache_behavior:
+  target_origin_id: "api-v1"
+  allowed_methods: ["GET", "HEAD", "OPTIONS"]
+  cached_methods: ["GET", "HEAD"]
+  viewer_protocol_policy: "redirect-to-https"
+  ttl:
+    min_ttl: 86400
+    default_ttl: 86400
+    max_ttl: 31536000
+  compress: false
+
+ordered_cache_behaviors: []
+  # All cache behaviors COMMENTED OUT FOR NOW
+  # - template: "media"
+  #   path_pattern: "/videos/*"
+  #   target_origin_id: "media-s3"
+  # - template: "media"
+  #   path_pattern: "/audio/*"
+  #   target_origin_id: "media-s3"
+  # - template: "media"
+  #   path_pattern: "/thumbnails/*"
+  #   target_origin_id: "media-s3"
+  #   ttl:
+  #     min_ttl: 3600
+  #     default_ttl: 86400
+  #     max_ttl: 86400
+  # - template: "api"
+  #   path_pattern: "/metadata/*"
+  #   target_origin_id: "media-api"

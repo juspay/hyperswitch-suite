@@ -1,0 +1,14 @@
+# Origin Access Controls
+# Define OACs that will be referenced by S3 origins
+
+- name: "hyperswitch-web-s3-assets-oac"
+  description: "OAC for S3 static assets bucket (web-app distribution)"
+  origin_access_control_origin_type: "s3"
+  signing_behavior: "always"
+  signing_protocol: "sigv4"
+
+- name: "hyperswitch-media-s3-oac"
+  description: "OAC for S3 media bucket (media-cdn distribution)"
+  origin_access_control_origin_type: "s3"
+  signing_behavior: "always"
+  signing_protocol: "sigv4"

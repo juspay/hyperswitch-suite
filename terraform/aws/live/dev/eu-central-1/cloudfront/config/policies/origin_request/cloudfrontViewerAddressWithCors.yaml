@@ -1,0 +1,13 @@
+name: "cloudfrontViewerAddressWithCors"
+comment: "Forward CloudFront viewer address with CORS headers"
+headers_config:
+  header_behavior: "whitelist"
+  headers:
+    - "CloudFront-Viewer-Address"
+    - "Origin"
+    - "Access-Control-Request-Method"
+    - "Access-Control-Request-Headers"
+cookies_config:
+  cookie_behavior: "none"
+query_strings_config:
+  query_string_behavior: "all"

@@ -1,0 +1,17 @@
+name: "add-security-headers"
+runtime: "cloudfront-js-1.0"
+comment: "Add security headers to all responses"
+code: |
+  function handler(event) {
+      var response = event.response;
+      var headers = response.headers;
+
+      // Add security headers
+      headers['strict-transport-security'] = { value: 'max-age=63072000; includeSubdomains; preload' };
+      headers['x-content-type-options'] = { value: 'nosniff' };
+      headers['x-frame-options'] = { value: 'DENY' };
+      headers['x-xss-protection'] = { value: '1; mode=block' };
+
+      return response;
+  }
+publish: true

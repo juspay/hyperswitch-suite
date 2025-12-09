@@ -1,0 +1,18 @@
+name: "cache_cors_headers"
+comment: "Cache policy with CORS headers support"
+default_ttl: 86400
+max_ttl: 31536000
+min_ttl: 0
+parameters_in_cache_key_and_forwarded_to_origin:
+  enable_accept_encoding_brotli: true
+  enable_accept_encoding_gzip: true
+  headers_config:
+    header_behavior: "whitelist"
+    headers:
+      - "Origin"
+      - "Access-Control-Request-Method"
+      - "Access-Control-Request-Headers"
+  cookies_config:
+    cookie_behavior: "none"
+  query_strings_config:
+    query_string_behavior: "all"

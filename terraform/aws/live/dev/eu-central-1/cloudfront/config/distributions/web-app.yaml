@@ -1,0 +1,129 @@
+# Main web application CDN
+
+comment: "Main web application CDN"
+
+# Domain aliases (CNAMEs) - uncomment and configure when using custom domain
+# aliases:
+#   - "dev.hyperswitch.com"
+#   - "*.dev.hyperswitch.com"
+
+# Viewer certificate - uncomment when using custom domain with ACM certificate
+# Note: ACM certificate must be in us-east-1 region for CloudFront
+# viewer_certificate:
+#   acm_certificate_arn: "arn:aws:acm:us-east-1:123456789012:certificate/abc-123-def-456"
+#   ssl_support_method: "sni-only"
+#   minimum_protocol_version: "TLSv1.2_2021"
+
+origins:
+  # S3 bucket for static assets (CSS, JS, images, etc.) 
+  - origin_id: "s3-assets"
+    type: "s3"
+    s3_bucket_domain_name: "dev-hyperswitch-envoy-config-2xxxxxxxxxx7-eu-central-1.s3.eu-central-1.amazonaws.com"
+    s3_bucket_id: "dev-hyperswitch-envoy-config-2xxxxxxxxxx7-eu-central-1"
+    s3_bucket_arn: "arn:aws:s3:::dev-hyperswitch-envoy-config-2xxxxxxxxxx7-eu-central-1"
+    origin_access_control_id: "hyperswitch-web-s3-assets-oac"
+    apply_bucket_policy: true
+
+  # API v1 endpoint - Now the default origin
+  - origin_id: "api-v1"
+    type: "alb"
+    domain_name: "dev-hyperswitch-envoy-alb-1381992561.eu-central-1.elb.amazonaws.com"
+    custom_origin_config:
+      http_port: 80
+      https_port: 443
+      origin_protocol_policy: "http-only"
+
+  # Admin interface - COMMENTED OUT FOR NOW
+  - origin_id: "admin-api"
+    type: "alb"
+    domain_name: "dev-hyperswitch-envoy-alb-1381992561.eu-central-1.elb.amazonaws.com"
+    custom_origin_config:
+      http_port: 80
+      https_port: 443
+      origin_protocol_policy: "http-only"
+
+# Default cache behavior now serves from API
+default_cache_behavior:
+  target_origin_id: "api-v1"
+  allowed_methods: ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+  cached_methods: ["GET", "HEAD", "OPTIONS"]
+  viewer_protocol_policy: "redirect-to-https"
+  compress: true
+  
+  # Attach response headers policy
+  response_headers_policy_id: "api-cors-policy"
+  
+  # Attach CloudFront function to add security headers on viewer response
+  function_associations:
+    - event_type: "viewer-response"
+      function_arn: "add-security-headers"
+  
+  ttl:
+    min_ttl: 0
+    default_ttl: 3600
+    max_ttl: 86400
+
+# Ordered cache behaviors for path-based routing
+ordered_cache_behaviors: 
+  - template: "static_assets"
+    path_pattern: "/css/*"
+    target_origin_id: "s3-assets"
+  - template: "static_assets"
+    path_pattern: "/js/*"
+    target_origin_id: "s3-assets"
+  - template: "static_assets"
+    path_pattern: "/images/*"
+    target_origin_id: "s3-assets"
+    # cache_policy_id: "Managed-CachingOptimized"
+  - template: "static_assets"
+    path_pattern: "/fonts/*"
+    target_origin_id: "s3-assets"
+  - template: "api"
+    path_pattern: "/api/v1/*"
+    target_origin_id: "api-v1"
+    cache_policy_id: "cache_cors_headers"
+    response_headers_policy_id: "admin-cors-policy"
+    origin_request_policy_id: "b689b0a8-53d0-40ab-baf2-68738e2966ac"
+    # response_headers_policy_id: "CachingDisabled"
+  - template: "admin"
+    path_pattern: "/admin/*"
+    target_origin_id: "admin-api"
+    origin_request_policy_id: "HostHeaderOnly"
+  - template: "media"
+    path_pattern: "/media/*"
+    target_origin_id: "s3-assets"
+  - template: "static_assets"
+    path_pattern: "/manifest.json"
+    target_origin_id: "s3-assets"
+    ttl:
+      min_ttl: 0
+      default_ttl: 0
+      max_ttl: 0
+  - template: "static_assets"
+    path_pattern: "/sw.js"
+    target_origin_id: "s3-assets"
+    ttl:
+      min_ttl: 0
+      default_ttl: 0
+      max_ttl: 0
+
+# Custom error responses for SPA routing
+custom_error_responses:
+  - error_code: 403
+    error_caching_min_ttl: 300
+    response_code: 200
+    response_page_path: "/index.html"
+  - error_code: 404
+    error_caching_min_ttl: 300
+    response_code: 200
+    response_page_path: "/index.html"
+
+# Invalidation configuration
+invalidation:
+  enabled: true
+  version: "v1.2.3"
+  paths:
+    - "/*"
+    - "/index.html"
+    - "/manifest.json"
+    - "/sw.js"

@@ -1,0 +1,70 @@
+# API CDN Distribution
+# Dedicated CDN for API endpoints with Lambda@Edge
+
+comment: "API CDN with Lambda@Edge authentication"
+
+origins:
+  - origin_id: "api-v1"
+    type: "alb"
+    domain_name: "dev-hyperswitch-envoy-alb-1078419686.eu-central-1.elb.amazonaws.com"
+    custom_origin_config:
+      http_port: 80
+      https_port: 443
+      origin_protocol_policy: "http-only"
+
+  # API v2 - COMMENTED OUT FOR NOW
+  # - origin_id: "api-v2"
+  #   type: "alb"
+  #   domain_name: "dev-hyperswitch-api-v2-555666777.eu-central-1.elb.amazonaws.com"
+  #   custom_origin_config:
+  #     http_port: 80
+  #     https_port: 443
+  #     origin_protocol_policy: "http-only"
+
+default_cache_behavior:
+  target_origin_id: "api-v1"
+  allowed_methods: ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+  cached_methods: ["GET", "HEAD", "OPTIONS"]
+  viewer_protocol_policy: "redirect-to-https"
+  ttl:
+    min_ttl: 0
+    default_ttl: 300
+    max_ttl: 3600
+  compress: true
+
+ordered_cache_behaviors:
+  # API v1 - with Lambda@Edge
+  - template: "api"
+    path_pattern: "/api/v1/*"
+    target_origin_id: "api-v1"
+    # lambda_function_associations:
+    #   - event_type: "viewer-request"
+    #     lambda_arn: "arn:aws:lambda:eu-central-1:123456789012:function:api-auth"
+    #     include_body: false
+    #   - event_type: "viewer-response"
+    #     lambda_arn: "arn:aws:lambda:eu-central-1:123456789012:function:remove-headers"
+    #     include_body: false
+
+  # Health check endpoint - COMMENTED OUT FOR NOW
+  # - template: "api"
+  #   path_pattern: "/health"
+  #   target_origin_id: "api-v1"
+  #   ttl:
+  #     min_ttl: 0
+  #     default_ttl: 0
+  #     max_ttl: 0
+
+  # Metrics endpoint - COMMENTED OUT FOR NOW
+  # - template: "api_v2"
+  #   path_pattern: "/metrics/*"
+  #   target_origin_id: "api-v2"
+  #   ttl:
+  #     min_ttl: 0
+  #     default_ttl: 60
+  #     max_ttl: 300
+
+invalidation:
+  enabled: true
+  version: "v1.0.5"
+  paths:
+    - "/*"
