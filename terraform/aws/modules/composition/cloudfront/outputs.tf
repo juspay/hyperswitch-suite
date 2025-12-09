@@ -65,37 +65,19 @@ output "distribution_statuses" {
 # CloudFront Functions
 output "cloudfront_functions" {
   description = "Map of CloudFront Functions"
-  value = local.create ? {
-    for fn in aws_cloudfront_function.this :
-    fn.name => {
-      id          = fn.id
-      name        = fn.name
-      runtime     = fn.runtime
-      arn         = fn.arn
-      status      = fn.status
-      publish     = fn.publish
-      comment     = fn.comment
-      etag        = fn.etag
-    }
-  } : {}
+  value       = module.cloudfront_resources.cloudfront_functions
 }
 
 # CloudFront Function IDs
 output "cloudfront_function_ids" {
   description = "Map of CloudFront Function IDs"
-  value = local.create ? {
-    for fn in aws_cloudfront_function.this :
-    fn.name => fn.id
-  } : {}
+  value       = module.cloudfront_resources.cloudfront_function_ids
 }
 
 # CloudFront Function ARNs
 output "cloudfront_function_arns" {
   description = "Map of CloudFront Function ARNs"
-  value = local.create ? {
-    for fn in aws_cloudfront_function.this :
-    fn.name => fn.arn
-  } : {}
+  value       = module.cloudfront_resources.cloudfront_function_arns
 }
 
 # Origin Access Controls
@@ -132,32 +114,19 @@ output "origin_access_control_arns" {
 # Response Headers Policies
 output "response_headers_policies" {
   description = "Map of Response Headers Policies"
-  value = local.create ? {
-    for policy in aws_cloudfront_response_headers_policy.this :
-    policy.name => {
-      id   = policy.id
-      name = policy.name
-      arn  = policy.arn
-    }
-  } : {}
+  value       = module.cloudfront_resources.response_headers_policies
 }
 
 # Response Headers Policy IDs
 output "response_headers_policy_ids" {
   description = "Map of Response Headers Policy IDs"
-  value = local.create ? {
-    for policy in aws_cloudfront_response_headers_policy.this :
-    policy.name => policy.id
-  } : {}
+  value       = module.cloudfront_resources.response_headers_policy_ids
 }
 
 # Response Headers Policy ARNs
 output "response_headers_policy_arns" {
   description = "Map of Response Headers Policy ARNs"
-  value = local.create ? {
-    for policy in aws_cloudfront_response_headers_policy.this :
-    policy.name => policy.arn
-  } : {}
+  value       = module.cloudfront_resources.response_headers_policy_arns
 }
 
 # Log Bucket

@@ -1,0 +1,11 @@
+name: "admin-cors-policy"
+comment: "CORS policy for admin interface"
+cors_config:
+  access_control_allow_credentials: true
+  access_control_allow_headers:
+    items: ["Authorization", "Content-Type", "X-Admin-Token"]
+  access_control_allow_methods:
+    items: ["GET", "POST", "PUT", "DELETE"]
+  access_control_allow_origins:
+    items: ["https://admin.dev.hyperswitch.com"]
+  access_control_max_age_sec: 3600

@@ -1,6 +1,22 @@
 # ============================================================================
-# CloudFront Module - Main Implementation
+# CloudFront Module - Main Implementation (Updated)
+# Uses cloudfront-resources module for shared resources
 # ============================================================================
+
+# Call cloudfront-resources module to create shared resources
+module "cloudfront_resources" {
+  source = "../../cloudfront-resources"
+
+  create = var.create
+  environment  = var.environment
+  project_name = var.project_name
+  common_tags  = var.common_tags
+
+  cloudfront_functions = var.cloudfront_functions
+  response_headers_policies = var.response_headers_policies
+  cache_policies = var.cache_policies
+  origin_request_policies = var.origin_request_policies
+}
 
 # Create S3 bucket for CloudFront logs if enabled and requested
 module "log_bucket" {
@@ -69,9 +85,10 @@ module "cloudfront" {
     cached_methods  = local.processed_cache_behaviors[each.key].default.cached_methods
     compress        = local.processed_cache_behaviors[each.key].default.compress
 
-    cache_policy_id            = local.processed_cache_behaviors[each.key].default.cache_policy_id
-    origin_request_policy_id   = local.processed_cache_behaviors[each.key].default.origin_request_policy_id
-    response_headers_policy_id = local.processed_cache_behaviors[each.key].default.response_headers_policy_id
+    # Policy IDs - resolved in locals.tf to support custom, AWS managed (short/full names), ARNs, and UUIDs
+    cache_policy_id            = local.processed_cache_behaviors[each.key].default.resolved_cache_policy_id
+    origin_request_policy_id   = local.processed_cache_behaviors[each.key].default.resolved_origin_request_policy_id
+    response_headers_policy_id = local.processed_cache_behaviors[each.key].default.resolved_response_headers_policy_id
 
     min_ttl     = local.processed_cache_behaviors[each.key].default.min_ttl
     default_ttl = local.processed_cache_behaviors[each.key].default.default_ttl
@@ -94,9 +111,10 @@ module "cloudfront" {
       cached_methods  = behavior.cached_methods
       compress        = behavior.compress
 
-      cache_policy_id            = behavior.cache_policy_id
-      origin_request_policy_id   = behavior.origin_request_policy_id
-      response_headers_policy_id = behavior.response_headers_policy_id
+      # Policy IDs - resolved in locals.tf to support custom, AWS managed (short/full names), ARNs, and UUIDs
+      cache_policy_id            = behavior.resolved_cache_policy_id
+      origin_request_policy_id   = behavior.resolved_origin_request_policy_id
+      response_headers_policy_id = behavior.resolved_response_headers_policy_id
 
       min_ttl     = behavior.min_ttl
       default_ttl = behavior.default_ttl
@@ -114,7 +132,7 @@ module "cloudfront" {
     bucket          = local.log_bucket_config.bucket_domain_name
     prefix          = lookup(local.log_bucket_config, "prefix", "cloudfront/")
     include_cookies = false
-  } : {}
+  } : null
 
   # Custom error responses
   custom_error_response = lookup(each.value, "custom_error_responses", [])
@@ -134,7 +152,8 @@ module "cloudfront" {
   aliases = lookup(each.value, "aliases", [])
 
   # Viewer certificate configuration
-  # Use custom certificate if provided, otherwise use CloudFront default
+  # Note: When using cloudfront_default_certificate=true, AWS forces minimum_protocol_version to TLSv1
+  # To enforce TLSv1.2+, you must use a custom ACM certificate.
   viewer_certificate = lookup(each.value, "viewer_certificate", null) != null ? {
     acm_certificate_arn      = each.value.viewer_certificate.acm_certificate_arn
     ssl_support_method       = lookup(each.value.viewer_certificate, "ssl_support_method", "sni-only")
@@ -142,11 +161,9 @@ module "cloudfront" {
     cloudfront_default_certificate = false
   } : {
     cloudfront_default_certificate = true
-    minimum_protocol_version       = "TLSv1.2_2021"
+    minimum_protocol_version       = "TLSv1"  # AWS enforces TLSv1 for default certificate
   }
 
-  # Disable automatic OAC creation by the module
-  # OACs are managed at the composition level instead
   origin_access_control = {}
 
   # Add distribution-specific name to tags
@@ -157,256 +174,6 @@ module "cloudfront" {
     }
   )
 }
-
-# CloudFront Functions
-resource "aws_cloudfront_function" "this" {
-  count = local.create ? length(var.cloudfront_functions) : 0
-
-  name    = var.cloudfront_functions[count.index].name
-  runtime = var.cloudfront_functions[count.index].runtime
-  comment = lookup(var.cloudfront_functions[count.index], "comment", null)
-  code    = var.cloudfront_functions[count.index].code
-  publish = lookup(var.cloudfront_functions[count.index], "publish", true)
-
-}
-
-# Response Headers Policies
-resource "aws_cloudfront_response_headers_policy" "this" {
-  count = local.create ? length(var.response_headers_policies) : 0
-
-  name    = var.response_headers_policies[count.index].name
-  comment = lookup(var.response_headers_policies[count.index], "comment", null)
-
-  # CORS configuration
-  dynamic "cors_config" {
-    for_each = var.response_headers_policies[count.index].cors_config != null ? [var.response_headers_policies[count.index].cors_config] : []
-    
-    content {
-      origin_override = true
-      access_control_allow_credentials = cors_config.value.access_control_allow_credentials
-      access_control_allow_headers {
-        items = cors_config.value.access_control_allow_headers
-      }
-      access_control_allow_methods {
-        items = cors_config.value.access_control_allow_methods
-      }
-      access_control_allow_origins {
-        items = cors_config.value.access_control_allow_origins
-      }
-      dynamic "access_control_expose_headers" {
-        for_each = length(lookup(cors_config.value, "access_control_expose_headers", [])) > 0 ? [cors_config.value.access_control_expose_headers] : []
-        content {
-          items = access_control_expose_headers.value
-        }
-      }
-      access_control_max_age_sec = cors_config.value.access_control_max_age_sec
-    }
-  }
-
-  # Security headers configuration
-  dynamic "security_headers_config" {
-    for_each = lookup(var.response_headers_policies[count.index], "security_headers_config", null) != null ? [var.response_headers_policies[count.index].security_headers_config] : []
-
-    content {
-      dynamic "content_security_policy" {
-        for_each = security_headers_config.value != null ? (lookup(security_headers_config.value, "content_security_policy", null) != null ? [lookup(security_headers_config.value, "content_security_policy", null)] : []) : []
-        content {
-          content_security_policy = content_security_policy.value.content_security_policy
-          override                = content_security_policy.value.override
-        }
-      }
-
-      dynamic "content_type_options" {
-        for_each = security_headers_config.value != null ? (lookup(security_headers_config.value, "content_type_options", null) != null ? [lookup(security_headers_config.value, "content_type_options", null)] : []) : []
-        content {
-          override = content_type_options.value.override
-        }
-      }
-
-      dynamic "frame_options" {
-        for_each = security_headers_config.value != null ? (lookup(security_headers_config.value, "frame_options", null) != null ? [lookup(security_headers_config.value, "frame_options", null)] : []) : []
-        content {
-          frame_option = frame_options.value.frame_option
-          override     = frame_options.value.override
-        }
-      }
-
-      dynamic "referrer_policy" {
-        for_each = security_headers_config.value != null ? (lookup(security_headers_config.value, "referrer_policy", null) != null ? [lookup(security_headers_config.value, "referrer_policy", null)] : []) : []
-        content {
-          referrer_policy = referrer_policy.value.referrer_policy
-          override        = referrer_policy.value.override
-        }
-      }
-
-      dynamic "xss_protection" {
-        for_each = security_headers_config.value != null ? (lookup(security_headers_config.value, "xss_protection", null) != null ? [lookup(security_headers_config.value, "xss_protection", null)] : []) : []
-        content {
-          mode_block = xss_protection.value.mode_block
-          override   = xss_protection.value.override
-          protection = xss_protection.value.protection
-          report_uri = lookup(xss_protection.value, "report_uri", null)
-        }
-      }
-
-      dynamic "strict_transport_security" {
-        for_each = security_headers_config.value != null ? (lookup(security_headers_config.value, "strict_transport_security", null) != null ? [lookup(security_headers_config.value, "strict_transport_security", null)] : []) : []
-        content {
-          access_control_max_age_sec = strict_transport_security.value.access_control_max_age_sec
-          override                   = strict_transport_security.value.override
-          include_subdomains         = lookup(strict_transport_security.value, "include_subdomains", null)
-          preload                    = lookup(strict_transport_security.value, "preload", null)
-        }
-      }
-    }
-  }
-
-  # Custom headers configuration
-  dynamic "custom_headers_config" {
-    for_each = lookup(var.response_headers_policies[count.index], "custom_headers_config", null) != null ? [var.response_headers_policies[count.index].custom_headers_config] : []
-    
-    content {
-      dynamic "items" {
-        for_each = custom_headers_config.value.items
-        
-        content {
-          header   = items.value.header
-          override = items.value.override
-          value    = items.value.value
-        }
-      }
-    }
-  }
-
-  # Remove headers configuration
-  dynamic "remove_headers_config" {
-    for_each = lookup(var.response_headers_policies[count.index], "remove_headers_config", null) != null ? [var.response_headers_policies[count.index].remove_headers_config] : []
-    
-    content {
-      dynamic "items" {
-        for_each = remove_headers_config.value.items
-        
-        content {
-          header = items.value.header
-        }
-      }
-    }
-  }
-
-}
-
-# Cache Policies
-resource "aws_cloudfront_cache_policy" "this" {
-  count = local.create ? length(var.cache_policies) : 0
-
-  name        = var.cache_policies[count.index].name
-  comment     = lookup(var.cache_policies[count.index], "comment", null)
-  default_ttl = lookup(var.cache_policies[count.index], "default_ttl", null)
-  max_ttl     = lookup(var.cache_policies[count.index], "max_ttl", null)
-  min_ttl     = lookup(var.cache_policies[count.index], "min_ttl", null)
-
-  dynamic "parameters_in_cache_key_and_forwarded_to_origin" {
-    for_each = lookup(var.cache_policies[count.index], "parameters_in_cache_key_and_forwarded_to_origin", null) != null ? [var.cache_policies[count.index].parameters_in_cache_key_and_forwarded_to_origin] : []
-
-    content {
-      enable_accept_encoding_brotli = lookup(parameters_in_cache_key_and_forwarded_to_origin.value, "enable_accept_encoding_brotli", null)
-      enable_accept_encoding_gzip   = lookup(parameters_in_cache_key_and_forwarded_to_origin.value, "enable_accept_encoding_gzip", null)
-
-      dynamic "headers_config" {
-        for_each = lookup(parameters_in_cache_key_and_forwarded_to_origin.value, "headers_config", null) != null ? [parameters_in_cache_key_and_forwarded_to_origin.value.headers_config] : []
-
-        content {
-          header_behavior = headers_config.value.header_behavior
-          dynamic "headers" {
-            for_each = lookup(headers_config.value, "headers", null) != null ? [headers_config.value.headers] : []
-            content {
-              items = headers.value
-            }
-          }
-        }
-      }
-
-      dynamic "cookies_config" {
-        for_each = lookup(parameters_in_cache_key_and_forwarded_to_origin.value, "cookies_config", null) != null ? [parameters_in_cache_key_and_forwarded_to_origin.value.cookies_config] : []
-
-        content {
-          cookie_behavior = cookies_config.value.cookie_behavior
-          dynamic "cookies" {
-            for_each = lookup(cookies_config.value, "cookies", null) != null ? [cookies_config.value.cookies] : []
-            content {
-              items = cookies.value
-            }
-          }
-        }
-      }
-
-      dynamic "query_strings_config" {
-        for_each = lookup(parameters_in_cache_key_and_forwarded_to_origin.value, "query_strings_config", null) != null ? [parameters_in_cache_key_and_forwarded_to_origin.value.query_strings_config] : []
-
-        content {
-          query_string_behavior = query_strings_config.value.query_string_behavior
-          dynamic "query_strings" {
-            for_each = lookup(query_strings_config.value, "query_strings", null) != null ? [query_strings_config.value.query_strings] : []
-            content {
-              items = query_strings.value
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-# Origin Request Policies
-resource "aws_cloudfront_origin_request_policy" "this" {
-  count = local.create ? length(var.origin_request_policies) : 0
-
-  name    = var.origin_request_policies[count.index].name
-  comment = lookup(var.origin_request_policies[count.index], "comment", null)
-
-  dynamic "headers_config" {
-    for_each = lookup(var.origin_request_policies[count.index], "headers_config", null) != null ? [var.origin_request_policies[count.index].headers_config] : []
-
-    content {
-      header_behavior = headers_config.value.header_behavior
-      dynamic "headers" {
-        for_each = lookup(headers_config.value, "headers", null) != null ? [headers_config.value.headers] : []
-        content {
-          items = headers.value
-        }
-      }
-    }
-  }
-
-  dynamic "cookies_config" {
-    for_each = lookup(var.origin_request_policies[count.index], "cookies_config", null) != null ? [var.origin_request_policies[count.index].cookies_config] : []
-
-    content {
-      cookie_behavior = cookies_config.value.cookie_behavior
-      dynamic "cookies" {
-        for_each = lookup(cookies_config.value, "cookies", null) != null ? [cookies_config.value.cookies] : []
-        content {
-          items = cookies.value
-        }
-      }
-    }
-  }
-
-  dynamic "query_strings_config" {
-    for_each = lookup(var.origin_request_policies[count.index], "query_strings_config", null) != null ? [var.origin_request_policies[count.index].query_strings_config] : []
-
-    content {
-      query_string_behavior = query_strings_config.value.query_string_behavior
-      dynamic "query_strings" {
-        for_each = lookup(query_strings_config.value, "query_strings", null) != null ? [query_strings_config.value.query_strings] : []
-        content {
-          items = query_strings.value
-        }
-      }
-    }
-  }
-}
-
 # ============================================================================
 # S3 Bucket Policies for OAC
 # ============================================================================

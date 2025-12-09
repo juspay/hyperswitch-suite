@@ -1,10 +1,43 @@
 # ============================================================================
-# Locals - Load and process configuration from YAML
+# Locals - Auto-discover and load configuration from YAML files
+# Uses fileset() for dynamic, self-managing configuration
 # ============================================================================
 
 locals {
-  # Load configuration from YAML file
-  config = yamldecode(file("${path.module}/config.yaml"))
+  # Auto-discover distribution files from config/distributions/ directory
+  # Each .yaml file in this directory becomes a distribution
+  distributions = {
+    for file in fileset("${path.module}/config/distributions/", "*.yaml") :
+    trimsuffix(basename(file), ".yaml") => yamldecode(file("${path.module}/config/distributions/${file}"))
+  }
+
+  # Auto-discover function files from config/functions/ directory
+  # Each .yaml file becomes a CloudFront Function
+  cloudfront_functions = [
+    for file in fileset("${path.module}/config/functions/", "*.yaml") :
+    yamldecode(file("${path.module}/config/functions/${file}"))
+  ]
+
+  # Load Origin Access Controls (single file)
+  origin_access_controls = yamldecode(file("${path.module}/config/origin_access_controls.yaml"))
+
+  # Auto-discover cache policies from config/policies/cache/ directory
+  cache_policies = [
+    for file in fileset("${path.module}/config/policies/cache/", "*.yaml") :
+    yamldecode(file("${path.module}/config/policies/cache/${file}"))
+  ]
+
+  # Auto-discover origin request policies from config/policies/origin_request/ directory
+  origin_request_policies = [
+    for file in fileset("${path.module}/config/policies/origin_request/", "*.yaml") :
+    yamldecode(file("${path.module}/config/policies/origin_request/${file}"))
+  ]
+
+  # Auto-discover response headers policies from config/policies/response_headers/ directory
+  response_headers_policies = [
+    for file in fileset("${path.module}/config/policies/response_headers/", "*.yaml") :
+    yamldecode(file("${path.module}/config/policies/response_headers/${file}"))
+  ]
 
   # Common tags
   common_tags = merge(
@@ -15,7 +48,7 @@ locals {
     }
   )
 
-  # Behavior templates for reuse
+  # Behavior templates - use AWS managed policy names (will be resolved by module)
   behavior_templates = {
     # Static assets template
     static_assets = {
@@ -23,8 +56,8 @@ locals {
       cached_methods         = ["GET", "HEAD"]
       viewer_protocol_policy = "redirect-to-https"
       compress               = true
-      cache_policy_id        = data.aws_cloudfront_cache_policy.caching_optimized.id
-      response_headers_policy_id = data.aws_cloudfront_response_headers_policy.security_headers.id
+      cache_policy_id        = "CachingOptimized"  # AWS managed policy (short name)
+      response_headers_policy_id = "SecurityHeadersPolicy"  # AWS managed policy (short name)
       ttl = {
         min_ttl    = 86400
         default_ttl = 31536000
@@ -38,8 +71,8 @@ locals {
       cached_methods         = ["GET", "HEAD", "OPTIONS"]
       viewer_protocol_policy = "redirect-to-https"
       compress               = true
-      cache_policy_id        = data.aws_cloudfront_cache_policy.caching_disabled.id
-      response_headers_policy_id = data.aws_cloudfront_response_headers_policy.cors_with_preflight.id
+      cache_policy_id        = "CachingDisabled"  # AWS managed policy (short name)
+      response_headers_policy_id = "CORS-with-preflight-and-SecurityHeadersPolicy"  # AWS managed policy (short name)
       ttl = {
         min_ttl    = 0
         default_ttl = 300
@@ -53,8 +86,8 @@ locals {
       cached_methods         = ["GET", "HEAD"]
       viewer_protocol_policy = "redirect-to-https"
       compress               = false
-      cache_policy_id        = data.aws_cloudfront_cache_policy.caching_disabled.id
-      response_headers_policy_id = data.aws_cloudfront_response_headers_policy.security_headers.id
+      cache_policy_id        = "CachingDisabled"  # AWS managed policy (short name)
+      response_headers_policy_id = "SecurityHeadersPolicy"  # AWS managed policy (short name)
       ttl = {
         min_ttl    = 0
         default_ttl = 0
@@ -68,8 +101,8 @@ locals {
       cached_methods         = ["GET", "HEAD"]
       viewer_protocol_policy = "redirect-to-https"
       compress               = false
-      cache_policy_id        = data.aws_cloudfront_cache_policy.caching_optimized.id
-      response_headers_policy_id = data.aws_cloudfront_response_headers_policy.security_headers.id
+      cache_policy_id        = "CachingOptimized"  # AWS managed policy (short name)
+      response_headers_policy_id = "SecurityHeadersPolicy"  # AWS managed policy (short name)
       ttl = {
         min_ttl    = 86400
         default_ttl = 86400
@@ -83,8 +116,8 @@ locals {
       cached_methods         = ["GET", "HEAD", "OPTIONS"]
       viewer_protocol_policy = "redirect-to-https"
       compress               = true
-      cache_policy_id        = data.aws_cloudfront_cache_policy.caching_disabled.id
-      response_headers_policy_id = data.aws_cloudfront_response_headers_policy.cors_with_preflight.id
+      cache_policy_id        = "CachingDisabled"  # AWS managed policy (short name)
+      response_headers_policy_id = "CORS-with-preflight-and-SecurityHeadersPolicy"  # AWS managed policy (short name)
       ttl = {
         min_ttl    = 0
         default_ttl = 180
@@ -93,19 +126,17 @@ locals {
     }
   }
 
-  # Process distributions from config.yaml
+  # Process distributions with behavior templates
   processed_distributions = {
-    for dist_name, dist_config in local.config.distributions :
+    for dist_name, dist_config in local.distributions :
     dist_name => {
       comment             = lookup(dist_config, "comment", null)
       enabled             = lookup(dist_config, "enabled", true)
       default_root_object = lookup(dist_config, "default_root_object", "index.html")
       price_class         = lookup(dist_config, "price_class", "PriceClass_All")
-      
-      # Domain aliases and viewer certificate
       aliases            = lookup(dist_config, "aliases", [])
       viewer_certificate = lookup(dist_config, "viewer_certificate", null)
-      
+
       # Process origins
       origins = dist_config.origins
 
@@ -118,7 +149,7 @@ locals {
         lookup(behavior, "template", null) != null ? merge(
           # Use template as base
           local.behavior_templates[behavior.template],
-          # Override with specific behavior settings (only non-null values)
+          # Override with specific behavior settings
           {
             path_pattern                = behavior.path_pattern
             target_origin_id            = behavior.target_origin_id
@@ -160,16 +191,12 @@ locals {
 
       # Custom error responses
       custom_error_responses = lookup(dist_config, "custom_error_responses", [])
-
-      # Geo restrictions
       geo_restriction = lookup(dist_config, "geo_restriction", {})
-
-      # Invalidation configuration
       invalidation = lookup(dist_config, "invalidation", null)
     }
   }
 
-  # Process origins for each distribution
+  # Process origins
   processed_origins = {
     for dist_name, dist_config in local.processed_distributions :
     dist_name => dist_config.origins
@@ -183,9 +210,9 @@ locals {
     }
   }
 
-  # Transform CORS config from YAML (which has items as list) to module format (list of strings)
+  # Transform CORS config (preserved from original)
   transformed_response_headers_policies = [
-    for policy in local.config.response_headers_policies :
+    for policy in local.response_headers_policies :
     merge(
       policy,
       policy.cors_config != null ? {
@@ -202,9 +229,7 @@ locals {
     )
   ]
 
-  # Transform cache policies from YAML to module format
-  transformed_cache_policies = lookup(local.config, "cache_policies", [])
-
-  # Transform origin request policies from YAML to module format
-  transformed_origin_request_policies = lookup(local.config, "origin_request_policies", [])
+  # Other transformations
+  transformed_cache_policies = local.cache_policies
+  transformed_origin_request_policies = local.origin_request_policies
 }

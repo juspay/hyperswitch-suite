@@ -55,10 +55,10 @@ module "cloudfront" {
   log_prefix        = var.log_prefix
 
   # Origin Access Controls from config.yaml
-  origin_access_controls = lookup(local.config, "origin_access_controls", [])
+  origin_access_controls = local.origin_access_controls
 
   # CloudFront Functions from config.yaml
-  cloudfront_functions = local.config.cloudfront_functions
+  cloudfront_functions = local.cloudfront_functions
 
   # Response Headers Policies from config.yaml (transformed)
   response_headers_policies = local.transformed_response_headers_policies

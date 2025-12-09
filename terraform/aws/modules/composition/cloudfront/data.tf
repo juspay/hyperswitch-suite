@@ -15,57 +15,98 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
-# CloudFront managed cache policies
-data "aws_cloudfront_cache_policy" "caching_optimized" {
-  count = var.create ? 1 : 0
-  name   = "Managed-CachingOptimized"
+# CloudFront managed policies - Dynamically fetched based on usage
+# Collect all unique policy names that might be AWS managed policies
+locals {
+  # Extract all policy references from the configuration (both default and ordered cache behaviors)
+  all_cache_policy_names = distinct(flatten([
+    for dist in var.distributions : concat(
+      # Default cache behavior
+      lookup(dist.default_cache_behavior, "cache_policy_id", null) != null ? [dist.default_cache_behavior.cache_policy_id] : [],
+      # Ordered cache behaviors
+      [
+        for behavior in lookup(dist, "ordered_cache_behaviors", []) :
+        behavior.cache_policy_id
+        if lookup(behavior, "cache_policy_id", null) != null
+      ]
+    )
+  ]))
+
+  all_origin_request_policy_names = distinct(flatten([
+    for dist in var.distributions : concat(
+      # Default cache behavior
+      lookup(dist.default_cache_behavior, "origin_request_policy_id", null) != null ? [dist.default_cache_behavior.origin_request_policy_id] : [],
+      # Ordered cache behaviors
+      [
+        for behavior in lookup(dist, "ordered_cache_behaviors", []) :
+        behavior.origin_request_policy_id
+        if lookup(behavior, "origin_request_policy_id", null) != null
+      ]
+    )
+  ]))
+
+  all_response_headers_policy_names = distinct(flatten([
+    for dist in var.distributions : concat(
+      # Default cache behavior
+      lookup(dist.default_cache_behavior, "response_headers_policy_id", null) != null ? [dist.default_cache_behavior.response_headers_policy_id] : [],
+      # Ordered cache behaviors
+      [
+        for behavior in lookup(dist, "ordered_cache_behaviors", []) :
+        behavior.response_headers_policy_id
+        if lookup(behavior, "response_headers_policy_id", null) != null
+      ]
+    )
+  ]))
+
+  # Filter for only policies that look like AWS managed (not ARNs, not UUIDs, not custom)
+  aws_managed_cache_policy_names = [
+    for name in local.all_cache_policy_names :
+    name == null ? null : (
+      startswith(name, "arn:") ? null :
+      can(regex("^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$", name)) ? null :
+      contains(keys(module.cloudfront_resources.cache_policy_ids), name) ? null :
+      startswith(name, "Managed-") ? name :
+      "Managed-${name}"
+    )
+  ]
+
+  aws_managed_origin_request_policy_names = [
+    for name in local.all_origin_request_policy_names :
+    name == null ? null : (
+      startswith(name, "arn:") ? null :
+      can(regex("^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$", name)) ? null :
+      contains(keys(module.cloudfront_resources.origin_request_policy_ids), name) ? null :
+      startswith(name, "Managed-") ? name :
+      "Managed-${name}"
+    )
+  ]
+
+  aws_managed_response_headers_policy_names = [
+    for name in local.all_response_headers_policy_names :
+    name == null ? null : (
+      startswith(name, "arn:") ? null :
+      can(regex("^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$", name)) ? null :
+      contains(keys(module.cloudfront_resources.response_headers_policy_ids), name) ? null :
+      startswith(name, "Managed-") ? name :
+      "Managed-${name}"
+    )
+  ]
 }
 
-data "aws_cloudfront_cache_policy" "caching_disabled" {
-  count = var.create ? 1 : 0
-  name   = "Managed-CachingDisabled"
+# Dynamic data sources for cache policies
+data "aws_cloudfront_cache_policy" "aws_managed" {
+  count = local.create ? length(compact(local.aws_managed_cache_policy_names)) : 0
+  name   = compact(local.aws_managed_cache_policy_names)[count.index]
 }
 
-# Note: This policy doesn't exist in all regions
-# data "aws_cloudfront_cache_policy" "caching_optimized_for_unmanaged_origins" {
-#   count = var.create ? 1 : 0
-#   name   = "Managed-CachingOptimizedForUnmanagedOrigins"
-# }
-
-# Note: This policy doesn't exist in all regions
-# data "aws_cloudfront_cache_policy" "elemental_media_tailor" {
-#   count = var.create ? 1 : 0
-#   name   = "Managed-ElementalMediaTailor"
-# }
-
-# CloudFront managed origin request policies
-data "aws_cloudfront_origin_request_policy" "all_viewer" {
-  count = var.create ? 1 : 0
-  name   = "Managed-AllViewer"
+# Dynamic data sources for origin request policies
+data "aws_cloudfront_origin_request_policy" "aws_managed" {
+  count = local.create ? length(compact(local.aws_managed_origin_request_policy_names)) : 0
+  name   = compact(local.aws_managed_origin_request_policy_names)[count.index]
 }
 
-data "aws_cloudfront_origin_request_policy" "cors_s3_origin" {
-  count = var.create ? 1 : 0
-  name   = "Managed-CORS-S3Origin"
-}
-
-data "aws_cloudfront_origin_request_policy" "all_viewer_except_host_header" {
-  count = var.create ? 1 : 0
-  name   = "Managed-AllViewerExceptHostHeader"
-}
-
-# CloudFront managed response headers policies
-data "aws_cloudfront_response_headers_policy" "security_headers_policy" {
-  count = var.create ? 1 : 0
-  name   = "Managed-SecurityHeadersPolicy"
-}
-
-data "aws_cloudfront_response_headers_policy" "cors_with_preflight_and_security_headers" {
-  count = var.create ? 1 : 0
-  name   = "Managed-CORS-with-preflight-and-SecurityHeadersPolicy"
-}
-
-data "aws_cloudfront_response_headers_policy" "simple_cors" {
-  count = var.create ? 1 : 0
-  name   = "Managed-SimpleCORS"
+# Dynamic data sources for response headers policies
+data "aws_cloudfront_response_headers_policy" "aws_managed" {
+  count = local.create ? length(compact(local.aws_managed_response_headers_policy_names)) : 0
+  name   = compact(local.aws_managed_response_headers_policy_names)[count.index]
 }

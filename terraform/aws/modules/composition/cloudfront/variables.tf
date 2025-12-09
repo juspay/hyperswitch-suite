@@ -106,7 +106,6 @@ variable "distributions" {
 
       allowed_methods = list(string)
       cached_methods  = list(string)
-
       viewer_protocol_policy = string
 
       # Cache TTL configuration
@@ -224,7 +223,7 @@ variable "log_bucket_arn" {
   default     = null
 
   validation {
-    condition     = var.log_bucket_arn == null || can(regex("^arn:aws:s3:::[a-z0-9][a-z0-9\\.-]*[a-z0-9]$", var.log_bucket_arn))
+    condition     = var.log_bucket_arn == null || can(regex("^arn:aws:s3:::[a-z0-9][a-z0-9.-]*[a-z0-9]$", var.log_bucket_arn))
     error_message = "log_bucket_arn must be a valid S3 bucket ARN."
   }
 
@@ -235,13 +234,13 @@ variable "log_bucket_arn" {
 }
 
 variable "log_prefix" {
-  description = "Prefix for CloudFront log files in the S3 bucket"
+  description = "Prefix for CloudFront log files in S3 bucket"
   type        = string
   default     = "cloudfront/"
 }
 
 # ============================================================================
-# Origin Access Controls (OAC)
+# Origin Access Controls (OAC) - Kept in composition layer as they're distribution-specific
 # ============================================================================
 
 variable "origin_access_controls" {
@@ -257,12 +256,11 @@ variable "origin_access_controls" {
 }
 
 # ============================================================================
-# ============================================================================
-# CloudFront Functions (Lightweight)
+# CloudFront Shared Resources - Now passed to cloudfront-resources module
 # ============================================================================
 
 variable "cloudfront_functions" {
-  description = "Map of CloudFront Functions to create"
+  description = "List of CloudFront Functions to create (passed to cloudfront-resources module)"
   type = list(object({
     name    = string
     runtime = optional(string, "cloudfront-js-1.0")
@@ -273,17 +271,11 @@ variable "cloudfront_functions" {
   default = []
 }
 
-# ============================================================================
-# Response Headers Policies
-# ============================================================================
-
 variable "response_headers_policies" {
-  description = "Map of response headers policies to create"
+  description = "List of response headers policies to create (passed to cloudfront-resources module)"
   type = list(object({
     name    = string
     comment = optional(string)
-
-    # CORS configuration
     cors_config = optional(object({
       access_control_allow_credentials = bool
       access_control_allow_headers     = list(string)
@@ -292,83 +284,33 @@ variable "response_headers_policies" {
       access_control_expose_headers    = optional(list(string), [])
       access_control_max_age_sec       = optional(number)
     }))
-
-    # Security headers configuration
-    security_headers_config = optional(object({
-      content_security_policy = optional(object({
-        content_security_policy = string
-        override                = bool
-      }))
-      content_type_options = optional(object({
-        override = bool
-      }))
-      frame_options = optional(object({
-        frame_option = string
-        override     = bool
-      }))
-      referrer_policy = optional(object({
-        referrer_policy = string
-        override        = bool
-      }))
-      xss_protection = optional(object({
-        mode_block = bool
-        override   = bool
-        protection = bool
-        report_uri = optional(string)
-      }))
-      strict_transport_security = optional(object({
-        access_control_max_age_sec = number
-        override                   = bool
-        include_subdomains         = optional(bool)
-        preload                    = optional(bool)
-      }))
-    }))
-
-    # Custom headers configuration
-    custom_headers_config = optional(object({
-      items = list(object({
-        header   = string
-        override = bool
-        value    = string
-      }))
-    }))
-
-    # Remove headers configuration
-    remove_headers_config = optional(object({
-      items = list(object({
-        header = string
-      }))
-    }))
+    security_headers_config = optional(any) # Can be extended for security headers
   }))
   default = []
 }
 
 variable "cache_policies" {
-  description = "Map of cache policies to create"
+  description = "List of cache policies to create (passed to cloudfront-resources module)"
   type = list(object({
     name        = string
     comment     = optional(string)
     default_ttl = optional(number)
     max_ttl     = optional(number)
     min_ttl     = optional(number)
-
     parameters_in_cache_key_and_forwarded_to_origin = optional(object({
-      enable_accept_encoding_brotli = optional(bool)
-      enable_accept_encoding_gzip   = optional(bool)
-
+      enable_accept_encoding_brotli = optional(bool, false)
+      enable_accept_encoding_gzip  = optional(bool, true)
       headers_config = optional(object({
         header_behavior = string
-        headers         = optional(list(string))
+        headers         = optional(list(string), [])
       }))
-
       cookies_config = optional(object({
         cookie_behavior = string
-        cookies         = optional(list(string))
+        cookies         = optional(list(string), [])
       }))
-
       query_strings_config = optional(object({
         query_string_behavior = string
-        query_strings         = optional(list(string))
+        query_strings         = optional(list(string), [])
       }))
     }))
   }))
@@ -376,26 +318,22 @@ variable "cache_policies" {
 }
 
 variable "origin_request_policies" {
-  description = "Map of origin request policies to create"
+  description = "List of origin request policies to create (passed to cloudfront-resources module)"
   type = list(object({
     name    = string
     comment = optional(string)
-
     headers_config = optional(object({
       header_behavior = string
-      headers         = optional(list(string))
+      headers         = optional(list(string), [])
     }))
-
     cookies_config = optional(object({
       cookie_behavior = string
-      cookies         = optional(list(string))
+      cookies         = optional(list(string), [])
     }))
-
     query_strings_config = optional(object({
       query_string_behavior = string
-      query_strings         = optional(list(string))
+      query_strings         = optional(list(string), [])
     }))
   }))
   default = []
 }
-

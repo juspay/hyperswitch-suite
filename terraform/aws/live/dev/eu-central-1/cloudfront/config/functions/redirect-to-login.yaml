@@ -1,0 +1,23 @@
+name: "redirect-to-login"
+runtime: "cloudfront-js-1.0"
+comment: "Redirect unauthenticated users to login page"
+code: |
+  function handler(event) {
+      var request = event.request;
+      var response = event.response;
+
+      // Check if user is authenticated
+      if (!request.headers.authorization) {
+          // Redirect to login
+          return {
+              statusCode: 302,
+              statusDescription: 'Found',
+              headers: {
+                  location: { value: '/login.html' }
+              }
+          };
+      }
+
+      return request;
+  }
+publish: true
