@@ -193,9 +193,83 @@ module "locker_instance" {
 
   iam_instance_profile = aws_iam_instance_profile.locker.name
 
-  # Deploy Docker container with pre-built card vault application
-  user_data = base64encode(templatefile("${path.module}/templates/userdata.sh", {}))
-
+  # User data script for locker setup is yet to be finalized
+  # user_data = base64encode(templatefile("${path.module}/templates/userdata.sh", {}))
 
   tags = local.common_tags
+}
+
+# Network Load Balancer for locker access
+resource "aws_security_group" "nlb" {
+  name        = "${local.name_prefix}-nlb-sg"
+  description = "Security group for locker Network Load Balancer"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [var.jump_host_security_group_id]
+    description     = "Allow HTTPS access from jump host"
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = local.common_tags
+}
+
+resource "aws_lb" "locker_nlb" {
+  name               = "${local.name_prefix}-nlb"
+  internal           = true
+  load_balancer_type = "network"
+  subnets            = [var.locker_subnet_id]
+  security_groups    = [aws_security_group.nlb.id]
+
+  tags = local.common_tags
+}
+
+resource "aws_lb_target_group" "locker" {
+  name     = "${local.name_prefix}-tg"
+  port     = 8080
+  protocol = "TCP"
+  vpc_id   = var.vpc_id
+
+  health_check {
+    port     = "8080"
+    protocol = "TCP"
+  }
+
+  tags = local.common_tags
+}
+
+resource "aws_lb_target_group_attachment" "locker" {
+  target_group_arn = aws_lb_target_group.locker.arn
+  target_id        = module.locker_instance.id
+  port             = 8080
+}
+
+resource "aws_lb_listener" "locker" {
+  load_balancer_arn = aws_lb.locker_nlb.arn
+  port            = "443"
+  protocol        = "TCP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.locker.arn
+  }
+}
+
+resource "aws_security_group_rule" "nlb_to_locker" {
+  security_group_id = aws_security_group.locker.id
+  type              = "ingress"
+  from_port         = 8080
+  to_port           = 8080
+  protocol          = "tcp"
+  source_security_group_id = aws_security_group.nlb.id
+  description       = "Allow traffic from NLB to locker instance"
 }
