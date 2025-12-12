@@ -18,11 +18,6 @@ variable "vpc_id" {
   type        = string
 }
 
-variable "private_subnet_ids" {
-  description = "List of private subnet IDs for deployment"
-  type        = list(string)
-}
-
 variable "ami_id" {
   description = "Custom AMI ID for locker instance"
   type        = string
@@ -44,13 +39,11 @@ variable "jump_host_security_group_id" {
   type        = string
 }
 
-
 variable "log_retention_days" {
   description = "Number of days to retain CloudWatch logs"
   type        = number
   default     = 30
 }
-
 
 variable "rds_cidr" {
   description = "CIDR block for RDS database access"
