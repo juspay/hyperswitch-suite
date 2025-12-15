@@ -15,7 +15,22 @@ output "instance_arn" {
 
 output "security_group_id" {
   description = "Security group ID of the locker instance"
-  value       = aws_security_group.locker.id
+  value       = local.locker_security_group_id
+}
+
+output "subnet_id" {
+  description = "Subnet ID where the locker instance is deployed"
+  value       = local.locker_subnet_id
+}
+
+output "key_name" {
+  description = "SSH key pair name used for the locker instance"
+  value       = local.key_name
+}
+
+output "ssh_private_key_ssm_parameter" {
+  description = "SSM Parameter Store path where the auto-generated SSH private key is stored (only populated if key pair was auto-generated)"
+  value       = var.create_key_pair && var.public_key == null ? aws_ssm_parameter.locker_private_key[0].name : null
 }
 
 output "nlb_dns_name" {

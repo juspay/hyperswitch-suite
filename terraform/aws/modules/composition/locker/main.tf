@@ -1,15 +1,76 @@
+# =========================================================================
+# DATA SOURCES
+# =========================================================================
+data "aws_availability_zones" "available" {
+  state = "available"
+}
+
+# =========================================================================
+# NETWORK RESOURCES
+# =========================================================================
+resource "aws_subnet" "locker" {
+  count             = var.create_subnet ? 1 : 0
+  vpc_id            = var.vpc_id
+  cidr_block        = var.subnet_cidr_block
+  availability_zone = var.subnet_availability_zone != null ? var.subnet_availability_zone : data.aws_availability_zones.available.names[0]
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-subnet"
+    }
+  )
+}
+
+# =========================================================================
+# SECURITY - SSH KEY PAIR
+# =========================================================================
+# Auto-generate SSH key pair if public_key not provided
+resource "tls_private_key" "locker" {
+  count     = var.create_key_pair && var.public_key == null ? 1 : 0
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+# Create AWS key pair (from provided or generated public key)
+resource "aws_key_pair" "locker" {
+  count      = var.create_key_pair ? 1 : 0
+  key_name   = local.key_pair_name
+  public_key = var.public_key != null ? var.public_key : tls_private_key.locker[0].public_key_openssh
+
+  tags = local.common_tags
+}
+
+# Store auto-generated private key in SSM Parameter Store
+resource "aws_ssm_parameter" "locker_private_key" {
+  count       = var.create_key_pair && var.public_key == null ? 1 : 0
+  name        = "/${var.environment}/${var.project_name}/locker/ssh-private-key"
+  description = "Auto-generated SSH private key for locker instance"
+  type        = "SecureString"
+  value       = tls_private_key.locker[0].private_key_pem
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-private-key"
+    }
+  )
+}
+
+# =========================================================================
+# SECURITY - LOCKER SECURITY GROUP
+# =========================================================================
 resource "aws_security_group" "locker" {
+  count       = var.locker_security_group_id == null ? 1 : 0
   name        = "${local.name_prefix}-sg"
   description = "Security group for locker instance"
   vpc_id      = var.vpc_id
   tags        = local.common_tags
 }
 
-# =========================================================================
-# Locker Instance - Ingress Rules
-# =========================================================================
+# Ingress: SSH access from jump host
 resource "aws_security_group_rule" "locker_ingress_ssh" {
-  security_group_id        = aws_security_group.locker.id
+  security_group_id        = local.locker_security_group_id
   type                     = "ingress"
   from_port                = 22
   to_port                  = 22
@@ -18,29 +79,68 @@ resource "aws_security_group_rule" "locker_ingress_ssh" {
   description              = "SSH access from jump host"
 }
 
+# Ingress: Application access from internal services
 resource "aws_security_group_rule" "locker_ingress_app" {
-  security_group_id = aws_security_group.locker.id
-  type            = "ingress"
-  from_port       = 8080
-  to_port         = 8080
-  protocol        = "tcp"
-  self            = true
-  description     = "Application access from internal services"
+  security_group_id = local.locker_security_group_id
+  type              = "ingress"
+  from_port         = 8080
+  to_port           = 8080
+  protocol          = "tcp"
+  self              = true
+  description       = "Application access from internal services"
 }
 
-# =========================================================================
-# Locker Instance - Egress Rules
-# =========================================================================
+# Ingress: Traffic from NLB
+resource "aws_security_group_rule" "nlb_to_locker" {
+  security_group_id        = local.locker_security_group_id
+  type                     = "ingress"
+  from_port                = 8080
+  to_port                  = 8080
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.nlb.id
+  description              = "Allow traffic from NLB to locker instance"
+}
+
+# Egress: Database access to RDS
 resource "aws_security_group_rule" "locker_egress_rds" {
-  security_group_id = aws_security_group.locker.id
-  type            = "egress"
-  from_port       = 5432
-  to_port         = 5432
-  protocol        = "tcp"
-  cidr_blocks     = [var.rds_cidr]
-  description     = "Database access to RDS"
+  security_group_id = local.locker_security_group_id
+  type              = "egress"
+  from_port         = 5432
+  to_port           = 5432
+  protocol          = "tcp"
+  cidr_blocks       = [var.rds_cidr]
+  description       = "Database access to RDS"
 }
 
+# =========================================================================
+# SECURITY - NLB SECURITY GROUP
+# =========================================================================
+resource "aws_security_group" "nlb" {
+  name        = "${local.name_prefix}-nlb-sg"
+  description = "Security group for locker Network Load Balancer"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [var.jump_host_security_group_id]
+    description     = "Allow HTTPS access from jump host"
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = local.common_tags
+}
+
+# =========================================================================
+# MONITORING - CLOUDWATCH LOGS
+# =========================================================================
 resource "aws_cloudwatch_log_group" "locker" {
   name              = "/aws/ec2/locker/${var.environment}"
   retention_in_days = var.log_retention_days
@@ -53,6 +153,9 @@ resource "aws_cloudwatch_log_group" "locker" {
   )
 }
 
+# =========================================================================
+# IAM - ROLE & INSTANCE PROFILE
+# =========================================================================
 resource "aws_iam_role" "locker" {
   name        = "${local.name_prefix}-role"
   description = "IAM role for locker card vault instance"
@@ -78,6 +181,10 @@ resource "aws_iam_instance_profile" "locker" {
   tags = local.common_tags
 }
 
+# =========================================================================
+# IAM - CUSTOM POLICIES
+# =========================================================================
+# CloudWatch Logs Policy
 resource "aws_iam_policy" "locker" {
   name = "${local.name_prefix}-policy"
   policy = jsonencode({
@@ -98,38 +205,17 @@ resource "aws_iam_policy" "locker" {
   tags = local.common_tags
 }
 
-resource "aws_iam_role_policy_attachment" "locker" {
-  role       = aws_iam_role.locker.name
-  policy_arn = aws_iam_policy.locker.arn
-}
-
-# AWS Managed Policy Attachments
-resource "aws_iam_role_policy_attachment" "ecr_readonly" {
-  role       = aws_iam_role.locker.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
-}
-
-resource "aws_iam_role_policy_attachment" "s3_fullaccess" {
-  role       = aws_iam_role.locker.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-}
-
-resource "aws_iam_role_policy_attachment" "cloudwatch_agent" {
-  role       = aws_iam_role.locker.name
-  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
-}
-
-# Custom ECR Policy
+# ECR Policy
 resource "aws_iam_policy" "locker_ecr" {
   name = "${local.name_prefix}-ecr-policy"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        Sid       = "0"
-        Effect    = "Allow"
-        Action    = "ecr:*"
-        Resource  = "*"
+        Sid      = "0"
+        Effect   = "Allow"
+        Action   = "ecr:*"
+        Resource = "*"
       }
     ]
   })
@@ -137,15 +223,15 @@ resource "aws_iam_policy" "locker_ecr" {
   tags = local.common_tags
 }
 
-# Custom KMS Policy
+# KMS Policy
 resource "aws_iam_policy" "locker_kms" {
   name = "${local.name_prefix}-kms-policy"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
       {
-        Sid       = "0"
-        Effect    = "Allow"
+        Sid    = "0"
+        Effect = "Allow"
         Action = [
           "kms:ListKeys",
           "kms:Decrypt",
@@ -165,7 +251,15 @@ resource "aws_iam_policy" "locker_kms" {
   tags = local.common_tags
 }
 
+# =========================================================================
+# IAM - POLICY ATTACHMENTS
+# =========================================================================
 # Custom Policy Attachments
+resource "aws_iam_role_policy_attachment" "locker" {
+  role       = aws_iam_role.locker.name
+  policy_arn = aws_iam_policy.locker.arn
+}
+
 resource "aws_iam_role_policy_attachment" "locker_ecr" {
   role       = aws_iam_role.locker.name
   policy_arn = aws_iam_policy.locker_ecr.arn
@@ -176,6 +270,25 @@ resource "aws_iam_role_policy_attachment" "locker_kms" {
   policy_arn = aws_iam_policy.locker_kms.arn
 }
 
+# AWS Managed Policy Attachments
+resource "aws_iam_role_policy_attachment" "ecr_readonly" {
+  role       = aws_iam_role.locker.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
+
+resource "aws_iam_role_policy_attachment" "s3_fullaccess" {
+  role       = aws_iam_role.locker.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "cloudwatch_agent" {
+  role       = aws_iam_role.locker.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+
+# =========================================================================
+# COMPUTE - EC2 INSTANCE
+# =========================================================================
 module "locker_instance" {
   source  = "terraform-aws-modules/ec2-instance/aws"
   version = "~> 6.1.5"
@@ -184,14 +297,12 @@ module "locker_instance" {
 
   ami                         = var.ami_id
   instance_type               = var.instance_type
-  key_name                    = var.key_name
+  key_name                    = local.key_name
   monitoring                  = true
-  subnet_id                   = var.locker_subnet_id
-  vpc_security_group_ids      = [aws_security_group.locker.id]
-
+  subnet_id                   = local.locker_subnet_id
+  vpc_security_group_ids      = [local.locker_security_group_id]
   associate_public_ip_address = false
-
-  iam_instance_profile = aws_iam_instance_profile.locker.name
+  iam_instance_profile        = aws_iam_instance_profile.locker.name
 
   # User data script for locker setup is yet to be finalized
   # user_data = base64encode(templatefile("${path.module}/templates/userdata.sh", {}))
@@ -199,40 +310,22 @@ module "locker_instance" {
   tags = local.common_tags
 }
 
-# Network Load Balancer for locker access
-resource "aws_security_group" "nlb" {
-  name        = "${local.name_prefix}-nlb-sg"
-  description = "Security group for locker Network Load Balancer"
-  vpc_id      = var.vpc_id
-
-  ingress {
-    from_port       = 443
-    to_port         = 443
-    protocol        = "tcp"
-    security_groups = [var.jump_host_security_group_id]
-    description     = "Allow HTTPS access from jump host"
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = local.common_tags
-}
-
+# =========================================================================
+# LOAD BALANCER - NETWORK LOAD BALANCER
+# =========================================================================
 resource "aws_lb" "locker_nlb" {
   name               = "${local.name_prefix}-nlb"
   internal           = true
   load_balancer_type = "network"
-  subnets            = [var.locker_subnet_id]
+  subnets            = [local.locker_subnet_id]
   security_groups    = [aws_security_group.nlb.id]
 
   tags = local.common_tags
 }
 
+# =========================================================================
+# LOAD BALANCER - TARGET GROUP
+# =========================================================================
 resource "aws_lb_target_group" "locker" {
   name     = "${local.name_prefix}-tg"
   port     = 8080
@@ -253,23 +346,16 @@ resource "aws_lb_target_group_attachment" "locker" {
   port             = 8080
 }
 
+# =========================================================================
+# LOAD BALANCER - LISTENER
+# =========================================================================
 resource "aws_lb_listener" "locker" {
   load_balancer_arn = aws_lb.locker_nlb.arn
-  port            = "443"
-  protocol        = "TCP"
+  port              = "443"
+  protocol          = "TCP"
 
   default_action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.locker.arn
   }
-}
-
-resource "aws_security_group_rule" "nlb_to_locker" {
-  security_group_id = aws_security_group.locker.id
-  type              = "ingress"
-  from_port         = 8080
-  to_port           = 8080
-  protocol          = "tcp"
-  source_security_group_id = aws_security_group.nlb.id
-  description       = "Allow traffic from NLB to locker instance"
 }
