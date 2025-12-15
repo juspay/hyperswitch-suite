@@ -196,8 +196,8 @@ resource "aws_iam_instance_profile" "locker" {
 # IAM - CUSTOM POLICIES
 # =========================================================================
 # CloudWatch Logs Policy
-resource "aws_iam_policy" "locker" {
-  name = "${local.name_prefix}-policy"
+resource "aws_iam_policy" "locker_logs" {
+  name = "${local.name_prefix}-logs-policy"
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -266,9 +266,9 @@ resource "aws_iam_policy" "locker_kms" {
 # IAM - POLICY ATTACHMENTS
 # =========================================================================
 # Custom Policy Attachments
-resource "aws_iam_role_policy_attachment" "locker" {
+resource "aws_iam_role_policy_attachment" "locker_logs" {
   role       = aws_iam_role.locker.name
-  policy_arn = aws_iam_policy.locker.arn
+  policy_arn = aws_iam_policy.locker_logs.arn
 }
 
 resource "aws_iam_role_policy_attachment" "locker_ecr" {
