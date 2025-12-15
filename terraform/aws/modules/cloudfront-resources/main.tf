@@ -79,7 +79,7 @@ resource "aws_cloudfront_cache_policy" "this" {
         content {
           header_behavior = headers_config.value.header_behavior
           dynamic "headers" {
-            for_each = lookup(headers_config.value, "headers", null) != null ? [headers_config.value.headers] : []
+            for_each = lookup(headers_config.value, "headers", null) != null && length(lookup(headers_config.value, "headers", [])) > 0 ? [headers_config.value.headers] : []
             content {
               items = headers.value
             }
