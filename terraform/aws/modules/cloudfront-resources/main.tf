@@ -5,25 +5,25 @@
 
 # CloudFront Functions
 resource "aws_cloudfront_function" "this" {
-  count = local.create ? length(var.cloudfront_functions) : 0
+  for_each = local.create ? var.cloudfront_functions : {}
 
-  name    = var.cloudfront_functions[count.index].name
-  runtime = var.cloudfront_functions[count.index].runtime
-  comment = lookup(var.cloudfront_functions[count.index], "comment", null)
-  code    = var.cloudfront_functions[count.index].code
-  publish = lookup(var.cloudfront_functions[count.index], "publish", true)
+  name    = each.value.name
+  runtime = each.value.runtime
+  comment = lookup(each.value, "comment", null)
+  code    = each.value.code
+  publish = lookup(each.value, "publish", true)
 }
 
 # Response Headers Policies
 resource "aws_cloudfront_response_headers_policy" "this" {
-  count = local.create ? length(var.response_headers_policies) : 0
+  for_each = local.create ? var.response_headers_policies : {}
 
-  name    = var.response_headers_policies[count.index].name
-  comment = lookup(var.response_headers_policies[count.index], "comment", null)
+  name    = each.value.name
+  comment = lookup(each.value, "comment", null)
 
   # CORS configuration
   dynamic "cors_config" {
-    for_each = var.response_headers_policies[count.index].cors_config != null ? [var.response_headers_policies[count.index].cors_config] : []
+    for_each = each.value.cors_config != null ? [each.value.cors_config] : []
 
     content {
       origin_override = true
@@ -49,7 +49,7 @@ resource "aws_cloudfront_response_headers_policy" "this" {
 
   # Security headers (simplified for brevity - can be extended)
   dynamic "security_headers_config" {
-    for_each = lookup(var.response_headers_policies[count.index], "security_headers_config", null) != null ? [var.response_headers_policies[count.index].security_headers_config] : []
+    for_each = lookup(each.value, "security_headers_config", null) != null ? [each.value.security_headers_config] : []
     content {
       # Security headers configuration would go here
       # For now, we'll keep it simple as the current config only uses CORS
@@ -59,17 +59,17 @@ resource "aws_cloudfront_response_headers_policy" "this" {
 
 # Cache Policies
 resource "aws_cloudfront_cache_policy" "this" {
-  count = local.create ? length(var.cache_policies) : 0
+  for_each = local.create ? var.cache_policies : {}
 
-  name        = var.cache_policies[count.index].name
-  comment     = lookup(var.cache_policies[count.index], "comment", null)
-  default_ttl = lookup(var.cache_policies[count.index], "default_ttl", null)
-  max_ttl     = lookup(var.cache_policies[count.index], "max_ttl", null)
-  min_ttl     = lookup(var.cache_policies[count.index], "min_ttl", null)
+  name        = each.value.name
+  comment     = lookup(each.value, "comment", null)
+  default_ttl = lookup(each.value, "default_ttl", null)
+  max_ttl     = lookup(each.value, "max_ttl", null)
+  min_ttl     = lookup(each.value, "min_ttl", null)
 
   # Cache key configuration
   dynamic "parameters_in_cache_key_and_forwarded_to_origin" {
-    for_each = lookup(var.cache_policies[count.index], "parameters_in_cache_key_and_forwarded_to_origin", null) != null ? [var.cache_policies[count.index].parameters_in_cache_key_and_forwarded_to_origin] : []
+    for_each = lookup(each.value, "parameters_in_cache_key_and_forwarded_to_origin", null) != null ? [each.value.parameters_in_cache_key_and_forwarded_to_origin] : []
     content {
       enable_accept_encoding_brotli = lookup(parameters_in_cache_key_and_forwarded_to_origin.value, "enable_accept_encoding_brotli", false)
       enable_accept_encoding_gzip = lookup(parameters_in_cache_key_and_forwarded_to_origin.value, "enable_accept_encoding_gzip", true)
@@ -118,13 +118,13 @@ resource "aws_cloudfront_cache_policy" "this" {
 
 # Origin Request Policies
 resource "aws_cloudfront_origin_request_policy" "this" {
-  count = local.create ? length(var.origin_request_policies) : 0
+  for_each = local.create ? var.origin_request_policies : {}
 
-  name    = var.origin_request_policies[count.index].name
-  comment = lookup(var.origin_request_policies[count.index], "comment", null)
+  name    = each.value.name
+  comment = lookup(each.value, "comment", null)
 
   dynamic "headers_config" {
-    for_each = lookup(var.origin_request_policies[count.index], "headers_config", null) != null ? [var.origin_request_policies[count.index].headers_config] : []
+    for_each = lookup(each.value, "headers_config", null) != null ? [each.value.headers_config] : []
     content {
       header_behavior = headers_config.value.header_behavior
       dynamic "headers" {
@@ -137,7 +137,7 @@ resource "aws_cloudfront_origin_request_policy" "this" {
   }
 
   dynamic "cookies_config" {
-    for_each = lookup(var.origin_request_policies[count.index], "cookies_config", null) != null ? [var.origin_request_policies[count.index].cookies_config] : []
+    for_each = lookup(each.value, "cookies_config", null) != null ? [each.value.cookies_config] : []
     content {
       cookie_behavior = cookies_config.value.cookie_behavior
       dynamic "cookies" {
@@ -150,7 +150,7 @@ resource "aws_cloudfront_origin_request_policy" "this" {
   }
 
   dynamic "query_strings_config" {
-    for_each = lookup(var.origin_request_policies[count.index], "query_strings_config", null) != null ? [var.origin_request_policies[count.index].query_strings_config] : []
+    for_each = lookup(each.value, "query_strings_config", null) != null ? [each.value.query_strings_config] : []
     content {
       query_string_behavior = query_strings_config.value.query_string_behavior
       dynamic "query_strings" {

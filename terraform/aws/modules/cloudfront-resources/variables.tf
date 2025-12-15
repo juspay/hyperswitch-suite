@@ -25,20 +25,20 @@ variable "common_tags" {
 }
 
 variable "cloudfront_functions" {
-  description = "List of CloudFront Functions to create"
-  type = list(object({
+  description = "Map of CloudFront Functions to create (keyed by function name for stable resource tracking)"
+  type = map(object({
     name    = string
     runtime = optional(string, "cloudfront-js-1.0")
     comment = optional(string)
     code    = string
     publish = optional(bool, true)
   }))
-  default = []
+  default = {}
 }
 
 variable "response_headers_policies" {
-  description = "List of response headers policies to create"
-  type = list(object({
+  description = "Map of response headers policies to create (keyed by policy name for stable resource tracking)"
+  type = map(object({
     name    = string
     comment = optional(string)
     cors_config = optional(object({
@@ -51,12 +51,12 @@ variable "response_headers_policies" {
     }))
     security_headers_config = optional(any) # Can be extended for security headers
   }))
-  default = []
+  default = {}
 }
 
 variable "cache_policies" {
-  description = "List of cache policies to create"
-  type = list(object({
+  description = "Map of cache policies to create (keyed by policy name for stable resource tracking)"
+  type = map(object({
     name        = string
     comment     = optional(string)
     default_ttl = optional(number)
@@ -79,12 +79,12 @@ variable "cache_policies" {
       }))
     }))
   }))
-  default = []
+  default = {}
 }
 
 variable "origin_request_policies" {
-  description = "List of origin request policies to create"
-  type = list(object({
+  description = "Map of origin request policies to create (keyed by policy name for stable resource tracking)"
+  type = map(object({
     name    = string
     comment = optional(string)
     headers_config = optional(object({
@@ -100,5 +100,5 @@ variable "origin_request_policies" {
       query_strings         = optional(list(string), [])
     }))
   }))
-  default = []
+  default = {}
 }

@@ -30,13 +30,13 @@ module "log_bucket" {
 
 # Origin Access Controls
 resource "aws_cloudfront_origin_access_control" "this" {
-  count = local.create ? length(var.origin_access_controls) : 0
+  for_each = local.create ? var.origin_access_controls : {}
 
-  name                              = var.origin_access_controls[count.index].name
-  description                       = var.origin_access_controls[count.index].description
-  origin_access_control_origin_type = var.origin_access_controls[count.index].origin_access_control_origin_type
-  signing_behavior                  = var.origin_access_controls[count.index].signing_behavior
-  signing_protocol                  = var.origin_access_controls[count.index].signing_protocol
+  name                              = each.value.name
+  description                       = each.value.description
+  origin_access_control_origin_type = each.value.origin_access_control_origin_type
+  signing_behavior                  = each.value.signing_behavior
+  signing_protocol                  = each.value.signing_protocol
 }
 
 # CloudFront Distributions

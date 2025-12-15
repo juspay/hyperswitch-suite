@@ -35,7 +35,7 @@ output "cloudfront_function_arns" {
 
 output "cloudfront_function_names" {
   description = "List of CloudFront Function names"
-  value = local.create ? aws_cloudfront_function.this[*].name : []
+  value = local.create ? values(aws_cloudfront_function.this)[*].name : []
 }
 
 # Response Headers Policies

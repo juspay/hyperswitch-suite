@@ -22,8 +22,8 @@ locals {
 
   # Origin Access Controls map (needs to be defined before processed_origins)
   origin_access_controls_map = {
-    for idx, oac in var.origin_access_controls :
-    oac.name => aws_cloudfront_origin_access_control.this[idx].id
+    for key, oac in var.origin_access_controls :
+    oac.name => aws_cloudfront_origin_access_control.this[key].id
   }
 
   # CloudFront Functions ARN map for resolving function names to ARNs

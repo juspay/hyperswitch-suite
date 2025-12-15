@@ -12,32 +12,55 @@ locals {
   }
 
   # Auto-discover function files from config/functions/ directory
-  # Each .yaml file becomes a CloudFront Function
-  cloudfront_functions = [
+  # Each .yaml file becomes a CloudFront Function (converted to map with stable keys)
+  cloudfront_functions_list = [
     for file in fileset("${path.module}/config/functions/", "*.yaml") :
     yamldecode(file("${path.module}/config/functions/${file}"))
   ]
+  cloudfront_functions = {
+    for func in local.cloudfront_functions_list :
+    func.name => func
+  }
 
-  # Load Origin Access Controls (single file)
-  origin_access_controls = yamldecode(file("${path.module}/config/origin_access_controls.yaml"))
+  # Load Origin Access Controls (single file) - convert list to map with name as key
+  origin_access_controls_list = yamldecode(file("${path.module}/config/origin_access_controls.yaml"))
+  origin_access_controls = {
+    for oac in local.origin_access_controls_list :
+    oac.name => oac
+  }
 
   # Auto-discover cache policies from config/policies/cache/ directory
-  cache_policies = [
+  # Convert list to map with policy name as key for stable resource tracking
+  cache_policies_list = [
     for file in fileset("${path.module}/config/policies/cache/", "*.yaml") :
     yamldecode(file("${path.module}/config/policies/cache/${file}"))
   ]
+  cache_policies = {
+    for policy in local.cache_policies_list :
+    policy.name => policy
+  }
 
   # Auto-discover origin request policies from config/policies/origin_request/ directory
-  origin_request_policies = [
+  # Convert list to map with policy name as key for stable resource tracking
+  origin_request_policies_list = [
     for file in fileset("${path.module}/config/policies/origin_request/", "*.yaml") :
     yamldecode(file("${path.module}/config/policies/origin_request/${file}"))
   ]
+  origin_request_policies = {
+    for policy in local.origin_request_policies_list :
+    policy.name => policy
+  }
 
   # Auto-discover response headers policies from config/policies/response_headers/ directory
-  response_headers_policies = [
+  # Convert list to map with policy name as key for stable resource tracking
+  response_headers_policies_list = [
     for file in fileset("${path.module}/config/policies/response_headers/", "*.yaml") :
     yamldecode(file("${path.module}/config/policies/response_headers/${file}"))
   ]
+  response_headers_policies = {
+    for policy in local.response_headers_policies_list :
+    policy.name => policy
+  }
 
   # Common tags
   common_tags = merge(
@@ -210,26 +233,24 @@ locals {
     }
   }
 
-  # Transform CORS config (preserved from original)
-  transformed_response_headers_policies = [
-    for policy in local.response_headers_policies :
-    merge(
-      policy,
-      policy.cors_config != null ? {
-        cors_config = merge(
-          policy.cors_config,
-          {
-            access_control_allow_headers = try(policy.cors_config.access_control_allow_headers.items, policy.cors_config.access_control_allow_headers)
-            access_control_allow_methods = try(policy.cors_config.access_control_allow_methods.items, policy.cors_config.access_control_allow_methods)
-            access_control_allow_origins = try(policy.cors_config.access_control_allow_origins.items, policy.cors_config.access_control_allow_origins)
-            access_control_expose_headers = try(policy.cors_config.access_control_expose_headers.items, lookup(policy.cors_config, "access_control_expose_headers", []))
-          }
-        )
-      } : {}
-    )
-  ]
+  # Transform CORS config
+  transformed_response_headers_policies = {
+    for key, policy in local.response_headers_policies : key => {
+      name    = policy.name
+      comment = try(policy.comment, null)
+      cors_config = try(policy.cors_config, null) != null ? {
+        access_control_allow_credentials = policy.cors_config.access_control_allow_credentials
+        access_control_allow_headers     = try(policy.cors_config.access_control_allow_headers.items, policy.cors_config.access_control_allow_headers)
+        access_control_allow_methods     = try(policy.cors_config.access_control_allow_methods.items, policy.cors_config.access_control_allow_methods)
+        access_control_allow_origins     = try(policy.cors_config.access_control_allow_origins.items, policy.cors_config.access_control_allow_origins)
+        access_control_expose_headers    = try(policy.cors_config.access_control_expose_headers.items, try(policy.cors_config.access_control_expose_headers, []))
+        access_control_max_age_sec       = try(policy.cors_config.access_control_max_age_sec, null)
+      } : null
+      security_headers_config = can(policy.security_headers_config) ? policy.security_headers_config : null
+    }
+  }
 
-  # Other transformations
+  # Pass through cache_policies and origin_request_policies as maps 
   transformed_cache_policies = local.cache_policies
   transformed_origin_request_policies = local.origin_request_policies
 }
