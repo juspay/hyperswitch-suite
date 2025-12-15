@@ -68,13 +68,9 @@ variable "log_retention_days" {
   default     = 30
 }
 
-variable "rds_cidr" {
-  description = "CIDR block for RDS database access"
+variable "rds_security_group_id" {
+  description = "Security group ID of RDS database for database access"
   type        = string
-  validation {
-    condition     = can(regex("^(\\d{1,3}\\.){3}\\d{1,3}/\\d{1,2}$", var.rds_cidr))
-    error_message = "rds_cidr must be a valid CIDR block (e.g., 10.0.0.0/32)"
-  }
 }
 
 variable "tags" {

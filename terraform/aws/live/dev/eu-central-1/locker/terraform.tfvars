@@ -26,9 +26,8 @@ locker_subnet_id = "subnet-xxxxxxxxxxxxxxxxx"  # Replace with your private subne
 # subnet_cidr_block        = "10.0.10.0/24"  # Replace with desired CIDR block
 # subnet_availability_zone = "eu-central-1a"  # Optional: specify AZ, otherwise uses first available
 
-# RDS CIDR block for database access
-# Format: x.x.x.x/32 for single IP or x.x.x.x/24 for subnet range
-rds_cidr = "10.0.0.0/24"  # Replace with your RDS subnet CIDR
+# RDS security group ID for database access
+rds_security_group_id = "sg-xxxxxxxxxxxxxxxxx"  # Replace with your RDS security group ID
 
 # ============================================================================
 # Instance Configuration

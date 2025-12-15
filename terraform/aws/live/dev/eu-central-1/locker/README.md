@@ -39,7 +39,7 @@ This directory contains the Terraform configuration to deploy the Hyperswitch Lo
 
 1. **VPC with Subnets:**
    - Private subnet with NAT gateway (for outbound internet access)
-   - RDS subnet or CIDR block for database connectivity
+   - RDS database with security group configured
 
 2. **S3 Backend:**
    - S3 bucket: `hyperswitch-dev-terraform-state`
@@ -64,9 +64,9 @@ Edit `terraform.tfvars` and replace the placeholder values:
 
 ```hcl
 # Network Configuration
-vpc_id           = "vpc-XXXXXXXXXXXXXXXXX"       # Your VPC ID
-locker_subnet_id = "subnet-XXXXXXXXXXXXXXXXX"    # Private subnet ID
-rds_cidr         = "10.0.0.0/24"                 # RDS subnet CIDR
+vpc_id                  = "vpc-XXXXXXXXXXXXXXXXX"       # Your VPC ID
+locker_subnet_id        = "subnet-XXXXXXXXXXXXXXXXX"    # Private subnet ID
+rds_security_group_id   = "sg-XXXXXXXXXXXXXXXXX"        # RDS security group ID
 
 # Instance Configuration
 ami_id           = "ami-XXXXXXXXXXXXXXXXX"       # Locker AMI ID
@@ -156,8 +156,8 @@ terraform destroy
 
 ### Database connection issues
 
-1. Verify RDS security group allows traffic from locker security group
-2. Check `rds_cidr` configuration
+1. Verify RDS security group allows traffic from locker security group (automatically configured)
+2. Check `rds_security_group_id` configuration matches your RDS instance
 3. Ensure RDS is in the same VPC
 
 ### Permission errors

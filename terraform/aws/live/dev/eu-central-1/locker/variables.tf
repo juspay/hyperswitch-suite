@@ -51,8 +51,8 @@ variable "subnet_availability_zone" {
   default     = null
 }
 
-variable "rds_cidr" {
-  description = "CIDR block for RDS database access"
+variable "rds_security_group_id" {
+  description = "Security group ID of RDS database for database access"
   type        = string
 }
 

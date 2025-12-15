@@ -103,13 +103,24 @@ resource "aws_security_group_rule" "nlb_to_locker" {
 
 # Egress: Database access to RDS
 resource "aws_security_group_rule" "locker_egress_rds" {
-  security_group_id = local.locker_security_group_id
-  type              = "egress"
-  from_port         = 5432
-  to_port           = 5432
-  protocol          = "tcp"
-  cidr_blocks       = [var.rds_cidr]
-  description       = "Database access to RDS"
+  security_group_id        = local.locker_security_group_id
+  type                     = "egress"
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "tcp"
+  source_security_group_id = var.rds_security_group_id
+  description              = "Database access to RDS"
+}
+
+# Ingress: Allow locker to connect to RDS
+resource "aws_security_group_rule" "rds_ingress_from_locker" {
+  security_group_id        = var.rds_security_group_id
+  type                     = "ingress"
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "tcp"
+  source_security_group_id = local.locker_security_group_id
+  description              = "Allow locker instance to connect to RDS"
 }
 
 # =========================================================================

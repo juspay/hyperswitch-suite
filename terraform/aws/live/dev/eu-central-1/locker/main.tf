@@ -24,9 +24,9 @@ module "locker" {
   project_name = var.project_name
 
   # Network Configuration
-  vpc_id           = var.vpc_id
-  locker_subnet_id = var.locker_subnet_id
-  rds_cidr         = var.rds_cidr
+  vpc_id                = var.vpc_id
+  locker_subnet_id      = var.locker_subnet_id
+  rds_security_group_id = var.rds_security_group_id
 
   # Instance Configuration
   ami_id        = var.ami_id
