@@ -18,10 +18,26 @@ output "locker_instance_arn" {
   value       = module.locker.instance_arn
 }
 
-# Security Group
+# Network Configuration
+output "locker_subnet_id" {
+  description = "Subnet ID where the locker instance is deployed"
+  value       = module.locker.subnet_id
+}
+
+# Security Configuration
 output "locker_security_group_id" {
   description = "Security group ID of the locker instance"
   value       = module.locker.security_group_id
+}
+
+output "locker_key_name" {
+  description = "SSH key pair name used for the locker instance"
+  value       = module.locker.key_name
+}
+
+output "locker_ssh_private_key_ssm_parameter" {
+  description = "SSM Parameter Store path where the auto-generated SSH private key is stored (null if key was not auto-generated)"
+  value       = module.locker.ssh_private_key_ssm_parameter
 }
 
 # Network Load Balancer
