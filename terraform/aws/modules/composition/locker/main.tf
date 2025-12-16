@@ -315,9 +315,6 @@ module "locker_instance" {
   associate_public_ip_address = false
   iam_instance_profile        = aws_iam_instance_profile.locker.name
 
-  # User data script for locker setup is yet to be finalized
-  # user_data = base64encode(templatefile("${path.module}/templates/userdata.sh", {}))
-
   tags = local.common_tags
 }
 
