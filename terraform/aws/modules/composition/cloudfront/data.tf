@@ -110,3 +110,17 @@ data "aws_cloudfront_response_headers_policy" "aws_managed" {
   count = local.create ? length(compact(local.aws_managed_response_headers_policy_names)) : 0
   name   = compact(local.aws_managed_response_headers_policy_names)[count.index]
 }
+
+# ============================================================================
+# S3 Bucket Policies for OAC
+# ============================================================================
+
+# Read existing S3 bucket policies to preserve statements from other CloudFront distributions
+data "aws_s3_bucket_policy" "existing" {
+  for_each = local.create ? toset([
+    for dist_name, origins in local.s3_bucket_origins :
+    origins[0].bucket_id if length(origins) > 0
+  ]) : []
+
+  bucket = each.value
+}

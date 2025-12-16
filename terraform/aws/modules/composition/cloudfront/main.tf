@@ -188,20 +188,27 @@ resource "aws_s3_bucket_policy" "oac_policy" {
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      for origin in each.value : {
-        Sid       = "AllowCloudFrontServicePrincipal-${origin.origin_id}"
-        Effect    = "Allow"
-        Principal = { Service = "cloudfront.amazonaws.com" }
-        Action    = ["s3:GetObject"]
-        Resource  = "${origin.bucket_arn}/*"
-        Condition = {
-          StringEquals = {
-            "AWS:SourceArn" = module.cloudfront[each.key].cloudfront_distribution_arn
+    Statement = concat(
+      try([
+        for stmt in jsondecode(data.aws_s3_bucket_policy.existing[each.value[0].bucket_id].policy).Statement :
+        stmt if !can(regex("^AllowCloudFrontServicePrincipal-", lookup(stmt, "Sid", "")))
+      ], []),
+      # Add new statements for origins in this distribution
+      [
+        for origin in each.value : {
+          Sid       = "AllowCloudFrontServicePrincipal-${origin.origin_id}"
+          Effect    = "Allow"
+          Principal = { Service = "cloudfront.amazonaws.com" }
+          Action    = ["s3:GetObject"]
+          Resource  = "${origin.bucket_arn}/*"
+          Condition = {
+            StringEquals = {
+              "AWS:SourceArn" = module.cloudfront[each.key].cloudfront_distribution_arn
+            }
           }
         }
-      }
-    ]
+      ]
+    )
   })
 
   depends_on = [module.cloudfront]
