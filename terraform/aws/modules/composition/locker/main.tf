@@ -344,6 +344,7 @@ module "locker_instance" {
   vpc_security_group_ids      = [local.locker_security_group_id]
   associate_public_ip_address = false
   iam_instance_profile        = aws_iam_instance_profile.locker.name
+  create_security_group       = false
 
   tags = local.common_tags
 }
