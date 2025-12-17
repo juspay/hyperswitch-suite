@@ -26,9 +26,6 @@ locker_subnet_id = "subnet-xxxxxxxxxxxxxxxxx"  # Replace with your private subne
 # subnet_cidr_block        = "10.0.10.0/24"  # Replace with desired CIDR block
 # subnet_availability_zone = "eu-central-1a"  # Optional: specify AZ, otherwise uses first available
 
-# RDS security group ID for database access
-rds_security_group_id = "sg-xxxxxxxxxxxxxxxxx"  # Replace with your RDS security group ID
-
 # ============================================================================
 # Instance Configuration
 # ============================================================================
@@ -50,14 +47,98 @@ key_name = "your-key-pair-name"  # Replace with your SSH key pair name
 #       will be securely stored in SSM Parameter Store at: /{environment}/{project}/locker/ssh-private-key
 
 # ============================================================================
-# Security Configuration
+# Security Group Rules Configuration
 # ============================================================================
-# Jump host security group ID for SSH access to locker
-jump_host_security_group_id = "sg-xxxxxxxxxxxxxxxxx"  # Replace with jump host security group ID
+# Ingress rules for locker instance security group
+# Note: Traffic from NLB (port 8080) is automatically configured
+locker_ingress_rules = [
+  # SSH access from jump host
+  {
+    description = "SSH access from jump host"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    sg_id       = ["sg-xxxxxxxxxxxxxxxxx"]  # Replace with jump host security group ID
+  },
+  # Example: Vector metrics endpoint from EKS monitoring (uncomment if needed)
+  # {
+  #   description = "Vector metrics scraping"
+  #   from_port   = 9273
+  #   to_port     = 9273
+  #   protocol    = "tcp"
+  #   sg_id       = ["sg-xxxxxxxxxxxxxxxxx"]  # Replace with monitoring security group ID
+  # },
+]
 
-# OPTIONAL: Use existing security group for locker instance
-# If not provided, a new security group will be created automatically
-# locker_security_group_id = "sg-xxxxxxxxxxxxxxxxx"  # Uncomment to use existing security group
+# Egress rules for locker instance security group
+locker_egress_rules = [
+  # HTTPS for ECR, S3, AWS services
+  {
+    description = "HTTPS access for ECR, S3, and AWS services"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr        = ["0.0.0.0/0"]
+  },
+  # HTTP for package downloads
+  {
+    description = "HTTP access for package downloads"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr        = ["0.0.0.0/0"]
+  },
+  # PostgreSQL access to RDS
+  {
+    description = "PostgreSQL access to RDS database"
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    sg_id       = ["sg-xxxxxxxxxxxxxxxxx"]  # Replace with RDS security group ID
+  },
+  # Example: Redis access (uncomment if needed)
+  # {
+  #   description = "Redis access"
+  #   from_port   = 6379
+  #   to_port     = 6379
+  #   protocol    = "tcp"
+  #   sg_id       = ["sg-xxxxxxxxxxxxxxxxx"]  # Replace with Redis security group ID
+  # },
+]
+
+# Ingress rules for NLB security group
+nlb_ingress_rules = [
+  # HTTPS access from jump host
+  {
+    description = "HTTPS access from jump host"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    sg_id       = ["sg-xxxxxxxxxxxxxxxxx"]  # Replace with jump host security group ID
+  },
+  # Example: HTTPS from specific CIDR (uncomment if needed)
+  # {
+  #   description = "HTTPS from internal network"
+  #   from_port   = 443
+  #   to_port     = 443
+  #   protocol    = "tcp"
+  #   cidr        = ["10.0.0.0/16"]  # Replace with your CIDR
+  # },
+]
+
+# Egress rules for NLB security group
+# Note: Traffic to locker instance (port 8080) is automatically configured
+nlb_egress_rules = [
+  # Add additional egress rules here if needed
+  # Example: All outbound traffic (uncomment if needed)
+  # {
+  #   description = "Allow all outbound traffic"
+  #   from_port   = 0
+  #   to_port     = 0
+  #   protocol    = "-1"
+  #   cidr        = ["0.0.0.0/0"]
+  # },
+]
 
 # ============================================================================
 # Logging Configuration

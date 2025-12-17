@@ -61,37 +61,17 @@ resource "aws_ssm_parameter" "locker_private_key" {
 # SECURITY - LOCKER SECURITY GROUP
 # =========================================================================
 resource "aws_security_group" "locker" {
-  count       = var.locker_security_group_id == null ? 1 : 0
   name        = "${local.name_prefix}-sg"
   description = "Security group for locker instance"
   vpc_id      = var.vpc_id
   tags        = local.common_tags
 }
 
-# Ingress: SSH access from jump host
-resource "aws_security_group_rule" "locker_ingress_ssh" {
-  security_group_id        = local.locker_security_group_id
-  type                     = "ingress"
-  from_port                = 22
-  to_port                  = 22
-  protocol                 = "tcp"
-  source_security_group_id = var.jump_host_security_group_id
-  description              = "SSH access from jump host"
-}
-
-# Ingress: Application access from internal services
-resource "aws_security_group_rule" "locker_ingress_app" {
-  security_group_id = local.locker_security_group_id
-  type              = "ingress"
-  from_port         = 8080
-  to_port           = 8080
-  protocol          = "tcp"
-  self              = true
-  description       = "Application access from internal services"
-}
-
-# Ingress: Traffic from NLB
-resource "aws_security_group_rule" "nlb_to_locker" {
+# =========================================================================
+# LOCKER SECURITY GROUP - INGRESS RULES
+# =========================================================================
+# Internal rule: Allow traffic from NLB (required for module functionality)
+resource "aws_security_group_rule" "locker_ingress_from_nlb" {
   security_group_id        = local.locker_security_group_id
   type                     = "ingress"
   from_port                = 8080
@@ -101,26 +81,41 @@ resource "aws_security_group_rule" "nlb_to_locker" {
   description              = "Allow traffic from NLB to locker instance"
 }
 
-# Egress: Database access to RDS
-resource "aws_security_group_rule" "locker_egress_rds" {
-  security_group_id        = local.locker_security_group_id
-  type                     = "egress"
-  from_port                = 5432
-  to_port                  = 5432
-  protocol                 = "tcp"
-  source_security_group_id = var.rds_security_group_id
-  description              = "Database access to RDS"
+# Additional ingress rules (environment-configurable via ingress_rules variable)
+resource "aws_security_group_rule" "locker_ingress_rules" {
+  for_each = { for idx, rule in var.locker_ingress_rules : idx => rule }
+
+  security_group_id = local.locker_security_group_id
+  type              = "ingress"
+  from_port         = each.value.from_port
+  to_port           = each.value.to_port
+  protocol          = each.value.protocol
+  description       = each.value.description
+
+  cidr_blocks              = try(each.value.cidr, null)
+  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
+  source_security_group_id = try(each.value.sg_id[0], null)
+  prefix_list_ids          = try(each.value.prefix_list_ids, null)
 }
 
-# Ingress: Allow locker to connect to RDS
-resource "aws_security_group_rule" "rds_ingress_from_locker" {
-  security_group_id        = var.rds_security_group_id
-  type                     = "ingress"
-  from_port                = 5432
-  to_port                  = 5432
-  protocol                 = "tcp"
-  source_security_group_id = local.locker_security_group_id
-  description              = "Allow locker instance to connect to RDS"
+# =========================================================================
+# LOCKER SECURITY GROUP - EGRESS RULES
+# =========================================================================
+# All egress rules are environment-configurable via egress_rules variable
+resource "aws_security_group_rule" "locker_egress_rules" {
+  for_each = { for idx, rule in var.locker_egress_rules : idx => rule }
+
+  security_group_id = local.locker_security_group_id
+  type              = "egress"
+  from_port         = each.value.from_port
+  to_port           = each.value.to_port
+  protocol          = each.value.protocol
+  description       = each.value.description
+
+  cidr_blocks              = try(each.value.cidr, null)
+  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
+  source_security_group_id = try(each.value.sg_id[0], null)
+  prefix_list_ids          = try(each.value.prefix_list_ids, null)
 }
 
 # =========================================================================
@@ -130,23 +125,58 @@ resource "aws_security_group" "nlb" {
   name        = "${local.name_prefix}-nlb-sg"
   description = "Security group for locker Network Load Balancer"
   vpc_id      = var.vpc_id
+  tags        = local.common_tags
+}
 
-  ingress {
-    from_port       = 443
-    to_port         = 443
-    protocol        = "tcp"
-    security_groups = [var.jump_host_security_group_id]
-    description     = "Allow HTTPS access from jump host"
-  }
+# =========================================================================
+# NLB SECURITY GROUP - INGRESS RULES
+# =========================================================================
+# All ingress rules are environment-configurable via nlb_ingress_rules variable
+resource "aws_security_group_rule" "nlb_ingress_rules" {
+  for_each = { for idx, rule in var.nlb_ingress_rules : idx => rule }
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  security_group_id = aws_security_group.nlb.id
+  type              = "ingress"
+  from_port         = each.value.from_port
+  to_port           = each.value.to_port
+  protocol          = each.value.protocol
+  description       = each.value.description
 
-  tags = local.common_tags
+  cidr_blocks              = try(each.value.cidr, null)
+  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
+  source_security_group_id = try(each.value.sg_id[0], null)
+  prefix_list_ids          = try(each.value.prefix_list_ids, null)
+}
+
+# =========================================================================
+# NLB SECURITY GROUP - EGRESS RULES
+# =========================================================================
+# Internal rule: Allow NLB to send traffic to locker instance (required for module functionality)
+resource "aws_security_group_rule" "nlb_egress_to_locker" {
+  security_group_id        = aws_security_group.nlb.id
+  type                     = "egress"
+  from_port                = 8080
+  to_port                  = 8080
+  protocol                 = "tcp"
+  source_security_group_id = local.locker_security_group_id
+  description              = "Allow NLB to send traffic to locker instance"
+}
+
+# Additional egress rules (environment-configurable via nlb_egress_rules variable)
+resource "aws_security_group_rule" "nlb_egress_rules" {
+  for_each = { for idx, rule in var.nlb_egress_rules : idx => rule }
+
+  security_group_id = aws_security_group.nlb.id
+  type              = "egress"
+  from_port         = each.value.from_port
+  to_port           = each.value.to_port
+  protocol          = each.value.protocol
+  description       = each.value.description
+
+  cidr_blocks              = try(each.value.cidr, null)
+  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
+  source_security_group_id = try(each.value.sg_id[0], null)
+  prefix_list_ids          = try(each.value.prefix_list_ids, null)
 }
 
 # =========================================================================

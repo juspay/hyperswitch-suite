@@ -64,17 +64,64 @@ Edit `terraform.tfvars` and replace the placeholder values:
 
 ```hcl
 # Network Configuration
-vpc_id                  = "vpc-XXXXXXXXXXXXXXXXX"       # Your VPC ID
-locker_subnet_id        = "subnet-XXXXXXXXXXXXXXXXX"    # Private subnet ID
-rds_security_group_id   = "sg-XXXXXXXXXXXXXXXXX"        # RDS security group ID
+vpc_id           = "vpc-XXXXXXXXXXXXXXXXX"       # Your VPC ID
+locker_subnet_id = "subnet-XXXXXXXXXXXXXXXXX"    # Private subnet ID
 
 # Instance Configuration
-ami_id           = "ami-XXXXXXXXXXXXXXXXX"       # Locker AMI ID
-key_name         = "your-key-pair-name"          # SSH key pair
+ami_id    = "ami-XXXXXXXXXXXXXXXXX"       # Locker AMI ID
+key_name  = "your-key-pair-name"          # SSH key pair
 
-# Security
-jump_host_security_group_id = "sg-XXXXXXXXXXXXXXXXX"  # Jump host SG ID
+# Security Group Rules
+locker_ingress_rules = [
+  {
+    description = "SSH access from jump host"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    sg_id       = ["sg-XXXXXXXXXXXXXXXXX"]  # Jump host SG ID
+  }
+]
+
+locker_egress_rules = [
+  {
+    description = "HTTPS access for ECR, S3, and AWS services"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr        = ["0.0.0.0/0"]
+  },
+  {
+    description = "PostgreSQL access to RDS database"
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    sg_id       = ["sg-XXXXXXXXXXXXXXXXX"]  # RDS SG ID
+  }
+]
+
+nlb_ingress_rules = [
+  {
+    description = "HTTPS access from jump host"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    sg_id       = ["sg-XXXXXXXXXXXXXXXXX"]  # Jump host SG ID
+  }
+]
 ```
+
+### Security Group Rules
+
+The module uses a flexible security group rule configuration:
+
+- **Internal Rules (Automatic):** NLB ↔ Locker communication on port 8080 is automatically configured
+- **External Rules (Configurable):** Define custom ingress/egress rules via `ingress_rules`, `egress_rules`, `nlb_ingress_rules`, `nlb_egress_rules`
+
+Each rule supports:
+- `cidr` - IPv4 CIDR blocks (e.g., `["10.0.0.0/16"]`)
+- `sg_id` - Security Group IDs (e.g., `["sg-xxxxx"]`)
+- `prefix_list_ids` - VPC Endpoint Prefix Lists (e.g., `["pl-6ea54007"]`)
+- `ipv6_cidr` - IPv6 CIDR blocks
 
 ## Deployment
 
