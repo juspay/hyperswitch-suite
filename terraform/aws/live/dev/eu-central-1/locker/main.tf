@@ -24,17 +24,19 @@ module "locker" {
   project_name = var.project_name
 
   # Network Configuration
-  vpc_id                = var.vpc_id
-  locker_subnet_id      = var.locker_subnet_id
-  rds_security_group_id = var.rds_security_group_id
+  vpc_id           = var.vpc_id
+  locker_subnet_id = var.locker_subnet_id
 
   # Instance Configuration
   ami_id        = var.ami_id
   instance_type = var.instance_type
   key_name      = var.key_name
 
-  # Security Configuration
-  jump_host_security_group_id = var.jump_host_security_group_id
+  # Security Group Rules
+  locker_ingress_rules     = var.locker_ingress_rules
+  locker_egress_rules      = var.locker_egress_rules
+  nlb_ingress_rules        = var.nlb_ingress_rules
+  nlb_egress_rules         = var.nlb_egress_rules
 
   # Logging Configuration
   log_retention_days = var.log_retention_days

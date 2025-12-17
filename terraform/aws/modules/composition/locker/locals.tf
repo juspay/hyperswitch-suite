@@ -12,7 +12,7 @@ locals {
   )
 
   # Determine which resources to use (created or provided)
-  locker_security_group_id = var.locker_security_group_id != null ? var.locker_security_group_id : aws_security_group.locker[0].id
+  locker_security_group_id = aws_security_group.locker.id
   locker_subnet_id         = var.locker_subnet_id != null ? var.locker_subnet_id : aws_subnet.locker[0].id
 
   # Key pair logic:
