@@ -178,38 +178,76 @@ module "cloudfront" {
 # S3 Bucket Policies for OAC
 # ============================================================================
 
-resource "aws_s3_bucket_policy" "oac_policy" {
-  for_each = local.create ? {
-    for dist_name, origins in local.s3_bucket_origins :
-    dist_name => origins if length(origins) > 0
-  } : {}
+# Manage bucket policies using null_resource and AWS CLI for granular control
+# This approach allows us to add/remove individual statements without destroying the entire policy
+# Key feature: Only removes the EXACT statements added by this Terraform configuration
+resource "null_resource" "s3_bucket_policy_manager" {
+  for_each = local.create ? local.bucket_policy_map : {}
 
-  bucket = each.value[0].bucket_id
+  triggers = {
+    bucket_id     = each.key
+    policy_hash   = md5(jsonencode(each.value))
+    existing_hash = md5(jsonencode(local.get_existing_statements[each.key]))
+    # Store the exact Sid list for statements managed by THIS configuration
+    # This ensures we only remove OUR statements on destroy, not others
+    managed_sids  = jsonencode([for stmt in each.value : stmt.Sid])
+  }
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = concat(
-      try([
-        for stmt in jsondecode(data.aws_s3_bucket_policy.existing[each.value[0].bucket_id].policy).Statement :
-        stmt if !can(regex("^AllowCloudFrontServicePrincipal-", lookup(stmt, "Sid", "")))
-      ], []),
-      # Add new statements for origins in this distribution
-      [
-        for origin in each.value : {
-          Sid       = "AllowCloudFrontServicePrincipal-${origin.origin_id}"
-          Effect    = "Allow"
-          Principal = { Service = "cloudfront.amazonaws.com" }
-          Action    = ["s3:GetObject"]
-          Resource  = "${origin.bucket_arn}/*"
-          Condition = {
-            StringEquals = {
-              "AWS:SourceArn" = module.cloudfront[each.key].cloudfront_distribution_arn
-            }
-          }
-        }
-      ]
-    )
-  })
+  # Apply the merged policy (existing + CloudFront statements)
+  provisioner "local-exec" {
+    command = <<-EOT
+      # Build the complete policy JSON
+      POLICY=$(cat <<'POLICY_EOF'
+${jsonencode({
+  Version = "2012-10-17"
+  Statement = concat(
+    local.get_existing_statements[each.key],
+    each.value
+  )
+})}
+POLICY_EOF
+)
+      
+      # Apply the policy to the bucket
+      echo "$POLICY" | aws s3api put-bucket-policy --bucket ${each.key} --policy file:///dev/stdin
+    EOT
+  }
+
+  # On destroy, remove ONLY the specific statements added by this Terraform configuration
+  # Preserves statements from other distributions and external configurations
+  provisioner "local-exec" {
+    when    = destroy
+    command = <<-EOT
+      # Get current policy
+      CURRENT_POLICY=$(aws s3api get-bucket-policy --bucket ${self.triggers.bucket_id} --query Policy --output text 2>/dev/null || echo "")
+      
+      if [ -n "$CURRENT_POLICY" ]; then
+        # Parse the list of Sids that this configuration manages
+        MANAGED_SIDS='${self.triggers.managed_sids}'
+        
+        # Remove ONLY the statements with Sids in our managed list
+        # This preserves statements from other distributions and external configurations
+        FILTERED_POLICY=$(echo "$CURRENT_POLICY" | jq --argjson sids "$MANAGED_SIDS" '
+          .Statement |= map(select(.Sid as $sid | $sids | index($sid) | not))
+        ')
+        
+        # Count remaining statements
+        STATEMENT_COUNT=$(echo "$FILTERED_POLICY" | jq '.Statement | length')
+        
+        # If no statements remain, delete the policy entirely
+        if [ "$STATEMENT_COUNT" -eq 0 ]; then
+          echo "No statements remain, deleting bucket policy"
+          aws s3api delete-bucket-policy --bucket ${self.triggers.bucket_id} 2>/dev/null || true
+        else
+          # Otherwise, update with filtered policy (preserving other statements)
+          echo "Removing only managed CloudFront statements, preserving others"
+          echo "$FILTERED_POLICY" | aws s3api put-bucket-policy --bucket ${self.triggers.bucket_id} --policy file:///dev/stdin
+        fi
+      fi
+    EOT
+    
+    on_failure = continue
+  }
 
   depends_on = [module.cloudfront]
 }

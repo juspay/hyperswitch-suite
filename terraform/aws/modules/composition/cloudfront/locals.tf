@@ -292,6 +292,47 @@ locals {
     ]
   }
 
+  # Safely extract existing policy statements from S3 buckets
+  # Returns a map of bucket_id => list of existing statements
+  # Handles buckets that may not have policies by returning empty list
+  get_existing_statements = {
+    for bucket_id in distinct(flatten([
+      for dist_name, origins in local.s3_bucket_origins :
+      [for origin in origins : origin.bucket_id]
+    ])) : bucket_id => try(
+      lookup(data.aws_s3_bucket_policy.existing, bucket_id, null) != null ? [
+        for stmt in jsondecode(data.aws_s3_bucket_policy.existing[bucket_id].policy).Statement :
+        stmt if !can(regex("^AllowCloudFrontServicePrincipal-", lookup(stmt, "Sid", "")))
+      ] : [],
+      []
+    )
+  }
+
+  # Aggregate CloudFront OAC statements by bucket
+  # This groups all distributions' OAC statements for each bucket
+  # Key insight: Manage policy once per bucket, not once per distribution
+  bucket_policy_map = {
+    for bucket_id in distinct(flatten([
+      for dist_name, origins in local.s3_bucket_origins :
+      [for origin in origins : origin.bucket_id]
+    ])) : bucket_id => flatten([
+      for dist_name, origins in local.s3_bucket_origins : [
+        for origin in origins : {
+          Sid       = "AllowCloudFrontServicePrincipal-${dist_name}-${origin.origin_id}"
+          Effect    = "Allow"
+          Principal = { Service = "cloudfront.amazonaws.com" }
+          Action    = ["s3:GetObject"]
+          Resource  = "${origin.bucket_arn}/*"
+          Condition = {
+            StringEquals = {
+              "AWS:SourceArn" = module.cloudfront[dist_name].cloudfront_distribution_arn
+            }
+          }
+        } if origin.bucket_id == bucket_id
+      ]
+    ])
+  }
+
   # CloudFront Functions map
   cloudfront_functions_map = {
     for fn in var.cloudfront_functions :
