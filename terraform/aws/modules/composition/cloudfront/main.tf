@@ -62,15 +62,17 @@ module "cloudfront" {
         domain_name              = origin_config.resolved_domain_name
         origin_path              = lookup(origin_config, "origin_path", "")
         origin_access_control_id = lookup(origin_config, "origin_access_control_id", null)
+        connection_attempts      = lookup(origin_config, "connection_attempts", 3)
+        connection_timeout       = lookup(origin_config, "connection_timeout", 10)
       },
       origin_config.type != "s3" ? {
         custom_origin_config = {
-          http_port                = lookup(origin_config.custom_origin_config, "http_port", 80)
-          https_port               = lookup(origin_config.custom_origin_config, "https_port", 443)
-          origin_protocol_policy   = lookup(origin_config.custom_origin_config, "origin_protocol_policy", "https-only")
-          origin_ssl_protocols     = lookup(origin_config.custom_origin_config, "origin_ssl_protocols", ["TLSv1.2"])
-          origin_keepalive_timeout = 5
-          origin_read_timeout      = 30
+          http_port                    = lookup(origin_config.custom_origin_config, "http_port", 80)
+          https_port                   = lookup(origin_config.custom_origin_config, "https_port", 443)
+          origin_protocol_policy       = lookup(origin_config.custom_origin_config, "origin_protocol_policy", "https-only")
+          origin_ssl_protocols         = lookup(origin_config.custom_origin_config, "origin_ssl_protocols", ["TLSv1.2"])
+          origin_keepalive_timeout     = lookup(origin_config.custom_origin_config, "origin_keepalive_timeout", 5)
+          origin_read_timeout          = lookup(origin_config.custom_origin_config, "origin_read_timeout", 30)
         }
       } : {}
     )
