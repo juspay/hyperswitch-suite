@@ -55,12 +55,18 @@ variable "distributions" {
       origin_access_control_id  = optional(string)
       apply_bucket_policy       = optional(bool, true)
 
+      # Origin-level connection settings (not inside custom_origin_config)
+      connection_attempts       = optional(number, 3)
+      connection_timeout        = optional(number, 10)
+
       # Custom origin configuration
       custom_origin_config = optional(object({
         http_port              = number
         https_port             = number
         origin_protocol_policy = string
         origin_ssl_protocols   = optional(list(string), ["TLSv1.2"])
+        origin_keepalive_timeout = optional(number, 5)
+        origin_read_timeout      = optional(number, 30)
       }))
     }))
 
