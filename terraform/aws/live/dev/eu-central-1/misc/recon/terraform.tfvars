@@ -24,16 +24,15 @@ kms_key_arn = "arn:aws:kms:eu-central-1:XXXXXXXXXXXX:key/xxxxxxxx-xxxx-xxxx-xxxx
 # ============================================================================
 # OIDC provider ARN for your EKS cluster
 # Replace with your EKS OIDC provider ARN
-oidc_provider_arn = "arn:aws:iam::701342709052:oidc-provider/oidc.eks.eu-central-1.amazonaws.com/id/D8874FEADD8373D93A7323D3772B1BB1"
+oidc_provider_arn = "arn:aws:iam::XXXXXXXXXXXX:oidc-provider/oidc.<region>.amazonaws.com/id/XXXXXXXXXXXXXXXXXXXXXX"
 
 # OIDC provider ID (extract from the ARN above, format: oidc.eks.<region>.amazonaws.com/id/<ID>)
-oidc_provider_id = "oidc.eks.eu-central-1.amazonaws.com/id/D8874FEADD8373D93A7323D3772B1BB1"
+oidc_provider_id = "oidc.eks.<region>.amazonaws.com/id/XXXXXXXXXXXXXXXXXXXXXX"
 
 # Kubernetes service accounts that can assume the recon IAM role
 # Format: system:serviceaccount:<namespace>:<service-account-name>
 service_accounts = [
-  "system:serviceaccount:router:router-role",
-  "system:serviceaccount:hyperswitch-sandbox:hyperswitch-router-role"
+  "system:serviceaccount:recon:recon-role",
 ]
 
 # ============================================================================
