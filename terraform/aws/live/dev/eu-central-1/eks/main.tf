@@ -151,10 +151,10 @@ resource "helm_release" "hyperswitch_stack" {
   chart      = "hyperswitch-stack"
   namespace  = kubernetes_namespace_v1.hyperswitch[0].metadata[0].name
 
-  # Use custom values file for ECR image overrides
-  values = [
+  # Use custom values file for ECR image overrides (if present)
+  values = fileexists("${path.module}/hyperswitch-values.yaml") ? [
     file("${path.module}/hyperswitch-values.yaml")
-  ]
+  ] : []
 
   # Wait for resources to be ready
   wait          = true
