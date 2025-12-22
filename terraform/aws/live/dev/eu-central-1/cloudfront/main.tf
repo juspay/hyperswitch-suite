@@ -35,6 +35,7 @@ module "cloudfront" {
       price_class        = dist.price_class
       enabled            = dist.enabled
       comment            = dist.comment
+      web_acl_id         = dist.web_acl_id
 
       # Domain aliases and viewer certificate
       aliases            = dist.aliases

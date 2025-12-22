@@ -155,6 +155,9 @@ variable "distributions" {
     enabled            = optional(bool, true)
     comment            = optional(string)
 
+    # Web Acl Id for WAF
+    web_acl_id = optional(string, null)
+
     # Domain aliases (CNAMEs)
     aliases = optional(list(string), [])
 

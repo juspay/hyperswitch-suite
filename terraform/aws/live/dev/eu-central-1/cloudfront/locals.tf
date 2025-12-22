@@ -159,6 +159,7 @@ locals {
       price_class         = lookup(dist_config, "price_class", "PriceClass_All")
       aliases            = lookup(dist_config, "aliases", [])
       viewer_certificate = lookup(dist_config, "viewer_certificate", null)
+      web_acl_id         = lookup(dist_config, "web_acl_id", null)
 
       # Process origins
       origins = dist_config.origins
