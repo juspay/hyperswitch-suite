@@ -50,3 +50,14 @@ output "locker_nlb_endpoint" {
   description = "HTTPS endpoint for accessing locker via NLB"
   value       = "https://${module.locker.nlb_dns_name}"
 }
+
+# NLB Listeners Information
+output "locker_nlb_listener_arns" {
+  description = "ARNs of the NLB listeners"
+  value       = module.locker.nlb_listener_arns
+}
+
+output "locker_nlb_listener_details" {
+  description = "Details of the NLB listeners (port and protocol)"
+  value       = module.locker.nlb_listener_details
+}

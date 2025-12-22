@@ -38,6 +38,9 @@ module "locker" {
   nlb_ingress_rules        = var.nlb_ingress_rules
   nlb_egress_rules         = var.nlb_egress_rules
 
+  # NLB Listeners Configuration
+  nlb_listeners           = var.nlb_listeners
+
   # Logging Configuration
   log_retention_days = var.log_retention_days
 

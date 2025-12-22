@@ -141,6 +141,35 @@ nlb_egress_rules = [
 ]
 
 # ============================================================================
+# NLB Listeners Configuration
+# ============================================================================
+# NLB listener configurations for the Network Load Balancer
+# Default: TCP on port 80 for secure internal access
+nlb_listeners = [
+  {
+    port     = 80
+    protocol = "TCP"
+  },
+  # Example: Add HTTP listener (uncomment if needed)
+  # {
+  #   port     = 443
+  #   protocol = "TCP"
+  # },
+  # Example: Add TLS listener with certificate (uncomment if needed)
+  # {
+  #   port              = 8443
+  #   protocol          = "TLS"
+  #   certificate_arn   = "arn:aws:acm:eu-central-1:123456789012:certificate/12345678-1234-1234-1234-123456789012"
+  # },
+  # Example: Route to custom target group (uncomment if needed)
+  # {
+  #   port              = 9090
+  #   protocol          = "TCP"
+  #   target_group_arn  = "arn:aws:elasticloadbalancing:eu-central-1:123456789012:targetgroup/custom-tg/1234567890123456"
+  # },
+]
+
+# ============================================================================
 # Logging Configuration
 # ============================================================================
 # CloudWatch log retention in days (1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653)

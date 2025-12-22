@@ -186,3 +186,26 @@ variable "nlb_egress_rules" {
     error_message = "Each rule must have exactly one of 'cidr' (IPv4), 'ipv6_cidr' (IPv6), 'sg_id' (Security Group), or 'prefix_list_ids' (VPC Endpoint)."
   }
 }
+
+variable "nlb_listeners" {
+  description = "NLB listener configurations for the Network Load Balancer"
+  type = list(object({
+    port              = number
+    protocol          = string
+    target_group_arn  = optional(string) # If not provided, will use the default locker target group
+    certificate_arn   = optional(string) # Required for TLS/HTTPS protocol
+  }))
+  default = [
+    {
+      port     = 80
+      protocol = "TCP"
+    }
+  ]
+  validation {
+    condition = alltrue([
+      for listener in var.nlb_listeners :
+      contains(["TCP", "UDP", "TCP_UDP", "TLS", "HTTP", "HTTPS"], listener.protocol)
+    ])
+    error_message = "Listener protocol must be one of: TCP, UDP, TCP_UDP, TLS, HTTP, HTTPS"
+  }
+}
