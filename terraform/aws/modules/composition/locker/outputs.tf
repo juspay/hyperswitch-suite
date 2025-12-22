@@ -37,3 +37,16 @@ output "nlb_dns_name" {
   description = "DNS name of the Network Load Balancer"
   value       = aws_lb.locker_nlb.dns_name
 }
+
+output "nlb_listener_arns" {
+  description = "ARNs of the NLB listeners"
+  value       = { for key, listener in aws_lb_listener.locker : key => listener.arn }
+}
+
+output "nlb_listener_details" {
+  description = "Details of the NLB listeners (port and protocol)"
+  value       = { for key, listener in var.nlb_listeners : key => {
+    port     = listener.port
+    protocol = listener.protocol
+  }}
+}

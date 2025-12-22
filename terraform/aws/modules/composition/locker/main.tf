@@ -386,15 +386,17 @@ resource "aws_lb_target_group_attachment" "locker" {
 }
 
 # =========================================================================
-# LOAD BALANCER - LISTENER
+# LOAD BALANCER - LISTENERS
 # =========================================================================
 resource "aws_lb_listener" "locker" {
+  for_each = var.nlb_listeners
+
   load_balancer_arn = aws_lb.locker_nlb.arn
-  port              = "443"
-  protocol          = "TCP"
+  port              = each.value.port
+  protocol          = each.value.protocol
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.locker.arn
+    target_group_arn = each.value.target_group_arn != null ? each.value.target_group_arn : aws_lb_target_group.locker.arn
   }
 }

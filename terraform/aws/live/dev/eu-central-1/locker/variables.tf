@@ -147,6 +147,25 @@ variable "nlb_egress_rules" {
 }
 
 # ============================================================================
+# NLB Listeners Configuration
+# ============================================================================
+variable "nlb_listeners" {
+  description = "NLB listener configurations"
+  type = map(object({
+    port              = number
+    protocol          = string
+    target_group_arn  = optional(string)
+    certificate_arn   = optional(string)
+  }))
+  default = {
+    "http" = {
+      port     = 80
+      protocol = "TCP"
+    }
+  }
+}
+
+# ============================================================================
 # Logging Configuration
 # ============================================================================
 variable "log_retention_days" {

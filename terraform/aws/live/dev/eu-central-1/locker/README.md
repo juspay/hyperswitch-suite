@@ -15,7 +15,7 @@ This directory contains the Terraform configuration to deploy the Hyperswitch Lo
 ┌─────────────────────┐       ┌─────────────────────┐
 │  Network Load       │──────▶│  Locker Instance    │
 │  Balancer (NLB)     │       │  - Private Subnet   │
-│  - Port 443 (TCP)   │       │  - Port 8080        │
+│  - Listeners        │       │  - Port 8080        │
 └─────────────────────┘       │  - Card Vault       │
                               └─────────┬───────────┘
                                         │
@@ -108,6 +108,19 @@ nlb_ingress_rules = [
     sg_id       = ["sg-XXXXXXXXXXXXXXXXX"]  # Jump host SG ID
   }
 ]
+
+# NLB Listeners Configuration (Optional)
+nlb_listeners = [
+  {
+    port     = 443
+    protocol = "TCP"
+  },
+  {
+    port              = 8443
+    protocol          = "TLS"
+    certificate_arn   = "arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012"
+  }
+]
 ```
 
 ### Security Group Rules
@@ -122,6 +135,45 @@ Each rule supports:
 - `sg_id` - Security Group IDs (e.g., `["sg-xxxxx"]`)
 - `prefix_list_ids` - VPC Endpoint Prefix Lists (e.g., `["pl-6ea54007"]`)
 - `ipv6_cidr` - IPv6 CIDR blocks
+
+### NLB Listeners Configuration
+
+The module supports flexible NLB listener configuration through `nlb_listeners` variable:
+
+- **Default Listener:** Port 443 with TCP protocol (if not specified)
+- **Multiple Listeners:** Configure multiple listeners on different ports
+- **Protocol Support:** TCP, UDP, TCP_UDP, TLS, HTTP, HTTPS
+- **TLS/HTTPS:** Requires `certificate_arn` for SSL/TLS termination
+- **Custom Target Groups:** Use `target_group_arn` to route to different target groups
+
+Example configurations:
+```hcl
+# Simple TCP listener
+nlb_listeners = {
+  https = {
+    port     = 443
+    protocol = "TCP"
+  }
+}
+
+# Multiple listeners with TLS
+nlb_listeners = {
+  http = {
+    port     = 80
+    protocol = "TCP"
+  },
+  https = {
+    port              = 443
+    protocol          = "TLS"
+    certificate_arn   = "arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012"
+  },
+  custom_app = {
+    port              = 8443
+    protocol          = "TCP"
+    target_group_arn  = "arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/custom-tg/1234567890123456"
+  }
+}
+```
 
 ## Deployment
 
