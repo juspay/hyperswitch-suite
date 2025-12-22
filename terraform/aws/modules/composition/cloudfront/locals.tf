@@ -191,9 +191,10 @@ locals {
         for behavior in lookup(dist_config, "ordered_cache_behaviors", []) :
         merge(behavior, {
           # When cache_policy_id is set, TTL must be 0 (controlled by the policy)
-          min_ttl               = lookup(behavior, "cache_policy_id", null) != null ? 0 : lookup(behavior.ttl, "min_ttl", 0)
-          default_ttl           = lookup(behavior, "cache_policy_id", null) != null ? 0 : lookup(behavior.ttl, "default_ttl", 0)
-          max_ttl               = lookup(behavior, "cache_policy_id", null) != null ? 0 : lookup(behavior.ttl, "max_ttl", 0)
+          # Otherwise, use TTL from behavior.ttl or default to 0 if ttl block is missing
+          min_ttl               = lookup(behavior, "cache_policy_id", null) != null ? 0 : try(behavior.ttl.min_ttl, 0)
+          default_ttl           = lookup(behavior, "cache_policy_id", null) != null ? 0 : try(behavior.ttl.default_ttl, 0)
+          max_ttl               = lookup(behavior, "cache_policy_id", null) != null ? 0 : try(behavior.ttl.max_ttl, 0)
           compress              = lookup(behavior, "compress", false)
           cache_policy_id       = lookup(behavior, "cache_policy_id", null)
           origin_request_policy_id = lookup(behavior, "origin_request_policy_id", null)
@@ -286,58 +287,6 @@ locals {
     )
   ) : null
 
-  # S3 buckets requiring OAC policies (metadata only, ARNs computed after creation)
-  s3_bucket_origins = {
-    for dist_name, dist_config in var.distributions :
-    dist_name => [
-      for origin in dist_config.origins : {
-        bucket_id  = origin.s3_bucket_id
-        bucket_arn = origin.s3_bucket_arn
-        origin_id  = origin.origin_id
-      } if origin.type == "s3" && lookup(origin, "apply_bucket_policy", true) && lookup(origin, "origin_access_control_id", null) != null
-    ]
-  }
-
-  # Safely extract existing policy statements from S3 buckets
-  # Returns a map of bucket_id => list of existing statements
-  # Handles buckets that may not have policies by returning empty list
-  get_existing_statements = {
-    for bucket_id in distinct(flatten([
-      for dist_name, origins in local.s3_bucket_origins :
-      [for origin in origins : origin.bucket_id]
-    ])) : bucket_id => try(
-      lookup(data.aws_s3_bucket_policy.existing, bucket_id, null) != null ? [
-        for stmt in jsondecode(data.aws_s3_bucket_policy.existing[bucket_id].policy).Statement :
-        stmt if !can(regex("^AllowCloudFrontServicePrincipal-", lookup(stmt, "Sid", "")))
-      ] : [],
-      []
-    )
-  }
-
-  # Aggregate CloudFront OAC statements by bucket
-  # This groups all distributions' OAC statements for each bucket
-  # Key insight: Manage policy once per bucket, not once per distribution
-  bucket_policy_map = {
-    for bucket_id in distinct(flatten([
-      for dist_name, origins in local.s3_bucket_origins :
-      [for origin in origins : origin.bucket_id]
-    ])) : bucket_id => flatten([
-      for dist_name, origins in local.s3_bucket_origins : [
-        for origin in origins : {
-          Sid       = "AllowCloudFrontServicePrincipal-${dist_name}-${origin.origin_id}"
-          Effect    = "Allow"
-          Principal = { Service = "cloudfront.amazonaws.com" }
-          Action    = ["s3:GetObject"]
-          Resource  = "${origin.bucket_arn}/*"
-          Condition = {
-            StringEquals = {
-              "AWS:SourceArn" = module.cloudfront[dist_name].cloudfront_distribution_arn
-            }
-          }
-        } if origin.bucket_id == bucket_id
-      ]
-    ])
-  }
 
   # CloudFront Functions map
   cloudfront_functions_map = {

@@ -111,35 +111,3 @@ data "aws_cloudfront_response_headers_policy" "aws_managed" {
   name   = compact(local.aws_managed_response_headers_policy_names)[count.index]
 }
 
-# ============================================================================
-# S3 Bucket Policies for OAC
-# ============================================================================
-
-# Check if S3 buckets have existing policies using AWS CLI
-# This prevents errors when trying to read non-existent policies
-data "external" "bucket_has_policy" {
-  for_each = local.create ? toset([
-    for dist_name, origins in local.s3_bucket_origins :
-    origins[0].bucket_id if length(origins) > 0
-  ]) : []
-
-  program = ["bash", "-c", <<-EOT
-    if aws s3api get-bucket-policy --bucket ${each.value} > /dev/null 2>&1; then
-      echo '{"has_policy":"true"}'
-    else
-      echo '{"has_policy":"false"}'
-    fi
-  EOT
-  ]
-}
-
-# Read existing S3 bucket policies only for buckets that have policies
-# This prevents the "couldn't find resource" error for buckets without policies
-data "aws_s3_bucket_policy" "existing" {
-  for_each = local.create ? {
-    for bucket_id, check in data.external.bucket_has_policy :
-    bucket_id => bucket_id if check.result.has_policy == "true"
-  } : {}
-
-  bucket = each.value
-}
