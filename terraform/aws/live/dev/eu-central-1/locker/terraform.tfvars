@@ -145,29 +145,32 @@ nlb_egress_rules = [
 # ============================================================================
 # NLB listener configurations for the Network Load Balancer
 # Default: TCP on port 80 for secure internal access
-nlb_listeners = [
-  {
+nlb_listeners = {
+  http = {
     port     = 80
     protocol = "TCP"
-  },
+  }
+
   # Example: Add HTTP listener (uncomment if needed)
-  # {
+  # https = {
   #   port     = 443
   #   protocol = "TCP"
   # },
+
   # Example: Add TLS listener with certificate (uncomment if needed)
-  # {
+  # https_tls = {
   #   port              = 8443
   #   protocol          = "TLS"
   #   certificate_arn   = "arn:aws:acm:eu-central-1:123456789012:certificate/12345678-1234-1234-1234-123456789012"
   # },
+
   # Example: Route to custom target group (uncomment if needed)
-  # {
+  # custom_app = {
   #   port              = 9090
   #   protocol          = "TCP"
   #   target_group_arn  = "arn:aws:elasticloadbalancing:eu-central-1:123456789012:targetgroup/custom-tg/1234567890123456"
-  # },
-]
+  # }
+}
 
 # ============================================================================
 # Logging Configuration

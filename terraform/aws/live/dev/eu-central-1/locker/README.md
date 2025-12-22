@@ -149,30 +149,30 @@ The module supports flexible NLB listener configuration through `nlb_listeners` 
 Example configurations:
 ```hcl
 # Simple TCP listener
-nlb_listeners = [
-  {
+nlb_listeners = {
+  https = {
     port     = 443
     protocol = "TCP"
   }
-]
+}
 
 # Multiple listeners with TLS
-nlb_listeners = [
-  {
+nlb_listeners = {
+  http = {
     port     = 80
     protocol = "TCP"
   },
-  {
+  https = {
     port              = 443
     protocol          = "TLS"
     certificate_arn   = "arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012"
   },
-  {
+  custom_app = {
     port              = 8443
     protocol          = "TCP"
     target_group_arn  = "arn:aws:elasticloadbalancing:us-east-1:123456789012:targetgroup/custom-tg/1234567890123456"
   }
-]
+}
 ```
 
 ## Deployment

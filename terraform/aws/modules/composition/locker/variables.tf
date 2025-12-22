@@ -189,21 +189,21 @@ variable "nlb_egress_rules" {
 
 variable "nlb_listeners" {
   description = "NLB listener configurations for the Network Load Balancer"
-  type = list(object({
+  type = map(object({
     port              = number
     protocol          = string
     target_group_arn  = optional(string) # If not provided, will use the default locker target group
     certificate_arn   = optional(string) # Required for TLS/HTTPS protocol
   }))
-  default = [
-    {
+  default = {
+    "http" = {
       port     = 80
       protocol = "TCP"
     }
-  ]
+  }
   validation {
     condition = alltrue([
-      for listener in var.nlb_listeners :
+      for key, listener in var.nlb_listeners :
       contains(["TCP", "UDP", "TCP_UDP", "TLS", "HTTP", "HTTPS"], listener.protocol)
     ])
     error_message = "Listener protocol must be one of: TCP, UDP, TCP_UDP, TLS, HTTP, HTTPS"

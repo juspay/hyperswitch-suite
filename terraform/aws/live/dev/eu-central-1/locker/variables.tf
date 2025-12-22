@@ -151,18 +151,18 @@ variable "nlb_egress_rules" {
 # ============================================================================
 variable "nlb_listeners" {
   description = "NLB listener configurations"
-  type = list(object({
+  type = map(object({
     port              = number
     protocol          = string
     target_group_arn  = optional(string)
     certificate_arn   = optional(string)
   }))
-  default = [
-    {
+  default = {
+    "http" = {
       port     = 80
       protocol = "TCP"
     }
-  ]
+  }
 }
 
 # ============================================================================

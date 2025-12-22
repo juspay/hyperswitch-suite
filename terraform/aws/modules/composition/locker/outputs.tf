@@ -40,12 +40,12 @@ output "nlb_dns_name" {
 
 output "nlb_listener_arns" {
   description = "ARNs of the NLB listeners"
-  value       = { for idx, listener in aws_lb_listener.locker : idx => listener.arn }
+  value       = { for key, listener in aws_lb_listener.locker : key => listener.arn }
 }
 
 output "nlb_listener_details" {
   description = "Details of the NLB listeners (port and protocol)"
-  value       = { for idx, listener in var.nlb_listeners : idx => {
+  value       = { for key, listener in var.nlb_listeners : key => {
     port     = listener.port
     protocol = listener.protocol
   }}

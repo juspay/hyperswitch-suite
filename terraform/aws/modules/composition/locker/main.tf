@@ -389,7 +389,7 @@ resource "aws_lb_target_group_attachment" "locker" {
 # LOAD BALANCER - LISTENERS
 # =========================================================================
 resource "aws_lb_listener" "locker" {
-  for_each = { for idx, listener in var.nlb_listeners : idx => listener }
+  for_each = var.nlb_listeners
 
   load_balancer_arn = aws_lb.locker_nlb.arn
   port              = each.value.port
