@@ -29,6 +29,22 @@ variable "instance_type" {
   default     = "t3.medium"
 }
 
+variable "instance_count" {
+  description = "Number of EC2 instances to create"
+  type        = number
+  default     = 1
+  validation {
+    condition     = var.instance_count >= 1
+    error_message = "Instance count must be at least 1"
+  }
+}
+
+variable "locker_port" {
+  description = "Port number for the locker service"
+  type        = number
+  default     = 8080
+}
+
 variable "key_name" {
   description = "SSH key pair name. Required if create_key_pair is false. If create_key_pair is true and this is provided, it will be used as the name for the new key pair; otherwise an auto-generated name will be used"
   type        = string
