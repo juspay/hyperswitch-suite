@@ -3,8 +3,8 @@ variable "environment" {
   type        = string
 
   validation {
-    condition     = contains(["dev", "integ", "prod", "sandbox"], var.environment)
-    error_message = "Environment must be one of: dev, integ, prod, sandbox"
+    condition     = contains(["dev", "integ", "prod", "sbx"], var.environment)
+    error_message = "Environment must be one of: dev, integ, prod, sbx"
   }
 }
 
@@ -29,27 +29,80 @@ variable "lb_subnet_ids" {
   type        = list(string)
 }
 
-# NOTE: eks_security_group_id is NOT needed for Envoy proxy
-# Traffic flow: CloudFront → External ALB → Envoy → Internal ALB → EKS
-# EKS does not initiate connections to Envoy, so EKS SG is not required
-# (This is different from Squid proxy where EKS → Squid → Internet)
-# Variable kept for backward compatibility but not used anywhere
-variable "eks_security_group_id" {
-  description = "DEPRECATED: Not used. Kept for backward compatibility only."
-  type        = string
-  default     = null
+variable "ingress_rules" {
+  description = "Ingress rules for ASG security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, 'sg_id' for security groups, or 'prefix_list_ids' for VPC endpoints"
+  type = list(object({
+    description     = string
+    from_port       = number
+    to_port         = number
+    protocol        = string
+    cidr            = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
+    ipv6_cidr       = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
+    sg_id           = optional(list(string))  # Security Group IDs
+    prefix_list_ids = optional(list(string))  # VPC Endpoint Prefix Lists (e.g., ["pl-6ea54007"])
+  }))
+  default = []
+  validation {
+    condition = alltrue([
+      for rule in var.ingress_rules :
+      # Must have exactly one of: cidr, ipv6_cidr, sg_id, or prefix_list_ids
+      (rule.cidr != null ? 1 : 0) + (rule.ipv6_cidr != null ? 1 : 0) + (rule.sg_id != null ? 1 : 0) + (rule.prefix_list_ids != null ? 1 : 0) == 1
+    ])
+    error_message = "Each rule must have exactly one of 'cidr' (IPv4), 'ipv6_cidr' (IPv6), 'sg_id' (Security Group), or 'prefix_list_ids' (VPC Endpoint)."
+  }
 }
 
-variable "envoy_admin_port" {
-  description = "Port for Envoy admin interface (localhost only, not exposed externally)"
-  type        = number
-  default     = 9901
+variable "egress_rules" {
+  description = "Egress rules for ASG security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, 'sg_id' for security groups, or 'prefix_list_ids' for VPC endpoints"
+  type = list(object({
+    description     = string
+    from_port       = number
+    to_port         = number
+    protocol        = string
+    cidr            = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
+    ipv6_cidr       = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
+    sg_id           = optional(list(string))  # Security Group IDs
+    prefix_list_ids = optional(list(string))  # VPC Endpoint Prefix Lists (e.g., ["pl-6ea54007"])
+  }))
+  default = []
+  validation {
+    condition = alltrue([
+      for rule in var.egress_rules :
+      # Must have exactly one of: cidr, ipv6_cidr, sg_id, or prefix_list_ids
+      (rule.cidr != null ? 1 : 0) + (rule.ipv6_cidr != null ? 1 : 0) + (rule.sg_id != null ? 1 : 0) + (rule.prefix_list_ids != null ? 1 : 0) == 1
+    ])
+    error_message = "Each rule must have exactly one of 'cidr' (IPv4), 'ipv6_cidr' (IPv6), 'sg_id' (Security Group), or 'prefix_list_ids' (VPC Endpoint)."
+  }
 }
 
-variable "envoy_listener_port" {
-  description = "Port for Envoy listener"
-  type        = number
-  default     = 10000
+variable "lb_ingress_rules" {
+  description = "Additional ingress rules for external load balancer security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, 'sg_id' for security groups, or 'prefix_list_ids' for VPC endpoints"
+  type = list(object({
+    description     = string
+    from_port       = number
+    to_port         = number
+    protocol        = string
+    cidr            = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
+    ipv6_cidr       = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
+    sg_id           = optional(list(string))  # Security Group IDs
+    prefix_list_ids = optional(list(string))  # VPC Endpoint Prefix Lists (e.g., ["pl-6ea54007"])
+  }))
+  default = []
+}
+
+variable "lb_egress_rules" {
+  description = "Additional egress rules for external load balancer security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, 'sg_id' for security groups, or 'prefix_list_ids' for VPC endpoints"
+  type = list(object({
+    description     = string
+    from_port       = number
+    to_port         = number
+    protocol        = string
+    cidr            = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
+    ipv6_cidr       = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
+    sg_id           = optional(list(string))  # Security Group IDs
+    prefix_list_ids = optional(list(string))  # VPC Endpoint Prefix Lists (e.g., ["pl-6ea54007"])
+  }))
+  default = []
 }
 
 # =========================================================================
@@ -80,24 +133,13 @@ variable "alb_https_listener_port" {
 }
 
 variable "envoy_traffic_port" {
-  description = "Port where Envoy instances listen for traffic from ALB (target group port)"
+  description = "Port where Envoy instances listen for traffic from ALB (target group port) - ALB forwards traffic to this port"
   type        = number
   default     = 80
 
   validation {
     condition     = var.envoy_traffic_port >= 1 && var.envoy_traffic_port <= 65535
     error_message = "Envoy traffic port must be between 1 and 65535"
-  }
-}
-
-variable "envoy_health_check_port" {
-  description = "Port for Envoy health check endpoint"
-  type        = number
-  default     = 8081
-
-  validation {
-    condition     = var.envoy_health_check_port >= 1 && var.envoy_health_check_port <= 65535
-    error_message = "Envoy health check port must be between 1 and 65535"
   }
 }
 
@@ -227,6 +269,94 @@ variable "existing_launch_template_version" {
   default     = "$Latest"
 }
 
+# =========================================================================
+# Launch Template Advanced Configuration (ignored if use_existing_launch_template = true)
+# =========================================================================
+
+variable "ebs_optimized" {
+  description = "Enable EBS optimization for instances (ignored if use_existing_launch_template = true)"
+  type        = bool
+  default     = true
+}
+
+variable "ebs_encrypted" {
+  description = "Enable EBS encryption for root volume (ignored if use_existing_launch_template = true or enable_ebs_block_device = false)"
+  type        = bool
+  default     = true
+}
+
+variable "enable_ebs_block_device" {
+  description = "Enable EBS block device mapping in launch template. Set to false if AMI already has storage configured (ignored if use_existing_launch_template = true)"
+  type        = bool
+  default     = true
+}
+
+variable "root_volume_size" {
+  description = "Root volume size in GB (ignored if use_existing_launch_template = true or enable_ebs_block_device = false)"
+  type        = number
+  default     = 20
+
+  validation {
+    condition     = var.root_volume_size >= 8 && var.root_volume_size <= 16384
+    error_message = "Root volume size must be between 8 and 16384 GB"
+  }
+}
+
+variable "root_volume_type" {
+  description = "Root volume type: gp2, gp3, io1, io2, st1, sc1 (ignored if use_existing_launch_template = true or enable_ebs_block_device = false)"
+  type        = string
+  default     = "gp3"
+
+  validation {
+    condition     = contains(["gp2", "gp3", "io1", "io2", "st1", "sc1"], var.root_volume_type)
+    error_message = "Root volume type must be one of: gp2, gp3, io1, io2, st1, sc1"
+  }
+}
+
+variable "imds_http_tokens" {
+  description = "Whether IMDS requires session tokens (IMDSv2). Set to 'required' for IMDSv2, 'optional' for IMDSv1/v2, or null to use AWS default (ignored if use_existing_launch_template = true)"
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.imds_http_tokens == null || contains(["required", "optional"], var.imds_http_tokens)
+    error_message = "imds_http_tokens must be either 'required' (IMDSv2), 'optional' (IMDSv1/v2), or null (AWS default)"
+  }
+}
+
+variable "imds_http_endpoint" {
+  description = "Enable or disable the IMDS HTTP endpoint. Set to 'enabled', 'disabled', or null to use AWS default (ignored if use_existing_launch_template = true)"
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.imds_http_endpoint == null || contains(["enabled", "disabled"], var.imds_http_endpoint)
+    error_message = "imds_http_endpoint must be either 'enabled', 'disabled', or null (AWS default)"
+  }
+}
+
+variable "imds_http_put_response_hop_limit" {
+  description = "Desired HTTP PUT response hop limit for instance metadata requests (1-64), or null to use AWS default (ignored if use_existing_launch_template = true)"
+  type        = number
+  default     = null
+
+  validation {
+    condition     = var.imds_http_put_response_hop_limit == null || (var.imds_http_put_response_hop_limit >= 1 && var.imds_http_put_response_hop_limit <= 64)
+    error_message = "imds_http_put_response_hop_limit must be between 1 and 64, or null (AWS default)"
+  }
+}
+
+variable "imds_instance_metadata_tags" {
+  description = "Enable instance metadata tags. Set to 'enabled', 'disabled', or null to use AWS default (ignored if use_existing_launch_template = true)"
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.imds_instance_metadata_tags == null || contains(["enabled", "disabled"], var.imds_instance_metadata_tags)
+    error_message = "imds_instance_metadata_tags must be either 'enabled', 'disabled', or null (AWS default)"
+  }
+}
+
 variable "key_name" {
   description = "SSH key pair name (ignored if generate_ssh_key=true)"
   type        = string
@@ -251,8 +381,14 @@ variable "existing_iam_role_name" {
   default     = null
 }
 
+variable "create_instance_profile" {
+  description = "Whether to create a new instance profile for existing IAM role (only relevant when create_iam_role = false)"
+  type        = bool
+  default     = true
+}
+
 variable "existing_iam_instance_profile_name" {
-  description = "Name of existing IAM instance profile to use (only if create_iam_role = false)"
+  description = "Name of existing IAM instance profile to use (only if create_iam_role = false AND create_instance_profile = false)"
   type        = string
   default     = null
 }
@@ -263,8 +399,15 @@ variable "custom_userdata" {
 }
 
 variable "envoy_config_template" {
-  description = "Envoy configuration template (envoy.yaml content). This should be environment-specific and loaded from the live layer (e.g., file(\"$${path.module}/config/envoy.yaml\"))"
+  description = <<-EOT
+    Envoy configuration template content. This is environment-specific and flexible:
+    - Load from file: file("$${path.module}/config/my-envoy-config.yaml")
+    - Load from any path: file("/path/to/envoy.yaml")
+    - Provide inline: "admin: { ... }"
+    - Use try() for optional: try(file("$${path.module}/config/envoy.yaml"), "")
+  EOT
   type        = string
+  default     = ""
 }
 
 variable "min_size" {
@@ -356,6 +499,24 @@ variable "max_instance_lifetime" {
   }
 }
 
+variable "create_logs_bucket" {
+  description = "Whether to create a new S3 bucket for logs (if false, use existing bucket)"
+  type        = bool
+  default     = true
+}
+
+variable "logs_bucket_name" {
+  description = "Name of existing S3 bucket for logs (required if create_logs_bucket=false)"
+  type        = string
+  default     = ""
+}
+
+variable "logs_bucket_arn" {
+  description = "ARN of existing S3 bucket for logs (required if create_logs_bucket=false)"
+  type        = string
+  default     = ""
+}
+
 variable "create_config_bucket" {
   description = "Whether to create a new S3 bucket for configuration files (if false, use existing bucket)"
   type        = bool
@@ -386,6 +547,19 @@ variable "config_files_source_path" {
   default     = "./config"
 }
 
+variable "envoy_config_filename" {
+  description = <<-EOT
+    Name of the main Envoy config file (relative to config_files_source_path).
+    This file will receive template variable substitution when uploaded to S3.
+    Different environments can use different filenames:
+    - Dev: "envoy.yaml" or "envoy-dev.yaml"
+    - Staging: "envoy-staging.yaml"
+    - Production: "envoy-prod.yaml" or "proxy-config.yaml"
+  EOT
+  type        = string
+  default     = "envoy.yaml"
+}
+
 variable "hyperswitch_cloudfront_dns" {
   description = "CloudFront distribution DNS for Hyperswitch (for envoy.yaml templating)"
   type        = string
@@ -399,21 +573,9 @@ variable "internal_loadbalancer_dns" {
 }
 
 variable "enable_detailed_monitoring" {
-  description = "Enable detailed CloudWatch monitoring"
+  description = "Enable detailed CloudWatch monitoring (ignored if use_existing_launch_template = true)"
   type        = bool
   default     = true
-}
-
-variable "root_volume_size" {
-  description = "Size of root EBS volume in GB"
-  type        = number
-  default     = 30
-}
-
-variable "root_volume_type" {
-  description = "Type of root EBS volume"
-  type        = string
-  default     = "gp3"
 }
 
 variable "create_lb" {
@@ -439,6 +601,67 @@ variable "target_group_protocol" {
   }
 }
 
+variable "target_group_deregistration_delay" {
+  description = "Time to wait before deregistering a target in seconds"
+  type        = number
+  default     = 30
+}
+
+# =========================================================================
+# Health Check Configuration (Environment-specific)
+# =========================================================================
+
+variable "health_check" {
+  description = "Health check configuration for target group"
+  type = object({
+    enabled             = optional(bool, true)
+    port                = optional(number, 80)
+    path                = optional(string, "/healthz")
+    protocol            = optional(string, "HTTP")
+    matcher             = optional(string, "200")
+    interval            = optional(number, 30)
+    timeout             = optional(number, 5)
+    healthy_threshold   = optional(number, 2)
+    unhealthy_threshold = optional(number, 2)
+  })
+  default = {
+    enabled             = true
+    port                = 80
+    path                = "/healthz"
+    protocol            = "HTTP"
+    matcher             = "200"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+  }
+
+  validation {
+    condition     = contains(["HTTP", "HTTPS"], var.health_check.protocol)
+    error_message = "Health check protocol must be either HTTP or HTTPS"
+  }
+
+  validation {
+    condition     = var.health_check.interval >= 5 && var.health_check.interval <= 300
+    error_message = "Health check interval must be between 5 and 300 seconds"
+  }
+
+  validation {
+    condition     = var.health_check.timeout >= 2 && var.health_check.timeout <= 120
+    error_message = "Health check timeout must be between 2 and 120 seconds"
+  }
+
+  validation {
+    condition     = var.health_check.healthy_threshold >= 2 && var.health_check.healthy_threshold <= 10
+    error_message = "Healthy threshold must be between 2 and 10"
+  }
+
+  validation {
+    condition     = var.health_check.unhealthy_threshold >= 2 && var.health_check.unhealthy_threshold <= 10
+    error_message = "Unhealthy threshold must be between 2 and 10"
+  }
+}
+
 # =========================================================================
 # VPC Endpoint Configuration
 # =========================================================================
@@ -450,23 +673,15 @@ variable "s3_vpc_endpoint_prefix_list_id" {
 }
 
 variable "existing_lb_arn" {
-  description = "ARN of existing load balancer (required if create_lb=false)"
+  description = "ARN of existing load balancer (optional - only needed if you want to reference it)"
   type        = string
   default     = null
-  validation {
-    condition     = var.create_lb == true || var.existing_lb_arn != null
-    error_message = "existing_lb_arn must be provided when create_lb is false"
-  }
 }
 
 variable "existing_lb_security_group_id" {
-  description = "Security group ID of existing load balancer (required if create_lb=false)"
+  description = "Security group ID of existing load balancer (optional - only needed for automatic security group rule creation)"
   type        = string
   default     = null
-  validation {
-    condition     = var.create_lb == true || var.existing_lb_security_group_id != null
-    error_message = "existing_lb_security_group_id must be provided when create_lb is false"
-  }
 }
 
 variable "existing_tg_arn" {
@@ -479,38 +694,40 @@ variable "existing_tg_arn" {
   }
 }
 
-variable "enable_instance_refresh" {
-  description = "Enable automatic instance refresh when launch template changes. When enabled, ASG will automatically replace instances with manual checkpoints for validation."
+# =========================================================================
+# Auto Scaling Policies Configuration
+# =========================================================================
+variable "enable_autoscaling" {
+  description = "Enable auto-scaling policies for the ASG based on CPU and memory metrics"
   type        = bool
   default     = false
 }
 
-variable "instance_refresh_preferences" {
-  description = "Preferences for instance refresh behavior. Defines how instances are replaced during a refresh."
+variable "scaling_policies" {
+  description = "Configuration for auto-scaling policies using built-in AWS metrics"
   type = object({
-    min_healthy_percentage       = optional(number, 50)
-    instance_warmup              = optional(number, 300)
-    max_healthy_percentage       = optional(number, 100)
-    checkpoint_percentages       = optional(list(number), [50])
-    checkpoint_delay             = optional(number, 300)
-    scale_in_protected_instances = optional(string, "Ignore")
-    standby_instances            = optional(string, "Ignore")
+    # CPU-based target tracking
+    cpu_target_tracking = optional(object({
+      enabled      = optional(bool, false)
+      target_value = optional(number, 70.0) # Target CPU utilization %
+    }), {})
+
+    # Memory-based target tracking (requires CloudWatch agent on instances)
+    memory_target_tracking = optional(object({
+      enabled      = optional(bool, false)
+      target_value = optional(number, 70.0) # Target Memory utilization %
+    }), {})
   })
   default = {
-    min_healthy_percentage       = 50
-    instance_warmup              = 300
-    max_healthy_percentage       = 100
-    checkpoint_percentages       = [50]
-    checkpoint_delay             = 300
-    scale_in_protected_instances = "Ignore"
-    standby_instances            = "Ignore"
+    cpu_target_tracking = {
+      enabled      = false
+      target_value = 70.0
+    }
+    memory_target_tracking = {
+      enabled      = false
+      target_value = 70.0
+    }
   }
-}
-
-variable "instance_refresh_triggers" {
-  description = "List of triggers that will start an instance refresh. Note: launch_template changes always trigger refresh automatically."
-  type        = list(string)
-  default     = []  # Empty - launch_template triggers are automatic
 }
 
 variable "tags" {

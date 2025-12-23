@@ -10,7 +10,7 @@
 terraform {
      backend "s3" {
        bucket  = "hyperswitch-dev-terraform-state"
-       key     = "dev/eu-central-1/squid-proxy/terraform.tfstate"
+       key     = "dev/eu-central-1/envoy-proxy/terraform.tfstate"
        region  = "eu-central-1"
        encrypt = true
      }

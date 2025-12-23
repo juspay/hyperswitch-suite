@@ -16,33 +16,102 @@ project_name = "hyperswitch"
 # Network Configuration
 # ============================================================================
 # TODO: Replace with your actual VPC and subnet IDs
-vpc_id = "vpc-XXXXXXXXXXXXX"  # Replace with your VPC ID
+vpc_id = "vpc-XXXXXXXXXXXXXXXXX"  # Replace with your VPC ID
 
 # Subnets where Squid proxy instances will run (private subnets with NAT/IGW)
 proxy_subnet_ids = [
-  "subnet-XXXXXXXXXXXXX",  # Private subnet AZ1
-  "subnet-XXXXXXXXXXXXX"   # Private subnet AZ2
+  "subnet-XXXXXXXXXXXXXXXXX",  # Private subnet AZ1
+  "subnet-XXXXXXXXXXXXXXXXX",  # Private subnet AZ2
+  "subnet-XXXXXXXXXXXXXXXXX"   # Private subnet AZ3
 ]
 
 # Subnets where NLB will be placed (service/public subnets)
 lb_subnet_ids = [
-  "subnet-XXXXXXXXXXXXX",  # Service subnet AZ1
-  "subnet-XXXXXXXXXXXXX"   # Service subnet AZ2
+  "subnet-XXXXXXXXXXXXXXXXX",  # Private subnet AZ1
+  "subnet-XXXXXXXXXXXXXXXXX",  # Private subnet AZ2
+  "subnet-XXXXXXXXXXXXXXXXX"   # Private subnet AZ3
 ]
 
-# EKS Configuration
-# TODO: Replace with your actual EKS worker security group ID
-eks_security_group_id = "sg-XXXXXXXXXXXXX"  # Replace with your EKS worker security group ID
+# ============================================================================
+# Security Group Rules (Environment Specific)
+# ============================================================================
+# Define environment-specific ingress and egress rules
+# Each rule must have EITHER 'cidr' OR 'sg_id':
+#   - cidr: list(string) for CIDR blocks
+#   - sg_id: list(string) for Security Group IDs
+#
+# Note: The 'type' field is automatically set by the composition layer
+# (ingress_rules → type="ingress", egress_rules → type="egress")
 
-# EKS Worker Node Subnet CIDRs
-# IMPORTANT: NLB preserves source IP, so we need to allow traffic from EKS worker subnets
-# These are the subnets where your EKS worker nodes (and pods) run
-# To find these subnets:
-#   aws ec2 describe-subnets --filters "Name=vpc-id,Values=YOUR_VPC_ID" \
-#     --query 'Subnets[?contains(Tags[?Key==`Name`].Value|[0], `eks-worker`)].{CIDR:CidrBlock,Name:Tags[?Key==`Name`].Value|[0]}'
-eks_worker_subnet_cidrs = [
-  "10.0.X.0/22",   # eks-worker-nodes-one-zoneSubnet1 (AZ1) - Replace with your CIDR
-  "10.0.X.0/22"    # eks-worker-nodes-one-zoneSubnet2 (AZ2) - Replace with your CIDR
+# ============================================================================
+# INGRESS RULES EXAMPLES
+# ============================================================================
+ingress_rules = [
+  {
+    description = "Allow traffic from EKS worker subnets"
+    from_port   = 3128
+    to_port     = 3128
+    protocol    = "tcp"
+    cidr        = ["10.X.X.0/21", "10.X.X.0/21"]  # Replace with your EKS worker subnet CIDRs
+  },
+  # Example 2: Allow SSH from jumpbox security group
+  # {
+  #   description = "Allow SSH access from external jumpbox"
+  #   from_port   = 22
+  #   to_port     = 22
+  #   protocol    = "tcp"
+  #   sg_id       = ["sg-XXXXXXXXXXXXX"]
+  # },
+  # Example 3: Allow Prometheus metrics scraping from Prometheus security group
+  # {
+  #   description = "Allow Prometheus metrics scraping"
+  #   from_port   = 9273
+  #   to_port     = 9273
+  #   protocol    = "tcp"
+  #   sg_id       = ["sg-XXXXXXXXXXXXX"]
+  # },
+]
+
+# ============================================================================
+# EGRESS RULES EXAMPLES
+# ============================================================================
+# Use this to add environment-specific outbound rules for:
+# - Security/Monitoring tools (Wazuh, ClamAV, Prometheus)
+# - Application-specific endpoints (payment gateways, connectors)
+#
+egress_rules = [
+  # Allow HTTPS access to the internet
+  {
+    description = "Allow HTTPS to internet"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr        = ["0.0.0.0/0"]
+  },
+  # Example 1: Allow outbound to Wazuh master (CIDR blocks)
+  # {
+  #   description = "Wazuh master"
+  #   from_port   = 1515
+  #   to_port     = 1515
+  #   protocol    = "tcp"
+  #   cidr        = ["10.41.16.0/20"]
+  # },
+  # Example 2: Allow outbound to ClamAV (Security Group ID)
+  # {
+  #   description = "ClamAV antivirus service"
+  #   from_port   = 3310
+  #   to_port     = 3310
+  #   protocol    = "tcp"
+  #   sg_id       = ["sg-XXXXXXXXXXXXX"]
+  # },
+  # Example 3: Allow outbound to custom application on non-standard port
+  # {
+  #   description = "Custom API endpoint"
+  #   from_port   = 8443
+  #   to_port     = 8443
+  #   protocol    = "tcp"
+  #   cidr        = ["192.168.1.0/24"]
+  # },
 ]
 
 # ============================================================================
@@ -93,18 +162,68 @@ instance_type = "t3.small"                # Smaller instance for dev
 
 #=======================================================================
 
+# ============================================================================
 # Auto Scaling Configuration
+# ============================================================================
 min_size         = 1
 max_size         = 2
 desired_capacity = 1
 
-# S3 Configuration
+# ============================================================================
+# Auto Scaling Policies (CPU and Memory-based)
+# ============================================================================
+# Enable auto-scaling to automatically add/remove instances based on load
+# Uses AWS built-in metrics - no custom CloudWatch metrics needed
+#
+# How it works:
+# - CPU-based: Scales when average CPU across all instances exceeds target
+# - Memory-based: Scales when average memory usage exceeds target (requires CloudWatch agent)
+# - Target Tracking: AWS automatically creates scale-up AND scale-down policies
+# - Cooldown: Prevents rapid scaling (scale-out: 60s, scale-in: 300s by default)
+#
+# Example scenario with cpu_target_tracking at 70%:
+# - Current: 1 instance at 85% CPU → ASG adds 1 instance
+# - Result: 2 instances at ~42% CPU → Stable
+# - Later: 2 instances at 20% CPU → ASG removes 1 instance after 15 min
+#
+# Recommendation for dev:
+# - Start with CPU-based scaling only
+# - Monitor behavior, then add memory-based if needed
+# ============================================================================
+
+enable_autoscaling = true  # Set to false to disable auto-scaling
+
+scaling_policies = {
+  # CPU Target Tracking - Recommended for most workloads
+  cpu_target_tracking = {
+    enabled      = true
+    target_value = 70.0  # Scale when average CPU > 70%
+  }
+
+  # Memory Target Tracking - Optional (requires CloudWatch agent)
+  # Note: CloudWatch agent must be installed and configured on instances
+  # to publish memory metrics to CloudWatch under "CWAgent" namespace
+  memory_target_tracking = {
+    enabled      = false  # Set to true after installing CloudWatch agent
+    target_value = 70.0   # Scale when average memory > 70%
+  }
+}
+
+# S3 Logs Bucket Configuration
+# Create a new S3 bucket for logs (dev environment)
+create_logs_bucket = true  # Automatically creates bucket: dev-hyperswitch-squid-logs-<account-id>-eu-central-1
+
+# NOTE: If using existing logs bucket, set create_logs_bucket = false and provide:
+# logs_bucket_name = "app-proxy-logs-<account-id>-eu-central-1"
+# logs_bucket_arn  = "arn:aws:s3:::app-proxy-logs-<account-id>-eu-central-1"
+
+# S3 Config Bucket Configuration
 # Create a new S3 bucket for configuration files (dev environment)
 create_config_bucket = true  # Automatically creates bucket: dev-hyperswitch-squid-config-<account-id>-eu-central-1
 
-# NOTE: If using existing bucket, set create_config_bucket = false and provide:
-# config_bucket_name = "app-proxy-config-225681119357-eu-central-1"
-# config_bucket_arn  = "arn:aws:s3:::app-proxy-config-225681119357-eu-central-1"
+# NOTE: If using existing config bucket, set create_config_bucket = false and provide:
+# config_bucket_name = "app-proxy-config-<account-id>-eu-central-1"
+# config_bucket_arn  = "arn:aws:s3:::app-proxy-config-<account-id>-eu-central-1"
 
 # Monitoring
 enable_detailed_monitoring = false
@@ -233,38 +352,42 @@ upload_config_to_s3 = true  # Automatically uploads configs from ./config direct
 #
 # OPTION 1: Create New IAM Role + Instance Profile (Current Setting) - RECOMMENDED
 #   create_iam_role = true
-#   - Terraform creates a new IAM role with required permissions
-#   - Includes S3 access for configs/logs, SSM, CloudWatch
+#   - Terraform creates a restrictive IAM role: "dev-hyperswitch-squid-role"
+#   - Dedicated role for Squid proxy instances
+#   - Minimal permissions following least-privilege principle:
+#     ✓ SSM access (AmazonSSMManagedInstanceCore)
+#     ✓ CloudWatch metrics only (cloudwatch:PutMetricData)
+#     ✓ S3 config bucket read-only (s3:GetObject, s3:ListBucket)
+#     ✓ S3 logs bucket write-only (s3:PutObject, s3:ListBucket)
 #   - Automatically creates instance profile
 #
-# OPTION 2: Use Existing IAM Role + Create New Instance Profile - RECOMMENDED for reusing roles
+# OPTION 2: Use Existing IAM Role + Create New Instance Profile
 #   create_iam_role = false
 #   create_instance_profile = true
-#   existing_iam_role_name = "my-existing-role"
-#   - Reuses an existing IAM role (with permissions already configured)
+#   existing_iam_role_name = "dev-hyperswitch-squid-role"
+#   - Reuses existing Squid role across environments
 #   - Creates a NEW instance profile for this deployment's launch template
-#   - Best for: Sharing IAM roles across deployments while keeping launch templates separate
+#   - Best for: Sharing IAM roles across environments while keeping launch templates separate
 #
 # OPTION 3: Use Existing IAM Role + Existing Instance Profile
 #   create_iam_role = false
 #   create_instance_profile = false
-#   existing_iam_role_name = "my-existing-role"
-#   existing_iam_instance_profile_name = "my-existing-instance-profile"
+#   existing_iam_role_name = "dev-hyperswitch-squid-role"
+#   existing_iam_instance_profile_name = "dev-hyperswitch-squid-instance-profile"
 #   - Uses both existing IAM role and instance profile
 #   - ⚠️ Warning: Instance profile can only be used by ONE launch template
-#   - Required permissions: S3 (config/logs buckets), SSM, CloudWatch
 #=======================================================================
 
 create_iam_role = true  # Set to false to use existing IAM role
 
 # Only used when create_iam_role = false
-# existing_iam_role_name = "hyperswitch-squid-role"
+# existing_iam_role_name = "dev-hyperswitch-squid-role"
 
 # Only used when create_iam_role = false
 create_instance_profile = true  # Set to false to use existing instance profile
 
 # Only used when create_iam_role = false AND create_instance_profile = false
-# existing_iam_instance_profile_name = "my-squid-instance-profile"
+# existing_iam_instance_profile_name = "dev-hyperswitch-squid-instance-profile"
 
 #=======================================================================
 # Instance Refresh Configuration

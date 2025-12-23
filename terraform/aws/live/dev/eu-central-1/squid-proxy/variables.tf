@@ -31,15 +31,30 @@ variable "lb_subnet_ids" {
   type        = list(string)
 }
 
-variable "eks_security_group_id" {
-  description = "EKS cluster security group ID"
-  type        = string
+variable "ingress_rules" {
+  description = "Ingress rules for ASG security group"
+  type = list(object({
+    description = string
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    cidr        = optional(list(string))
+    sg_id       = optional(list(string))
+  }))
+  default = []
 }
 
-variable "eks_worker_subnet_cidrs" {
-  description = "List of CIDR blocks for EKS worker node subnets (required because NLB preserves source IP)"
-  type        = list(string)
-  default     = []
+variable "egress_rules" {
+  description = "Egress rules for ASG security group"
+  type = list(object({
+    description = string
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    cidr        = optional(list(string))
+    sg_id       = optional(list(string))
+  }))
+  default = []
 }
 
 variable "squid_port" {
@@ -100,6 +115,24 @@ variable "desired_capacity" {
   description = "Desired ASG capacity"
   type        = number
   default     = 1
+}
+
+variable "create_logs_bucket" {
+  description = "Whether to create a new S3 bucket for logs"
+  type        = bool
+  default     = true
+}
+
+variable "logs_bucket_name" {
+  description = "Name of existing S3 bucket for logs (required if create_logs_bucket=false)"
+  type        = string
+  default     = ""
+}
+
+variable "logs_bucket_arn" {
+  description = "ARN of existing S3 bucket for logs (required if create_logs_bucket=false)"
+  type        = string
+  default     = ""
 }
 
 variable "create_config_bucket" {
@@ -290,5 +323,41 @@ variable "tls_alpn_policy" {
   description = "ALPN policy for TLS listener. Options: None, HTTP2Preferred, HTTP2Only"
   type        = string
   default     = "None"
+}
+
+# =========================================================================
+# Auto Scaling Policies Configuration
+# =========================================================================
+variable "enable_autoscaling" {
+  description = "Enable auto-scaling policies for the ASG based on CPU and memory metrics"
+  type        = bool
+  default     = false
+}
+
+variable "scaling_policies" {
+  description = "Configuration for auto-scaling policies using built-in AWS metrics"
+  type = object({
+    # CPU-based target tracking
+    cpu_target_tracking = optional(object({
+      enabled      = optional(bool, false)
+      target_value = optional(number, 70.0) # Target CPU utilization %
+    }), {})
+
+    # Memory-based target tracking (requires CloudWatch agent on instances)
+    memory_target_tracking = optional(object({
+      enabled      = optional(bool, false)
+      target_value = optional(number, 70.0) # Target Memory utilization %
+    }), {})
+  })
+  default = {
+    cpu_target_tracking = {
+      enabled      = false
+      target_value = 70.0
+    }
+    memory_target_tracking = {
+      enabled      = false
+      target_value = 70.0
+    }
+  }
 }
 

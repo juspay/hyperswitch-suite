@@ -47,9 +47,10 @@ resource "aws_ssm_parameter" "squid_private_key" {
 # If SSH is required, use the command above to retrieve the private key
 
 # =========================================================================
-# S3 Bucket for Squid Logs
+# S3 Bucket for Squid Logs (Optional - Create only if needed)
 # =========================================================================
 module "logs_bucket" {
+  count  = var.create_logs_bucket ? 1 : 0
   source = "../../base/s3-bucket"
 
   bucket_name       = "${local.name_prefix}-logs-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
@@ -123,34 +124,44 @@ resource "aws_s3_object" "squid_config_files" {
 }
 
 # =========================================================================
-# IAM Role for Squid Instances (Conditional - Create only if needed)
+# IAM Role for Squid Proxy Instances (Conditional - Create only if needed)
 # =========================================================================
 module "squid_iam_role" {
   count  = var.create_iam_role ? 1 : 0
   source = "../../base/iam-role"
 
-  name                    = "${local.name_prefix}-role"
+  name                    = "${var.environment}-${var.project_name}-squid-role"
   description             = "IAM role for Squid proxy instances"
   service_identifiers     = ["ec2.amazonaws.com"]
   create_instance_profile = true
 
-  # Attach AWS managed policies
-  managed_policy_arns = [
-    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore", # For SSM access
-    "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"   # For CloudWatch metrics/logs
-  ]
-
-  # Inline policies for S3 access
+  # Restrictive inline policies
   inline_policies = {
+    # CloudWatch - Restricted to PutMetricData only
+    squid-cloudwatch-metrics = jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Sid    = "PutMetricData"
+          Effect = "Allow"
+          Action = [
+            "cloudwatch:PutMetricData"
+          ]
+          Resource = "*"
+        }
+      ]
+    })
+
+    # S3 Config Bucket - Read-only access
     squid-config-bucket-read = jsonencode({
       Version = "2012-10-17"
       Statement = [
         {
+          Sid    = "ConfigBucketRead"
           Effect = "Allow"
           Action = [
             "s3:GetObject",
-            "s3:ListBucket",
-            "s3:GetBucketLocation"
+            "s3:ListBucket"
           ]
           Resource = [
             local.config_bucket_arn,
@@ -160,21 +171,20 @@ module "squid_iam_role" {
       ]
     })
 
+    # S3 Logs Bucket - Write access for log archival
     squid-logs-bucket-write = jsonencode({
       Version = "2012-10-17"
       Statement = [
         {
+          Sid    = "LogsBucketWrite"
           Effect = "Allow"
           Action = [
-            "s3:GetObject",
             "s3:PutObject",
-            "s3:DeleteObject",
-            "s3:ListBucket",
-            "s3:GetBucketLocation"
+            "s3:ListBucket"
           ]
           Resource = [
-            module.logs_bucket.bucket_arn,
-            "${module.logs_bucket.bucket_arn}/*"
+            local.logs_bucket_arn,
+            "${local.logs_bucket_arn}/*"
           ]
         }
       ]
@@ -225,32 +235,6 @@ module "asg_security_group" {
   description = "Security group for Squid proxy ASG instances"
   vpc_id      = var.vpc_id
 
-  ingress_rules = [
-    {
-      description              = "Allow traffic from EKS cluster"
-      from_port                = var.squid_port
-      to_port                  = var.squid_port
-      protocol                 = "tcp"
-      source_security_group_id = var.eks_security_group_id
-    }
-  ]
-
-  egress_rules = [
-    {
-      description = "Allow HTTP to internet"
-      from_port   = 80
-      to_port     = 80
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-    },
-    {
-      description = "Allow HTTPS to internet"
-      from_port   = 443
-      to_port     = 443
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
-    }
-  ]
 
   tags = local.common_tags
 }
@@ -274,35 +258,31 @@ resource "aws_security_group_rule" "nlb_health_checks" {
 }
 
 # =========================================================================
-# Allow Traffic from EKS Worker Node Subnets
+# Ingress Rules (Environment Specific)
 # =========================================================================
-# NLB preserves the client source IP, so traffic from EKS pods appears to come
-# from the pod's actual IP address (in the EKS worker subnet), not from a security group.
-# Therefore, we need to explicitly allow traffic from EKS worker subnet CIDRs.
-resource "aws_security_group_rule" "eks_worker_subnets" {
-  for_each = toset(var.eks_worker_subnet_cidrs)
+# Use the base security-group-rules module for flexible ingress rules
+# Supports both CIDR blocks and Security Group IDs
+module "ingress_rules" {
+  source = "../../base/security-group-rules"
 
-  type              = "ingress"
-  from_port         = var.squid_port
-  to_port           = var.squid_port
-  protocol          = "tcp"
-  cidr_blocks       = [each.value]
   security_group_id = module.asg_security_group.sg_id
-
-  description = "Allow traffic from EKS worker subnet ${each.value}"
+  rules = [
+    for rule in var.ingress_rules : merge(rule, { type = "ingress" })
+  ]
 }
 
-resource "aws_security_group_rule" "existing_lb_to_asg" {
-  count = !var.create_nlb && var.existing_lb_security_group_id != null ? 1 : 0
+# =========================================================================
+# Egress Rules (Environment Specific)
+# =========================================================================
+# Use the base security-group-rules module for flexible egress rules
+# Supports both CIDR blocks and Security Group IDs
+module "egress_rules" {
+  source = "../../base/security-group-rules"
 
-  type                     = "egress"
-  from_port                = var.squid_port
-  to_port                  = var.squid_port
-  protocol                 = "tcp"
-  source_security_group_id = module.asg_security_group.sg_id
-  security_group_id        = var.existing_lb_security_group_id
-
-  description = "Allow traffic from existing LB to Squid ASG instances on port ${var.squid_port}"
+  security_group_id = module.asg_security_group.sg_id
+  rules = [
+    for rule in var.egress_rules : merge(rule, { type = "egress" })
+  ]
 }
 
 # =========================================================================
@@ -411,7 +391,7 @@ module "launch_template" {
 
   iam_instance_profile_name = local.instance_profile_name
 
-  user_data = base64encode(local.userdata_content)
+  user_data = local.userdata_content
 
   ebs_optimized     = true
   enable_monitoring = var.enable_detailed_monitoring
@@ -487,6 +467,10 @@ module "asg" {
   enable_instance_refresh      = var.enable_instance_refresh
   instance_refresh_preferences = var.instance_refresh_preferences
   instance_refresh_triggers    = var.instance_refresh_triggers
+
+  # Auto Scaling Policies
+  enable_scaling_policies = var.enable_autoscaling
+  scaling_policies        = var.scaling_policies
 
   tags          = local.common_tags
   instance_tags = local.instance_tags

@@ -31,21 +31,69 @@ variable "lb_subnet_ids" {
   type        = list(string)
 }
 
+variable "ingress_rules" {
+  description = "Ingress rules for ASG security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, 'sg_id' for security groups, or 'prefix_list_ids' for VPC endpoints"
+  type = list(object({
+    description     = string
+    from_port       = number
+    to_port         = number
+    protocol        = string
+    cidr            = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
+    ipv6_cidr       = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
+    sg_id           = optional(list(string))  # Security Group IDs
+    prefix_list_ids = optional(list(string))  # VPC Endpoint Prefix Lists (e.g., ["pl-6ea54007"])
+  }))
+  default = []
+}
+
+variable "egress_rules" {
+  description = "Egress rules for ASG security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, 'sg_id' for security groups, or 'prefix_list_ids' for VPC endpoints"
+  type = list(object({
+    description     = string
+    from_port       = number
+    to_port         = number
+    protocol        = string
+    cidr            = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
+    ipv6_cidr       = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
+    sg_id           = optional(list(string))  # Security Group IDs
+    prefix_list_ids = optional(list(string))  # VPC Endpoint Prefix Lists (e.g., ["pl-6ea54007"])
+  }))
+  default = []
+}
+
+variable "lb_ingress_rules" {
+  description = "Additional ingress rules for external load balancer security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, 'sg_id' for security groups, or 'prefix_list_ids' for VPC endpoints"
+  type = list(object({
+    description     = string
+    from_port       = number
+    to_port         = number
+    protocol        = string
+    cidr            = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
+    ipv6_cidr       = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
+    sg_id           = optional(list(string))  # Security Group IDs
+    prefix_list_ids = optional(list(string))  # VPC Endpoint Prefix Lists (e.g., ["pl-6ea54007"])
+  }))
+  default = []
+}
+
+variable "lb_egress_rules" {
+  description = "Additional egress rules for external load balancer security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, 'sg_id' for security groups, or 'prefix_list_ids' for VPC endpoints"
+  type = list(object({
+    description     = string
+    from_port       = number
+    to_port         = number
+    protocol        = string
+    cidr            = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
+    ipv6_cidr       = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
+    sg_id           = optional(list(string))  # Security Group IDs
+    prefix_list_ids = optional(list(string))  # VPC Endpoint Prefix Lists (e.g., ["pl-6ea54007"])
+  }))
+  default = []
+}
+
 # NOTE: eks_security_group_id is NOT needed for Envoy proxy
 # Traffic flow: CloudFront → External ALB → Envoy → Internal ALB → EKS
 # (Different from Squid where EKS → Squid → Internet)
-
-variable "envoy_admin_port" {
-  description = "Envoy admin port"
-  type        = number
-  default     = 9901
-}
-
-variable "envoy_listener_port" {
-  description = "Envoy listener port"
-  type        = number
-  default     = 10000
-}
 
 # =========================================================================
 # Port Configuration Variables (Environment-specific)
@@ -64,16 +112,11 @@ variable "alb_https_listener_port" {
 }
 
 variable "envoy_traffic_port" {
-  description = "Port where Envoy listens for traffic from ALB"
+  description = "Port where Envoy instances listen for traffic from ALB (target group port) - ALB forwards traffic to this port"
   type        = number
   default     = 80  # Dev uses port 80
 }
 
-variable "envoy_health_check_port" {
-  description = "Port for Envoy health check endpoint"
-  type        = number
-  default     = 8081
-}
 
 variable "envoy_upstream_port" {
   description = "Port for Envoy to forward traffic to upstream"
@@ -111,6 +154,64 @@ variable "existing_launch_template_version" {
   default     = "$Latest"
 }
 
+# =========================================================================
+# Launch Template Advanced Configuration (ignored if use_existing_launch_template = true)
+# =========================================================================
+
+variable "ebs_optimized" {
+  description = "Enable EBS optimization for instances (ignored if use_existing_launch_template = true)"
+  type        = bool
+  default     = true
+}
+
+variable "ebs_encrypted" {
+  description = "Enable EBS encryption for root volume (ignored if use_existing_launch_template = true or enable_ebs_block_device = false)"
+  type        = bool
+  default     = true
+}
+
+variable "enable_ebs_block_device" {
+  description = "Enable EBS block device mapping in launch template. Set to false if AMI already has storage configured (ignored if use_existing_launch_template = true)"
+  type        = bool
+  default     = true
+}
+
+variable "root_volume_size" {
+  description = "Root volume size in GB (ignored if use_existing_launch_template = true or enable_ebs_block_device = false)"
+  type        = number
+  default     = 20
+}
+
+variable "root_volume_type" {
+  description = "Root volume type: gp2, gp3, io1, io2, st1, sc1 (ignored if use_existing_launch_template = true or enable_ebs_block_device = false)"
+  type        = string
+  default     = "gp3"
+}
+
+variable "imds_http_tokens" {
+  description = "Whether IMDS requires session tokens (IMDSv2). Set to 'required' for IMDSv2, 'optional' for IMDSv1 (ignored if use_existing_launch_template = true)"
+  type        = string
+  default     = "required"
+}
+
+variable "imds_http_endpoint" {
+  description = "Enable or disable the IMDS HTTP endpoint. Set to 'enabled' or 'disabled' (ignored if use_existing_launch_template = true)"
+  type        = string
+  default     = "enabled"
+}
+
+variable "imds_http_put_response_hop_limit" {
+  description = "Desired HTTP PUT response hop limit for instance metadata requests (1-64) (ignored if use_existing_launch_template = true)"
+  type        = number
+  default     = 1
+}
+
+variable "imds_instance_metadata_tags" {
+  description = "Enable instance metadata tags. Set to 'enabled' or 'disabled' (ignored if use_existing_launch_template = true)"
+  type        = string
+  default     = "enabled"
+}
+
 variable "key_name" {
   description = "SSH key pair name"
   type        = string
@@ -133,6 +234,24 @@ variable "desired_capacity" {
   description = "Desired ASG capacity"
   type        = number
   default     = 1
+}
+
+variable "create_logs_bucket" {
+  description = "Whether to create a new S3 bucket for logs"
+  type        = bool
+  default     = true
+}
+
+variable "logs_bucket_name" {
+  description = "S3 bucket name for logs (required if create_logs_bucket=false)"
+  type        = string
+  default     = ""
+}
+
+variable "logs_bucket_arn" {
+  description = "S3 bucket ARN for logs (required if create_logs_bucket=false)"
+  type        = string
+  default     = ""
 }
 
 variable "create_config_bucket" {
@@ -159,18 +278,6 @@ variable "enable_detailed_monitoring" {
   default     = false
 }
 
-variable "root_volume_size" {
-  description = "Root volume size in GB"
-  type        = number
-  default     = 20
-}
-
-variable "root_volume_type" {
-  description = "Root volume type"
-  type        = string
-  default     = "gp3"
-}
-
 variable "generate_ssh_key" {
   description = "Whether to auto-generate SSH key pair"
   type        = bool
@@ -181,6 +288,12 @@ variable "upload_config_to_s3" {
   description = "Whether to upload config files from local config/ directory to S3"
   type        = bool
   default     = false
+}
+
+variable "envoy_config_filename" {
+  description = "Name of the main Envoy config file that receives template variable substitution (e.g., 'envoy.yaml', 'envoy-dev.yaml')"
+  type        = string
+  default     = "envoy.yaml"
 }
 
 variable "hyperswitch_cloudfront_dns" {
@@ -223,12 +336,6 @@ variable "existing_lb_security_group_id" {
   description = "Security group ID of existing ALB (required when create_lb = false)"
   type        = string
   default     = null
-}
-
-variable "enable_instance_refresh" {
-  description = "Enable automatic instance refresh when config changes"
-  type        = bool
-  default     = true
 }
 
 variable "create_iam_role" {
@@ -350,6 +457,42 @@ variable "target_group_protocol" {
   default     = "HTTP"
 }
 
+variable "target_group_deregistration_delay" {
+  description = "Time to wait before deregistering a target in seconds"
+  type        = number
+  default     = 30
+}
+
+# =========================================================================
+# Health Check Configuration (Environment-specific)
+# =========================================================================
+
+variable "health_check" {
+  description = "Health check configuration for target group"
+  type = object({
+    enabled             = optional(bool, true)
+    port                = optional(number, 80)
+    path                = optional(string, "/healthz")
+    protocol            = optional(string, "HTTP")
+    matcher             = optional(string, "200")
+    interval            = optional(number, 30)
+    timeout             = optional(number, 5)
+    healthy_threshold   = optional(number, 2)
+    unhealthy_threshold = optional(number, 2)
+  })
+  default = {
+    enabled             = true
+    port                = 80
+    path                = "/healthz"
+    protocol            = "HTTP"
+    matcher             = "200"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+  }
+}
+
 # =========================================================================
 # VPC Endpoint Configuration
 # =========================================================================
@@ -408,6 +551,40 @@ variable "max_instance_lifetime" {
   description = "Maximum lifetime of instances in seconds (0 = no limit)"
   type        = number
   default     = 0
+}
+
+# =========================================================================
+# Auto Scaling Policies Configuration
+# =========================================================================
+
+variable "enable_autoscaling" {
+  description = "Enable auto-scaling policies for the ASG"
+  type        = bool
+  default     = false
+}
+
+variable "scaling_policies" {
+  description = "Configuration for auto-scaling policies"
+  type = object({
+    cpu_target_tracking = optional(object({
+      enabled      = optional(bool, false)
+      target_value = optional(number, 70.0)
+    }), {})
+    memory_target_tracking = optional(object({
+      enabled      = optional(bool, false)
+      target_value = optional(number, 70.0)
+    }), {})
+  })
+  default = {
+    cpu_target_tracking = {
+      enabled      = false
+      target_value = 70.0
+    }
+    memory_target_tracking = {
+      enabled      = false
+      target_value = 70.0
+    }
+  }
 }
 
 variable "common_tags" {

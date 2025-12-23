@@ -15,17 +15,36 @@ module "envoy_proxy" {
   lb_subnet_ids    = var.lb_subnet_ids
   # Note: eks_security_group_id not needed - Envoy receives traffic from ALB, not from EKS
 
+  # Security Group Rules (environment-specific)
+  ingress_rules    = var.ingress_rules
+  egress_rules     = var.egress_rules
+  lb_ingress_rules = var.lb_ingress_rules
+  lb_egress_rules  = var.lb_egress_rules
+
   # Envoy configuration
-  envoy_listener_port = var.envoy_listener_port
-  envoy_admin_port    = var.envoy_admin_port
-  ami_id              = var.ami_id
-  instance_type       = var.instance_type
+  ami_id        = var.ami_id
+  instance_type = var.instance_type
+
+  # Launch Template Configuration
+  use_existing_launch_template      = var.use_existing_launch_template
+  existing_launch_template_id       = var.existing_launch_template_id
+  existing_launch_template_version  = var.existing_launch_template_version
+
+  # Launch Template Advanced Configuration
+  ebs_optimized                     = var.ebs_optimized
+  ebs_encrypted                     = var.ebs_encrypted
+  enable_ebs_block_device           = var.enable_ebs_block_device
+  root_volume_size                  = var.root_volume_size
+  root_volume_type                  = var.root_volume_type
+  imds_http_tokens                  = var.imds_http_tokens
+  imds_http_endpoint                = var.imds_http_endpoint
+  imds_http_put_response_hop_limit  = var.imds_http_put_response_hop_limit
+  imds_instance_metadata_tags       = var.imds_instance_metadata_tags
 
   # Port Configuration (Environment-specific)
   alb_http_listener_port  = var.alb_http_listener_port
   alb_https_listener_port = var.alb_https_listener_port
-  envoy_traffic_port      = var.envoy_traffic_port
-  envoy_health_check_port = var.envoy_health_check_port
+  envoy_traffic_port      = var.envoy_traffic_port   # ALB forwards traffic to this port on Envoy instances
   envoy_upstream_port     = var.envoy_upstream_port
 
   # SSH Key Configuration
@@ -36,11 +55,16 @@ module "envoy_proxy" {
   custom_userdata = file("${path.module}/templates/userdata.sh")
 
   # Envoy config template ({{hyperswitch_cloudfront_dns}}, {{internal_loadbalancer_dns}}, {{eks_cluster_name}} replaced)
-  envoy_config_template = file("${path.module}/config/envoy.yaml")
+  envoy_config_template = file("${path.module}/config/${var.envoy_config_filename}")
 
   # Template variables for envoy.yaml
   hyperswitch_cloudfront_dns = var.hyperswitch_cloudfront_dns
   internal_loadbalancer_dns  = var.internal_loadbalancer_dns
+
+  # S3 Logs Bucket - create or use existing
+  create_logs_bucket = var.create_logs_bucket
+  logs_bucket_name   = var.logs_bucket_name
+  logs_bucket_arn    = var.logs_bucket_arn
 
   # S3 Config Bucket - create or use existing
   create_config_bucket     = var.create_config_bucket
@@ -50,6 +74,7 @@ module "envoy_proxy" {
   # S3 Config Upload (optional)
   upload_config_to_s3      = var.upload_config_to_s3
   config_files_source_path = "${path.module}/config"
+  envoy_config_filename    = var.envoy_config_filename
 
   # ASG configuration
   min_size         = var.min_size
@@ -77,7 +102,11 @@ module "envoy_proxy" {
   waf_web_acl_arn = var.waf_web_acl_arn
 
   # Target Group Configuration
-  target_group_protocol = var.target_group_protocol
+  target_group_protocol             = var.target_group_protocol
+  target_group_deregistration_delay = var.target_group_deregistration_delay
+
+  # Health Check Configuration
+  health_check = var.health_check
 
   # S3 VPC Endpoint
   s3_vpc_endpoint_prefix_list_id = var.s3_vpc_endpoint_prefix_list_id
@@ -93,13 +122,18 @@ module "envoy_proxy" {
   termination_policies  = var.termination_policies
   max_instance_lifetime = var.max_instance_lifetime
 
-  # Instance Refresh (automatic rolling updates when config changes)
-  enable_instance_refresh = var.enable_instance_refresh
+  # IAM Role Configuration
+  create_iam_role                    = var.create_iam_role
+  existing_iam_role_name             = var.existing_iam_role_name
+  create_instance_profile            = var.create_instance_profile
+  existing_iam_instance_profile_name = var.existing_iam_instance_profile_name
+
+  # Auto Scaling Policies
+  enable_autoscaling = var.enable_autoscaling
+  scaling_policies   = var.scaling_policies
 
   # Monitoring
   enable_detailed_monitoring = var.enable_detailed_monitoring
-  root_volume_size           = var.root_volume_size
-  root_volume_type           = var.root_volume_type
 
   tags = var.common_tags
 }

@@ -21,6 +21,11 @@ locals {
     }
   )
 
+  # Logs bucket selection - use created or existing
+  logs_bucket_name = var.create_logs_bucket ? module.logs_bucket[0].bucket_name : var.logs_bucket_name
+  logs_bucket_arn  = var.create_logs_bucket ? module.logs_bucket[0].bucket_arn : var.logs_bucket_arn
+  logs_bucket_id   = var.create_logs_bucket ? module.logs_bucket[0].bucket_id : var.logs_bucket_name
+
   # Config bucket selection - use created or existing
   config_bucket_name = var.create_config_bucket ? module.config_bucket[0].bucket_name : var.config_bucket_name
   config_bucket_arn  = var.create_config_bucket ? module.config_bucket[0].bucket_arn : var.config_bucket_arn
@@ -32,7 +37,7 @@ locals {
         var.custom_userdata,
         "{{config_bucket}}", local.config_bucket_name
       ),
-      "{{logs_bucket}}", module.logs_bucket.bucket_id
+      "{{logs_bucket}}", local.logs_bucket_id
     ),
     "{{bucket-name}}", local.config_bucket_name
   )
@@ -48,6 +53,8 @@ locals {
   iam_role_name = var.create_iam_role ? module.squid_iam_role[0].role_name : data.aws_iam_role.existing_squid_role[0].name
 
   # Launch Template selection - use created or existing
+  # IMPORTANT: Use explicit version number instead of "$Latest" to ensure
+  # Terraform detects changes and triggers instance refresh automatically
   launch_template_id      = var.use_existing_launch_template ? var.existing_launch_template_id : module.launch_template[0].lt_id
-  launch_template_version = var.use_existing_launch_template ? var.existing_launch_template_version : "$Latest"
+  launch_template_version = var.use_existing_launch_template ? var.existing_launch_template_version : tostring(module.launch_template[0].lt_latest_version)
 }
