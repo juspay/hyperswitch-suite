@@ -1,0 +1,11 @@
+name: "media-cors-policy"
+comment: "CORS policy for media streaming"
+cors_config:
+  access_control_allow_credentials: false
+  access_control_allow_headers:
+    items: ["Range", "Accept"]
+  access_control_allow_methods:
+    items: ["GET", "HEAD", "OPTIONS"]
+  access_control_allow_origins:
+    items: ["*"]
+  access_control_max_age_sec: 3600

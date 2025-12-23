@@ -1,0 +1,11 @@
+name: "api-cors-policy"
+comment: "CORS policy for API endpoints"
+cors_config:
+  access_control_allow_credentials: true
+  access_control_allow_headers:
+    items: ["Authorization", "Content-Type", "X-Requested-With", "X-API-Key"]
+  access_control_allow_methods:
+    items: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]
+  access_control_allow_origins:
+    items: ["https://dev.hyperswitch.com", "https://*.dev.hyperswitch.com"]
+  access_control_max_age_sec: 86400
