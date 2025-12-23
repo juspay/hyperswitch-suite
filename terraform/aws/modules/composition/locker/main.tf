@@ -74,8 +74,8 @@ resource "aws_security_group" "locker" {
 resource "aws_security_group_rule" "locker_ingress_from_nlb" {
   security_group_id        = local.locker_security_group_id
   type                     = "ingress"
-  from_port                = 8080
-  to_port                  = 8080
+  from_port                = var.locker_port
+  to_port                  = var.locker_port
   protocol                 = "tcp"
   source_security_group_id = aws_security_group.nlb.id
   description              = "Allow traffic from NLB to locker instance"
@@ -155,8 +155,8 @@ resource "aws_security_group_rule" "nlb_ingress_rules" {
 resource "aws_security_group_rule" "nlb_egress_to_locker" {
   security_group_id        = aws_security_group.nlb.id
   type                     = "egress"
-  from_port                = 8080
-  to_port                  = 8080
+  from_port                = var.locker_port
+  to_port                  = var.locker_port
   protocol                 = "tcp"
   source_security_group_id = local.locker_security_group_id
   description              = "Allow NLB to send traffic to locker instance"
@@ -328,13 +328,15 @@ resource "aws_iam_role_policy_attachment" "cloudwatch_agent" {
 }
 
 # =========================================================================
-# COMPUTE - EC2 INSTANCE
+# COMPUTE - EC2 INSTANCES
 # =========================================================================
 module "locker_instance" {
+  count = var.instance_count
+
   source  = "terraform-aws-modules/ec2-instance/aws"
   version = "~> 6.1.5"
 
-  name = "${local.name_prefix}-instance"
+  name = "${local.name_prefix}-instance-${count.index}"
 
   ami                         = var.ami_id
   instance_type               = var.instance_type
@@ -346,7 +348,9 @@ module "locker_instance" {
   iam_instance_profile        = aws_iam_instance_profile.locker.name
   create_security_group       = false
 
-  tags = local.common_tags
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-instance-${count.index}"
+  })
 }
 
 # =========================================================================
@@ -367,12 +371,12 @@ resource "aws_lb" "locker_nlb" {
 # =========================================================================
 resource "aws_lb_target_group" "locker" {
   name     = "${local.name_prefix}-tg"
-  port     = 8080
+  port     = var.locker_port
   protocol = "TCP"
   vpc_id   = var.vpc_id
 
   health_check {
-    port     = "8080"
+    port     = var.locker_port
     protocol = "TCP"
   }
 
@@ -380,9 +384,11 @@ resource "aws_lb_target_group" "locker" {
 }
 
 resource "aws_lb_target_group_attachment" "locker" {
+  count            = var.instance_count
+
   target_group_arn = aws_lb_target_group.locker.arn
-  target_id        = module.locker_instance.id
-  port             = 8080
+  target_id        = module.locker_instance[count.index].id
+  port             = var.locker_port
 }
 
 # =========================================================================

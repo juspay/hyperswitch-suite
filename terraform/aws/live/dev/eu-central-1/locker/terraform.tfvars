@@ -36,6 +36,14 @@ ami_id = "ami-xxxxxxxxxxxxxxxxx"  # Replace with your locker AMI ID
 # Upgrade to t3.large or c5.large for production workloads
 instance_type = "t3.medium"
 
+# Number of instances to create (default: 1)
+# Increase for high availability and load distribution
+# instance_count = 1  # Uncomment and modify to create multiple instances
+
+# Locker service port (default: 8080)
+# Change if your locker application runs on a different port
+# locker_port = 8080  # Uncomment and modify to use a different port
+
 # OPTION 1: Use existing SSH key pair (default)
 key_name = "your-key-pair-name"  # Replace with your SSH key pair name
 
@@ -50,7 +58,7 @@ key_name = "your-key-pair-name"  # Replace with your SSH key pair name
 # Security Group Rules Configuration
 # ============================================================================
 # Ingress rules for locker instance security group
-# Note: Traffic from NLB (port 8080) is automatically configured
+# Note: Traffic from NLB (configured via locker_port variable, default: 8080) is automatically configured
 locker_ingress_rules = [
   # SSH access from jump host
   {
@@ -127,7 +135,7 @@ nlb_ingress_rules = [
 ]
 
 # Egress rules for NLB security group
-# Note: Traffic to locker instance (port 8080) is automatically configured
+# Note: Traffic to locker instance (configured via locker_port variable, default: 8080) is automatically configured
 nlb_egress_rules = [
   # Add additional egress rules here if needed
   # Example: All outbound traffic (uncomment if needed)

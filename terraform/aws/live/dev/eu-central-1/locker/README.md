@@ -15,7 +15,7 @@ This directory contains the Terraform configuration to deploy the Hyperswitch Lo
 ┌─────────────────────┐       ┌─────────────────────┐
 │  Network Load       │──────▶│  Locker Instance    │
 │  Balancer (NLB)     │       │  - Private Subnet   │
-│  - Listeners        │       │  - Port 8080        │
+│  - Listeners        │       │  - Port:locker_port │
 └─────────────────────┘       │  - Card Vault       │
                               └─────────┬───────────┘
                                         │
@@ -68,8 +68,11 @@ vpc_id           = "vpc-XXXXXXXXXXXXXXXXX"       # Your VPC ID
 locker_subnet_id = "subnet-XXXXXXXXXXXXXXXXX"    # Private subnet ID
 
 # Instance Configuration
-ami_id    = "ami-XXXXXXXXXXXXXXXXX"       # Locker AMI ID
-key_name  = "your-key-pair-name"          # SSH key pair
+ami_id         = "ami-XXXXXXXXXXXXXXXXX"  # Locker AMI ID
+instance_type  = "t3.medium"              # Instance type
+instance_count = 1                        # Number of instances (optional, default: 1)
+locker_port    = 8080                     # Locker service port (optional, default: 8080)
+key_name       = "your-key-pair-name"     # SSH key pair
 
 # Security Group Rules
 locker_ingress_rules = [
@@ -127,7 +130,7 @@ nlb_listeners = [
 
 The module uses a flexible security group rule configuration:
 
-- **Internal Rules (Automatic):** NLB ↔ Locker communication on port 8080 is automatically configured
+- **Internal Rules (Automatic):** NLB ↔ Locker communication on configured locker_port (default: 8080) is automatically configured
 - **External Rules (Configurable):** Define custom ingress/egress rules via `ingress_rules`, `egress_rules`, `nlb_ingress_rules`, `nlb_egress_rules`
 
 Each rule supports:
@@ -215,10 +218,22 @@ ssh -i /path/to/key.pem ec2-user@<locker-private-ip>
 
 ## Outputs
 
-- `locker_instance_id`: EC2 instance ID
-- `locker_private_ip`: Private IP address of the locker instance
-- `locker_nlb_dns`: DNS name of the Network Load Balancer
-- `locker_nlb_endpoint`: HTTPS endpoint for accessing locker
+### Instance Outputs
+- `instance_ids`: List of EC2 instance IDs (all instances)
+- `instance_private_ips`: List of private IP addresses of all instances
+- `instance_arns`: List of ARNs of all instances
+- `locker_port`: Port number used for the locker service
+
+### Legacy Outputs (Backward Compatible)
+- `instance_id`: ID of the first locker instance
+- `instance_private_ip`: Private IP of the first locker instance
+- `instance_arn`: ARN of the first locker instance
+
+### Network Outputs
+- `nlb_dns_name`: DNS name of the Network Load Balancer
+- `nlb_listener_arns`: ARNs of the NLB listeners
+- `security_group_id`: Security group ID of the locker instances
+- `subnet_id`: Subnet ID where instances are deployed
 
 ## Security Considerations
 
