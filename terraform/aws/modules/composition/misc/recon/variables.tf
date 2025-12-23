@@ -1,10 +1,6 @@
 variable "environment" {
   description = "Environment name (dev/integ/prod)"
   type        = string
-  validation {
-    condition     = contains(["dev", "integ", "prod"], var.environment)
-    error_message = "Environment must be one of: dev, integ, prod"
-  }
 }
 
 variable "project_name" {
