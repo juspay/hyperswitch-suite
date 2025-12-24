@@ -23,6 +23,11 @@ output "security_group_id" {
   value       = local.locker_security_group_id
 }
 
+output "nlb_security_group_id" {
+  description = "Security group ID of the locker NLB"
+  value       = aws_security_group.nlb.id
+}
+
 output "subnet_id" {
   description = "Subnet ID where the locker instance is deployed"
   value       = local.locker_subnet_id

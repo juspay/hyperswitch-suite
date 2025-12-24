@@ -35,6 +35,11 @@ output "locker_security_group_id" {
   value       = module.locker.security_group_id
 }
 
+output "locker_nlb_security_group_id" {
+  description = "Security group ID of the locker NLB"
+  value       = module.locker.nlb_security_group_id
+}
+
 output "locker_key_name" {
   description = "SSH key pair name used for the locker instance"
   value       = module.locker.key_name
