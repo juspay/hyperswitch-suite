@@ -70,6 +70,18 @@ variable "node_groups" {
   default     = {}
 }
 
+# EKS Addons
+variable "eks_addon_versions" {
+  description = "Map of EKS addon names to their versions"
+  type        = map(string)
+  default = {
+    vpc-cni              = "v1.21.1-eksbuild.1"
+    coredns              = "v1.12.4-eksbuild.1"
+    kube-proxy           = "v1.34.1-eksbuild.2"
+    aws-ebs-csi-driver   = "v1.54.0-eksbuild.1"
+    snapshot-controller  = "v8.3.0-eksbuild.1"
+  }
+}
 
 # Tags
 variable "tags" {

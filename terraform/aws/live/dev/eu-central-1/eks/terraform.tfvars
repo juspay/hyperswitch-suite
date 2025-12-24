@@ -20,6 +20,7 @@ subnet_ids = [            # Replace with your subnet IDs
   "subnet-xxxx"
 ]
 
+argocd_assume_role_principal_arn = "arn:aws:iam::yyyyyyyy:role/argocd-management-role"
 # Basic Node Group
 node_groups = {
   general = {
@@ -50,6 +51,16 @@ node_groups = {
       "k8s.io/cluster-autoscaler/dev-hyperswitch-cluster" = "owned"
     }
   }
+}
+
+# EKS Addon Versions
+# Pinned addon versions for Kubernetes 1.34
+eks_addon_versions = {
+  vpc-cni             = "v1.21.1-eksbuild.1"
+  coredns             = "v1.12.4-eksbuild.1"
+  kube-proxy          = "v1.34.1-eksbuild.2"
+  aws-ebs-csi-driver  = "v1.54.0-eksbuild.1"
+  snapshot-controller = "v8.3.0-eksbuild.1"
 }
 
 # EKS Cluster Access Entries

@@ -75,10 +75,30 @@ module "eks" {
 
   # EKS Add-ons
   cluster_addons = {
+    # VPC CNI for pod networking
+    vpc-cni = {
+      addon_version = var.eks_addon_versions["vpc-cni"]
+    }
+
+    # CoreDNS for service discovery
+    coredns = {
+      addon_version = var.eks_addon_versions["coredns"]
+    }
+
+    # kube-proxy for network rules
+    kube-proxy = {
+      addon_version = var.eks_addon_versions["kube-proxy"]
+    }
+
     # EBS CSI Driver for persistent volumes
     aws-ebs-csi-driver = {
-      most_recent = true
+      addon_version            = var.eks_addon_versions["aws-ebs-csi-driver"]
       service_account_role_arn = module.ebs_csi_irsa.iam_role_arn
+    }
+
+    # Snapshot controller for volume snapshots
+    snapshot-controller = {
+      addon_version = var.eks_addon_versions["snapshot-controller"]
     }
   }
 
