@@ -3,19 +3,24 @@
 # ============================================================================
 
 # Instance Information
-output "locker_instance_id" {
-  description = "ID of the locker instance"
-  value       = module.locker.instance_id
+output "locker_instance_ids" {
+  description = "List of IDs of the locker instances"
+  value       = module.locker.instance_ids
 }
 
-output "locker_private_ip" {
-  description = "Private IP address of the locker instance"
-  value       = module.locker.instance_private_ip
+output "locker_private_ips" {
+  description = "List of private IP addresses of the locker instances"
+  value       = module.locker.instance_private_ips
 }
 
-output "locker_instance_arn" {
-  description = "ARN of the locker instance"
-  value       = module.locker.instance_arn
+output "locker_instance_arns" {
+  description = "List of ARNs of the locker instances"
+  value       = module.locker.instance_arns
+}
+
+output "locker_port" {
+  description = "Port number used for the locker service"
+  value       = module.locker.locker_port
 }
 
 # Network Configuration
@@ -28,6 +33,11 @@ output "locker_subnet_id" {
 output "locker_security_group_id" {
   description = "Security group ID of the locker instance"
   value       = module.locker.security_group_id
+}
+
+output "locker_nlb_security_group_id" {
+  description = "Security group ID of the locker NLB"
+  value       = module.locker.nlb_security_group_id
 }
 
 output "locker_key_name" {

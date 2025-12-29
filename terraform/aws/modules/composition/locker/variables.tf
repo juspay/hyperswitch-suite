@@ -1,10 +1,6 @@
 variable "environment" {
   description = "Environment name (dev/integ/prod)"
   type        = string
-  validation {
-    condition     = contains(["dev", "integ", "prod"], var.environment)
-    error_message = "Environment must be one of: dev, integ, prod"
-  }
 }
 
 variable "project_name" {
@@ -27,6 +23,22 @@ variable "instance_type" {
   description = "EC2 instance type"
   type        = string
   default     = "t3.medium"
+}
+
+variable "instance_count" {
+  description = "Number of EC2 instances to create"
+  type        = number
+  default     = 1
+  validation {
+    condition     = var.instance_count >= 1
+    error_message = "Instance count must be at least 1"
+  }
+}
+
+variable "locker_port" {
+  description = "Port number for the locker service"
+  type        = number
+  default     = 8080
 }
 
 variable "key_name" {

@@ -1,21 +1,31 @@
-output "instance_id" {
-  description = "ID of the locker instance"
-  value       = module.locker_instance.id
+output "instance_ids" {
+  description = "List of IDs of the locker instances"
+  value       = module.locker_instance[*].id
 }
 
-output "instance_private_ip" {
-  description = "Private IP address of the locker instance"
-  value       = module.locker_instance.private_ip
+output "instance_private_ips" {
+  description = "List of private IP addresses of the locker instances"
+  value       = module.locker_instance[*].private_ip
 }
 
-output "instance_arn" {
-  description = "ARN of the locker instance"
-  value       = module.locker_instance.arn
+output "instance_arns" {
+  description = "List of ARNs of the locker instances"
+  value       = module.locker_instance[*].arn
+}
+
+output "locker_port" {
+  description = "Port number used for the locker service"
+  value       = var.locker_port
 }
 
 output "security_group_id" {
   description = "Security group ID of the locker instance"
   value       = local.locker_security_group_id
+}
+
+output "nlb_security_group_id" {
+  description = "Security group ID of the locker NLB"
+  value       = aws_security_group.nlb.id
 }
 
 output "subnet_id" {
