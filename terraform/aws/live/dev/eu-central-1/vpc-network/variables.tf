@@ -3,6 +3,21 @@
 # Based on VPC_NETWORK_OPTIMIZED_PLAN.md
 ###################
 
+# ============================================================================
+# ENVIRONMENT IDENTIFICATION
+# ============================================================================
+variable "environment" {
+  description = "Environment name (dev, staging, prod)"
+  type        = string
+  default     = "dev"
+}
+
+variable "project_name" {
+  description = "Project name for resource naming"
+  type        = string
+  default     = "hyperswitch"
+}
+
 variable "aws_region" {
   description = "AWS region"
   type        = string

@@ -93,8 +93,8 @@ resource "aws_security_group_rule" "endpoint_egress" {
   count = var.create_security_group && var.vpc_endpoint_type == "Interface" ? 1 : 0
 
   type              = "egress"
-  from_port         = 0
-  to_port           = 0
+  from_port         = -1
+  to_port           = -1
   protocol          = "-1"
   cidr_blocks       = ["0.0.0.0/0"]
   security_group_id = aws_security_group.endpoint[0].id

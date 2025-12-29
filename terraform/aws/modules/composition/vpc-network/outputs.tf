@@ -214,9 +214,14 @@ output "redis_route_table_id" {
   value       = module.redis_route_table.route_table_id
 }
 
-output "passetto_route_table_id" {
-  description = "ID of the Passetto-RT (locker route table)"
-  value       = module.passetto_route_table.route_table_id
+output "database_route_table_id" {
+  description = "ID of the Database-RT (locker route table)"
+  value       = module.database_route_table.route_table_id
+}
+
+output "locker_server_s3_route_table_id" {
+  description = "ID of the LockerServerS3 route table"
+  value       = module.locker_server_s3_rt.route_table_id
 }
 
 output "proxy_peering_nat_a_route_table_id" {
@@ -232,6 +237,16 @@ output "proxy_peering_nat_b_route_table_id" {
 output "proxy_peering_nat_c_route_table_id" {
   description = "ID of the ProxyPeeringNAT-C route table"
   value       = var.enable_nat_gateway && length(var.availability_zones) > 2 ? module.proxy_peering_nat_c_rt[0].route_table_id : ""
+}
+
+output "eks_worker_route_table_id" {
+  description = "ID of the EKS worker route table (S3 only, no NAT)"
+  value       = module.eks_worker_rt.route_table_id
+}
+
+output "common_local_nat_s3_route_table_id" {
+  description = "ID of the Common Local NAT S3 route table (NAT + S3 access)"
+  value       = var.enable_nat_gateway ? module.common_local_nat_s3_rt[0].route_table_id : ""
 }
 
 ###################

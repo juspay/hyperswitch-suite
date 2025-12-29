@@ -77,12 +77,12 @@ module "db_route_table" {
   source = "../../base/route-table"
 
   vpc_id             = module.vpc.vpc_id
-  route_table_name   = "${var.vpc_name}-DBRouteTable"
+  route_table_name   = "${var.vpc_name}-DB-Table"
 
   tags = merge(
     var.tags,
     {
-      Name = "${var.vpc_name}-DBRouteTable"
+      Name = "${var.vpc_name}-DB-Table"
       Type = "database"
     }
   )
@@ -104,18 +104,35 @@ module "redis_route_table" {
   )
 }
 
-# Passetto-RT - Locker subnets (PCI-DSS compliant)
-module "passetto_route_table" {
+# Database-RT - Locker subnets (PCI-DSS compliant)
+module "database_route_table" {
   source = "../../base/route-table"
 
   vpc_id             = module.vpc.vpc_id
-  route_table_name   = "${var.vpc_name}-Passetto-RT"
+  route_table_name   = "${var.vpc_name}-Locker-DB-RT"
 
   tags = merge(
     var.tags,
     {
-      Name = "${var.vpc_name}-Passetto-RT"
-      Type = "locker"
+      Name       = "${var.vpc_name}-Locker-DB-RT"
+      Type       = "locker"
+      Compliance = "PCI-DSS"
+    }
+  )
+}
+
+# LockerServerS3 - Locker Server subnets with S3 endpoint only (PCI-DSS)
+module "locker_server_s3_rt" {
+  source = "../../base/route-table"
+
+  vpc_id             = module.vpc.vpc_id
+  route_table_name   = "${var.vpc_name}-LockerServerS3"
+
+  tags = merge(
+    var.tags,
+    {
+      Name       = "${var.vpc_name}-LockerServerS3"
+      Type       = "locker-s3"
       Compliance = "PCI-DSS"
     }
   )
@@ -184,6 +201,45 @@ module "proxy_peering_nat_c_rt" {
   )
 }
 
+
+# EKS Worker Route Table - Single route table for all EKS worker subnets (S3 only, no NAT)
+module "eks_worker_rt" {
+  source = "../../base/route-table"
+
+  vpc_id             = module.vpc.vpc_id
+  route_table_name   = "${var.vpc_name}-EKSWorker"
+
+  create_nat_gateway_route = false
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.vpc_name}-EKSWorker"
+      Type = "eks-worker-s3-only"
+    }
+  )
+}
+
+# Common Local NAT S3 - Private subnets with NAT Gateway and S3 endpoint access
+module "common_local_nat_s3_rt" {
+  source = "../../base/route-table"
+  count  = var.enable_nat_gateway ? 1 : 0
+
+  vpc_id             = module.vpc.vpc_id
+  route_table_name   = "${var.vpc_name}-CommonLocalNATS3"
+
+  create_nat_gateway_route = true
+  nat_gateway_id           = module.external_incoming_subnets[0].nat_gateway_id
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.vpc_name}-CommonLocalNATS3"
+      Type = "private-nat-s3"
+    }
+  )
+}
+
 ###################
 # Route Table Associations
 ###################
@@ -196,28 +252,28 @@ resource "aws_route_table_association" "external_incoming" {
   route_table_id = module.common_internet_rt.route_table_id
 }
 
-# Associate Management subnets with CommonInternet
+# Associate Management subnets with CommonInternetS3
 resource "aws_route_table_association" "management" {
   count = length(var.management_subnet_cidrs)
 
   subnet_id      = module.management_subnets[count.index].subnet_id
-  route_table_id = module.common_internet_rt.route_table_id
+  route_table_id = module.common_internet_s3_rt.route_table_id
 }
 
-# Associate EKS Worker subnets with ProxyPeeringNAT (per AZ)
+# Associate EKS Worker subnets with EKSWorker route table (S3 only, no NAT)
 resource "aws_route_table_association" "eks_workers" {
   count = length(var.eks_workers_subnet_cidrs)
 
   subnet_id      = module.eks_workers_subnets[count.index].subnet_id
-  route_table_id = count.index == 0 ? module.proxy_peering_nat_a_rt[0].route_table_id : (count.index == 1 ? module.proxy_peering_nat_b_rt[0].route_table_id : module.proxy_peering_nat_c_rt[0].route_table_id)
+  route_table_id = module.eks_worker_rt.route_table_id
 }
 
-# Associate EKS Control Plane subnets with CommonLocalS3
+# Associate EKS Control Plane subnets with CommonLocalRoute
 resource "aws_route_table_association" "eks_control_plane" {
   count = length(var.eks_control_plane_subnet_cidrs)
 
   subnet_id      = module.eks_control_plane_subnets[count.index].subnet_id
-  route_table_id = module.common_local_s3_rt.route_table_id
+  route_table_id = module.common_local_route_rt.route_table_id
 }
 
 # Associate Database subnets with DBRouteTable
@@ -228,20 +284,20 @@ resource "aws_route_table_association" "database" {
   route_table_id = module.db_route_table.route_table_id
 }
 
-# Associate Locker Database subnets with Passetto-RT
+# Associate Locker Database subnets with Database-RT
 resource "aws_route_table_association" "locker_database" {
   count = length(var.locker_database_subnet_cidrs)
 
   subnet_id      = module.locker_database_subnets[count.index].subnet_id
-  route_table_id = module.passetto_route_table.route_table_id
+  route_table_id = module.database_route_table.route_table_id
 }
 
-# Associate Locker Server subnets with Passetto-RT
+# Associate Locker Server subnets with LockerServerS3
 resource "aws_route_table_association" "locker_server" {
   count = length(var.locker_server_subnet_cidrs)
 
   subnet_id      = module.locker_server_subnets[count.index].subnet_id
-  route_table_id = module.passetto_route_table.route_table_id
+  route_table_id = module.locker_server_s3_rt.route_table_id
 }
 
 # Associate ElastiCache subnets with RedisRouteTable
@@ -260,12 +316,12 @@ resource "aws_route_table_association" "data_stack" {
   route_table_id = module.common_local_s3_rt.route_table_id
 }
 
-# Associate Incoming Envoy subnets with ProxyPeeringNAT (per AZ)
+# Associate Incoming Envoy subnets with CommonLocalS3
 resource "aws_route_table_association" "incoming_envoy" {
   count = length(var.incoming_envoy_subnet_cidrs)
 
   subnet_id      = module.incoming_envoy_subnets[count.index].subnet_id
-  route_table_id = count.index == 0 ? module.proxy_peering_nat_a_rt[0].route_table_id : (count.index == 1 ? module.proxy_peering_nat_b_rt[0].route_table_id : module.proxy_peering_nat_c_rt[0].route_table_id)
+  route_table_id = module.common_local_s3_rt.route_table_id
 }
 
 # Associate Outgoing Proxy subnets with ProxyPeeringNAT (per AZ)

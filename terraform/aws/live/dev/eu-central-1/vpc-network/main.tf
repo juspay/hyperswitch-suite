@@ -1,7 +1,17 @@
+# AWS Provider Configuration
+provider "aws" {
+  region = var.aws_region
+}
+
+# Compute dynamic VPC name based on project and environment
+locals {
+  vpc_name = "${var.project_name}-${var.environment}-vpc"
+}
+
 module "vpc_network" {
   source = "../../../../modules/composition/vpc-network"
 
-  vpc_name           = "hyperswitch-dev-vpc"
+  vpc_name           = local.vpc_name
   vpc_cidr           = var.vpc_cidr
   aws_region         = var.aws_region
   availability_zones = var.availability_zones
@@ -95,9 +105,9 @@ module "vpc_network" {
   tags = merge(
     var.tags,
     {
-      Environment = "dev"
+      Environment = var.environment
       ManagedBy   = "Terraform"
-      Project     = "hyperswitch"
+      Project     = var.project_name
     }
   )
 }

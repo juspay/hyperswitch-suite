@@ -115,7 +115,7 @@ module "eks_workers_subnets" {
   availability_zone = var.availability_zones[count.index]
 
   subnet_tier = "eks-workers"
-  subnet_type = "private-nat"
+  subnet_type = "private-isolated"
 
   # Route table is managed by shared route tables (route-tables.tf)
   create_route_table = false
@@ -307,7 +307,7 @@ module "incoming_envoy_subnets" {
   availability_zone = var.availability_zones[count.index]
 
   subnet_tier = "incoming-envoy"
-  subnet_type = "private-nat"
+  subnet_type = "private-isolated"
 
   # Route table is managed by shared route tables (route-tables.tf)
   create_route_table = false
@@ -361,7 +361,7 @@ module "utils_subnets" {
   availability_zone = var.availability_zones[count.index]
 
   subnet_tier = "utils"
-  subnet_type = "private-nat"
+  subnet_type = "private-isolated"
 
   # Route table is managed by shared route tables (route-tables.tf)
   create_route_table = false

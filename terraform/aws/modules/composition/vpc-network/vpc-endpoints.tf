@@ -127,9 +127,15 @@ locals {
   gateway_route_table_ids = compact(concat(
     [module.common_internet_s3_rt.route_table_id],
     [module.common_local_s3_rt.route_table_id],
+    [module.locker_server_s3_rt.route_table_id],
+    # Per-AZ ProxyPeeringNAT route tables
     var.enable_nat_gateway && length(var.availability_zones) > 0 ? [module.proxy_peering_nat_a_rt[0].route_table_id] : [],
     var.enable_nat_gateway && length(var.availability_zones) > 1 ? [module.proxy_peering_nat_b_rt[0].route_table_id] : [],
     var.enable_nat_gateway && length(var.availability_zones) > 2 ? [module.proxy_peering_nat_c_rt[0].route_table_id] : [],
+    # EKS Worker route table (S3 only, no NAT)
+    [module.eks_worker_rt.route_table_id],
+    # Common Local NAT S3 route table (NAT + S3)
+    var.enable_nat_gateway ? [module.common_local_nat_s3_rt[0].route_table_id] : [],
     var.include_database_route_tables_in_gateway_endpoints ? [module.db_route_table.route_table_id] : []
   ))
 }
@@ -201,8 +207,8 @@ module "vpc_endpoint_sg" {
   egress_rules = [
     {
       description = "Allow all outbound"
-      from_port   = 0
-      to_port     = 0
+      from_port   = -1
+      to_port     = -1
       protocol    = "-1"
       cidr_blocks = ["0.0.0.0/0"]
     }

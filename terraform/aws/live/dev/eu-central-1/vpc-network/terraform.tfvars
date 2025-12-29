@@ -1,11 +1,21 @@
-###################
-# VPC Network Configuration - Optimized 36-Subnet Plan
+# ============================================================================
+# DEVELOPMENT ENVIRONMENT - EU CENTRAL 1 - VPC NETWORK
+# ============================================================================
+# Optimized 36-Subnet Architecture for Hyperswitch
 # Environment: Development
-###################
+# ============================================================================
 
-###################
-# Basic Configuration
-###################
+# ============================================================================
+# ENVIRONMENT IDENTIFICATION
+# ============================================================================
+environment  = "dev"
+project_name = "hyperswitch"
+
+# ============================================================================
+# BASIC CONFIGURATION
+# ============================================================================
+# Core VPC and region settings
+
 aws_region = "eu-central-1"
 vpc_cidr   = "10.0.0.0/16" # 65,536 IPs
 
@@ -30,7 +40,8 @@ secondary_cidr_blocks = []
 ###################
 # Dev: Use single NAT gateway (cost savings ~$70/month)
 # Prod: Set to false for HA (one NAT per AZ)
-single_nat_gateway = true
+# For production reliability, using multi-AZ NAT gateways
+single_nat_gateway = false
 
 ###################
 # Subnet CIDR Allocations
@@ -144,13 +155,14 @@ enable_flow_logs           = false # Set to true for production
 flow_logs_destination_type = "cloud-watch-logs"
 # flow_logs_destination_arn  = "arn:aws:logs:eu-central-1:ACCOUNT_ID:log-group:/aws/vpc/flow-logs"
 
-###################
-# Tags
-###################
+# ============================================================================
+# TAGS
+# ============================================================================
+# Common tags for all resources
+
 tags = {
   Environment = "dev"
   Team        = "Infra"
-  CostCenter  = "Engineering"
   ManagedBy   = "Terraform"
   Project     = "hyperswitch"
 }
