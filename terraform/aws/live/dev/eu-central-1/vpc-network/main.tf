@@ -68,6 +68,9 @@ module "vpc_network" {
   # Utils subnets (Lambda, Elasticsearch - Private with NAT)
   utils_subnet_cidrs = var.utils_subnet_cidrs
 
+  # Lambda subnets (Private with NAT and S3 endpoint)
+  lambda_subnet_cidrs = var.lambda_subnet_cidrs
+
   # Network ACL (simplified - allow all traffic like integration environment)
   create_nacl = true
 

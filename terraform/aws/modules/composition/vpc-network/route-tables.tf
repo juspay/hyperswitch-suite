@@ -339,3 +339,11 @@ resource "aws_route_table_association" "utils" {
   subnet_id      = module.utils_subnets[count.index].subnet_id
   route_table_id = module.common_local_s3_rt.route_table_id
 }
+
+# Associate Lambda subnets with CommonLocalNATS3 (NAT + S3 endpoint)
+resource "aws_route_table_association" "lambda" {
+  count = var.enable_nat_gateway ? length(var.lambda_subnet_cidrs) : 0
+
+  subnet_id      = module.lambda_subnets[count.index].subnet_id
+  route_table_id = module.common_local_nat_s3_rt[0].route_table_id
+}

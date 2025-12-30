@@ -96,6 +96,13 @@ utils_subnet_cidrs = [
   "10.0.96.0/24"  # AZ-C: 256 IPs
 ]
 
+# Lambda (Private with NAT and S3 endpoint access)
+lambda_subnet_cidrs = [
+  "10.0.97.0/24", # AZ-A: 256 IPs
+  "10.0.98.0/24", # AZ-B: 256 IPs
+  "10.0.99.0/24"  # AZ-C: 256 IPs
+]
+
 # FULLY ISOLATED TIER - No internet access
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
