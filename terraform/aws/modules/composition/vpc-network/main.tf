@@ -376,6 +376,33 @@ module "utils_subnets" {
 }
 
 ###################
+# Lambda Subnets (Private with NAT and S3 endpoint access)
+###################
+module "lambda_subnets" {
+  source = "../../base/subnet"
+  count  = length(var.lambda_subnet_cidrs)
+
+  vpc_id            = module.vpc.vpc_id
+  subnet_name       = "${var.vpc_name}-lambda-${var.availability_zones[count.index]}"
+  cidr_block        = var.lambda_subnet_cidrs[count.index]
+  availability_zone = var.availability_zones[count.index]
+
+  subnet_tier = "lambda"
+  subnet_type = "private-nat"
+
+  # Route table is managed by shared route tables (route-tables.tf)
+  create_route_table = false
+
+  tags = merge(
+    var.tags,
+    var.lambda_subnet_tags,
+    {
+      "Tier" = "lambda"
+    }
+  )
+}
+
+###################
 # Additional Custom Subnet Groups
 ###################
 module "custom_subnets" {

@@ -224,6 +224,20 @@ variable "utils_subnet_cidrs" {
 }
 
 ###################
+# Lambda Subnets (Private with NAT and S3 endpoint access)
+# 10.0.95.0/24, 10.0.96.0/24, 10.0.97.0/24 (768 IPs total)
+###################
+variable "lambda_subnet_cidrs" {
+  description = "CIDR blocks for Lambda subnets (NAT + S3 endpoint)"
+  type        = list(string)
+  default = [
+    "10.0.95.0/24", # AZ-A: 256 IPs
+    "10.0.96.0/24", # AZ-B: 256 IPs
+    "10.0.97.0/24"  # AZ-C: 256 IPs
+  ]
+}
+
+###################
 # VPC Endpoints
 ###################
 variable "enable_vpc_endpoints" {

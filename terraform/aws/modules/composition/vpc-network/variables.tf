@@ -368,6 +368,21 @@ variable "utils_subnet_tags" {
 }
 
 ###################
+# Lambda Subnets (Private with NAT and S3 endpoint access)
+###################
+variable "lambda_subnet_cidrs" {
+  description = "List of CIDR blocks for Lambda subnets (one per AZ) - private with NAT and S3 endpoint"
+  type        = list(string)
+  default     = []
+}
+
+variable "lambda_subnet_tags" {
+  description = "Additional tags for Lambda subnets"
+  type        = map(string)
+  default     = {}
+}
+
+###################
 # Custom Subnet Groups
 ###################
 variable "custom_subnet_groups" {
