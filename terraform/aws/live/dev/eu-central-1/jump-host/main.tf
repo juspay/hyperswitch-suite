@@ -36,6 +36,9 @@ module "jump_host" {
   # Logging Configuration
   log_retention_days = var.log_retention_days
 
+  # SSM Configuration
+  enable_internal_jump_ssm = var.enable_internal_jump_ssm
+
   # Migration Mode Configuration
   enable_migration_mode = var.enable_migration_mode
 
