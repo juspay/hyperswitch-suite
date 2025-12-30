@@ -49,6 +49,12 @@ root_volume_type = "gp3" # General Purpose SSD
 log_retention_days = 30
 
 # ============================================================================
+# SSM Session Manager Configuration
+# ============================================================================
+# Enable SSM Session Manager access for internal jump host
+# Set to true to allow direct SSM access to internal jump host
+enable_internal_jump_ssm = false
+
 # Migration Mode Configuration
 # ============================================================================
 # Enable SSM SendCommand permissions for Packer AMI migration (SECURITY RISK)

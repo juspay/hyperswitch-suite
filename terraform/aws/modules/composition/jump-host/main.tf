@@ -149,7 +149,7 @@ module "external_jump_iam_role" {
   tags = local.common_tags
 }
 
-# IAM Role for Internal Jump Host (No SSM Session Manager)
+# IAM Role for Internal Jump Host (Optional SSM Session Manager)
 module "internal_jump_iam_role" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role"
   version = "~> 6.2"
@@ -169,25 +169,61 @@ module "internal_jump_iam_role" {
   }
 
   # Managed policies
-  policies = {
-    CloudWatchAgentServerPolicy = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
-  }
+  policies = merge(
+    {
+      CloudWatchAgentServerPolicy = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+    },
+    var.enable_internal_jump_ssm ? {
+      AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+    } : {}
+  )
 
   # Inline policies
   create_inline_policy = true
-  inline_policy_permissions = {
-    CloudWatchLogs = {
-      sid    = "CloudWatchLogs"
-      effect = "Allow"
-      actions = [
-        "logs:CreateLogGroup",
-        "logs:CreateLogStream",
-        "logs:PutLogEvents",
-        "logs:DescribeLogStreams"
-      ]
-      resources = ["arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/jump-host/${var.environment}/internal*"]
-    }
-  }
+  inline_policy_permissions = merge(
+    {
+      CloudWatchLogs = {
+        sid    = "CloudWatchLogs"
+        effect = "Allow"
+        actions = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogStreams"
+        ]
+        resources = ["arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/jump-host/${var.environment}/internal*"]
+      }
+    },
+    var.enable_internal_jump_ssm ? {
+      KMSSessionEncryption = {
+        sid    = "KMSSessionEncryption"
+        effect = "Allow"
+        actions = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey"
+        ]
+        resources = [
+          "arn:aws:kms:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:key/*"
+        ]
+      }
+      SSMSessionLogging = {
+        sid    = "SSMSessionLogging"
+        effect = "Allow"
+        actions = [
+          "s3:PutObject"
+        ]
+        resources = [
+          "arn:aws:s3:::*/*"
+        ]
+      }
+      SSMSessionLoggingEncryption = {
+        sid       = "SSMSessionLoggingEncryption"
+        effect    = "Allow"
+        actions   = ["s3:GetEncryptionConfiguration"]
+        resources = ["*"]
+      }
+    } : {}
+  )
 
   tags = local.common_tags
 }
