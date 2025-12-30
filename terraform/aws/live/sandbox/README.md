@@ -22,7 +22,6 @@ To set up the sandbox environment, follow the **dev environment** as a reference
      - Subnet IDs (proxy subnets, LB subnets)
      - Security Group IDs
      - AMI IDs
-     - EKS worker subnet CIDRs
      - DNS names (CloudFront, internal ALB)
    - **Consider minimal resource sizing for cost optimization:**
      - Use `desired_capacity = 1` (or even 0 when not in use)
