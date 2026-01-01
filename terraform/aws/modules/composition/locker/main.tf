@@ -81,43 +81,6 @@ resource "aws_security_group_rule" "locker_ingress_from_nlb" {
   description              = "Allow traffic from NLB to locker instance"
 }
 
-# Additional ingress rules (environment-configurable via ingress_rules variable)
-resource "aws_security_group_rule" "locker_ingress_rules" {
-  for_each = { for idx, rule in var.locker_ingress_rules : idx => rule }
-
-  security_group_id = local.locker_security_group_id
-  type              = "ingress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  description       = each.value.description
-
-  cidr_blocks              = try(each.value.cidr, null)
-  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
-  source_security_group_id = try(each.value.sg_id[0], null)
-  prefix_list_ids          = try(each.value.prefix_list_ids, null)
-}
-
-# =========================================================================
-# LOCKER SECURITY GROUP - EGRESS RULES
-# =========================================================================
-# All egress rules are environment-configurable via egress_rules variable
-resource "aws_security_group_rule" "locker_egress_rules" {
-  for_each = { for idx, rule in var.locker_egress_rules : idx => rule }
-
-  security_group_id = local.locker_security_group_id
-  type              = "egress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  description       = each.value.description
-
-  cidr_blocks              = try(each.value.cidr, null)
-  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
-  source_security_group_id = try(each.value.sg_id[0], null)
-  prefix_list_ids          = try(each.value.prefix_list_ids, null)
-}
-
 # =========================================================================
 # SECURITY - NLB SECURITY GROUP
 # =========================================================================
@@ -126,26 +89,6 @@ resource "aws_security_group" "nlb" {
   description = "Security group for locker Network Load Balancer"
   vpc_id      = var.vpc_id
   tags        = local.common_tags
-}
-
-# =========================================================================
-# NLB SECURITY GROUP - INGRESS RULES
-# =========================================================================
-# All ingress rules are environment-configurable via nlb_ingress_rules variable
-resource "aws_security_group_rule" "nlb_ingress_rules" {
-  for_each = { for idx, rule in var.nlb_ingress_rules : idx => rule }
-
-  security_group_id = aws_security_group.nlb.id
-  type              = "ingress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  description       = each.value.description
-
-  cidr_blocks              = try(each.value.cidr, null)
-  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
-  source_security_group_id = try(each.value.sg_id[0], null)
-  prefix_list_ids          = try(each.value.prefix_list_ids, null)
 }
 
 # =========================================================================
@@ -160,23 +103,6 @@ resource "aws_security_group_rule" "nlb_egress_to_locker" {
   protocol                 = "tcp"
   source_security_group_id = local.locker_security_group_id
   description              = "Allow NLB to send traffic to locker instance"
-}
-
-# Additional egress rules (environment-configurable via nlb_egress_rules variable)
-resource "aws_security_group_rule" "nlb_egress_rules" {
-  for_each = { for idx, rule in var.nlb_egress_rules : idx => rule }
-
-  security_group_id = aws_security_group.nlb.id
-  type              = "egress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  description       = each.value.description
-
-  cidr_blocks              = try(each.value.cidr, null)
-  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
-  source_security_group_id = try(each.value.sg_id[0], null)
-  prefix_list_ids          = try(each.value.prefix_list_ids, null)
 }
 
 # =========================================================================
