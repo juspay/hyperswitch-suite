@@ -21,7 +21,7 @@
 # LOCKER SECURITY GROUP - INGRESS RULES
 # =========================================================================
 resource "aws_security_group_rule" "locker_ingress" {
-  for_each = { for idx, rule in var.locker_ingress_rules : idx => rule }
+  for_each = { for rule in var.locker_ingress_rules : sha256(jsonencode(rule)) => rule }
 
   security_group_id = var.locker_sg_id
   type              = "ingress"
@@ -40,7 +40,7 @@ resource "aws_security_group_rule" "locker_ingress" {
 # LOCKER SECURITY GROUP - EGRESS RULES
 # =========================================================================
 resource "aws_security_group_rule" "locker_egress" {
-  for_each = { for idx, rule in var.locker_egress_rules : idx => rule }
+  for_each = { for rule in var.locker_egress_rules : sha256(jsonencode(rule)) => rule }
 
   security_group_id = var.locker_sg_id
   type              = "egress"
@@ -59,7 +59,7 @@ resource "aws_security_group_rule" "locker_egress" {
 # NLB SECURITY GROUP - INGRESS RULES
 # =========================================================================
 resource "aws_security_group_rule" "nlb_ingress" {
-  for_each = { for idx, rule in var.nlb_ingress_rules : idx => rule }
+  for_each = { for rule in var.nlb_ingress_rules : sha256(jsonencode(rule)) => rule }
 
   security_group_id = var.locker_nlb_sg_id
   type              = "ingress"
@@ -78,7 +78,7 @@ resource "aws_security_group_rule" "nlb_ingress" {
 # NLB SECURITY GROUP - EGRESS RULES
 # =========================================================================
 resource "aws_security_group_rule" "nlb_egress" {
-  for_each = { for idx, rule in var.nlb_egress_rules : idx => rule }
+  for_each = { for rule in var.nlb_egress_rules : sha256(jsonencode(rule)) => rule }
 
   security_group_id = var.locker_nlb_sg_id
   type              = "egress"
