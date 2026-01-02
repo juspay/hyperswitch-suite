@@ -32,12 +32,6 @@ module "locker" {
   instance_type = var.instance_type
   key_name      = var.key_name
 
-  # Security Group Rules
-  locker_ingress_rules     = var.locker_ingress_rules
-  locker_egress_rules      = var.locker_egress_rules
-  nlb_ingress_rules        = var.nlb_ingress_rules
-  nlb_egress_rules         = var.nlb_egress_rules
-
   # NLB Listeners Configuration
   nlb_listeners           = var.nlb_listeners
 
