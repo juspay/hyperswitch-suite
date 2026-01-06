@@ -445,5 +445,5 @@ module "asg" {
   scaling_policies        = var.scaling_policies
 
   tags          = local.common_tags
-  instance_tags = local.instance_tags
+  instance_tags = {}
 }
