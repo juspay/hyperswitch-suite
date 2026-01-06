@@ -64,8 +64,8 @@ module "security_rules" {
   source = "../../../../modules/composition/security-rules"
 
   # Security Group IDs from remote state
-  # locker_sg_id     = data.terraform_remote_state.locker.outputs.locker_security_group_id
-  # locker_nlb_sg_id = data.terraform_remote_state.locker.outputs.locker_nlb_security_group_id
+  locker_sg_id     = data.terraform_remote_state.locker.outputs.locker_security_group_id
+  locker_nlb_sg_id = data.terraform_remote_state.locker.outputs.locker_nlb_security_group_id
   squid_sg_id      = data.terraform_remote_state.squid_proxy.outputs.squid_asg_security_group_id
 
   # Security Group Rules
