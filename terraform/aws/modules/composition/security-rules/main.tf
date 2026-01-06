@@ -21,7 +21,7 @@
 # LOCKER SECURITY GROUP - INGRESS RULES
 # =========================================================================
 resource "aws_security_group_rule" "locker_ingress" {
-  for_each = { for rule in var.locker_ingress_rules : sha256(jsonencode(rule)) => rule }
+  for_each = var.locker_sg_id != null ? { for rule in var.locker_ingress_rules : sha256(jsonencode(rule)) => rule } : {}
 
   security_group_id = var.locker_sg_id
   type              = "ingress"
@@ -40,7 +40,7 @@ resource "aws_security_group_rule" "locker_ingress" {
 # LOCKER SECURITY GROUP - EGRESS RULES
 # =========================================================================
 resource "aws_security_group_rule" "locker_egress" {
-  for_each = { for rule in var.locker_egress_rules : sha256(jsonencode(rule)) => rule }
+  for_each = var.locker_sg_id != null ? { for rule in var.locker_egress_rules : sha256(jsonencode(rule)) => rule } : {}
 
   security_group_id = var.locker_sg_id
   type              = "egress"
@@ -59,7 +59,7 @@ resource "aws_security_group_rule" "locker_egress" {
 # NLB SECURITY GROUP - INGRESS RULES
 # =========================================================================
 resource "aws_security_group_rule" "nlb_ingress" {
-  for_each = { for rule in var.nlb_ingress_rules : sha256(jsonencode(rule)) => rule }
+  for_each = var.locker_nlb_sg_id != null ? { for rule in var.nlb_ingress_rules : sha256(jsonencode(rule)) => rule } : {}
 
   security_group_id = var.locker_nlb_sg_id
   type              = "ingress"
@@ -78,7 +78,7 @@ resource "aws_security_group_rule" "nlb_ingress" {
 # NLB SECURITY GROUP - EGRESS RULES
 # =========================================================================
 resource "aws_security_group_rule" "nlb_egress" {
-  for_each = { for rule in var.nlb_egress_rules : sha256(jsonencode(rule)) => rule }
+  for_each = var.locker_nlb_sg_id != null ? { for rule in var.nlb_egress_rules : sha256(jsonencode(rule)) => rule } : {}
 
   security_group_id = var.locker_nlb_sg_id
   type              = "egress"
@@ -87,6 +87,40 @@ resource "aws_security_group_rule" "nlb_egress" {
   protocol          = each.value.protocol
   description       = each.value.description
 
+  cidr_blocks              = try(each.value.cidr, null)
+  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
+  source_security_group_id = try(each.value.sg_id[0], null)
+  prefix_list_ids          = try(each.value.prefix_list_ids, null)
+}
+
+# =========================================================================
+# SQUID SECURITY GROUP - INGRESS RULES
+# =========================================================================
+resource "aws_security_group_rule" "squid_ingress" {
+  for_each = var.squid_sg_id != null ? { for rule in var.squid_ingress_rules : sha256(jsonencode(rule)) => rule } : {}
+  security_group_id = var.squid_sg_id
+  type              = "ingress"
+  from_port         = each.value.from_port
+  to_port           = each.value.to_port
+  protocol          = each.value.protocol
+  description       = each.value.description
+  cidr_blocks              = try(each.value.cidr, null)
+  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
+  source_security_group_id = try(each.value.sg_id[0], null)
+  prefix_list_ids          = try(each.value.prefix_list_ids, null)
+}
+
+# =========================================================================
+# SQUID SECURITY GROUP - EGRESS RULES
+# =========================================================================
+resource "aws_security_group_rule" "squid_egress" {
+  for_each = var.squid_sg_id != null ? { for rule in var.squid_egress_rules : sha256(jsonencode(rule)) => rule } : {}
+  security_group_id = var.squid_sg_id
+  type              = "egress"
+  from_port         = each.value.from_port
+  to_port           = each.value.to_port
+  protocol          = each.value.protocol
+  description       = each.value.description
   cidr_blocks              = try(each.value.cidr, null)
   ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
   source_security_group_id = try(each.value.sg_id[0], null)

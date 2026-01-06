@@ -258,34 +258,6 @@ resource "aws_security_group_rule" "nlb_health_checks" {
 }
 
 # =========================================================================
-# Ingress Rules (Environment Specific)
-# =========================================================================
-# Use the base security-group-rules module for flexible ingress rules
-# Supports both CIDR blocks and Security Group IDs
-module "ingress_rules" {
-  source = "../../base/security-group-rules"
-
-  security_group_id = module.asg_security_group.sg_id
-  rules = [
-    for rule in var.ingress_rules : merge(rule, { type = "ingress" })
-  ]
-}
-
-# =========================================================================
-# Egress Rules (Environment Specific)
-# =========================================================================
-# Use the base security-group-rules module for flexible egress rules
-# Supports both CIDR blocks and Security Group IDs
-module "egress_rules" {
-  source = "../../base/security-group-rules"
-
-  security_group_id = module.asg_security_group.sg_id
-  rules = [
-    for rule in var.egress_rules : merge(rule, { type = "egress" })
-  ]
-}
-
-# =========================================================================
 # Network Load Balancer (Conditional - Create only if needed)
 # =========================================================================
 module "nlb" {

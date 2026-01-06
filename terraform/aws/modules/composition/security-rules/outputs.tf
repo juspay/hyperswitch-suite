@@ -22,6 +22,16 @@ output "nlb_egress_rule_ids" {
   value       = { for k, v in aws_security_group_rule.nlb_egress : k => v.id }
 }
 
+output "squid_ingress_rule_ids" {
+  description = "IDs of squid ingress security group rules"
+  value       = { for k, v in aws_security_group_rule.squid_ingress : k => v.id }
+}
+
+output "squid_egress_rule_ids" {
+  description = "IDs of squid egress security group rules"
+  value       = { for k, v in aws_security_group_rule.squid_egress : k => v.id }
+}
+
 output "rules_summary" {
   description = "Summary of security rules created"
   value = {
@@ -29,6 +39,8 @@ output "rules_summary" {
     locker_egress_count  = length(var.locker_egress_rules)
     nlb_ingress_count    = length(var.nlb_ingress_rules)
     nlb_egress_count     = length(var.nlb_egress_rules)
-    total_rules          = length(var.locker_ingress_rules) + length(var.locker_egress_rules) + length(var.nlb_ingress_rules) + length(var.nlb_egress_rules)
+    squid_ingress_count  = length(var.squid_ingress_rules)
+    squid_egress_count   = length(var.squid_egress_rules)
+    total_rules          = length(var.locker_ingress_rules) + length(var.locker_egress_rules) + length(var.nlb_ingress_rules) + length(var.nlb_egress_rules) + length(var.squid_ingress_rules) + length(var.squid_egress_rules) 
   }
 }

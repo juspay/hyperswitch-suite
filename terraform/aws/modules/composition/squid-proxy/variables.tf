@@ -29,33 +29,6 @@ variable "lb_subnet_ids" {
   type        = list(string)
 }
 
-variable "ingress_rules" {
-  description = "Ingress rules for ASG security group"
-  type = list(object({
-    description = string
-    from_port   = number
-    to_port     = number
-    protocol    = string
-    cidr        = optional(list(string))
-    sg_id       = optional(list(string))
-  }))
-  default = []
-
-}
-
-variable "egress_rules" {
-  description = "Egress rules for ASG security group"
-  type = list(object({
-    description = string
-    from_port   = number
-    to_port     = number
-    protocol    = string
-    cidr        = optional(list(string))
-    sg_id       = optional(list(string))
-  }))
-  default = []
-
-}
 
 variable "squid_port" {
   description = "Port for Squid proxy"
