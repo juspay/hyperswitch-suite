@@ -53,10 +53,6 @@ module "squid_proxy" {
   proxy_subnet_ids = var.proxy_subnet_ids
   lb_subnet_ids    = var.lb_subnet_ids
 
-  # Security Group Rules (environment-specific)
-  ingress_rules = var.ingress_rules
-  egress_rules  = var.egress_rules
-
   # Squid configuration
   squid_port      = var.squid_port
   ami_id          = var.ami_id

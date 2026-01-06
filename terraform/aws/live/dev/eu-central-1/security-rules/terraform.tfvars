@@ -106,3 +106,69 @@ nlb_egress_rules = [
   #   cidr        = ["0.0.0.0/0"]
   # },
 ]
+
+# ============================================================================
+# Squid Proxy Security Group Rules
+# ============================================================================
+# Ingress rules for squid proxy instance security group
+squid_ingress_rules = [
+    {
+    description = "Allow traffic from EKS worker subnets"
+    from_port   = 3128
+    to_port     = 3128
+    protocol    = "tcp"
+    cidr        = ["10.X.X.0/21", "10.X.X.0/24"]  # Replace with your EKS worker subnet CIDRs
+  },
+  # Example 2: Allow SSH from jumpbox security group
+  # {
+  #   description = "Allow SSH access from external jumpbox"
+  #   from_port   = 22
+  #   to_port     = 22
+  #   protocol    = "tcp"
+  #   sg_id       = ["sg-XXXXXXXXXXXXX"]
+  # },
+  # Example 3: Allow Prometheus metrics scraping from Prometheus security group
+  # {
+  #   description = "Allow Prometheus metrics scraping"
+  #   from_port   = 9273
+  #   to_port     = 9273
+  #   protocol    = "tcp"
+  #   sg_id       = ["sg-XXXXXXXXXXXXX"]
+  # },
+]
+
+# Egress rules for squid proxy instance security group
+squid_egress_rules = [
+    # Allow HTTPS access to the internet
+  {
+    description = "Allow HTTPS to internet"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr        = ["0.0.0.0/0"]
+  },
+  # Example 1: Allow outbound to Wazuh master (CIDR blocks)
+  # {
+  #   description = "Wazuh master"
+  #   from_port   = 1515
+  #   to_port     = 1515
+  #   protocol    = "tcp"
+  #   cidr        = ["10.41.16.0/20"]
+  # },
+  # Example 2: Allow outbound to ClamAV (Security Group ID)
+  # {
+  #   description = "ClamAV antivirus service"
+  #   from_port   = 3310
+  #   to_port     = 3310
+  #   protocol    = "tcp"
+  #   sg_id       = ["sg-XXXXXXXXXXXXX"]
+  # },
+  # Example 3: Allow outbound to custom application on non-standard port
+  # {
+  #   description = "Custom API endpoint"
+  #   from_port   = 8443
+  #   to_port     = 8443
+  #   protocol    = "tcp"
+  #   cidr        = ["192.168.1.0/24"]
+  # },
+]

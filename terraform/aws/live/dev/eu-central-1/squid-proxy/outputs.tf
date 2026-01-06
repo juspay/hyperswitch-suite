@@ -46,3 +46,8 @@ output "memory_scaling_policy_arn" {
   description = "ARN of the memory target tracking scaling policy"
   value       = module.squid_proxy.memory_scaling_policy_arn
 }
+
+output "squid_asg_security_group_id" {
+  description = "Security group ID for Squid ASG instances"
+  value       = module.squid_proxy.asg_security_group_id
+}

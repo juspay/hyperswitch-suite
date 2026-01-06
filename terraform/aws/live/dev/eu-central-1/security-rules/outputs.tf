@@ -22,6 +22,16 @@ output "nlb_egress_rule_ids" {
   value       = module.security_rules.nlb_egress_rule_ids
 }
 
+output "squid_ingress_rule_ids" {
+  description = "IDs of squid ingress security group rules"
+  value       = module.security_rules.squid_ingress_rule_ids
+}
+
+output "squid_egress_rule_ids" {
+  description = "IDs of squid egress security group rules"
+  value       = module.security_rules.squid_egress_rule_ids
+}
+
 output "rules_summary" {
   description = "Summary of security rules created"
   value       = module.security_rules.rules_summary

@@ -6,16 +6,13 @@ locals {
   common_tags = merge(
     var.tags,
     {
-      Environment = var.environment
-      Service     = "squid-proxy"
-      ManagedBy   = "Terraform"
-      Module      = "composition/squid-proxy"
+      Module = try(var.tags.Module, "composition/squid-proxy")
     }
   )
 
   # Instance tags (propagated to EC2 instances)
   instance_tags = merge(
-    local.common_tags,
+    var.tags,
     {
       Name = "${local.name_prefix}-instance"
     }
