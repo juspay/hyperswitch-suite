@@ -40,7 +40,7 @@ data "terraform_remote_state" "envoy_proxy" {
   backend = "s3"
   config = {
     bucket = "hyperswitch-dev-terraform-state"
-    key    = "dev/eu-central-1/eks/terraform.tfstate"
+    key    = "dev/eu-central-1/envoy-proxy/terraform.tfstate"
     region = "eu-central-1"
   }
 }
