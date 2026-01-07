@@ -114,3 +114,69 @@ variable "squid_egress_rules" {
   }))
   default = []
 }
+
+# =========================================================================
+# ENVOY PROXY SECURITY GROUP RULES
+# =========================================================================
+
+variable "envoy_ingress_rules" {
+  description = "Ingress rules for Envoy security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, 'sg_id' for security groups, or 'prefix_list_ids' for VPC endpoints"
+  type = list(object({
+    description     = string
+    from_port       = number
+    to_port         = number
+    protocol        = string
+    cidr            = optional(list(string))
+    ipv6_cidr       = optional(list(string))
+    sg_id           = optional(list(string))
+    prefix_list_ids = optional(list(string))
+  }))
+  default = []
+}
+
+variable "envoy_egress_rules" {
+  description = "Egress rules for Envoy security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, 'sg_id' for security groups, or 'prefix_list_ids' for VPC endpoints"
+  type = list(object({
+    description     = string
+    from_port       = number
+    to_port         = number
+    protocol        = string
+    cidr            = optional(list(string))
+    ipv6_cidr       = optional(list(string))
+    sg_id           = optional(list(string))
+    prefix_list_ids = optional(list(string))
+  }))
+  default = []
+  
+}
+
+
+variable "envoy_lb_ingress_rules" {
+  description = "Ingress rules for Envoy load balancer security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, 'sg_id' for security groups, or 'prefix_list_ids' for VPC endpoints"
+  type = list(object({
+    description     = string
+    from_port       = number
+    to_port         = number
+    protocol        = string
+    cidr            = optional(list(string))
+    ipv6_cidr       = optional(list(string))
+    sg_id           = optional(list(string))
+    prefix_list_ids = optional(list(string))
+  }))
+  default = []
+}
+
+variable "envoy_lb_egress_rules" {
+  description = "Egress rules for Envoy load balancer security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, 'sg_id' for security groups, or 'prefix_list_ids' for VPC endpoints"
+  type = list(object({
+    description     = string
+    from_port       = number
+    to_port         = number
+    protocol        = string
+    cidr            = optional(list(string))
+    ipv6_cidr       = optional(list(string))
+    sg_id           = optional(list(string))
+    prefix_list_ids = optional(list(string))
+  }))
+  default = []
+}

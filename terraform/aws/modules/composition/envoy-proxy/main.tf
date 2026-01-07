@@ -235,48 +235,6 @@ module "lb_security_group" {
 }
 
 # =========================================================================
-# Load Balancer Security Group - Ingress Rules (Environment Specific)
-# =========================================================================
-# All ingress rules are now defined in the live layer (terraform.tfvars)
-# No hardcoded defaults - full flexibility per environment
-resource "aws_security_group_rule" "lb_ingress_rules" {
-  for_each = var.create_lb ? { for idx, rule in var.lb_ingress_rules : idx => rule } : {}
-
-  security_group_id = module.lb_security_group[0].security_group_id
-  type              = "ingress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  description       = each.value.description
-
-  cidr_blocks              = try(each.value.cidr, null)
-  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
-  source_security_group_id = try(each.value.sg_id[0], null)
-  prefix_list_ids          = try(each.value.prefix_list_ids, null)
-}
-
-# =========================================================================
-# Load Balancer Security Group - Egress Rules (Environment Specific)
-# =========================================================================
-# All egress rules are now defined in the live layer (terraform.tfvars)
-# No hardcoded defaults - full flexibility per environment
-resource "aws_security_group_rule" "lb_egress_rules" {
-  for_each = var.create_lb ? { for idx, rule in var.lb_egress_rules : idx => rule } : {}
-
-  security_group_id = module.lb_security_group[0].security_group_id
-  type              = "egress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  description       = each.value.description
-
-  cidr_blocks              = try(each.value.cidr, null)
-  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
-  source_security_group_id = try(each.value.sg_id[0], null)
-  prefix_list_ids          = try(each.value.prefix_list_ids, null)
-}
-
-# =========================================================================
 # Load Balancer Security Group - Default Egress Rules (Automatic)
 # =========================================================================
 # Automatically allow traffic from LB to Envoy ASG on configured traffic port
@@ -336,46 +294,6 @@ resource "aws_security_group_rule" "asg_ingress_from_alb_healthcheck" {
   protocol                 = "tcp"
   source_security_group_id = var.create_lb ? module.lb_security_group[0].security_group_id : var.existing_lb_security_group_id
   description              = "Allow health checks from ALB"
-}
-
-# =========================================================================
-# ASG Security Group - Additional Ingress Rules (Environment Specific)
-# =========================================================================
-resource "aws_security_group_rule" "asg_ingress_rules" {
-  for_each = { for idx, rule in var.ingress_rules : idx => rule }
-
-  security_group_id = module.asg_security_group.security_group_id
-  type              = "ingress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  description       = each.value.description
-
-  cidr_blocks              = try(each.value.cidr, null)
-  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
-  source_security_group_id = try(each.value.sg_id[0], null)
-  prefix_list_ids          = try(each.value.prefix_list_ids, null)
-}
-
-# =========================================================================
-# ASG Security Group - All Egress Rules (Environment Configurable)
-# =========================================================================
-# All egress rules are now defined in the live layer via egress_rules variable
-# This includes DNS, S3, upstream traffic - all customizable per environment
-resource "aws_security_group_rule" "asg_egress_rules" {
-  for_each = { for idx, rule in var.egress_rules : idx => rule }
-
-  security_group_id = module.asg_security_group.security_group_id
-  type              = "egress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  description       = each.value.description
-
-  cidr_blocks              = try(each.value.cidr, null)
-  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
-  source_security_group_id = try(each.value.sg_id[0], null)
-  prefix_list_ids          = try(each.value.prefix_list_ids, null)
 }
 
 # =========================================================================
