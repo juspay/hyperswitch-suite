@@ -15,12 +15,6 @@ module "envoy_proxy" {
   lb_subnet_ids    = var.lb_subnet_ids
   # Note: eks_security_group_id not needed - Envoy receives traffic from ALB, not from EKS
 
-  # Security Group Rules (environment-specific)
-  ingress_rules    = var.ingress_rules
-  egress_rules     = var.egress_rules
-  lb_ingress_rules = var.lb_ingress_rules
-  lb_egress_rules  = var.lb_egress_rules
-
   # Envoy configuration
   ami_id        = var.ami_id
   instance_type = var.instance_type

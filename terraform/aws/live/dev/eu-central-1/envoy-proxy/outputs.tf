@@ -27,3 +27,13 @@ output "envoy_target_group_arn" {
   description = "ARN of the target group"
   value       = module.envoy_proxy.target_group_arn
 }
+
+output "envoy_asg_security_group_id" {
+  description = "Security group ID for Envoy ASG instances"
+  value       = module.envoy_proxy.asg_security_group_id
+}
+
+output "envoy_lb_security_group_id" {
+  description = "Security group ID for Envoy ALB"
+  value       = module.envoy_proxy.lb_security_group_id
+}
