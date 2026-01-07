@@ -45,7 +45,6 @@ data "terraform_remote_state" "envoy_proxy" {
   }
 }
 
-# Jump Host module state (uncomment when ready)
 data "terraform_remote_state" "jump_host" {
   backend = "s3"
   config = {
