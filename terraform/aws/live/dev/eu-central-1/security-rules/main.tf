@@ -45,15 +45,14 @@ data "terraform_remote_state" "envoy_proxy" {
   }
 }
 
-# Jump Host module state (uncomment when ready)
-# data "terraform_remote_state" "jump_host" {
-#   backend = "s3"
-#   config = {
-#     bucket = "hyperswitch-dev-terraform-state"
-#     key    = "dev/eu-central-1/jump-host/terraform.tfstate"
-#     region = "eu-central-1"
-#   }
-# }
+data "terraform_remote_state" "jump_host" {
+  backend = "s3"
+  config = {
+    bucket = "hyperswitch-dev-terraform-state"
+    key    = "dev/eu-central-1/jump-host/terraform.tfstate"
+    region = "eu-central-1"
+  }
+}
 
 # EKS module state (uncomment when ready)
 # data "terraform_remote_state" "eks" {
@@ -78,6 +77,9 @@ module "security_rules" {
   squid_sg_id      = data.terraform_remote_state.squid_proxy.outputs.squid_asg_security_group_id
   envoy_sg_id      = data.terraform_remote_state.envoy_proxy.outputs.envoy_security_group_id
   envoy_lb_sg_id   = data.terraform_remote_state.envoy_proxy.outputs.envoy_lb_security_group_id
+  ext_jump_host_sg_id  = data.terraform_remote_state.jump_host.outputs.external_security_group_id
+  int_jump_host_sg_id  = data.terraform_remote_state.jump_host.outputs.internal_security_group_id
+
 
   # Security Group Rules
   locker_ingress_rules = var.locker_ingress_rules
@@ -90,4 +92,8 @@ module "security_rules" {
   envoy_egress_rules   = var.envoy_egress_rules
   envoy_lb_ingress_rules = var.envoy_lb_ingress_rules
   envoy_lb_egress_rules  = var.envoy_lb_egress_rules
+  ext_jump_host_ingress_rules = var.ext_jump_host_ingress_rules
+  ext_jump_host_egress_rules  = var.ext_jump_host_egress_rules
+  int_jump_host_ingress_rules = var.int_jump_host_ingress_rules
+  int_jump_host_egress_rules  = var.int_jump_host_egress_rules
 }

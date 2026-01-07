@@ -33,7 +33,18 @@ variable "envoy_lb_sg_id" {
   description = "Security group ID of the Envoy load balancer"
   type        = string
   default     = null
-  
+}
+
+variable "ext_jump_host_sg_id" {
+  description = "Security group ID of the jump host instance"
+  type        = string
+  default     = null
+}
+
+variable "int_jump_host_sg_id" {
+  description = "Security group ID of the internal jump host instance"
+  type        = string
+  default     = null
 }
 
 # =========================================================================
@@ -269,6 +280,101 @@ variable "envoy_lb_egress_rules" {
   validation {
     condition = alltrue([
       for rule in var.envoy_lb_egress_rules :
+      # Must have exactly one of: cidr, ipv6_cidr, sg_id, or prefix_list_ids
+      (rule.cidr != null ? 1 : 0) + (rule.ipv6_cidr != null ? 1 : 0) + (rule.sg_id != null ? 1 : 0) + (rule.prefix_list_ids != null ? 1 : 0) == 1
+    ])
+    error_message = "Each rule must have exactly one of 'cidr' (IPv4), 'ipv6_cidr' (IPv6), 'sg_id' (Security Group), or 'prefix_list_ids' (VPC Endpoint)."
+  }
+}
+
+# =========================================================================
+# JUMP HOST SECURITY GROUP RULES
+# =========================================================================
+variable "ext_jump_host_ingress_rules" {
+  description = "Ingress rules for external jump host security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, 'sg_id' for security groups, or 'prefix_list_ids' for VPC endpoints"
+  type = list(object({
+    description     = string
+    from_port       = number
+    to_port         = number
+    protocol        = string
+    cidr            = optional(list(string))
+    ipv6_cidr       = optional(list(string))
+    sg_id           = optional(list(string))
+    prefix_list_ids = optional(list(string))
+  }))
+  default = []
+  validation {
+    condition = alltrue([
+      for rule in var.ext_jump_host_ingress_rules :
+      # Must have exactly one of: cidr, ipv6_cidr, sg_id, or prefix_list_ids
+      (rule.cidr != null ? 1 : 0) + (rule.ipv6_cidr != null ? 1 : 0) + (rule.sg_id != null ? 1 : 0) + (rule.prefix_list_ids != null ? 1 : 0) == 1
+    ])
+    error_message = "Each rule must have exactly one of 'cidr' (IPv4), 'ipv6_cidr' (IPv6), 'sg_id' (Security Group), or 'prefix_list_ids' (VPC Endpoint)."
+  }
+}
+
+variable "ext_jump_host_egress_rules" {
+  description = "Egress rules for external jump host security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, 'sg_id' for security groups, or 'prefix_list_ids' for VPC endpoints"
+  type = list(object({
+    description     = string
+    from_port       = number
+    to_port         = number
+    protocol        = string
+    cidr            = optional(list(string))
+    ipv6_cidr       = optional(list(string))
+    sg_id           = optional(list(string))
+    prefix_list_ids = optional(list(string))
+  }))
+  default = []
+  validation {
+    condition = alltrue([
+      for rule in var.ext_jump_host_egress_rules :
+      # Must have exactly one of: cidr, ipv6_cidr, sg_id, or prefix_list_ids
+      (rule.cidr != null ? 1 : 0) + (rule.ipv6_cidr != null ? 1 : 0) + (rule.sg_id != null ? 1 : 0) + (rule.prefix_list_ids != null ? 1 : 0) == 1
+    ])
+    error_message = "Each rule must have exactly one of 'cidr' (IPv4), 'ipv6_cidr' (IPv6), 'sg_id' (Security Group), or 'prefix_list_ids' (VPC Endpoint)."
+  }
+}
+
+variable "int_jump_host_ingress_rules" {
+  description = "Ingress rules for internal jump host security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, 'sg_id' for security groups, or 'prefix_list_ids' for VPC endpoints"
+  type = list(object({
+    description     = string
+    from_port       = number
+    to_port         = number
+    protocol        = string
+    cidr            = optional(list(string))
+    ipv6_cidr       = optional(list(string))
+    sg_id           = optional(list(string))
+    prefix_list_ids = optional(list(string))
+  }))
+  default = []
+  validation {
+    condition = alltrue([
+      for rule in var.int_jump_host_ingress_rules :
+      # Must have exactly one of: cidr, ipv6_cidr, sg_id, or prefix_list_ids
+      (rule.cidr != null ? 1 : 0) + (rule.ipv6_cidr != null ? 1 : 0) + (rule.sg_id != null ? 1 : 0) + (rule.prefix_list_ids != null ? 1 : 0) == 1
+    ])
+    error_message = "Each rule must have exactly one of 'cidr' (IPv4), 'ipv6_cidr' (IPv6), 'sg_id' (Security Group), or 'prefix_list_ids' (VPC Endpoint)."
+  }
+}
+
+variable "int_jump_host_egress_rules" {
+  description = "Egress rules for internal jump host security group. Use 'cidr' for IPv4, 'ipv6_cidr' for IPv6, 'sg_id' for security groups, or 'prefix_list_ids' for VPC endpoints"
+  type = list(object({
+    description     = string
+    from_port       = number
+    to_port         = number
+    protocol        = string
+    cidr            = optional(list(string))
+    ipv6_cidr       = optional(list(string))
+    sg_id           = optional(list(string))
+    prefix_list_ids = optional(list(string))
+  }))
+  default = []
+  validation {
+    condition = alltrue([
+      for rule in var.int_jump_host_egress_rules :
       # Must have exactly one of: cidr, ipv6_cidr, sg_id, or prefix_list_ids
       (rule.cidr != null ? 1 : 0) + (rule.ipv6_cidr != null ? 1 : 0) + (rule.sg_id != null ? 1 : 0) + (rule.prefix_list_ids != null ? 1 : 0) == 1
     ])

@@ -310,3 +310,64 @@ envoy_lb_egress_rules = [
   # Note: Traffic to Envoy ASG on envoy_traffic_port is automatically handled
   # by the composition layer (creates egress rule to ASG security group dynamically)
  ]
+
+# ============================================================================
+# Jump Host Security Group Rules
+# ============================================================================
+# ----------------------------------------------------------------------------
+# External Jump Host - Ingress Rules
+# ----------------------------------------------------------------------------
+# Allow access from VPN IPs or specific CIDR blocks
+# Example: CIDR-based ingress rule
+# external_jump_ingress_rules = [
+#   {
+#     description = "VPN/Office IP - SSH/SSM access"
+#     from_port   = 22
+#     to_port     = 22
+#     protocol    = "tcp"
+#     cidr        = ["x.x.x.x/32"]  # Replace with your VPN/office IP
+#   }
+# ]
+
+# Ingress rules for external jump host security group
+ext_jump_host_egress_rules = [
+  {
+    description = "SSH to application servers"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    sg_id       = ["sg-xxxxxxxxxxxxxxxxx"]  # Replace with target security group ID
+  },
+  {
+    description = "Monitoring system access"
+    from_port   = 1514
+    to_port     = 1514
+    protocol    = "tcp"
+    cidr        = ["10.0.0.0/16"]  # Replace with your VPC CIDR or monitoring subnet
+  }
+]
+
+# Allow internal jump to access backend services (databases, caches, etc.)
+int_jump_host_egress_rules = [
+  {
+    description = "Database access (PostgreSQL/MySQL)"
+    from_port   = 3306
+    to_port     = 3306
+    protocol    = "tcp"
+    sg_id       = ["sg-xxxxxxxxxxxxxxxxx"]  # Replace with database security group ID
+  },
+  {
+    description = "S3 VPC endpoint access"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    prefix_list_ids = ["pl-xxxxxxxx"]  # Replace with S3 prefix list for your region
+  },
+  {
+    description = "HTTP/HTTPS to VPC CIDR on custom ports"
+    from_port   = 1514
+    to_port     = 1514
+    protocol    = "tcp"
+    cidr        = ["10.X.X.0/16"]  # Replace with your VPC CIDR
+  }
+]

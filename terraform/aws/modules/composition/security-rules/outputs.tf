@@ -51,6 +51,27 @@ output "envoy_lb_egress_rule_ids" {
   description = "IDs of Envoy LB egress security group rules"
   value       = { for k, v in aws_security_group_rule.envoy_lb_egress : k => v.id }
 }
+
+output "ext_jump_host_ingress_rule_ids" {
+  description = "IDs of external jump host ingress security group rules"
+  value       = { for k, v in aws_security_group_rule.ext_jump_host_ingress : k => v.id }
+}
+
+output "ext_jump_host_egress_rule_ids" {
+  description = "IDs of external jump host egress security group rules"
+  value       = { for k, v in aws_security_group_rule.ext_jump_host_egress : k => v.id }
+}
+
+output "int_jump_host_ingress_rule_ids" {
+  description = "IDs of internal jump host ingress security group rules"
+  value       = { for k, v in aws_security_group_rule.int_jump_host_ingress : k => v.id }
+}
+
+output "int_jump_host_egress_rule_ids" {
+  description = "IDs of internal jump host egress security group rules"
+  value       = { for k, v in aws_security_group_rule.int_jump_host_egress : k => v.id }
+}
+
 output "rules_summary" {
   description = "Summary of security rules created"
   value = {
@@ -64,6 +85,10 @@ output "rules_summary" {
     envoy_egress_count   = length(var.envoy_egress_rules)
     envoy_lb_ingress_count = length(var.envoy_lb_ingress_rules)
     envoy_lb_egress_count  = length(var.envoy_lb_egress_rules)
-    total_rules          = length(var.locker_ingress_rules) + length(var.locker_egress_rules) + length(var.nlb_ingress_rules) + length(var.nlb_egress_rules) + length(var.squid_ingress_rules) + length(var.squid_egress_rules) + length(var.envoy_ingress_rules) + length(var.envoy_egress_rules) + length(var.envoy_lb_ingress_rules) + length(var.envoy_lb_egress_rules)
+    ext_jump_host_ingress_count = length(var.ext_jump_host_ingress_rules)
+    ext_jump_host_egress_count = length(var.ext_jump_host_egress_rules)
+    int_jump_host_ingress_count = length(var.int_jump_host_ingress_rules)
+    int_jump_host_egress_count = length(var.int_jump_host_egress_rules)    
+    total_rules          = length(var.locker_ingress_rules) + length(var.locker_egress_rules) + length(var.nlb_ingress_rules) + length(var.nlb_egress_rules) + length(var.squid_ingress_rules) + length(var.squid_egress_rules) + length(var.envoy_ingress_rules) + length(var.envoy_egress_rules) + length(var.envoy_lb_ingress_rules) + length(var.envoy_lb_egress_rules) + length(var.ext_jump_host_ingress_rules) + length(var.ext_jump_host_egress_rules) + length(var.int_jump_host_ingress_rules) + length(var.int_jump_host_egress_rules)
   }
 }
