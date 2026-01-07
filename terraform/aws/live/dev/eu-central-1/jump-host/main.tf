@@ -42,11 +42,6 @@ module "jump_host" {
   # Migration Mode Configuration
   enable_migration_mode = var.enable_migration_mode
 
-  # Security Group Rules Configuration
-  external_jump_ingress_rules = var.external_jump_ingress_rules
-  external_jump_egress_rules  = var.external_jump_egress_rules
-  internal_jump_egress_rules  = var.internal_jump_egress_rules
-
   # Tags
   tags = var.common_tags
 }

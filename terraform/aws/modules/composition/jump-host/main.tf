@@ -272,24 +272,6 @@ module "internal_jump_sg" {
   )
 }
 
-# =========================================================================
-# External Jump Host - Ingress Rules (Environment Specific)
-# =========================================================================
-resource "aws_security_group_rule" "external_jump_ingress_rules" {
-  for_each = { for idx, rule in var.external_jump_ingress_rules : idx => rule }
-
-  security_group_id = module.external_jump_sg.security_group_id
-  type              = "ingress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  description       = each.value.description
-
-  cidr_blocks              = try(each.value.cidr, null)
-  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
-  source_security_group_id = try(each.value.sg_id[0], null)
-  prefix_list_ids          = try(each.value.prefix_list_ids, null)
-}
 
 # =========================================================================
 # External Jump Host - Default Egress Rules (Automatic)
@@ -316,24 +298,6 @@ resource "aws_security_group_rule" "external_jump_default_egress_https" {
   description       = "Allow HTTPS for Session Manager and package downloads"
 }
 
-# =========================================================================
-# External Jump Host - Additional Egress Rules (Environment Specific)
-# =========================================================================
-resource "aws_security_group_rule" "external_jump_egress_rules" {
-  for_each = { for idx, rule in var.external_jump_egress_rules : idx => rule }
-
-  security_group_id = module.external_jump_sg.security_group_id
-  type              = "egress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  description       = each.value.description
-
-  cidr_blocks              = try(each.value.cidr, null)
-  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
-  source_security_group_id = try(each.value.sg_id[0], null)
-  prefix_list_ids          = try(each.value.prefix_list_ids, null)
-}
 
 # =========================================================================
 # Internal Jump Host - Default Ingress Rules (Automatic)
@@ -349,24 +313,6 @@ resource "aws_security_group_rule" "internal_jump_default_ingress_from_external"
   description              = "Allow SSH from external jump host only"
 }
 
-# =========================================================================
-# Internal Jump Host - Egress Rules (Environment Specific)
-# =========================================================================
-resource "aws_security_group_rule" "internal_jump_egress_rules" {
-  for_each = { for idx, rule in var.internal_jump_egress_rules : idx => rule }
-
-  security_group_id = module.internal_jump_sg.security_group_id
-  type              = "egress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  description       = each.value.description
-
-  cidr_blocks              = try(each.value.cidr, null)
-  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
-  source_security_group_id = try(each.value.sg_id[0], null)
-  prefix_list_ids          = try(each.value.prefix_list_ids, null)
-}
 
 # Create AWS key pair for internal jump (public key only)
 resource "aws_key_pair" "internal_jump" {
