@@ -167,6 +167,12 @@ variable "upload_config_to_s3" {
   default     = false
 }
 
+variable "s3_config_path_prefix" {
+  description = "S3 path prefix for squid config files to upload (only used if upload_config_to_s3=true)"
+  type        = string
+  default     = "squid"
+}
+
 variable "config_files_source_path" {
   description = "Local path to squid config files to upload to S3 (only used if upload_config_to_s3=true)"
   type        = string
