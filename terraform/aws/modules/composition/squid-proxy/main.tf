@@ -131,7 +131,7 @@ module "squid_iam_role" {
   source = "../../base/iam-role"
 
   name                    = "${local.name_prefix}-role"
-  description             = "IAM role for ${local.name_prefix} proxy instances"
+  description             = "IAM role for Squid proxy instances"
   service_identifiers     = ["ec2.amazonaws.com"]
   create_instance_profile = true
 
@@ -232,7 +232,7 @@ module "asg_security_group" {
   source = "../../base/security-group"
 
   name        = "${local.name_prefix}-asg-sg"
-  description = "Security group for ${local.name_prefix} proxy ASG instances"
+  description = "Security group for Squid proxy ASG instances"
   vpc_id      = var.vpc_id
 
 
@@ -355,7 +355,7 @@ module "launch_template" {
   source = "../../base/launch-template"
 
   name               = local.name_prefix
-  description        = "Launch template for ${local.name_prefix} proxy instances"
+  description        = "Launch template for Squid proxy instances"
   ami_id             = var.ami_id
   instance_type      = var.instance_type
   key_name           = var.generate_ssh_key ? aws_key_pair.squid_key_pair[0].key_name : var.key_name
