@@ -31,10 +31,13 @@ locals {
   userdata_content = replace(
     replace(
       replace(
-        var.custom_userdata,
-        "{{config_bucket}}", local.config_bucket_name
+        replace(
+          var.custom_userdata,
+          "{{config_bucket}}", local.config_bucket_name
+        ),
+        "{{logs_bucket}}", local.logs_bucket_id
       ),
-      "{{logs_bucket}}", local.logs_bucket_id
+      "{{bucket-path-prefix}}", var.s3_config_path_prefix
     ),
     "{{bucket-name}}", local.config_bucket_name
   )
