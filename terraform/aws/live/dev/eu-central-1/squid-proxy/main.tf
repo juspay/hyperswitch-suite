@@ -47,6 +47,7 @@ module "squid_proxy" {
 
   environment  = var.environment
   project_name = var.project_name
+  name_override = var.name_override
 
   # Network configuration
   vpc_id           = var.vpc_id
