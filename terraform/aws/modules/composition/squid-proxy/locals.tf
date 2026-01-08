@@ -1,6 +1,6 @@
 locals {
   # Naming convention
-  name_prefix = "${var.environment}-${var.project_name}-squid"
+  name_prefix = "${var.environment}-${var.project_name}-${var.name_override}"
 
   # Common tags merged with environment-specific tags
   common_tags = merge(

@@ -16,6 +16,12 @@ variable "project_name" {
   default     = "hyperswitch"
 }
 
+variable "name_override" {
+  description = "Override for resource name prefix (appended to environment and project name)"
+  type        = string
+  default     = "squid"
+}
+
 variable "vpc_id" {
   description = "VPC ID"
   type        = string
