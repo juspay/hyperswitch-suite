@@ -187,6 +187,12 @@ variable "upload_config_to_s3" {
   default     = false
 }
 
+variable "s3_config_path_prefix" {
+  description = "S3 path prefix for squid config files to upload (only used if upload_config_to_s3=true)"
+  type        = string
+  default     = "squid"
+}
+
 variable "listener_rule_priority" {
   description = "Priority for listener rule on existing LB"
   type        = number

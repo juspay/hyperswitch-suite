@@ -143,6 +143,9 @@ create_config_bucket = true  # Automatically creates bucket: dev-hyperswitch-squ
 # config_bucket_name = "app-proxy-config-<account-id>-eu-central-1"
 # config_bucket_arn  = "arn:aws:s3:::app-proxy-config-<account-id>-eu-central-1"
 
+# S3 path prefix for squid config files to upload (Optional)
+# s3_config_path_prefix = "squid"  # S3 path prefix for squid config files to upload
+
 # Monitoring
 enable_detailed_monitoring = false
 

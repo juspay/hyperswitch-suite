@@ -74,6 +74,7 @@ module "squid_proxy" {
   create_config_bucket = var.create_config_bucket
   config_bucket_name   = var.config_bucket_name
   config_bucket_arn    = var.config_bucket_arn
+  s3_config_path_prefix = var.s3_config_path_prefix
 
   # S3 Config Upload (optional)
   upload_config_to_s3      = var.upload_config_to_s3
