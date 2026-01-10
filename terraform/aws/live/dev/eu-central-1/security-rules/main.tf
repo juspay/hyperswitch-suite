@@ -79,7 +79,7 @@ locals {
       from_port   = 22
       to_port     = 22
       protocol    = "tcp"
-      sg_id       = ["sg-xxxxxxxxxxxxxxxxx"] # Replace with jump host security group ID
+      sg_id       = [data.terraform_remote_state.jump_host.outputs.external_security_group_id]
     },
     # Example: Vector metrics endpoint from EKS monitoring (uncomment if needed)
     # {
@@ -136,7 +136,7 @@ locals {
       from_port   = 443
       to_port     = 443
       protocol    = "tcp"
-      sg_id       = ["sg-xxxxxxxxxxxxxxxxx"] # Replace with jump host security group ID
+      sg_id       = [data.terraform_remote_state.jump_host.outputs.external_security_group_id]
     },
     # Example: HTTPS from specific CIDR (uncomment if needed)
     # {
@@ -228,22 +228,22 @@ locals {
   # ENVOY PROXY COMPONENT RULES
   # =========================================================================
   envoy_ingress_rules = [
-    # Example: SSH access from jumpbox/bastion
+    # SSH access from jumpbox/bastion
     {
       description = "Allow SSH from jumpbox"
       from_port   = 22
       to_port     = 22
       protocol    = "tcp"
-      sg_id       = ["sg-xxxxxxxxxxxxx"] # Replace with your jumpbox security group ID
+      sg_id       = [data.terraform_remote_state.jump_host.outputs.external_security_group_id]
     },
-    # Example: Prometheus metrics scraping
-    {
-      description = "Allow Prometheus metrics scraping"
-      from_port   = 9901
-      to_port     = 9901
-      protocol    = "tcp"
-      sg_id       = ["sg-yyyyyyyyyyyyyyy"] # Replace with your monitoring SG ID
-    },
+    # Example: Prometheus metrics scraping (uncomment and replace with actual monitoring SG)
+    # {
+    #   description = "Allow Prometheus metrics scraping"
+    #   from_port   = 9901
+    #   to_port     = 9901
+    #   protocol    = "tcp"
+    #   sg_id       = ["sg-yyyyyyyyyyyyyyy"] # Replace with your monitoring SG ID
+    # },
   ]
 
   envoy_egress_rules = [
@@ -384,12 +384,29 @@ locals {
   ext_jump_host_ingress_rules = []
 
   ext_jump_host_egress_rules = [
+    # SSH to locker instance
     {
-      description = "SSH to application servers"
+      description = "SSH to locker instance"
       from_port   = 22
       to_port     = 22
       protocol    = "tcp"
-      sg_id       = ["sg-xxxxxxxxxxxxxxxxx"] # Replace with target security group ID
+      sg_id       = [data.terraform_remote_state.locker.outputs.locker_security_group_id]
+    },
+    # SSH to envoy instances
+    {
+      description = "SSH to envoy instances"
+      from_port   = 22
+      to_port     = 22
+      protocol    = "tcp"
+      sg_id       = [data.terraform_remote_state.envoy_proxy.outputs.envoy_security_group_id]
+    },
+    # SSH to squid proxy
+    {
+      description = "SSH to squid proxy"
+      from_port   = 22
+      to_port     = 22
+      protocol    = "tcp"
+      sg_id       = [data.terraform_remote_state.squid_proxy.outputs.squid_asg_security_group_id]
     },
     {
       description = "Monitoring system access"
