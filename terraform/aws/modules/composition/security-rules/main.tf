@@ -5,7 +5,7 @@
 #
 # Design Pattern:
 #   - Security groups are created in their respective composition modules
-#   - Cross-module connectivity rules are defined here
+#   - Cross-module connectivity rules are defined in the live layer
 #   - Module-internal rules (e.g., NLB -> Instance) remain in composition modules
 #
 # Rule Placement Decision:
@@ -15,15 +15,62 @@
 # Example:
 #   - Jump host → Locker SSH: HERE (cross-module)
 #   - Locker NLB → Locker instance: Locker module (same-module)
+#
+# New Architecture:
+#   - Live layer defines rules organized by component
+#   - Live layer merges rules into consolidated ingress/egress lists
+#   - This module receives pre-grouped rules and creates them
 # =========================================================================
 
 # =========================================================================
-# LOCKER SECURITY GROUP - INGRESS RULES
+# FLATTEN INGRESS RULES FOR ITERATION
 # =========================================================================
-resource "aws_security_group_rule" "locker_ingress" {
-  for_each = var.locker_sg_id != null ? { for rule in var.locker_ingress_rules : sha256(jsonencode(rule)) => rule } : {}
+locals {
+  # Flatten the ingress rules structure for easier iteration
+  # Creates a map with unique keys combining sg_id and rule hash
+  ingress_rules_flat = merge([
+    for group in var.ingress_rules : {
+      for rule in group.rules :
+      "${group.sg_id}_${sha256(jsonencode(rule))}" => {
+        sg_id           = group.sg_id
+        description     = rule.description
+        from_port       = rule.from_port
+        to_port         = rule.to_port
+        protocol        = rule.protocol
+        cidr            = rule.cidr
+        ipv6_cidr       = rule.ipv6_cidr
+        sg_id_source    = rule.sg_id
+        prefix_list_ids = rule.prefix_list_ids
+      }
+    }
+  ]...)
 
-  security_group_id = var.locker_sg_id
+  # Flatten the egress rules structure for easier iteration
+  egress_rules_flat = merge([
+    for group in var.egress_rules : {
+      for rule in group.rules :
+      "${group.sg_id}_${sha256(jsonencode(rule))}" => {
+        sg_id           = group.sg_id
+        description     = rule.description
+        from_port       = rule.from_port
+        to_port         = rule.to_port
+        protocol        = rule.protocol
+        cidr            = rule.cidr
+        ipv6_cidr       = rule.ipv6_cidr
+        sg_id_source    = rule.sg_id
+        prefix_list_ids = rule.prefix_list_ids
+      }
+    }
+  ]...)
+}
+
+# =========================================================================
+# INGRESS SECURITY GROUP RULES
+# =========================================================================
+resource "aws_security_group_rule" "ingress" {
+  for_each = local.ingress_rules_flat
+
+  security_group_id = each.value.sg_id
   type              = "ingress"
   from_port         = each.value.from_port
   to_port           = each.value.to_port
@@ -32,17 +79,17 @@ resource "aws_security_group_rule" "locker_ingress" {
 
   cidr_blocks              = try(each.value.cidr, null)
   ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
-  source_security_group_id = try(each.value.sg_id[0], null)
+  source_security_group_id = try(each.value.sg_id_source[0], null)
   prefix_list_ids          = try(each.value.prefix_list_ids, null)
 }
 
 # =========================================================================
-# LOCKER SECURITY GROUP - EGRESS RULES
+# EGRESS SECURITY GROUP RULES
 # =========================================================================
-resource "aws_security_group_rule" "locker_egress" {
-  for_each = var.locker_sg_id != null ? { for rule in var.locker_egress_rules : sha256(jsonencode(rule)) => rule } : {}
+resource "aws_security_group_rule" "egress" {
+  for_each = local.egress_rules_flat
 
-  security_group_id = var.locker_sg_id
+  security_group_id = each.value.sg_id
   type              = "egress"
   from_port         = each.value.from_port
   to_port           = each.value.to_port
@@ -51,219 +98,10 @@ resource "aws_security_group_rule" "locker_egress" {
 
   cidr_blocks              = try(each.value.cidr, null)
   ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
-  source_security_group_id = try(each.value.sg_id[0], null)
-  prefix_list_ids          = try(each.value.prefix_list_ids, null)
-}
-
-# =========================================================================
-# NLB SECURITY GROUP - INGRESS RULES
-# =========================================================================
-resource "aws_security_group_rule" "nlb_ingress" {
-  for_each = var.locker_nlb_sg_id != null ? { for rule in var.nlb_ingress_rules : sha256(jsonencode(rule)) => rule } : {}
-
-  security_group_id = var.locker_nlb_sg_id
-  type              = "ingress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  description       = each.value.description
-
-  cidr_blocks              = try(each.value.cidr, null)
-  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
-  source_security_group_id = try(each.value.sg_id[0], null)
-  prefix_list_ids          = try(each.value.prefix_list_ids, null)
-}
-
-# =========================================================================
-# NLB SECURITY GROUP - EGRESS RULES
-# =========================================================================
-resource "aws_security_group_rule" "nlb_egress" {
-  for_each = var.locker_nlb_sg_id != null ? { for rule in var.nlb_egress_rules : sha256(jsonencode(rule)) => rule } : {}
-
-  security_group_id = var.locker_nlb_sg_id
-  type              = "egress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  description       = each.value.description
-
-  cidr_blocks              = try(each.value.cidr, null)
-  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
-  source_security_group_id = try(each.value.sg_id[0], null)
-  prefix_list_ids          = try(each.value.prefix_list_ids, null)
-}
-
-# =========================================================================
-# SQUID SECURITY GROUP - INGRESS RULES
-# =========================================================================
-resource "aws_security_group_rule" "squid_ingress" {
-  for_each = var.squid_sg_id != null ? { for rule in var.squid_ingress_rules : sha256(jsonencode(rule)) => rule } : {}
-  security_group_id = var.squid_sg_id
-  type              = "ingress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  description       = each.value.description
-  cidr_blocks              = try(each.value.cidr, null)
-  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
-  source_security_group_id = try(each.value.sg_id[0], null)
-  prefix_list_ids          = try(each.value.prefix_list_ids, null)
-}
-
-# =========================================================================
-# SQUID SECURITY GROUP - EGRESS RULES
-# =========================================================================
-resource "aws_security_group_rule" "squid_egress" {
-  for_each = var.squid_sg_id != null ? { for rule in var.squid_egress_rules : sha256(jsonencode(rule)) => rule } : {}
-  security_group_id = var.squid_sg_id
-  type              = "egress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  description       = each.value.description
-  cidr_blocks              = try(each.value.cidr, null)
-  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
-  source_security_group_id = try(each.value.sg_id[0], null)
-  prefix_list_ids          = try(each.value.prefix_list_ids, null)
-}
-
-# =========================================================================
-# ENVOY SECURITY GROUP - INGRESS RULES
-# =========================================================================
-resource "aws_security_group_rule" "envoy_ingress" {
-  for_each = var.envoy_sg_id != null ? { for rule in var.envoy_ingress_rules : sha256(jsonencode(rule)) => rule } : {}
-  security_group_id = var.envoy_sg_id
-  type              = "ingress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  description       = each.value.description
-  cidr_blocks              = try(each.value.cidr, null)
-  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
-  source_security_group_id = try(each.value.sg_id[0], null)
-  prefix_list_ids          = try(each.value.prefix_list_ids, null)
-}
-
-# =========================================================================
-# ENVOY SECURITY GROUP - EGRESS RULES
-# =========================================================================
-resource "aws_security_group_rule" "envoy_egress" {
-  for_each = var.envoy_sg_id != null ? { for rule in var.envoy_egress_rules : sha256(jsonencode(rule)) => rule } : {}
-  security_group_id = var.envoy_sg_id
-  type              = "egress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  description       = each.value.description
-  cidr_blocks              = try(each.value.cidr, null)
-  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
-  source_security_group_id = try(each.value.sg_id[0], null)
-  prefix_list_ids          = try(each.value.prefix_list_ids, null)
-}
-
-# =========================================================================
-# ENVOY LB SECURITY GROUP - INGRESS RULES
-# =========================================================================
-resource "aws_security_group_rule" "envoy_lb_ingress" {
-  for_each = var.envoy_lb_sg_id != null ? { for rule in var.envoy_lb_ingress_rules : sha256(jsonencode(rule)) => rule } : {}
-  security_group_id = var.envoy_lb_sg_id
-  type              = "ingress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  description       = each.value.description
-  cidr_blocks              = try(each.value.cidr, null)
-  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
-  source_security_group_id = try(each.value.sg_id[0], null)
-  prefix_list_ids          = try(each.value.prefix_list_ids, null)    
-}
-
-# =========================================================================
-# ENVOY LB SECURITY GROUP - EGRESS RULES
-# =========================================================================
-resource "aws_security_group_rule" "envoy_lb_egress" {
-  for_each = var.envoy_lb_sg_id != null ? { for rule in var.envoy_lb_egress_rules : sha256(jsonencode(rule)) => rule } : {}
-  security_group_id = var.envoy_lb_sg_id
-  type              = "egress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  description       = each.value.description
-  cidr_blocks              = try(each.value.cidr, null)
-  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
-  source_security_group_id = try(each.value.sg_id[0], null)
+  source_security_group_id = try(each.value.sg_id_source[0], null)
   prefix_list_ids          = try(each.value.prefix_list_ids, null)
 }
 
 # =========================================================================
 # END OF SECURITY RULES MODULE
 # =========================================================================
-
-
-# =========================================================================
-# EXT JUMP HOST SECURITY GROUP - INGRESS RULES
-# =========================================================================
-resource "aws_security_group_rule" "ext_jump_host_ingress" {
-  for_each = var.ext_jump_host_sg_id != null ? { for rule in var.ext_jump_host_ingress_rules : sha256(jsonencode(rule)) => rule } : {}
-  security_group_id = var.ext_jump_host_sg_id
-  type              = "ingress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  description       = each.value.description
-  cidr_blocks              = try(each.value.cidr, null)
-  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
-  source_security_group_id = try(each.value.sg_id[0], null)
-  prefix_list_ids          = try(each.value.prefix_list_ids, null)
-}
-
-# =========================================================================
-# EXT JUMP HOST SECURITY GROUP - EGRESS RULES
-# =========================================================================
-resource "aws_security_group_rule" "ext_jump_host_egress" {
-  for_each = var.ext_jump_host_sg_id != null ? { for rule in var.ext_jump_host_egress_rules : sha256(jsonencode(rule)) => rule } : {}
-  security_group_id = var.ext_jump_host_sg_id
-  type              = "egress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  description       = each.value.description
-  cidr_blocks              = try(each.value.cidr, null)
-  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
-  source_security_group_id = try(each.value.sg_id[0], null)
-  prefix_list_ids          = try(each.value.prefix_list_ids, null)
-}
-
-# =========================================================================
-# INTERNAL JUMP HOST SECURITY GROUP - INGRESS RULES
-# =========================================================================
-resource "aws_security_group_rule" "int_jump_host_ingress" {
-  for_each = var.int_jump_host_sg_id != null ? { for rule in var.int_jump_host_ingress_rules : sha256(jsonencode(rule)) => rule } : {}
-  security_group_id = var.int_jump_host_sg_id
-  type              = "ingress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  description       = each.value.description
-  cidr_blocks              = try(each.value.cidr, null)
-  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
-  source_security_group_id = try(each.value.sg_id[0], null)
-  prefix_list_ids          = try(each.value.prefix_list_ids, null)
-}
-
-# =========================================================================
-# INTERNAL JUMP HOST SECURITY GROUP - EGRESS RULES
-# =========================================================================
-resource "aws_security_group_rule" "int_jump_host_egress" {
-  for_each = var.int_jump_host_sg_id != null ? { for rule in var.int_jump_host_egress_rules : sha256(jsonencode(rule)) => rule } : {}
-  security_group_id = var.int_jump_host_sg_id
-  type              = "egress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  description       = each.value.description
-  cidr_blocks              = try(each.value.cidr, null)
-  ipv6_cidr_blocks         = try(each.value.ipv6_cidr, null)
-  source_security_group_id = try(each.value.sg_id[0], null)
-  prefix_list_ids          = try(each.value.prefix_list_ids, null)
-}
