@@ -28,6 +28,12 @@ variable "cluster_endpoint_private_access" {
   default     = true
 }
 
+variable "cluster_endpoint_public_access_cidrs" {
+  description = "List of CIDR blocks which can access the Amazon EKS public API server endpoint"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
 variable "vpn_cidr_blocks" {
   description = "CIDR blocks for VPN access to EKS cluster (e.g., ['10.8.0.0/16'])"
   type        = list(string)
