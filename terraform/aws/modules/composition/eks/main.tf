@@ -52,8 +52,9 @@ module "eks" {
   iam_role_arn    = aws_iam_role.cluster.arn
 
   # Cluster endpoint access configuration
-  cluster_endpoint_public_access  = var.cluster_endpoint_public_access
-  cluster_endpoint_private_access = var.cluster_endpoint_private_access
+  cluster_endpoint_public_access       = var.cluster_endpoint_public_access
+  cluster_endpoint_private_access      = var.cluster_endpoint_private_access
+  cluster_endpoint_public_access_cidrs = var.cluster_endpoint_public_access_cidrs
 
   # Cluster security group - allow VPN access
   cluster_security_group_additional_rules = {
