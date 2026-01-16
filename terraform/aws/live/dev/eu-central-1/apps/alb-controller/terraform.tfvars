@@ -15,6 +15,10 @@ project_name = "hyperswitch"
 # ============================================================================
 # ALB Controller Configuration
 # ============================================================================
+
+# Name of the EKS cluster where ALB Controller will be deployed
+eks_cluster_name = "dev-eks-cluster"
+
 # Namespace where ALB Controller will be installed
 alb_controller_namespace = "kube-system"
 

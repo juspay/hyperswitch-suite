@@ -14,17 +14,6 @@ provider "aws" {
   region = var.region
 }
 
-# Data source to get EKS cluster details
-data "terraform_remote_state" "eks" {
-  backend = "s3"
-
-  config = {
-    bucket = "hyperswitch-dev-terraform-state"
-    key    = "dev/eu-central-1/eks/terraform.tfstate"
-    region = "eu-central-1"
-  }
-}
-
 module "aws_load_balancer_controller" {
   source = "../../../../../modules/application-resources/alb-controller"
 
@@ -34,7 +23,7 @@ module "aws_load_balancer_controller" {
   project_name = var.project_name
 
   # EKS Cluster Configuration
-  eks_cluster_name = data.terraform_remote_state.eks.outputs.cluster_name
+  eks_cluster_name = var.eks_cluster_name
 
   # ALB Controller Configuration
   alb_controller_namespace              = var.alb_controller_namespace

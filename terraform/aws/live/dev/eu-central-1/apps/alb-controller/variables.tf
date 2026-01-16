@@ -22,6 +22,11 @@ variable "project_name" {
 # ============================================================================
 # ALB Controller Configuration
 # ============================================================================
+variable "eks_cluster_name" {
+  description = "Name of the EKS cluster"
+  type        = string
+}
+
 variable "alb_controller_namespace" {
   description = "Namespace ALB Controller is installed on"
   type        = string
