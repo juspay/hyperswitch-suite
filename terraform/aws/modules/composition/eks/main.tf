@@ -40,7 +40,7 @@ module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 20.0"
 
-  cluster_name    = "${var.environment}-${var.project_name}-cluster"
+  cluster_name    = "${var.environment}-${var.project_name}-cluster-${var.cluster_name_version}"
   cluster_version = var.cluster_version
 
   vpc_id                   = var.vpc_id
@@ -74,34 +74,6 @@ module "eks" {
   # EKS Managed Node Groups
   eks_managed_node_groups = var.node_groups
 
-  # EKS Add-ons
-  cluster_addons = {
-    # VPC CNI for pod networking
-    vpc-cni = {
-      addon_version = var.eks_addon_versions["vpc-cni"]
-    }
-
-    # CoreDNS for service discovery
-    coredns = {
-      addon_version = var.eks_addon_versions["coredns"]
-    }
-
-    # kube-proxy for network rules
-    kube-proxy = {
-      addon_version = var.eks_addon_versions["kube-proxy"]
-    }
-
-    # EBS CSI Driver for persistent volumes
-    aws-ebs-csi-driver = {
-      addon_version            = var.eks_addon_versions["aws-ebs-csi-driver"]
-      service_account_role_arn = module.ebs_csi_irsa.iam_role_arn
-    }
-
-    # Snapshot controller for volume snapshots
-    snapshot-controller = {
-      addon_version = var.eks_addon_versions["snapshot-controller"]
-    }
-  }
 
   tags = var.tags
 }
@@ -109,7 +81,7 @@ module "eks" {
 # IAM Role for Cluster Autoscaler (IRSA)
 module "cluster_autoscaler_irsa" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-  version = "~> 5.0"
+  version = "5.44.0"
 
   role_name = "${var.environment}-${var.project_name}-cluster-autoscaler"
 
@@ -129,7 +101,7 @@ module "cluster_autoscaler_irsa" {
 # IAM Role for EBS CSI Driver (IRSA - IAM Roles for Service Accounts)
 module "ebs_csi_irsa" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-  version = "~> 5.0"
+  version = "5.44.0"
 
   role_name = "${var.environment}-${var.project_name}-ebs-csi"
 

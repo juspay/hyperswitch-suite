@@ -87,7 +87,7 @@ resource "kubernetes_cluster_role_v1" "developer" {
     verbs      = ["get", "list", "watch"]
   }
 
-  depends_on = [module.eks]
+  depends_on = [terraform_data.eks_ready]
 }
 
 # ============================================
@@ -141,7 +141,7 @@ resource "kubernetes_cluster_role_v1" "readonly" {
     verbs      = ["get", "list", "watch"]
   }
 
-  depends_on = [module.eks]
+  depends_on = [terraform_data.eks_ready]
 }
 
 # ============================================
@@ -194,7 +194,7 @@ resource "kubernetes_cluster_role_v1" "cicd" {
     verbs      = ["get", "list"]
   }
 
-  depends_on = [module.eks]
+  depends_on = [terraform_data.eks_ready]
 }
 
 # ============================================

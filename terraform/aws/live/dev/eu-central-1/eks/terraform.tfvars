@@ -1,54 +1,81 @@
 # Basic EKS Configuration
-project_name    = "hyperswitch"
-environment     = "dev"
-cluster_version = "1.34"
+project_name         = "hyperswitch"
+environment          = "dev"
+cluster_version      = "1.34"
+region               = "eu-central-1"
+cluster_name_version = "03"
+
+# EKS Cluster Endpoint Access Configuration
+# Control access to the EKS API server endpoint
+cluster_endpoint_public_access  = true
+cluster_endpoint_private_access = true
+
+# Public API Server Endpoint Access Allowlist
+# Only these CIDR blocks can access the public EKS API endpoint
+cluster_endpoint_public_access_cidrs = [
+  "XX.XXX.XX.XXX/32",   # Access point 1
+  "XX.XXX.XX.XXX/32",   # Access point 2
+  "XX.XXX.XX.XXX/32",   # Access point 3
+  "XX.XXX.XX.XXX/32",   # Access point 4
+  "XX.XXX.XX.XXX/32",   # Access point 5
+  "XX.XXX.XX.XXX/32",   # Access point 6
+  "XX.XXX.XX.XXX/32",   # Access point 7
+  "XX.XXX.XX.XXX/32",   # Access point 8
+  "XX.XXX.XX.XXX/32"    # Access point 9
+]
 
 # VPN Access Configuration
 # VPN IP addresses for accessing EKS cluster
-# vpn_cidr_blocks = ["1.2.3.128/32", "1.2.7.226/32", "3.7.1.245/32"]
-# vpn_cidr_blocks = []
+vpn_cidr_blocks = ["XX.XXX.XX.XXX/32","XX.XXX.XX.XXX/32","XX.XXX.XX.XXX/32"]
 
 # Deployment Management
 # Set to false if using ArgoCD from another cluster to manage deployments
 enable_helm_deployments = false
 
+enable_cluster_autoscaler = false
+
 # Networking - REPLACE WITH YOUR ACTUAL VALUES
-vpc_id = "vpc-xxxx"  # Replace with your VPC ID
+vpc_id = "vpc-XXXXXXXXXXXXXXXXX"  # Replace with your VPC ID
 subnet_ids = [            # Replace with your subnet IDs
-  "subnet-xxxx",     # Subnet 1
-  "subnet-xxxx",     # Subnet 2
-  "subnet-xxxx"
+  "subnet-XXXXXXXXXXXXXXXXX",     # Subnet 1
+  "subnet-XXXXXXXXXXXXXXXXX",     # Subnet 2
 ]
 
-argocd_assume_role_principal_arn = "arn:aws:iam::yyyyyyyy:role/argocd-management-role"
-# Basic Node Group
+argocd_assume_role_principal_arn = "arn:aws:iam::XXXXXXXXXXXX:role/AmazonEKSAutoClusterRole"
+
 node_groups = {
-  general = {
-    instance_types = ["t3.medium"]
-    min_size       = 1
-    max_size       = 3
-    desired_size   = 2
+  node_group_1 = {
+    capacity_type = "ON_DEMAND"
+    min_size      = 1 
+    max_size      = 2
+    desired_size  = 1 
+    instance_types = ["t3.small"]
+    subnet_ids   = [  "subnet-XXXXXXXXXXXXXXXXX","subnet-XXXXXXXXXXXXXXXXX" ]  
 
-    # Use AL2023 (required for K8s 1.34, AL2 only supports up to 1.32)
-    ami_type = "AL2023_x86_64_STANDARD"
-
-    # Explicitly invoke nodeadm via pre-bootstrap user data to work around cloud-init issue
-    cloudinit_pre_nodeadm = [
-      {
-        content_type = "text/x-shellscript"
-        content      = <<-EOT
-          #!/bin/bash
-          set -ex
-          # Force nodeadm to run the bootstrap configuration
-          /usr/bin/nodeadm init --skip nodeadm://cluster-dns-config || true
-        EOT
-      }
-    ]
-
-    # Tags for Cluster Autoscaler discovery
+    labels = {
+      "node-type" = "node-group-1"
+    }
     tags = {
-      "k8s.io/cluster-autoscaler/enabled"                = "true"
-      "k8s.io/cluster-autoscaler/dev-hyperswitch-cluster" = "owned"
+      stack = "hyperswitch"
+    }
+  }
+
+# node group two with custom security group
+  node_group_2 = {
+    capacity_type = "ON_DEMAND"
+    min_size      = 1
+    max_size      = 2
+    desired_size  = 1
+    instance_types = ["t3.small"]
+    subnet_ids   = [  "subnet-XXXXXXXXXXXXXXXXX","subnet-XXXXXXXXXXXXXXXXX" ] 
+    custom_launch_template_config = {
+      additional_security_group_ids = ["sg-XXXXXXXXXXXXXXXXX"]  # Additional SGs
+    }
+    labels = {
+      "node-type" = "node-group-2"
+    }
+    tags = {
+      stack = "hyperswitch"
     }
   }
 }
@@ -61,6 +88,7 @@ eks_addon_versions = {
   kube-proxy          = "v1.34.1-eksbuild.2"
   aws-ebs-csi-driver  = "v1.54.0-eksbuild.1"
   snapshot-controller = "v8.3.0-eksbuild.1"
+  metrics-server      = "v0.8.0-eksbuild.6"
 }
 
 # EKS Cluster Access Entries
@@ -68,7 +96,7 @@ eks_addon_versions = {
 cluster_access_entries = {
   admin_sso_role = {
     # SSO role ARN with correct path including region for accessing locally
-    principal_arn = "arn:aws:iam::yyyyyyyy:role/aws-reserved/sso.amazonaws.com/ap-south-1/AWSReservedSSO_AWSAdministratorAccess_ebf3e1964512148f"
+    principal_arn = "arn:aws:iam::XXXXXXXXXXXX:role/aws-reserved/sso.amazonaws.com/REGION/AWSReservedSSO_AWSAdministratorAccess_XXXXXXXXXXXXXXXX"
 
     policy_associations = {
       admin = {
