@@ -3,19 +3,17 @@ resource "aws_iam_role" "argocd_cross_account" {
   name = "${var.environment}-${var.project_name}-argocd-cross-account"
 
   assume_role_policy = jsonencode({
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-        "Effect": "Allow",
-        "Principal": {
-            "AWS": "arn:aws:iam::123456789012:role/argocd-management-role"
-        },
-        "Action": "sts:AssumeRole"
-    }
-  ]
-}
-
-)
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          AWS = var.argocd_assume_role_principal_arn
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
 
   tags = var.tags
 }

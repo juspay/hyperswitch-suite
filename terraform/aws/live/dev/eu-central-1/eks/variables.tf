@@ -16,10 +16,34 @@ variable "environment" {
   default     = "dev"
 }
 
+variable "cluster_name_version" {
+  description = "Version identifier for the EKS cluster name"
+  type        = string
+  default     = "v1"
+}
+
 variable "cluster_version" {
   description = "Kubernetes version for the EKS cluster"
   type        = string
   default     = "1.34"
+}
+
+variable "cluster_endpoint_public_access" {
+  description = "Enable public API server endpoint"
+  type        = bool
+  default     = true
+}
+
+variable "cluster_endpoint_private_access" {
+  description = "Enable private API server endpoint"
+  type        = bool
+  default     = true
+}
+
+variable "cluster_endpoint_public_access_cidrs" {
+  description = "List of CIDR blocks which can access the Amazon EKS public API server endpoint"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
 }
 
 variable "vpn_cidr_blocks" {
@@ -68,6 +92,17 @@ variable "node_groups" {
   default     = {}
 }
 
+variable "eks_addon_versions" {
+  description = "Map of EKS addon names to their versions"
+  type        = map(string)
+  default = {
+    vpc-cni             = "v1.21.1-eksbuild.1"
+    coredns             = "v1.12.4-eksbuild.1"
+    kube-proxy          = "v1.34.1-eksbuild.2"
+    aws-ebs-csi-driver  = "v1.54.0-eksbuild.1"
+    snapshot-controller = "v8.3.0-eksbuild.1"
+  }
+}
 
 variable "tags" {
   description = "Tags to apply to all resources"

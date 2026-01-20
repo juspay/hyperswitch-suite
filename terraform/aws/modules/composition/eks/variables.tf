@@ -9,6 +9,12 @@ variable "environment" {
   type        = string
 }
 
+variable "cluster_name_version" {
+  description = "Version identifier for the EKS cluster name"
+  type        = string
+  default     = "v1"
+}
+
 # EKS Configuration
 variable "cluster_version" {
   description = "Kubernetes version for the EKS cluster"
@@ -74,19 +80,6 @@ variable "node_groups" {
   description = "EKS managed node groups configuration"
   type        = any
   default     = {}
-}
-
-# EKS Addons
-variable "eks_addon_versions" {
-  description = "Map of EKS addon names to their versions"
-  type        = map(string)
-  default = {
-    vpc-cni              = "v1.21.1-eksbuild.1"
-    coredns              = "v1.12.4-eksbuild.1"
-    kube-proxy           = "v1.34.1-eksbuild.2"
-    aws-ebs-csi-driver   = "v1.54.0-eksbuild.1"
-    snapshot-controller  = "v8.3.0-eksbuild.1"
-  }
 }
 
 # Tags

@@ -10,11 +10,18 @@ module "eks" {
   environment  = var.environment
 
   cluster_version = var.cluster_version
+  cluster_name_version = var.cluster_name_version
 
   vpc_id     = var.vpc_id
   subnet_ids = var.subnet_ids
 
-  node_groups = var.node_groups
+  # Cluster endpoint access configuration
+  cluster_endpoint_public_access       = var.cluster_endpoint_public_access
+  cluster_endpoint_private_access      = var.cluster_endpoint_private_access
+  cluster_endpoint_public_access_cidrs = var.cluster_endpoint_public_access_cidrs
+
+  # Node groups managed independently outside this module for better control
+  node_groups = {}
 
   # VPN access configuration
   vpn_cidr_blocks = var.vpn_cidr_blocks
@@ -42,32 +49,128 @@ module "eks" {
   tags = var.tags
 }
 
-# Data sources for EKS cluster authentication
-data "aws_eks_cluster" "cluster" {
-  name = module.eks.cluster_name
+# EKS cluster add ons 
 
-  depends_on = [module.eks]
+resource "aws_eks_addon" "vpc_cni" {
+  cluster_name                      = module.eks.cluster_name
+  addon_name                        = "vpc-cni"
+  addon_version                     = var.eks_addon_versions["vpc-cni"]
+  resolve_conflicts_on_create       = "OVERWRITE"
+  resolve_conflicts_on_update       = "OVERWRITE"
+
+  depends_on = [
+    aws_eks_node_group.custom_nodes
+  ]
 }
 
-data "aws_eks_cluster_auth" "cluster" {
-  name = module.eks.cluster_name
+resource "aws_eks_addon" "coredns" {
+  cluster_name                      = module.eks.cluster_name
+  addon_name                        = "coredns"
+  addon_version                     = var.eks_addon_versions["coredns"]
+  resolve_conflicts_on_create       = "OVERWRITE"
+  resolve_conflicts_on_update       = "OVERWRITE"
 
-  depends_on = [module.eks]
+  depends_on = [
+    aws_eks_node_group.custom_nodes
+  ]
+}
+
+resource "aws_eks_addon" "kube_proxy" {
+  cluster_name                      = module.eks.cluster_name
+  addon_name                        = "kube-proxy"
+  addon_version                     = var.eks_addon_versions["kube-proxy"]
+  resolve_conflicts_on_create       = "OVERWRITE"
+  resolve_conflicts_on_update       = "OVERWRITE"
+
+  depends_on = [
+    aws_eks_node_group.custom_nodes
+  ]
+}
+
+resource "aws_eks_addon" "aws_ebs_csi_driver" {
+  cluster_name                      = module.eks.cluster_name
+  addon_name                        = "aws-ebs-csi-driver"
+  addon_version                     = var.eks_addon_versions["aws-ebs-csi-driver"]
+  service_account_role_arn          = module.eks.ebs_csi_iam_role_arn
+  resolve_conflicts_on_create       = "OVERWRITE"
+  resolve_conflicts_on_update       = "OVERWRITE"
+
+  depends_on = [
+    aws_eks_node_group.custom_nodes
+  ]
+}
+
+resource "aws_eks_addon" "snapshot_controller" {
+  cluster_name                      = module.eks.cluster_name
+  addon_name                        = "snapshot-controller"
+  addon_version                     = var.eks_addon_versions["snapshot-controller"]
+  resolve_conflicts_on_create       = "OVERWRITE"
+  resolve_conflicts_on_update       = "OVERWRITE"
+
+  depends_on = [
+    aws_eks_node_group.custom_nodes
+  ]
+}
+
+resource "aws_eks_addon" "metrics_server" {
+  cluster_name                      = module.eks.cluster_name
+  addon_name                        = "metrics-server"
+  addon_version                     = var.eks_addon_versions["metrics-server"]
+  resolve_conflicts_on_create       = "OVERWRITE"
+  resolve_conflicts_on_update       = "OVERWRITE"
+
+  depends_on = [
+    aws_eks_node_group.custom_nodes
+  ]
+}
+
+# terraform_data to ensure Kubernetes resources are created after cluster is ready
+resource "terraform_data" "eks_ready" {
+  triggers_replace = [
+    module.eks.cluster_id,
+    module.eks.cluster_endpoint,
+    module.eks.cluster_certificate_authority_data
+  ]
 }
 
 # Kubernetes Provider Configuration
 provider "kubernetes" {
-  host                   = try(data.aws_eks_cluster.cluster.endpoint, "")
-  cluster_ca_certificate = try(base64decode(data.aws_eks_cluster.cluster.certificate_authority[0].data), "")
-  token                  = try(data.aws_eks_cluster_auth.cluster.token, "")
+  host                   = module.eks.cluster_endpoint
+  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+
+  exec {
+    api_version = "client.authentication.k8s.io/v1beta1"
+    command     = "aws"
+    args = [
+      "eks",
+      "get-token",
+      "--cluster-name",
+      module.eks.cluster_name,
+      "--region",
+      var.region
+    ]
+  }
+
 }
 
 # Helm Provider Configuration
 provider "helm" {
   kubernetes = {
-    host                   = try(data.aws_eks_cluster.cluster.endpoint, "")
-    cluster_ca_certificate = try(base64decode(data.aws_eks_cluster.cluster.certificate_authority[0].data), "")
-    token                  = try(data.aws_eks_cluster_auth.cluster.token, "")
+    host                   = module.eks.cluster_endpoint
+    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+    
+    exec = {
+      api_version = "client.authentication.k8s.io/v1beta1"
+      command     = "aws"
+      args = [
+        "eks",
+        "get-token",
+        "--cluster-name",
+        module.eks.cluster_name,
+        "--region",
+        var.region
+      ]
+    }
   }
 }
 
@@ -85,7 +188,7 @@ resource "kubernetes_namespace_v1" "hyperswitch" {
     }
   }
 
-  depends_on = [module.eks]
+  depends_on = [terraform_data.eks_ready]
 }
 
 # Data source to get ECR authorization token
@@ -138,7 +241,7 @@ resource "kubernetes_storage_class_v1" "ebs_gp3" {
     fsType    = "ext4"
   }
 
-  depends_on = [module.eks]
+  depends_on = [terraform_data.eks_ready]
 }
 
 # Hyperswitch Helm Release
@@ -162,7 +265,7 @@ resource "helm_release" "hyperswitch_stack" {
   timeout       = 900 # 15 minutes
 
   depends_on = [
-    module.eks,
+    terraform_data.eks_ready,
     kubernetes_namespace_v1.hyperswitch,
     kubernetes_secret_v1.ecr_registry,
     kubernetes_storage_class_v1.ebs_gp3

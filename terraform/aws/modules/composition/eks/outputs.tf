@@ -58,3 +58,13 @@ output "ebs_csi_iam_role_arn" {
   description = "IAM role ARN for EBS CSI Driver"
   value       = module.ebs_csi_irsa.iam_role_arn
 }
+
+output "eks_managed_node_groups_iam_role_arn" {
+  description = "IAM role ARN for EKS managed node groups"
+  value       = try(module.eks.eks_managed_node_groups_iam_role_arn, null)
+}
+
+output "eks_managed_node_groups_iam_role_name" {
+  description = "IAM role name for EKS managed node groups"
+  value       = try(module.eks.eks_managed_node_groups_iam_role_name, null)
+}
