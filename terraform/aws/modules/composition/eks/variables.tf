@@ -82,6 +82,13 @@ variable "node_groups" {
   default     = {}
 }
 
+# KMS Configuration
+variable "kms_key_administrators" {
+  description = "A list of IAM ARNs for key administrators. If no value is provided, the current caller identity is used to ensure at least one key admin is available"
+  type        = list(string)
+  default     = []
+}
+
 # Tags
 variable "tags" {
   description = "Tags to apply to all resources"

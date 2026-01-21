@@ -74,6 +74,8 @@ module "eks" {
   # EKS Managed Node Groups
   eks_managed_node_groups = var.node_groups
 
+  # KMS encryption configuration
+  kms_key_administrators = var.kms_key_administrators
 
   tags = var.tags
 }
