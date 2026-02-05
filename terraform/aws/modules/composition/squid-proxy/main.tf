@@ -121,6 +121,10 @@ resource "aws_s3_object" "squid_config_files" {
   etag   = filemd5("${var.config_files_source_path}/${each.value}")
 
   tags = local.common_tags
+
+  lifecycle {
+    ignore_changes = [ source]
+  }
 }
 
 # =========================================================================
