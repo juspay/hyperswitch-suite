@@ -118,7 +118,7 @@ resource "aws_s3_object" "squid_config_files" {
   bucket = local.config_bucket_name
   key    = "${var.s3_config_path_prefix}/${each.value}"
   source = "${var.config_files_source_path}/${each.value}"
-  etag   = filemd5("${var.config_files_source_path}/${each.value}")
+  source_hash   = filemd5("${var.config_files_source_path}/${each.value}")
 
   tags = local.common_tags
 }
