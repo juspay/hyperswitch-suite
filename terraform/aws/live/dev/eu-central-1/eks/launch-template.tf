@@ -40,7 +40,7 @@ resource "aws_launch_template" "eks_nodes" {
   }
 
   # Dynamic user data - cluster details fetched at runtime by bootstrap script
-  user_data = base64encode(templatefile("${path.module}/templates/bootstrap-userdata.sh", {
+  user_data = base64encode(templatefile("${path.module}/templates/bootstrap-userdata.tpl", {
     cluster_name = "${var.environment}-${var.project_name}-cluster-${var.cluster_name_version}"
   }))
 
@@ -103,7 +103,7 @@ resource "aws_launch_template" "custom_node_group" {
     instance_metadata_tags      = "enabled"
   }
 
-  user_data = base64encode(templatefile("${path.module}/templates/bootstrap-userdata.sh", {
+  user_data = base64encode(templatefile("${path.module}/templates/bootstrap-userdata.tpl", {
     cluster_name = "${var.environment}-${var.project_name}-cluster-${var.cluster_name_version}"
   }))
 
