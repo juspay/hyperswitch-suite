@@ -80,7 +80,7 @@ module "config_bucket" {
 
   bucket_name       = "${local.name_prefix}-config-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
   force_destroy     = var.environment != "prod" ? true : false
-  enable_versioning = true  # Enable versioning to track config changes
+  enable_versioning = true # Enable versioning to track config changes
 
   # Security best practices
   block_public_acls       = true
@@ -93,12 +93,12 @@ module "config_bucket" {
   # Lifecycle rules for old versions
   lifecycle_rules = [
     {
-      id                             = "expire-old-config-versions"
-      enabled                        = true
-      prefix                         = ""
-      expiration_days                = null
-      noncurrent_version_expiration  = 90  # Keep old versions for 90 days
-      transition                     = []
+      id                            = "expire-old-config-versions"
+      enabled                       = true
+      prefix                        = ""
+      expiration_days               = null
+      noncurrent_version_expiration = 90 # Keep old versions for 90 days
+      transition                    = []
     }
   ]
 
@@ -123,7 +123,7 @@ resource "aws_s3_object" "squid_config_files" {
   tags = local.common_tags
 
   lifecycle {
-    ignore_changes = [ source]
+    ignore_changes = [source]
   }
 }
 
@@ -316,11 +316,11 @@ module "nlb_listener_tcp" {
   count  = var.create_nlb && var.enable_tcp_listener ? 1 : 0
   source = "../../base/nlb-listener"
 
-  name                = "${local.name_prefix}-tcp"
-  load_balancer_arn   = module.nlb[0].nlb_arn
-  port                = var.tcp_listener_port
-  protocol            = "TCP"
-  target_group_arn    = var.create_target_group ? module.target_group[0].tg_arn : var.existing_tg_arn
+  name              = "${local.name_prefix}-tcp"
+  load_balancer_arn = module.nlb[0].nlb_arn
+  port              = var.tcp_listener_port
+  protocol          = "TCP"
+  target_group_arn  = var.create_target_group ? module.target_group[0].tg_arn : var.existing_tg_arn
 
   tags = local.common_tags
 }
@@ -331,14 +331,14 @@ module "nlb_listener_tls" {
   count  = var.create_nlb && var.enable_tls_listener ? 1 : 0
   source = "../../base/nlb-listener"
 
-  name                = "${local.name_prefix}-tls"
-  load_balancer_arn   = module.nlb[0].nlb_arn
-  port                = var.tls_listener_port
-  protocol            = "TLS"
-  ssl_policy          = var.tls_ssl_policy
-  certificate_arn     = var.tls_certificate_arn
-  alpn_policy         = var.tls_alpn_policy
-  target_group_arn    = var.create_target_group ? module.target_group[0].tg_arn : var.existing_tg_arn
+  name              = "${local.name_prefix}-tls"
+  load_balancer_arn = module.nlb[0].nlb_arn
+  port              = var.tls_listener_port
+  protocol          = "TLS"
+  ssl_policy        = var.tls_ssl_policy
+  certificate_arn   = var.tls_certificate_arn
+  alpn_policy       = var.tls_alpn_policy
+  target_group_arn  = var.create_target_group ? module.target_group[0].tg_arn : var.existing_tg_arn
 
   tags = local.common_tags
 }
@@ -427,8 +427,8 @@ module "asg" {
   max_size         = var.max_size
   desired_capacity = var.desired_capacity
 
-  target_group_arns   = [var.create_target_group ? module.target_group[0].tg_arn : var.existing_tg_arn]
-  health_check_type   = "ELB"
+  target_group_arns         = [var.create_target_group ? module.target_group[0].tg_arn : var.existing_tg_arn]
+  health_check_type         = "ELB"
   health_check_grace_period = 300
 
   enabled_metrics = [
