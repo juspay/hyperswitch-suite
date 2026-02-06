@@ -98,7 +98,7 @@ variable "replicas_per_node_group" {
 variable "cluster_mode" {
   description = "Cluster mode: enabled, disabled, or compatible"
   type        = string
-  default     = "disabled"
+  default     = "enabled"
 }
 
 variable "data_tiering_enabled" {

@@ -31,7 +31,7 @@ node_type          = "cache.t3.small"
 num_cache_clusters = 2
 
 # Cluster Mode
-cluster_mode         = "disabled"
+cluster_mode         = "enabled"
 data_tiering_enabled = false
 
 # High Availability

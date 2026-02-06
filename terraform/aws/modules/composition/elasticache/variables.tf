@@ -103,7 +103,7 @@ variable "replicas_per_node_group" {
 variable "cluster_mode" {
   description = "(Optional) Specifies whether cluster mode is enabled or disabled. Valid values are enabled, disabled, or compatible"
   type        = string
-  default     = "disabled"
+  default     = "enabled"
 
   validation {
     condition     = var.cluster_mode == null || contains(["enabled", "disabled", "compatible"], var.cluster_mode)
