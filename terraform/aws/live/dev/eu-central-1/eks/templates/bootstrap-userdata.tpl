@@ -1,7 +1,13 @@
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="==MYBOUNDARY=="
+
+--==MYBOUNDARY==
+Content-Type: text/x-shellscript; charset="us-ascii"
+
 #!/bin/bash
 set -ex
 
-# Fetch cluster details from AWS at runtime 
+# Fetch cluster details from AWS at runtime
 CLUSTER_NAME="${cluster_name}"
 
 # Fetch cluster endpoint and CA from AWS CLI
@@ -26,3 +32,5 @@ EOF
 
 # Bootstrap node to cluster
 /usr/bin/nodeadm init --config-source file:///etc/eks/bootstrap.yaml
+
+--==MYBOUNDARY==--
