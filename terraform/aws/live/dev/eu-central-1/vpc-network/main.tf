@@ -88,6 +88,7 @@ module "vpc_network" {
     "secretsmanager",
     "ssm",
     "ssmmessages",
+    "sts",
     "ec2messages",
     "kms"
   ] : []
