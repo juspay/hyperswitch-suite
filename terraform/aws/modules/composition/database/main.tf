@@ -215,12 +215,12 @@ resource "aws_rds_cluster_instance" "instances" {
   preferred_maintenance_window = each.value.preferred_maintenance_window
 
   # Monitoring
-  monitoring_role_arn = coalesce(var.monitoring_role_arn, each.value.monitoring_role_arn)
+  monitoring_role_arn = each.value.monitoring_role_arn != null ? each.value.monitoring_role_arn : var.monitoring_role_arn
   monitoring_interval = each.value.monitoring_interval
 
   # Performance Insights
-  performance_insights_enabled          = coalesce(var.performance_insights_enabled, each.value.performance_insights_enabled)
-  performance_insights_kms_key_id       = coalesce(var.performance_insights_kms_key_id, each.value.performance_insights_kms_key_id)
+  performance_insights_enabled          = each.value.performance_insights_enabled != null ? each.value.performance_insights_enabled : var.performance_insights_enabled
+  performance_insights_kms_key_id       = each.value.performance_insights_kms_key_id != null ? each.value.performance_insights_kms_key_id : var.performance_insights_kms_key_id
   performance_insights_retention_period = each.value.performance_insights_retention_period
 
   # High Availability
