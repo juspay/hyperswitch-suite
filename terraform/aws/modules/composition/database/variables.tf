@@ -328,13 +328,13 @@ variable "delete_automated_backups" {
 variable "allow_major_version_upgrade" {
   description = "(Optional) Enable to allow major engine version upgrades when changing engine versions"
   type        = bool
-  default     = false
+  default     = null
 }
 
 variable "apply_immediately" {
   description = "(Optional) Specifies whether any cluster modifications are applied immediately, or during the next maintenance window"
   type        = bool
-  default     = false
+  default     = null
 }
 
 # Monitoring
@@ -425,14 +425,14 @@ variable "global_cluster_identifier" {
 variable "enable_global_write_forwarding" {
   description = "(Optional) Whether cluster should forward writes to an associated global cluster"
   type        = bool
-  default     = false
+  default     = null
 }
 
 # Local Write Forwarding
 variable "enable_local_write_forwarding" {
   description = "(Optional) Whether read replicas can forward write operations to the writer DB instance"
   type        = bool
-  default     = false
+  default     = null
 }
 
 # HTTP Endpoint (Data API)
@@ -518,7 +518,7 @@ variable "cluster_instances" {
     engine_version                        = optional(string)
     publicly_accessible                   = optional(bool, false)
     db_parameter_group_name               = optional(string)
-    apply_immediately                     = optional(bool, false)
+    apply_immediately                     = optional(bool, null)
     monitoring_role_arn                   = optional(string)
     monitoring_interval                   = optional(number, 0)
     promotion_tier                        = optional(number, 0)
