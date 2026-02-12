@@ -240,8 +240,8 @@ output "proxy_peering_nat_c_route_table_id" {
 }
 
 output "eks_worker_route_table_id" {
-  description = "ID of the EKS worker route table (S3 only, no NAT)"
-  value       = module.eks_worker_rt.route_table_id
+  description = "ID of the EKS worker route table (NAT + S3)"
+  value       = var.enable_nat_gateway ? module.eks_worker_rt[0].route_table_id : ""
 }
 
 output "common_local_nat_s3_route_table_id" {
