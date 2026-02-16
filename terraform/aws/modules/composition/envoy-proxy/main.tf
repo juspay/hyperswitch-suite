@@ -362,7 +362,7 @@ module "alb" {
 resource "aws_lb_target_group" "envoy" {
   for_each = var.create_target_group ? local.target_groups : {}
 
-  name                 = "${local.name_prefix}-tg-${substr(md5("${var.target_group_protocol}-${var.envoy_traffic_port}"), 0, 6)}"
+  name                 = "${local.name_prefix}-tg-${substr(md5("${var.target_group_protocol}-${var.envoy_traffic_port}"), 0, 6)}-v${each.key}"
   port                 = var.envoy_traffic_port
   protocol             = var.target_group_protocol # HTTP or HTTPS based on configuration
   vpc_id               = var.vpc_id
@@ -657,7 +657,7 @@ module "asg" {
   # Ensure S3 config files are uploaded before ASG starts
   depends_on = [aws_s3_object.envoy_config_files, aws_launch_template.envoy]
 
-  name = "${local.name_prefix}-asg"
+  name = "${local.name_prefix}-asg-v${each.key}"
 
   # =========================================================================
   # Launch Template Configuration Strategy
