@@ -33,8 +33,8 @@ data "aws_autoscaling_groups" "groups" {
 
 # Get details of the blue ASG
 data "aws_autoscaling_group" "asg_blue" {
-  count = length(data.aws_autoscaling_groups.groups[0].names) > 0 ? 1 : 0
-  name  = data.aws_autoscaling_groups.groups[0].names[0]
+  count = length(data.aws_autoscaling_groups.groups.names) > 0 ? 1 : 0
+  name  = data.aws_autoscaling_groups.groups.names[0]
 }
 
 # Reference to existing IAM role (if using existing)
