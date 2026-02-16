@@ -67,9 +67,16 @@ locals {
   launch_template_id      = var.use_existing_launch_template ? var.existing_launch_template_id : aws_launch_template.envoy[0].id
   launch_template_version = var.use_existing_launch_template ? var.existing_launch_template_version : aws_launch_template.envoy[0].latest_version
 
-  version = length(try(data.aws_autoscaling_groups.groups.names, [])) > 0 ? tonumber(data.aws_autoscaling_group.asg_blue[0].tag["Version"]) : 0
+  version = length(try(data.aws_autoscaling_groups.groups.names, [])) > 0 ? (
+    tonumber(
+      try(
+        [for t in data.aws_autoscaling_group.asg_blue[0].tag : t.value if t.key == "Version"][0],
+        "0"
+      )
+    )
+  ) : 0
 
-  target_group_arns = var.create_target_group ? [aws_lb_target_group.envoy[local.version+(var.blue_green_rollout != null ? 1 : 0)].arn] : [var.existing_tg_arn]
+  target_group_arns = var.create_target_group ? [aws_lb_target_group.envoy[local.version + (var.blue_green_rollout != null ? 1 : 0)].arn] : [var.existing_tg_arn]
 
   deployments = var.blue_green_rollout != null ? {
     (local.version) = {
@@ -79,7 +86,7 @@ locals {
       target_group_arns = data.aws_autoscaling_group.asg_blue[0].target_group_arns
       weight            = var.blue_green_rollout.blue_weight
     },
-    (local.version+1) = {
+    (local.version + 1) = {
       lt_version        = local.launch_template_version
       lt_id             = local.launch_template_id
       deployment        = "green"
@@ -97,8 +104,8 @@ locals {
   }
 
   target_groups = var.blue_green_rollout != null ? {
-    (local.version) = "blue",
-    (local.version+1) = "green"
+    (local.version)     = "blue",
+    (local.version + 1) = "green"
     } : {
     (local.version) = "blue"
   }
