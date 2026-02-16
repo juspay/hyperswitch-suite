@@ -95,9 +95,9 @@ locals {
   }
 
   target_groups = var.blue_green_rollout != null ? {
-    (data.aws_autoscaling_group.asg_blue[0].name) = "blue",
-    (local.launch_template_version)               = "green"
+    "blue" = (data.aws_autoscaling_group.asg_blue[0].name),
+    "green" = (local.launch_template_version)
     } : {
-    (local.launch_template_version) = "blue"
+    "green" = (local.launch_template_version)
   }
 }
