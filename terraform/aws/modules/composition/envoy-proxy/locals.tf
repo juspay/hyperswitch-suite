@@ -67,7 +67,7 @@ locals {
   launch_template_id      = var.use_existing_launch_template ? var.existing_launch_template_id : aws_launch_template.envoy[0].id
   launch_template_version = var.use_existing_launch_template ? var.existing_launch_template_version : aws_launch_template.envoy[0].latest_version
 
-  version = length(try(data.aws_autoscaling_groups.groups.names, [])) > 0 ? data.aws_autoscaling_group[0].tag["Version"] : 0
+  version = length(try(data.aws_autoscaling_groups.groups.names, [])) > 0 ? tonumber(data.aws_autoscaling_group.asg_blue[0].tag["Version"]) : 0
 
   target_group_arns = var.create_target_group ? [aws_lb_target_group.envoy[local.version+(var.blue_green_rollout != null ? 1 : 0)].arn] : [var.existing_tg_arn]
 
