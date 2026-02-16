@@ -657,7 +657,7 @@ module "asg" {
   # Ensure S3 config files are uploaded before ASG starts
   depends_on = [aws_s3_object.envoy_config_files, aws_launch_template.envoy]
 
-  name = "${local.name_prefix}-asg-v${each.key}"
+  name = "${local.name_prefix}-asg"
 
   # =========================================================================
   # Launch Template Configuration Strategy
