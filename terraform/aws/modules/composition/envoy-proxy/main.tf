@@ -191,12 +191,6 @@ module "envoy_iam_role" {
   tags = local.common_tags
 }
 
-# Reference to existing IAM role (if using existing)
-data "aws_iam_role" "existing_envoy_role" {
-  count = var.create_iam_role ? 0 : 1
-  name  = var.existing_iam_role_name
-}
-
 # Create a new instance profile for existing IAM role
 # This allows you to reuse an existing IAM role but create a fresh instance profile
 resource "aws_iam_instance_profile" "envoy_profile" {
@@ -366,9 +360,9 @@ module "alb" {
 # Target group for ALB → Envoy ASG
 # Targets Envoy traffic listener port
 resource "aws_lb_target_group" "envoy" {
-  count = var.create_target_group ? 1 : 0
+  for_each = var.create_target_group ? local.target_groups : {}
 
-  name                 = "${local.name_prefix}-tg-${substr(md5("${var.target_group_protocol}-${var.envoy_traffic_port}"), 0, 6)}"
+  name                 = "${local.name_prefix}-tg-${each.key}-${substr(md5("${var.target_group_protocol}-${var.envoy_traffic_port}"), 0, 6)}"
   port                 = var.envoy_traffic_port
   protocol             = var.target_group_protocol # HTTP or HTTPS based on configuration
   vpc_id               = var.vpc_id
@@ -390,7 +384,8 @@ resource "aws_lb_target_group" "envoy" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${local.name_prefix}-tg"
+      Name       = "${local.name_prefix}-tg-${each.key}"
+      Deployment = "${each.value}"
     }
   )
 
@@ -426,8 +421,26 @@ resource "aws_lb_listener" "envoy_http" {
       }
     }
 
-    # Forward to target group (only used if type = "forward")
-    target_group_arn = var.enable_https_listener && var.enable_http_to_https_redirect ? null : (var.create_target_group ? aws_lb_target_group.envoy[0].arn : var.existing_tg_arn)
+    # Weighted Forward block (used only when not redirecting)
+    dynamic "forward" {
+      for_each = !(var.enable_https_listener && var.enable_http_to_https_redirect) ? [1] : []
+      content {
+
+        # Canary target group (optional)
+        dynamic "target_group" {
+          for_each = local.deployments
+          content {
+            arn    = each.value.target_group_arns[0]
+            weight = each.value.weight
+          }
+        }
+
+        stickiness {
+          enabled  = false
+          duration = 1
+        }
+      }
+    }
   }
 
   tags = local.common_tags
@@ -444,8 +457,23 @@ resource "aws_lb_listener" "envoy_https" {
   certificate_arn   = var.ssl_certificate_arn
 
   default_action {
-    type             = "forward"
-    target_group_arn = var.create_target_group ? aws_lb_target_group.envoy[0].arn : var.existing_tg_arn
+    type = "forward"
+
+    forward {
+
+      dynamic "target_group" {
+        for_each = local.deployments
+        content {
+          arn    = each.value.target_group_arns[0]
+          weight = each.value.weight
+        }
+      }
+
+      stickiness {
+        enabled  = false
+        duration = 1
+      }
+    }
   }
 
   tags = local.common_tags
@@ -620,11 +648,13 @@ resource "aws_launch_template" "envoy" {
 # Auto Scaling Group
 # =========================================================================
 module "asg" {
+  for_each = local.deployments
+
   source  = "terraform-aws-modules/autoscaling/aws"
   version = "~> 7.0"
 
   # Ensure S3 config files are uploaded before ASG starts
-  depends_on = [aws_s3_object.envoy_config_files]
+  depends_on = [aws_s3_object.envoy_config_files, aws_launch_template.envoy]
 
   name = "${local.name_prefix}-asg"
 
@@ -646,8 +676,8 @@ module "asg" {
   # Always use a launch template (either existing or our created one)
   # This prevents the ASG module from creating its own launch template
   create_launch_template  = false
-  launch_template_id      = local.launch_template_id
-  launch_template_version = local.launch_template_version
+  launch_template_id      = each.value.lt_id
+  launch_template_version = each.value.lt_version
 
   # For mixed instances policy (spot enabled)
   mixed_instances_policy = var.enable_spot_instances ? {
@@ -676,7 +706,7 @@ module "asg" {
   default_cooldown          = 300
 
   # Target groups
-  target_group_arns = [var.create_target_group ? aws_lb_target_group.envoy[0].arn : var.existing_tg_arn]
+  target_group_arns = each.value.target_group_arns
 
   # Termination and lifecycle
   termination_policies  = var.termination_policies
@@ -695,7 +725,7 @@ module "asg" {
   # Scaling policies - Created separately below
 
   # Tags
-  tags = local.common_tags
+  tags = merge(local.common_tags, { Deployment = each.value.deployment })
 }
 
 # =========================================================================
@@ -704,10 +734,10 @@ module "asg" {
 
 # CPU Target Tracking Scaling Policy
 resource "aws_autoscaling_policy" "cpu_target_tracking" {
-  count = var.enable_autoscaling && var.scaling_policies.cpu_target_tracking.enabled ? 1 : 0
+  for_each = var.enable_autoscaling && var.scaling_policies.cpu_target_tracking.enabled ? local.deployments : {}
 
-  name                   = "${local.name_prefix}-cpu-target-tracking"
-  autoscaling_group_name = module.asg.autoscaling_group_name
+  name                   = "${local.name_prefix}-cpu-target-tracking-${each.key}"
+  autoscaling_group_name = module.asg[each.key].autoscaling_group_name
   policy_type            = "TargetTrackingScaling"
 
   target_tracking_configuration {
@@ -720,10 +750,10 @@ resource "aws_autoscaling_policy" "cpu_target_tracking" {
 
 # Memory Target Tracking Scaling Policy
 resource "aws_autoscaling_policy" "memory_target_tracking" {
-  count = var.enable_autoscaling && var.scaling_policies.memory_target_tracking.enabled ? 1 : 0
+  for_each = var.enable_autoscaling && var.scaling_policies.memory_target_tracking.enabled ? local.deployments : {}
 
-  name                   = "${local.name_prefix}-memory-target-tracking"
-  autoscaling_group_name = module.asg.autoscaling_group_name
+  name                   = "${local.name_prefix}-memory-target-tracking-${each.key}"
+  autoscaling_group_name = module.asg[each.key].autoscaling_group_name
   policy_type            = "TargetTrackingScaling"
 
   target_tracking_configuration {
@@ -736,7 +766,7 @@ resource "aws_autoscaling_policy" "memory_target_tracking" {
             metric_name = "mem_used_percent"
             dimensions {
               name  = "AutoScalingGroupName"
-              value = module.asg.autoscaling_group_name
+              value = module.asg[each.key].autoscaling_group_name
             }
           }
           stat = "Average"
