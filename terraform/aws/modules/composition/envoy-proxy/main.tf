@@ -385,7 +385,8 @@ resource "aws_lb_target_group" "envoy" {
     local.common_tags,
     {
       Name       = "${local.name_prefix}-tg"
-      Deployment = "${each.value}"
+      Deployment = each.value
+      Version    = each.key
     }
   )
 
@@ -725,7 +726,7 @@ module "asg" {
   # Scaling policies - Created separately below
 
   # Tags
-  tags = merge(local.common_tags, { Deployment = each.value.deployment })
+  tags = merge(local.common_tags, { Deployment = each.value.deployment, Version = each.key })
 }
 
 # =========================================================================

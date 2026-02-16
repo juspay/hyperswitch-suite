@@ -65,19 +65,21 @@ locals {
 
   # Launch Template selection - use created or existing
   launch_template_id      = var.use_existing_launch_template ? var.existing_launch_template_id : aws_launch_template.envoy[0].id
-  launch_template_version = var.use_existing_launch_template ? var.existing_launch_template_version : tostring(aws_launch_template.envoy[0].latest_version)
+  launch_template_version = var.use_existing_launch_template ? var.existing_launch_template_version : aws_launch_template.envoy[0].latest_version
 
-  target_group_arns = var.create_target_group ? [aws_lb_target_group.envoy[local.launch_template_version].arn] : [var.existing_tg_arn]
+  version = length(try(data.aws_autoscaling_groups.groups[0].names, [])) > 0 ? data.aws_autoscaling_group.tag["Version"] : 0
+
+  target_group_arns = var.create_target_group ? [aws_lb_target_group.envoy[local.version+(var.blue_green_rollout != null ? 1 : 0)].arn] : [var.existing_tg_arn]
 
   deployments = var.blue_green_rollout != null ? {
-    (data.aws_autoscaling_group.asg_blue[0].launch_template[0].version) = {
+    (local.version) = {
       lt_version        = data.aws_autoscaling_group.asg_blue[0].launch_template[0].version
       lt_id             = data.aws_autoscaling_group.asg_blue[0].launch_template[0].id
       deployment        = "blue"
       target_group_arns = data.aws_autoscaling_group.asg_blue[0].target_group_arns
       weight            = var.blue_green_rollout.blue_weight
     },
-    (local.launch_template_version) = {
+    (local.version+1) = {
       lt_version        = local.launch_template_version
       lt_id             = local.launch_template_id
       deployment        = "green"
@@ -85,7 +87,7 @@ locals {
       weight            = var.blue_green_rollout.green_weight
     }
     } : {
-    (local.launch_template_version) = {
+    (local.version) = {
       lt_version        = local.launch_template_version
       lt_id             = local.launch_template_id
       deployment        = "blue"
@@ -95,9 +97,9 @@ locals {
   }
 
   target_groups = var.blue_green_rollout != null ? {
-    (data.aws_autoscaling_group.asg_blue[0].launch_template[0].version) = "blue",
-    (local.launch_template_version)               = "green"
+    (local.version) = "blue",
+    (local.version+1) = "green"
     } : {
-    (local.launch_template_version) = "blue"
+    (local.version) = "blue"
   }
 }
