@@ -65,7 +65,7 @@ locals {
 
   # Launch Template selection - use created or existing
   launch_template_id      = var.use_existing_launch_template ? var.existing_launch_template_id : aws_launch_template.envoy[0].id
-  launch_template_version = var.use_existing_launch_template ? var.existing_launch_template_version : aws_launch_template.envoy[0].latest_version
+  launch_template_version = var.use_existing_launch_template ? var.existing_launch_template_version : "$Default"
 
   target_group_arns = var.create_target_group ? [aws_lb_target_group.envoy[local.launch_template_version].arn] : [var.existing_tg_arn]
 
@@ -95,9 +95,9 @@ locals {
   }
 
   target_groups = var.blue_green_rollout != null ? {
-    "blue" = (data.aws_autoscaling_group.asg_blue[0].name),
-    "green" = (local.launch_template_version)
+    (data.aws_autoscaling_group.asg_blue[0].name) = "blue",
+    (local.launch_template_version)               = "green"
     } : {
-    "green" = (local.launch_template_version)
+    (local.launch_template_version) = "blue"
   }
 }
