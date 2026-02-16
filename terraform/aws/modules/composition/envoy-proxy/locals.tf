@@ -70,7 +70,7 @@ locals {
   target_group_arns = var.create_target_group ? [aws_lb_target_group.envoy[local.launch_template_version].arn] : [var.existing_tg_arn]
 
   deployments = var.blue_green_rollout != null ? {
-    (data.aws_autoscaling_group.asg_blue[0].launch_template[0].id) = {
+    (data.aws_autoscaling_group.asg_blue[0].launch_template[0].version) = {
       lt_version        = data.aws_autoscaling_group.asg_blue[0].launch_template[0].version
       lt_id             = data.aws_autoscaling_group.asg_blue[0].launch_template[0].id
       deployment        = "blue"
@@ -95,7 +95,7 @@ locals {
   }
 
   target_groups = var.blue_green_rollout != null ? {
-    (data.aws_autoscaling_group.asg_blue[0].launch_template[0].id) = "blue",
+    (data.aws_autoscaling_group.asg_blue[0].launch_template[0].version) = "blue",
     (local.launch_template_version)               = "green"
     } : {
     (local.launch_template_version) = "blue"
