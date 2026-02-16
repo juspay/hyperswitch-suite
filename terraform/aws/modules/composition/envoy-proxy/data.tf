@@ -31,6 +31,7 @@ data "aws_autoscaling_groups" "groups_blue" {
   }
 }
 
+# Find existing green ASG for blue-green deployments
 data "aws_autoscaling_groups" "groups_green" {
 
   # Filter by common tags to find ASGs from this module
