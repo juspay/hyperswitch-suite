@@ -736,7 +736,7 @@ module "asg" {
 resource "aws_autoscaling_policy" "cpu_target_tracking" {
   for_each = var.enable_autoscaling && var.scaling_policies.cpu_target_tracking.enabled ? local.deployments : {}
 
-  name                   = "${local.name_prefix}-cpu-target-tracking-${each.key}"
+  name                   = "${local.name_prefix}-cpu-target-tracking"
   autoscaling_group_name = module.asg[each.key].autoscaling_group_name
   policy_type            = "TargetTrackingScaling"
 
