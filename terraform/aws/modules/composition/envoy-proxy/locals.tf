@@ -67,6 +67,8 @@ locals {
   launch_template_id      = var.use_existing_launch_template ? var.existing_launch_template_id : aws_launch_template.envoy[0].id
   launch_template_version = var.use_existing_launch_template ? var.existing_launch_template_version : aws_launch_template.envoy[0].latest_version
 
+  enable_bg_rollout = var.blue_green_rollout != null && length(try(data.aws_autoscaling_groups.groups_blue.names, [])) > 0
+
   rollout_version = length(try(data.aws_autoscaling_groups.groups_blue.names, [])) > 0 ? (
     tonumber(
       try(
@@ -87,7 +89,7 @@ locals {
 
   target_group_arns = var.create_target_group ? [aws_lb_target_group.envoy[local.standard_version].arn] : [var.existing_tg_arn]
 
-  deployments = var.blue_green_rollout != null ? {
+  deployments = local.enable_bg_rollout ? {
     (local.rollout_version) = {
       lt_version        = data.aws_autoscaling_group.asg_blue[0].launch_template[0].version
       lt_id             = data.aws_autoscaling_group.asg_blue[0].launch_template[0].id
@@ -112,7 +114,7 @@ locals {
     }
   }
 
-  target_groups = var.blue_green_rollout != null ? {
+  target_groups = local.enable_bg_rollout ? {
     (local.rollout_version)     = "blue",
     (local.rollout_version + 1) = "green"
     } : {
