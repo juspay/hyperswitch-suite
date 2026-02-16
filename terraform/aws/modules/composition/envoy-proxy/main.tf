@@ -384,7 +384,7 @@ resource "aws_lb_target_group" "envoy" {
   tags = merge(
     local.common_tags,
     {
-      Name       = "${local.name_prefix}-tg-${each.key}"
+      Name       = "${local.name_prefix}-tg"
       Deployment = "${each.value}"
     }
   )
