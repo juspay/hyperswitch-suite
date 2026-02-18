@@ -621,7 +621,7 @@ resource "aws_launch_template" "envoy" {
 # =========================================================================
 module "asg" {
   source  = "terraform-aws-modules/autoscaling/aws"
-  version = "~> 7.0"
+  version = "9.2.0"
 
   # Ensure S3 config files are uploaded before ASG starts
   depends_on = [aws_s3_object.envoy_config_files]
@@ -658,7 +658,9 @@ module "asg" {
       spot_instance_pools                      = 2
       spot_max_price                           = null # Use default (on-demand price)
     }
-    override = []
+    launch_template = {
+      override = []
+    }
   } : null
 
 
@@ -675,8 +677,13 @@ module "asg" {
   health_check_grace_period = 300
   default_cooldown          = 300
 
-  # Target groups
-  target_group_arns = [var.create_target_group ? aws_lb_target_group.envoy[0].arn : var.existing_tg_arn]
+  # Traffic sources (replaces target_group_arns in v8+)
+  traffic_source_attachments = var.create_target_group || var.existing_tg_arn != null ? {
+    envoy_tg = {
+      traffic_source_identifier = var.create_target_group ? aws_lb_target_group.envoy[0].arn : var.existing_tg_arn
+      traffic_source_type       = "elbv2"
+    }
+  } : null
 
   # Termination and lifecycle
   termination_policies  = var.termination_policies
