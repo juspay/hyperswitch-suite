@@ -59,7 +59,7 @@ resource "aws_eks_addon" "vpc_cni" {
   resolve_conflicts_on_update       = "OVERWRITE"
 
   depends_on = [
-    aws_eks_node_group.custom_nodes
+    module.eks
   ]
 }
 
@@ -83,7 +83,7 @@ resource "aws_eks_addon" "kube_proxy" {
   resolve_conflicts_on_update       = "OVERWRITE"
 
   depends_on = [
-    aws_eks_node_group.custom_nodes
+    module.eks
   ]
 }
 
@@ -124,6 +124,11 @@ resource "aws_eks_addon" "metrics_server" {
   ]
 }
 
+# Data source to get EKS cluster authentication token
+data "aws_eks_cluster_auth" "cluster" {
+  name = module.eks.cluster_name
+}
+
 # terraform_data to ensure Kubernetes resources are created after cluster is ready
 resource "terraform_data" "eks_ready" {
   triggers_replace = [
@@ -135,44 +140,20 @@ resource "terraform_data" "eks_ready" {
 
 # Kubernetes Provider Configuration
 provider "kubernetes" {
-  host                   = module.eks.cluster_endpoint
-  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
-
-  exec {
-    api_version = "client.authentication.k8s.io/v1beta1"
-    command     = "aws"
-    args = [
-      "eks",
-      "get-token",
-      "--cluster-name",
-      module.eks.cluster_name,
-      "--region",
-      var.region
-    ]
-  }
-
+  host                   = try(module.eks.cluster_endpoint, "")
+  cluster_ca_certificate = try(base64decode(module.eks.cluster_certificate_authority_data), "")
+  token                  = try(data.aws_eks_cluster_auth.cluster.token, "")
 }
 
 # Helm Provider Configuration
 provider "helm" {
   kubernetes = {
-    host                   = module.eks.cluster_endpoint
-    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
-    
-    exec = {
-      api_version = "client.authentication.k8s.io/v1beta1"
-      command     = "aws"
-      args = [
-        "eks",
-        "get-token",
-        "--cluster-name",
-        module.eks.cluster_name,
-        "--region",
-        var.region
-      ]
-    }
+    host                   = try(module.eks.cluster_endpoint, "")
+    cluster_ca_certificate = try(base64decode(module.eks.cluster_certificate_authority_data), "")
+    token                  = try(data.aws_eks_cluster_auth.cluster.token, "")
   }
 }
+
 
 # Kubernetes namespace for Hyperswitch
 # Only create if Helm deployments are enabled

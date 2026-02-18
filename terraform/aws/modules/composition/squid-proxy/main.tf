@@ -14,7 +14,7 @@ resource "tls_private_key" "squid" {
 resource "aws_key_pair" "squid_key_pair" {
   count = var.generate_ssh_key ? 1 : 0
 
-  key_name   = "${local.name_prefix}-keypair-${data.aws_region.current.name}"
+  key_name   = "${local.name_prefix}-keypair-${var.region}"
   public_key = tls_private_key.squid[0].public_key_openssh
 
   tags = local.common_tags
@@ -53,7 +53,7 @@ module "logs_bucket" {
   count  = var.create_logs_bucket ? 1 : 0
   source = "../../base/s3-bucket"
 
-  bucket_name       = "${local.name_prefix}-logs-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
+  bucket_name       = "${local.name_prefix}-logs-${data.aws_caller_identity.current.account_id}-${var.region}"
   force_destroy     = var.environment != "prod" ? true : false
   enable_versioning = false
 
@@ -78,7 +78,7 @@ module "config_bucket" {
   count  = var.create_config_bucket ? 1 : 0
   source = "../../base/s3-bucket"
 
-  bucket_name       = "${local.name_prefix}-config-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
+  bucket_name       = "${local.name_prefix}-config-${data.aws_caller_identity.current.account_id}-${var.region}"
   force_destroy     = var.environment != "prod" ? true : false
   enable_versioning = true # Enable versioning to track config changes
 

@@ -46,6 +46,7 @@ module "squid_proxy" {
   source = "../../../../modules/composition/squid-proxy"
 
   environment  = var.environment
+  region       = var.region
   project_name = var.project_name
   name_override = var.name_override
 

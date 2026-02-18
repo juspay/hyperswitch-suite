@@ -34,6 +34,11 @@ output "cluster_oidc_issuer_url" {
   value       = module.eks.cluster_oidc_issuer_url
 }
 
+output "cluster_service_cidr" {
+  description = "The CIDR block where Kubernetes pod and service IP addresses are assigned from"
+  value       = try(module.eks.cluster_service_cidr, null)
+}
+
 output "cluster_security_group_id" {
   description = "Cluster security group that was created by Amazon EKS for the cluster"
   value       = module.eks.cluster_security_group_id

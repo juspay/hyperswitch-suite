@@ -3,6 +3,11 @@ variable "environment" {
   type        = string
 }
 
+variable "region" {
+  description = "AWS region for resource deployment. Passed from live layer to ensure correct region configuration."
+  type        = string
+}
+
 variable "project_name" {
   description = "Project name for resource naming"
   type        = string
@@ -343,7 +348,7 @@ variable "instance_refresh_preferences" {
 variable "instance_refresh_triggers" {
   description = "List of triggers that will start an instance refresh. Note: launch_template changes always trigger refresh automatically."
   type        = list(string)
-  default     = []  # Empty - launch_template triggers are automatic
+  default     = [] # Empty - launch_template triggers are automatic
 }
 
 # =========================================================================

@@ -12,10 +12,10 @@ resource "aws_launch_template" "eks_nodes" {
   description = "EKS nodes with dynamic bootstrap (default template)"
 
   image_id = "ami-0e3c92d48f8c1d312" # Amazon Linux 2023 EKS Optimized AMI
-  
-  # SSH key for remote access
-  key_name = "pipeline-test"
-  
+
+  # # SSH key for remote access
+  # key_name = "pipeline-test"
+
   # Security groups: custom node SG + EKS-managed cluster and node SGs
   vpc_security_group_ids = [
     module.eks.cluster_security_group_id,
@@ -39,9 +39,12 @@ resource "aws_launch_template" "eks_nodes" {
     instance_metadata_tags      = "enabled"
   }
 
-  # Dynamic user data - cluster details fetched at runtime by bootstrap script
+  # User data with cluster details provided at apply time for AL2023 nodeadm
   user_data = base64encode(templatefile("${path.module}/templates/bootstrap-userdata.tpl", {
-    cluster_name = "${var.environment}-${var.project_name}-cluster-${var.cluster_name_version}"
+    cluster_name     = "${var.environment}-${var.project_name}-cluster-${var.cluster_name_version}"
+    cluster_endpoint = module.eks.cluster_endpoint
+    cluster_ca       = module.eks.cluster_certificate_authority_data
+    cluster_cidr     = module.eks.cluster_service_cidr
   }))
 
   tag_specifications {
@@ -73,10 +76,10 @@ resource "aws_launch_template" "custom_node_group" {
 
   # Use custom AMI if specified, otherwise use default
   image_id = lookup(each.value.custom_launch_template_config, "ami_id", "ami-0e3c92d48f8c1d312")
-  
-  # SSH key for remote access
-  key_name = lookup(each.value.custom_launch_template_config, "key_name", "pipeline-test")
-  
+
+  # # SSH key for remote access
+  # key_name = lookup(each.value.custom_launch_template_config, "key_name", "pipeline-test")
+
   # Custom security groups if specified, otherwise use default EKS security groups
   vpc_security_group_ids = concat(
     lookup(each.value.custom_launch_template_config, "additional_security_group_ids", []),
@@ -104,7 +107,10 @@ resource "aws_launch_template" "custom_node_group" {
   }
 
   user_data = base64encode(templatefile("${path.module}/templates/bootstrap-userdata.tpl", {
-    cluster_name = "${var.environment}-${var.project_name}-cluster-${var.cluster_name_version}"
+    cluster_name     = "${var.environment}-${var.project_name}-cluster-${var.cluster_name_version}"
+    cluster_endpoint = module.eks.cluster_endpoint
+    cluster_ca       = module.eks.cluster_certificate_authority_data
+    cluster_cidr     = module.eks.cluster_service_cidr
   }))
 
   tag_specifications {
