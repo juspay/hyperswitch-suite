@@ -40,5 +40,5 @@ resource "aws_ecr_repository_policy" "policies" {
   for_each = { for k, v in var.repositories : k => v if v.repository_policy != null }
 
   repository = aws_ecr_repository.repositories[each.key].name
-  policy     = each.value.repository_policy
+  policy     = jsonencode(each.value.repository_policy)
 }
