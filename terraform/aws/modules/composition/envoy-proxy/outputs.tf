@@ -13,9 +13,9 @@ output "lb_zone_id" {
   value       = var.create_lb ? module.alb[0].zone_id : null
 }
 
-output "target_group_arn" {
-  description = "ARN of the target group"
-  value       = var.create_target_group ? aws_lb_target_group.envoy[0].arn : var.existing_tg_arn
+output "target_group_arns" {
+  description = "Map of deployment names to target group ARNs"
+  value       = { for v in local.deployments : v.deployment => v.target_group_arns }
 }
 
 output "launch_template_id" {
@@ -33,14 +33,18 @@ output "launch_template_created" {
   value       = !var.use_existing_launch_template
 }
 
-output "asg_id" {
-  description = "ID of the Auto Scaling Group"
-  value       = module.asg.autoscaling_group_id
+output "asg_ids" {
+  description = "Map of deployment names to Auto Scaling Group IDs"
+  value = {
+    for k, v in module.asg : local.deployments[k].deployment => v.autoscaling_group_id
+  }
 }
 
-output "asg_name" {
-  description = "Name of the Auto Scaling Group"
-  value       = module.asg.autoscaling_group_name
+output "asg_names" {
+  description = "Map of deployment names to Auto Scaling Group names"
+  value = {
+    for k, v in module.asg : local.deployments[k].deployment => v.autoscaling_group_name
+  }
 }
 
 output "asg_security_group_id" {

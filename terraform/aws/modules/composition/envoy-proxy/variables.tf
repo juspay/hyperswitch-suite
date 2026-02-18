@@ -37,10 +37,10 @@ variable "lb_ingress_rules" {
     from_port       = number
     to_port         = number
     protocol        = string
-    cidr            = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
-    ipv6_cidr       = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
-    sg_id           = optional(list(string))  # Security Group IDs
-    prefix_list_ids = optional(list(string))  # VPC Endpoint Prefix Lists (e.g., ["pl-6ea54007"])
+    cidr            = optional(list(string)) # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
+    ipv6_cidr       = optional(list(string)) # IPv6 CIDR blocks (e.g., ["::/0"])
+    sg_id           = optional(list(string)) # Security Group IDs
+    prefix_list_ids = optional(list(string)) # VPC Endpoint Prefix Lists (e.g., ["pl-6ea54007"])
   }))
   default = []
 }
@@ -52,10 +52,10 @@ variable "lb_egress_rules" {
     from_port       = number
     to_port         = number
     protocol        = string
-    cidr            = optional(list(string))  # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
-    ipv6_cidr       = optional(list(string))  # IPv6 CIDR blocks (e.g., ["::/0"])
-    sg_id           = optional(list(string))  # Security Group IDs
-    prefix_list_ids = optional(list(string))  # VPC Endpoint Prefix Lists (e.g., ["pl-6ea54007"])
+    cidr            = optional(list(string)) # IPv4 CIDR blocks (e.g., ["0.0.0.0/0"])
+    ipv6_cidr       = optional(list(string)) # IPv6 CIDR blocks (e.g., ["::/0"])
+    sg_id           = optional(list(string)) # Security Group IDs
+    prefix_list_ids = optional(list(string)) # VPC Endpoint Prefix Lists (e.g., ["pl-6ea54007"])
   }))
   default = []
 }
@@ -222,6 +222,15 @@ variable "existing_launch_template_version" {
   description = "Version of existing launch template to use ($Latest, $Default, or specific version number)"
   type        = string
   default     = "$Latest"
+}
+
+variable "blue_green_rollout" {
+  description = "Blue-green rollout configuration for Envoy"
+  type = object({
+    blue_weight  = number,
+    green_weight = number
+  })
+  default = null
 }
 
 # =========================================================================
