@@ -1,7 +1,5 @@
-data "aws_region" "current" {}
-
 provider "aws" {
-  region = local.region
+  region = var.region
 }
 
 # ECR Repositories
