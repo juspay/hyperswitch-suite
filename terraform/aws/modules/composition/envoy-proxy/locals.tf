@@ -89,22 +89,26 @@ locals {
 
   target_group_arns = var.create_target_group ? [aws_lb_target_group.envoy[local.standard_version].arn] : [var.existing_tg_arn]
 
-  deployments = local.enable_bg_rollout ? {
-    (local.rollout_version) = {
-      lt_version        = data.aws_autoscaling_group.asg_blue[0].launch_template[0].version
-      lt_id             = data.aws_autoscaling_group.asg_blue[0].launch_template[0].id
-      deployment        = "blue"
-      target_group_arns = data.aws_autoscaling_group.asg_blue[0].target_group_arns
-      weight            = var.blue_green_rollout.blue_weight
-    },
-    (local.rollout_version + 1) = {
-      lt_version        = local.launch_template_version
-      lt_id             = local.launch_template_id
-      deployment        = "green"
-      target_group_arns = local.target_group_arns
-      weight            = var.blue_green_rollout.green_weight
-    }
-    } : {
+  deployments = local.enable_bg_rollout ? merge(
+    try(var.blue_green_rollout.blue_weight, null) != null ? {
+      (local.rollout_version) = {
+        lt_version        = data.aws_autoscaling_group.asg_blue[0].launch_template[0].version
+        lt_id             = data.aws_autoscaling_group.asg_blue[0].launch_template[0].id
+        deployment        = "blue"
+        target_group_arns = data.aws_autoscaling_group.asg_blue[0].target_group_arns
+        weight            = var.blue_green_rollout.blue_weight
+      }
+    } : {},
+    try(var.blue_green_rollout.green_weight, null) != null ? {
+      (local.rollout_version + 1) = {
+        lt_version        = local.launch_template_version
+        lt_id             = local.launch_template_id
+        deployment        = "green"
+        target_group_arns = local.target_group_arns
+        weight            = var.blue_green_rollout.green_weight
+      }
+    } : {}
+    ) : {
     (local.standard_version) = {
       lt_version        = local.launch_template_version
       lt_id             = local.launch_template_id
@@ -114,10 +118,14 @@ locals {
     }
   }
 
-  target_groups = local.enable_bg_rollout ? {
-    (local.rollout_version)     = "blue",
-    (local.rollout_version + 1) = "green"
-    } : {
+  target_groups = local.enable_bg_rollout ? merge(
+    try(var.blue_green_rollout.blue_weight, null) != null ? {
+      (local.rollout_version) = "blue"
+    } : {},
+    try(var.blue_green_rollout.green_weight, null) != null ? {
+      (local.rollout_version + 1) = "green"
+    } : {}
+    ) : {
     (local.standard_version) = "blue"
   }
 }
