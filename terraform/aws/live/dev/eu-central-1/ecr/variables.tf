@@ -30,9 +30,9 @@ variable "repositories" {
     image_tag_mutability = optional(string, "MUTABLE")
     scan_on_push         = optional(bool, true)
     encryption_type      = optional(string, "AES256")
-    kms_key              = optional(string, null)
+    kms_key              = optional(string)
     force_delete         = optional(bool, false)
-    repository_policy    = optional(string, null)
+    repository_policy    = optional(any)
     image_tag_mutability_exclusion_filters = optional(list(object({
       filter      = string
       filter_type = string

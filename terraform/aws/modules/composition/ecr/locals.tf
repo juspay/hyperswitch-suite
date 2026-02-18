@@ -10,6 +10,4 @@ locals {
     },
     var.tags
   )
-
-  region = var.region != null ? var.region : data.aws_region.current.region
 }
