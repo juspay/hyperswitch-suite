@@ -12,13 +12,14 @@ locals {
     }
   )
 
-  external_ami_id = var.external_jump_ami_id != null ? var.external_jump_ami_id : data.aws_ami.amazon_linux_2[0].id
-  internal_ami_id = var.internal_jump_ami_id != null ? var.internal_jump_ami_id : data.aws_ami.amazon_linux_2[0].id
+  external_ami_id = var.external_jump_ami_id != null ? var.external_jump_ami_id : data.aws_ami.amazon_linux_2023[0].id
+  internal_ami_id = var.internal_jump_ami_id != null ? var.internal_jump_ami_id : data.aws_ami.amazon_linux_2023[0].id
 
   userdata_internal = templatefile("${path.module}/templates/userdata.sh", {
     jump_type         = "internal"
     environment       = var.environment
     cloudwatch_region = data.aws_region.current.id
     internal_jump_ip  = ""  # Not used for internal jump
+    os_username       = "ec2-user"
   })
 }

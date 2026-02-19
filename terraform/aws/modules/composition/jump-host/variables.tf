@@ -81,3 +81,9 @@ variable "enable_internal_jump_ssm" {
   type        = bool
   default     = false
 }
+
+variable "ssm_os_username" {
+  description = "OS username for SSM Session Manager access. Defaults to the standard username used by SSM Agent. Can be overridden based on your environment and SSM config."
+  type        = string
+  default     = "ssm-user"
+}
