@@ -43,6 +43,14 @@ module "database" {
   vpc_id     = data.terraform_remote_state.vpc.outputs.vpc_id
   subnet_ids = var.subnet_ids
 
+  # Global Cluster Configuration
+  create_global_cluster          = var.create_global_cluster
+  global_cluster_identifier      = var.global_cluster_identifier
+  global_deletion_protection     = var.global_deletion_protection
+  enable_global_write_forwarding = var.enable_global_write_forwarding
+  use_existing_as_global_primary = var.use_existing_as_global_primary
+  source_db_cluster_identifier   = var.source_db_cluster_identifier
+
   # RDS Cluster Configuration
   cluster_identifier       = var.cluster_identifier
   engine                   = var.engine
@@ -80,9 +88,9 @@ module "database" {
   copy_tags_to_snapshot        = var.copy_tags_to_snapshot
 
   # Security and Encryption
-  storage_encrypted   = var.storage_encrypted
-  kms_key_id          = var.kms_key_id
-  deletion_protection = var.deletion_protection
+  storage_encrypted        = var.storage_encrypted
+  kms_key_id               = var.kms_key_id
+  deletion_protection      = var.deletion_protection
   delete_automated_backups = var.delete_automated_backups
 
   # Monitoring
