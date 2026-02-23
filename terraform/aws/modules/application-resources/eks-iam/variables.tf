@@ -55,15 +55,13 @@ variable "custom_trust_statements" {
 }
 
 variable "oidc_providers" {
-  description = "OIDC provider trust for EKS service accounts (IRSA pattern). Supports multiple providers with multiple service accounts and different condition types (StringEquals, StringLike)."
+  description = "OIDC provider trust for EKS service accounts. Direct condition specification for maximum flexibility. Each condition becomes a separate statement in the trust policy."
   type = map(object({
     provider_arn = string
-    service_accounts = list(object({
-      name            = string
-      namespace       = string
-      condition_type  = optional(string, "StringEquals")
-      condition_key   = optional(string, null)
-      condition_value = optional(list(string), null)
+    conditions = list(object({
+      type   = string  # "StringEquals" or "StringLike"
+      claim  = string  # OIDC claim type (e.g., "sub", "aud")
+      values = list(string)
     }))
   }))
   default = null

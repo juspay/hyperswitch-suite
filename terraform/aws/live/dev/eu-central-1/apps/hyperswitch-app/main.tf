@@ -6,92 +6,77 @@ locals {
   # Uncomment and modify as needed for your specific EKS cluster setup.
 
   oidc_providers = {
-    # EXAMPLE 1: EKS cluster with router service account (Simple configuration)
+    # EXAMPLE 1: Simple EKS cluster configuration with aud and sub claims
     # eks_cluster_1 = {
     #   provider_arn = "arn:aws:iam::XXXXXXXXXXXX:oidc-provider/oidc.eks.REGION.amazonaws.com/id/XXXXXXXXXXXXXXXXXXXXXXXXXX"
-    #   service_accounts = [
+    #   conditions = [
     #     {
-    #       name      = "router-role"
-    #       namespace = "router"
+    #       type   = "StringEquals"
+    #       claim  = "aud"
+    #       values = ["sts.amazonaws.com"]
+    #     },
+    #     {
+    #       type   = "StringEquals"
+    #       claim  = "sub"
+    #       values = ["system:serviceaccount:router:router-role"]
     #     }
     #   ]
     # }
-
     # EXAMPLE 2: Multiple service accounts with StringEquals
     # eks_cluster_2 = {
     #   provider_arn = "arn:aws:iam::XXXXXXXXXXXX:oidc-provider/oidc.eks.REGION.amazonaws.com/id/XXXXXXXXXXXXXXXXXXXXXXXXXX"
-    #   service_accounts = [
+    #   conditions = [
     #     {
-    #       name      = "router-role"
-    #       namespace = "router"
+    #       type   = "StringEquals"
+    #       claim  = "aud"
+    #       values = ["sts.amazonaws.com"]
     #     },
     #     {
-    #       name      = "uas-role"
-    #       namespace = "sandbox-uas"
+    #       type   = "StringEquals"
+    #       claim  = "sub"
+    #       values = [
+    #         "system:serviceaccount:router:router-role",
+    #         "system:serviceaccount:sandbox-uas:uas-role"
+    #       ]
     #     }
     #   ]
     # }
 
-    # EXAMPLE 3: Multiple service accounts with mixed conditions
+    # EXAMPLE 3: Mixed conditions (StringEquals and StringLike)
     # eks_cluster_3 = {
     #   provider_arn = "arn:aws:iam::XXXXXXXXXXXX:oidc-provider/oidc.eks.REGION.amazonaws.com/id/XXXXXXXXXXXXXXXXXXXXXXXXXX"
-    #   service_accounts = [
+    #   conditions = [
     #     {
-    #       name      = "router-role"
-    #       namespace = "router"
-    #       condition_value = [
-    #         "system:serviceaccount:router:router-role",
-    #         "system:serviceaccount:hyperswitch-sandbox:hyperswitch-router-role"
-    #       ]
+    #       type   = "StringEquals"
+    #       claim  = "aud"
+    #       values = ["sts.amazonaws.com"]
     #     },
     #     {
-    #       name           = "uas-role"
-    #       namespace      = "sandbox-uas"
-    #       condition_type = "StringLike"
-    #       condition_value = [
-    #         "system:serviceaccount:sandbox-uas:uas-role",
-    #         "system:serviceaccount:uas-sandbox:uas-sandbox-role"
+    #       type   = "StringLike"
+    #       claim  = "sub"
+    #       values = [
+    #         "system:serviceaccount:router:*",
+    #         "system:serviceaccount:sandbox-uas:*"
     #       ]
     #     }
     #   ]
     # }
-
-    # EXAMPLE 4: Multiple service accounts in single condition
-    # eks_cluster_4 = {
-    #   provider_arn = "arn:aws:iam::XXXXXXXXXXXX:oidc-provider/oidc.eks.REGION.amazonaws.com/id/XXXXXXXXXXXXXXXXXXXXXXXXXX"
-    #   service_accounts = [
-    #     {
-    #       name      = "multi-service"
-    #       namespace = "hyperswitch-sandbox"
-    #       condition_value = [
-    #         "system:serviceaccount:hyperswitch-sandbox:hyperswitch-router-role",
-    #         "system:serviceaccount:sandbox-uas:uas-role",
-    #         "system:serviceaccount:uas-sandbox:uas-sandbox-role"
-    #       ]
-    #     }
-    #   ]
-    # }
-
     # ACTIVE CONFIGURATION
     # Set the oidc_provider_arn variable in terraform.tfvars or pass via -var
     eks_cluster = {
       provider_arn = var.oidc_provider_arn
-      service_accounts = [
+      conditions = [
         {
-          name      = "router-role"
-          namespace = "router"
-          condition_value = [
-            "system:serviceaccount:hyperswitch-sandbox:hyperswitch-router-role",
-            "sts:AssumeRole"
-          ]
+          type   = "StringEquals"
+          claim  = "aud"
+          values = ["sts.amazonaws.com"]
         },
         {
-          name           = "uas-role"
-          namespace      = "sandbox-uas"
-          condition_type = "StringLike"
-          condition_value = [
-            "system:serviceaccount:uas-sandbox:uas-sandbox-role",
-            "sts:AssumeRole"
+          type   = "StringLike"
+          claim  = "sub"
+          values = [
+            "system:serviceaccount:hyperswitch-sandbox:hyperswitch-router-role",
+            "system:serviceaccount:uas-sandbox:uas-sandbox-role"
           ]
         }
       ]
