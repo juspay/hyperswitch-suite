@@ -32,48 +32,23 @@ output "replication_group_member_clusters" {
   value       = module.elasticache.replication_group_member_clusters
 }
 
-output "replication_group_cluster_enabled" {
-  description = "Whether cluster mode is enabled"
-  value       = module.elasticache.replication_group_cluster_enabled
-}
-
-output "replication_group_engine_version_actual" {
-  description = "Actual engine version after upgrade"
-  value       = module.elasticache.replication_group_engine_version_actual
+output "replication_group_port" {
+  description = "Port number for the replication group"
+  value       = module.elasticache.replication_group_port
 }
 
 # ============================================================================
 # ElastiCache Subnet Group Outputs
 # ============================================================================
 
-output "elasticache_subnet_group_id" {
+output "subnet_group_id" {
   description = "ID of the ElastiCache subnet group"
-  value       = module.elasticache.elasticache_subnet_group_id
+  value       = module.elasticache.subnet_group_id
 }
 
-output "elasticache_subnet_group_name" {
+output "subnet_group_name" {
   description = "Name of the ElastiCache subnet group"
-  value       = module.elasticache.elasticache_subnet_group_name
-}
-
-output "elasticache_subnet_group_arn" {
-  description = "ARN of the ElastiCache subnet group"
-  value       = module.elasticache.elasticache_subnet_group_arn
-}
-
-output "elasticache_subnet_group_description" {
-  description = "Description of the ElastiCache subnet group"
-  value       = module.elasticache.elasticache_subnet_group_description
-}
-
-output "elasticache_subnet_group_subnet_ids" {
-  description = "Subnet IDs in the ElastiCache subnet group"
-  value       = module.elasticache.elasticache_subnet_group_subnet_ids
-}
-
-output "elasticache_subnet_group_vpc_id" {
-  description = "VPC ID of the ElastiCache subnet group"
-  value       = module.elasticache.elasticache_subnet_group_vpc_id
+  value       = module.elasticache.subnet_group_name
 }
 
 # ============================================================================
@@ -95,9 +70,9 @@ output "security_group_arn" {
   value       = module.elasticache.security_group_arn
 }
 
-output "security_group_vpc_id" {
-  description = "VPC ID of the security group"
-  value       = module.elasticache.security_group_vpc_id
+output "all_security_group_ids" {
+  description = "All security group IDs attached to ElastiCache"
+  value       = module.elasticache.all_security_group_ids
 }
 
 # ============================================================================

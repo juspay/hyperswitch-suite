@@ -1,3 +1,23 @@
+# ElastiCache Global Replication Group
+resource "aws_elasticache_global_replication_group" "main" {
+  count = var.create_global_replication_group && !local.is_secondary_cluster ? 1 : 0
+
+  global_replication_group_id_suffix = replace(local.global_replication_group_id, "${local.name_prefix}-", "")
+  primary_replication_group_id       = var.use_existing_as_global_primary ? var.source_replication_group_id : aws_elasticache_replication_group.main.id
+
+  global_replication_group_description = "${title(var.project_name)} ${title(var.environment)} Global Redis"
+  automatic_failover_enabled           = true
+  cache_node_type                      = var.node_type
+  engine_version                       = var.engine_version
+  parameter_group_name                 = local.parameter_group_name
+
+  lifecycle {
+    ignore_changes = [
+      primary_replication_group_id,
+    ]
+  }
+}
+
 # ElastiCache Subnet Group
 resource "aws_elasticache_subnet_group" "elasticache_subnet_group" {
   count = var.create_elasticache_subnet_group ? 1 : 0
@@ -25,6 +45,24 @@ resource "aws_security_group" "elasticache_sg" {
   })
 }
 
+# ElastiCache Parameter Group (for cluster mode)
+# Only create custom parameter group if NOT using AWS default parameter group
+resource "aws_elasticache_parameter_group" "cluster_pg" {
+  count = var.cluster_mode == "enabled" && !startswith(var.parameter_group_name, "default.") ? 1 : 0
+  name        = "${local.elasticache_replication_group_id}-cluster-pg"
+  family      = "redis${split(".", var.engine_version)[0]}"
+  description = "${title(var.project_name)} ${title(var.environment)} ElastiCache cluster parameter group"
+
+  parameter {
+    name  = "cluster-enabled"
+    value = "yes"
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.elasticache_replication_group_id}-cluster-pg"
+  })
+}
+
 # ElastiCache Redis Replication Group
 resource "aws_elasticache_replication_group" "main" {
   # Required
@@ -32,48 +70,34 @@ resource "aws_elasticache_replication_group" "main" {
   description          = "${title(var.project_name)} ${title(var.environment)} Elasticache replication group"
 
   # Engine Configuration
-  engine               = var.engine
-  engine_version       = var.engine_version
-  parameter_group_name = var.parameter_group_name
+  engine               = local.is_secondary_cluster ? null : (var.snapshot_arn != null || var.snapshot_name != null ? null : var.engine)
+  engine_version       = local.is_secondary_cluster ? null : (var.snapshot_arn != null || var.snapshot_name != null ? null : var.engine_version)
+  parameter_group_name = local.is_secondary_cluster ? null : local.parameter_group_name
   port                 = var.port
-
-  # Node Configuration
-  node_type                   = var.node_type
+  node_type                   = local.is_secondary_cluster ? null : var.node_type
   num_cache_clusters          = var.num_node_groups == null ? var.num_cache_clusters : null
   num_node_groups             = var.num_node_groups
   replicas_per_node_group     = var.replicas_per_node_group
   preferred_cache_cluster_azs = var.preferred_cache_cluster_azs
-
-  # Cluster Mode
   cluster_mode         = var.cluster_mode
   data_tiering_enabled = var.data_tiering_enabled
-
-  # Network Configuration
-  subnet_group_name    = var.create_elasticache_subnet_group ? aws_elasticache_subnet_group.elasticache_subnet_group[0].name : var.elasticache_subnet_group_name
-  security_group_ids   = concat(var.existing_security_group_ids, var.create_security_group ? [aws_security_group.elasticache_sg[0].id] : [])
-  ip_discovery         = var.ip_discovery
-  network_type         = var.network_type
-
-  # High Availability
+  subnet_group_name  = var.create_elasticache_subnet_group ? aws_elasticache_subnet_group.elasticache_subnet_group[0].name : var.elasticache_subnet_group_name
+  security_group_ids = concat(var.existing_security_group_ids, var.create_security_group ? [aws_security_group.elasticache_sg[0].id] : [])
+  ip_discovery       = var.ip_discovery
+  network_type       = var.network_type
   automatic_failover_enabled = var.automatic_failover_enabled
   multi_az_enabled           = var.multi_az_enabled
-
-  # Global Replication
-  global_replication_group_id = var.global_replication_group_id
-
-  # Security
-  at_rest_encryption_enabled = var.at_rest_encryption_enabled
-  transit_encryption_enabled = var.transit_encryption_enabled
-  transit_encryption_mode    = var.transit_encryption_mode
-  auth_token                 = var.auth_token
-  auth_token_update_strategy = var.auth_token_update_strategy
-  kms_key_id                 = var.kms_key_id
-
-  # Maintenance & Backup
+  global_replication_group_id = local.is_secondary_cluster ? var.global_replication_group_id : null
+  at_rest_encryption_enabled = local.is_secondary_cluster ? null : var.at_rest_encryption_enabled
+  transit_encryption_enabled = local.is_secondary_cluster ? null : var.transit_encryption_enabled
+  transit_encryption_mode    = local.is_secondary_cluster ? null : var.transit_encryption_mode
+  auth_token                 = local.is_secondary_cluster ? null : var.auth_token
+  auth_token_update_strategy = local.is_secondary_cluster ? null : var.auth_token_update_strategy
+  kms_key_id                 = local.is_secondary_cluster ? null : var.kms_key_id
   maintenance_window        = var.maintenance_window
   snapshot_window           = var.snapshot_window
   snapshot_retention_limit  = var.snapshot_retention_limit
-  snapshot_arns             = var.snapshot_arns
+  snapshot_arns             = var.snapshot_arn != null ? [var.snapshot_arn] : var.snapshot_arns
   snapshot_name             = var.snapshot_name
   final_snapshot_identifier = var.final_snapshot_identifier
 

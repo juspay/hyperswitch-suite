@@ -76,3 +76,29 @@ output "connection_info" {
     engine_version   = aws_elasticache_replication_group.main.engine_version_actual
   }
 }
+
+# Global Replication Group Outputs
+output "global_replication_group_id" {
+  description = "Global Replication Group Identifier"
+  value       = var.create_global_replication_group && !local.is_secondary_cluster ? aws_elasticache_global_replication_group.main[0].id : null
+}
+
+output "global_replication_group_arn" {
+  description = "ARN of the Global Replication Group"
+  value       = var.create_global_replication_group && !local.is_secondary_cluster ? aws_elasticache_global_replication_group.main[0].arn : null
+}
+
+output "global_replication_group_name" {
+  description = "Global Replication Group name"
+  value       = var.create_global_replication_group && !local.is_secondary_cluster ? aws_elasticache_global_replication_group.main[0].global_replication_group_id : var.global_replication_group_id
+}
+
+output "is_primary_cluster" {
+  description = "Whether this cluster is the primary cluster in the global replication group"
+  value       = !local.is_secondary_cluster
+}
+
+output "is_secondary_cluster" {
+  description = "Whether this cluster is a secondary/replica cluster in the global replication group"
+  value       = local.is_secondary_cluster
+}
