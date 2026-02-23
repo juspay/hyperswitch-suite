@@ -10,10 +10,16 @@ locals {
     # Example: oidc_provider_arn = "arn:aws:iam::XXXXXXXXXXXX:oidc-provider/oidc.eks.REGION.amazonaws.com/id/XXXXXXXXXXXXXXXXXXXXXXXXXX"
     eks_cluster = {
       provider_arn = var.oidc_provider_arn
-      service_accounts = [
+      conditions = [
         {
-          name      = "grafana"
-          namespace = "monitoring"
+          type   = "StringEquals"
+          claim  = "aud"
+          values = ["sts.amazonaws.com"]
+        },
+        {
+          type   = "StringEquals"
+          claim  = "sub"
+          values = ["system:serviceaccount:monitoring:grafana"]
         }
       ]
     }

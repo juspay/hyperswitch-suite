@@ -11,42 +11,19 @@ locals {
 
   oidc_statements = var.oidc_providers != null ? flatten([
     for provider_key, provider in var.oidc_providers : [
-      length([for sa in provider.service_accounts : sa if sa.condition_type == "StringEquals" || sa.condition_type == null]) > 0 ? [
-        {
-          Sid    = "oidc${replace(provider_key, "_", "")}eq"
-          Effect = "Allow"
-          Principal = {
-            Federated = provider.provider_arn
-          }
-          Action = "sts:AssumeRoleWithWebIdentity"
-          Condition = {
-            StringEquals = {
-              "${replace(provider.provider_arn, "arn:aws:iam::[0-9]+:oidc-provider/", "")}:sub" = flatten([
-                for sa in provider.service_accounts : sa.condition_value != null ? sa.condition_value : ["system:serviceaccount:${sa.namespace}:${sa.name}"]
-                if sa.condition_type == "StringEquals" || sa.condition_type == null
-              ])
-            }
+      for cond_idx, condition in provider.conditions : {
+        Sid    = "oidc${replace(provider_key, "_", "")}${cond_idx}"
+        Effect = "Allow"
+        Principal = {
+          Federated = provider.provider_arn
+        }
+        Action = "sts:AssumeRoleWithWebIdentity"
+        Condition = {
+          (condition.type) = {
+            "${replace(provider.provider_arn, "arn:aws:iam::\\d+:oidc-provider/", "")}:${condition.claim}" = condition.values
           }
         }
-      ] : [],
-      length([for sa in provider.service_accounts : sa if sa.condition_type == "StringLike"]) > 0 ? [
-        {
-          Sid    = "oidc${replace(provider_key, "_", "")}like"
-          Effect = "Allow"
-          Principal = {
-            Federated = provider.provider_arn
-          }
-          Action = "sts:AssumeRoleWithWebIdentity"
-          Condition = {
-            StringLike = {
-              "${replace(provider.provider_arn, "arn:aws:iam::[0-9]+:oidc-provider/", "")}:sub" = flatten([
-                for sa in provider.service_accounts : sa.condition_value != null ? sa.condition_value : ["system:serviceaccount:${sa.namespace}:${sa.name}"]
-                if sa.condition_type == "StringLike"
-              ])
-            }
-          }
-        }
-      ] : []
+      }
     ]
   ]) : []
 
