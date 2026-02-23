@@ -1,5 +1,37 @@
 data "aws_region" "current" {}
 
+# ============================================================================
+# Aurora Global Cluster
+# ============================================================================
+# This resource creates the global cluster that spans multiple regions
+# Only created when create_global_cluster is true and this is not a secondary cluster
+resource "aws_rds_global_cluster" "main" {
+  count = var.create_global_cluster && !local.is_secondary_cluster ? 1 : 0
+
+  global_cluster_identifier    = local.global_cluster_identifier
+  source_db_cluster_identifier = var.use_existing_as_global_primary ? var.source_db_cluster_identifier : null
+  force_destroy                = var.use_existing_as_global_primary
+
+  engine                   = var.use_existing_as_global_primary ? null : var.engine
+  engine_version           = var.use_existing_as_global_primary ? null : var.engine_version
+  engine_lifecycle_support = var.use_existing_as_global_primary ? null : var.engine_lifecycle_support
+  database_name            = var.use_existing_as_global_primary ? null : var.database_name
+  storage_encrypted        = var.use_existing_as_global_primary ? null : var.storage_encrypted
+
+  deletion_protection = var.global_deletion_protection
+
+  tags = merge(local.common_tags, {
+    Name = local.global_cluster_identifier
+  })
+
+  lifecycle {
+    ignore_changes = [
+      engine_version,
+    ]
+  }
+}
+
+
 # DB Subnet Group
 resource "aws_db_subnet_group" "main" {
   count = var.create_db_subnet_group ? 1 : 0
@@ -84,7 +116,7 @@ resource "aws_rds_cluster" "main" {
   domain_iam_role_name = var.domain_iam_role_name
 
   # Deletion Protection
-  deletion_protection     = var.deletion_protection
+  deletion_protection      = var.deletion_protection
   delete_automated_backups = var.delete_automated_backups
 
   # Version Management
@@ -95,7 +127,7 @@ resource "aws_rds_cluster" "main" {
   enabled_cloudwatch_logs_exports       = var.enabled_cloudwatch_logs_exports
   performance_insights_enabled          = var.performance_insights_enabled
   performance_insights_kms_key_id       = var.performance_insights_kms_key_id
-  performance_insights_retention_period = var.performance_insights_retention_period
+  performance_insights_retention_period = var.performance_insights_enabled ? var.performance_insights_retention_period : null
   monitoring_interval                   = var.monitoring_interval
   monitoring_role_arn                   = var.monitoring_role_arn
   database_insights_mode                = var.database_insights_mode
@@ -124,7 +156,11 @@ resource "aws_rds_cluster" "main" {
   }
 
   # Global Cluster
-  global_cluster_identifier      = var.global_cluster_identifier
+  # Only set global_cluster_identifier if:
+  # 1. Creating new cluster for global DB (create_global_cluster=true, use_existing_as_global_primary=false)
+  # 2. This is a secondary cluster (local.is_secondary_cluster=true, pass via var.global_cluster_identifier)
+  # Do NOT set if use_existing_as_global_primary=true - AWS handles relationship via source_db_cluster_identifier
+  global_cluster_identifier      = var.create_global_cluster && !local.is_secondary_cluster && !var.use_existing_as_global_primary ? aws_rds_global_cluster.main[0].id : (local.is_secondary_cluster ? var.global_cluster_identifier : null)
   enable_global_write_forwarding = var.enable_global_write_forwarding
 
   # Local Write Forwarding
@@ -182,6 +218,8 @@ resource "aws_rds_cluster" "main" {
     ignore_changes = [
       snapshot_identifier,
       master_password,
+      availability_zones,
+      cluster_members,
     ]
   }
 }
@@ -191,8 +229,8 @@ resource "aws_rds_cluster_instance" "instances" {
   for_each = var.cluster_instances
 
   # Identifiers
-  identifier        = each.value.identifier != null ? each.value.identifier : "${local.cluster_identifier}-${each.key}"
-  identifier_prefix = each.value.identifier_prefix
+  identifier         = each.value.identifier != null ? each.value.identifier : "${local.cluster_identifier}-${each.key}"
+  identifier_prefix  = each.value.identifier_prefix
   cluster_identifier = aws_rds_cluster.main.id
 
   # Instance Configuration
@@ -209,9 +247,9 @@ resource "aws_rds_cluster_instance" "instances" {
   db_parameter_group_name = each.value.db_parameter_group_name
 
   # Maintenance and Updates
-  apply_immediately          = each.value.apply_immediately
-  auto_minor_version_upgrade = each.value.auto_minor_version_upgrade
-  preferred_backup_window    = each.value.preferred_backup_window
+  apply_immediately            = each.value.apply_immediately
+  auto_minor_version_upgrade   = each.value.auto_minor_version_upgrade
+  preferred_backup_window      = each.value.preferred_backup_window
   preferred_maintenance_window = each.value.preferred_maintenance_window
 
   # Monitoring
@@ -221,7 +259,7 @@ resource "aws_rds_cluster_instance" "instances" {
   # Performance Insights
   performance_insights_enabled          = each.value.performance_insights_enabled != null ? each.value.performance_insights_enabled : var.performance_insights_enabled
   performance_insights_kms_key_id       = each.value.performance_insights_kms_key_id != null ? each.value.performance_insights_kms_key_id : var.performance_insights_kms_key_id
-  performance_insights_retention_period = each.value.performance_insights_retention_period
+  performance_insights_retention_period = (each.value.performance_insights_enabled != null ? each.value.performance_insights_enabled : var.performance_insights_enabled) ? (each.value.performance_insights_retention_period != null ? each.value.performance_insights_retention_period : var.performance_insights_retention_period) : null
 
   # High Availability
   promotion_tier = each.value.promotion_tier

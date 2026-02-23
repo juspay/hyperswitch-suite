@@ -16,6 +16,23 @@ subnet_ids = [
 ]
 
 # ============================================================================
+# Global Cluster Configuration
+# ============================================================================
+# Enable Aurora Global Database for multi-region deployment
+# Set to false to revert to single-region mode (requires cluster recreation)
+create_global_cluster      = false
+# global_cluster_identifier  = "hyperswitch-global-db"
+# global_deletion_protection = true
+
+# Link existing cluster as primary for global database 
+use_existing_as_global_primary = false
+# source_db_cluster_identifier   = "arn:aws:rds:<region>:xxxxxxxxxxxxx:cluster:hyperswitchdb-cluster"
+
+# Enable write forwarding from secondary clusters (optional)
+# Set to true to allow writes from secondary region (adds latency)
+enable_global_write_forwarding = false
+
+# ============================================================================
 # RDS Cluster Configuration
 # ============================================================================
 cluster_identifier       = "hyperswitchdb-cluster"
@@ -34,9 +51,9 @@ master_username = "postgres"
 # Multi-AZ Configuration
 # ============================================================================
 availability_zones = ["eu-central-1a", "eu-central-1b", "eu-central-1c"]
-allocated_storage  = 20
+allocated_storage  = null
 storage_type       = "aurora-iopt1"
-iops               = 0
+iops               = null
 
 # ============================================================================
 # Network Settings
@@ -104,8 +121,6 @@ cluster_instances = {
     promotion_tier                        = 0
     availability_zone                     = "eu-central-1a"
     db_parameter_group_name               = "default.aurora-postgresql13"
-    preferred_backup_window               = "00:51-01:21"
-    preferred_maintenance_window          = "mon:03:38-mon:04:08"
     performance_insights_enabled          = true
     performance_insights_kms_key_id       = null
     performance_insights_retention_period = 7
@@ -114,16 +129,14 @@ cluster_instances = {
     publicly_accessible                   = false
     copy_tags_to_snapshot                 = false
     monitoring_interval                   = 0
-    tags = {}
+    tags                                  = {}
   }
   ro = {
     identifier                            = "hyperswitchdb-ro"
-    instance_class                        = "db.t4g.medium"
+    instance_class                        = "db.r5.large"
     promotion_tier                        = 1
     availability_zone                     = "eu-central-1c"
     db_parameter_group_name               = "default.aurora-postgresql13"
-    preferred_backup_window               = "00:51-01:21"
-    preferred_maintenance_window          = "mon:03:38-mon:04:08"
     performance_insights_enabled          = true
     performance_insights_kms_key_id       = null
     performance_insights_retention_period = 7
@@ -136,12 +149,10 @@ cluster_instances = {
   }
   failover = {
     identifier                            = "failover-replica"
-    instance_class                        = "db.t4g.large"
+    instance_class                        = "db.r5.large"
     promotion_tier                        = 1
     availability_zone                     = "eu-central-1b"
     db_parameter_group_name               = "default.aurora-postgresql13"
-    preferred_backup_window               = "00:51-01:21"
-    preferred_maintenance_window          = "mon:03:38-mon:04:08"
     performance_insights_enabled          = true
     performance_insights_kms_key_id       = null
     performance_insights_retention_period = 7

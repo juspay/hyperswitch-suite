@@ -116,6 +116,37 @@ output "ca_certificate_valid_till" {
   value       = aws_rds_cluster.main.ca_certificate_valid_till
 }
 
+# Global Cluster Outputs
+output "global_cluster_id" {
+  description = "Global Cluster Identifier"
+  value       = var.create_global_cluster && !local.is_secondary_cluster ? aws_rds_global_cluster.main[0].id : null
+}
+
+output "global_cluster_arn" {
+  description = "ARN of the Global Cluster"
+  value       = var.create_global_cluster && !local.is_secondary_cluster ? aws_rds_global_cluster.main[0].arn : null
+}
+
+output "global_cluster_identifier" {
+  description = "Global Cluster Identifier name"
+  value       = var.create_global_cluster && !local.is_secondary_cluster ? aws_rds_global_cluster.main[0].global_cluster_identifier : var.global_cluster_identifier
+}
+
+output "global_writer_endpoint" {
+  description = "Global writer endpoint for the Aurora Global Database (use this for applications)"
+  value       = var.create_global_cluster && !local.is_secondary_cluster ? aws_rds_global_cluster.main[0].global_cluster_resource_id : null
+}
+
+output "is_primary_cluster" {
+  description = "Whether this cluster is the primary cluster in the global database"
+  value       = !local.is_secondary_cluster
+}
+
+output "is_secondary_cluster" {
+  description = "Whether this cluster is a secondary/replica cluster in the global database"
+  value       = local.is_secondary_cluster
+}
+
 # DB Subnet Group Outputs
 output "db_subnet_group_name" {
   description = "Name of the DB subnet group"

@@ -36,6 +36,44 @@ variable "subnet_ids" {
 }
 
 # ============================================================================
+# Global Cluster Configuration
+variable "create_global_cluster" {
+  description = "Enable Aurora Global Database for multi-region deployment"
+  type        = bool
+  default     = false
+}
+
+variable "global_cluster_identifier" {
+  description = "Global cluster identifier for multi-region Aurora"
+  type        = string
+  default     = "hyperswitch-global-db"
+}
+
+variable "global_deletion_protection" {
+  description = "Enable deletion protection for global cluster"
+  type        = bool
+  default     = true
+}
+
+variable "enable_global_write_forwarding" {
+  description = "Enable write forwarding for secondary clusters (not applicable to primary)"
+  type        = bool
+  default     = false
+}
+
+variable "use_existing_as_global_primary" {
+  description = "Whether to use existing cluster as primary for global database (links existing cluster instead of creating new)"
+  type        = bool
+  default     = false
+}
+
+variable "source_db_cluster_identifier" {
+  description = "ARN of existing cluster to use as primary for global database (only used when use_existing_as_global_primary is true)"
+  type        = string
+  default     = null
+}
+
+# ============================================================================
 # RDS Cluster Configuration
 # ============================================================================
 
