@@ -20,7 +20,7 @@ locals {
         Action = "sts:AssumeRoleWithWebIdentity"
         Condition = {
           (condition.type) = {
-            "${replace(provider.provider_arn, "arn:aws:iam::\\d+:oidc-provider/", "")}:${condition.claim}" = condition.values
+            "${regex("^arn:aws:iam::[0-9]+:oidc-provider/(.+)$", provider.provider_arn)[0]}:${condition.claim}" = condition.values
           }
         }
       }
