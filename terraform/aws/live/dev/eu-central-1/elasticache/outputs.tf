@@ -83,3 +83,33 @@ output "connection_info" {
   description = "Connection information for the Redis cluster"
   value       = module.elasticache.connection_info
 }
+
+
+# ============================================================================
+# Global Replication Group Outputs
+# ============================================================================
+
+output "global_replication_group_id" {
+  description = "Global Replication Group Identifier (AWS-generated ID)"
+  value       = module.elasticache.global_replication_group_id
+}
+
+output "global_replication_group_name" {
+  description = "Global Replication Group name (AWS-generated name)"
+  value       = module.elasticache.global_replication_group_name
+}
+
+output "global_replication_group_suffix" {
+  description = "User-specified suffix for the Global Replication Group (may differ from actual AWS-generated ID)"
+  value       = module.elasticache.global_replication_group_suffix
+}
+
+output "is_primary_cluster" {
+  description = "Whether this cluster is the primary cluster in the global replication group"
+  value       = module.elasticache.is_primary_cluster
+}
+
+output "is_secondary_cluster" {
+  description = "Whether this cluster is a secondary/replica cluster in the global replication group"
+  value       = module.elasticache.is_secondary_cluster
+}

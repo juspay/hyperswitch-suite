@@ -93,6 +93,11 @@ output "global_replication_group_name" {
   value       = var.create_global_replication_group && !local.is_secondary_cluster ? aws_elasticache_global_replication_group.main[0].global_replication_group_id : var.global_replication_group_id
 }
 
+output "global_replication_group_suffix" {
+  description = "User-specified suffix for the Global Replication Group (may differ from actual AWS-generated ID)"
+  value       = var.global_replication_group_id
+}
+
 output "is_primary_cluster" {
   description = "Whether this cluster is the primary cluster in the global replication group"
   value       = !local.is_secondary_cluster

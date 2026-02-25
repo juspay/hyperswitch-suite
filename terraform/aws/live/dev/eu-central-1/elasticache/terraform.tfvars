@@ -49,10 +49,10 @@ at_rest_encryption_enabled = false
 transit_encryption_enabled = false
 
 # Maintenance & Backup
-maintenance_window       = "sun:05:00-sun:06:00"
-snapshot_window          = "03:00-05:00"
-snapshot_retention_limit = 7
-auto_minor_version_upgrade = true
+maintenance_window         = "sun:05:00-sun:06:00"
+snapshot_window            = "03:00-05:00"
+snapshot_retention_limit   = 7
+auto_minor_version_upgrade = false
 apply_immediately          = false
 
 # Subnet Group Configuration
