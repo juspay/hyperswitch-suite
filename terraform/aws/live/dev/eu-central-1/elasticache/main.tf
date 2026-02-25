@@ -34,6 +34,14 @@ module "elasticache" {
   # Replication Group Configuration
   elasticache_replication_group_id = var.elasticache_replication_group_id
 
+  # Global Replication Configuration
+  create_global_replication_group = var.create_global_replication_group
+  global_replication_group_id     = var.global_replication_group_id
+  global_deletion_protection      = var.global_deletion_protection
+  is_secondary_region             = var.is_secondary_region
+  use_existing_as_global_primary  = var.use_existing_as_global_primary
+  source_replication_group_id     = var.source_replication_group_id
+
   # Engine Configuration
   engine               = var.engine
   engine_version       = var.engine_version

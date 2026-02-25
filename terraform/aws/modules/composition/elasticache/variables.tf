@@ -74,10 +74,10 @@ variable "node_type" {
 variable "num_cache_clusters" {
   description = "(Optional) Number of cache clusters (primary and replicas). Must be at least 2 if automatic_failover_enabled or multi_az_enabled are true. Conflicts with num_node_groups"
   type        = number
-  default     = 2
+  default     = null
 
   validation {
-    condition     = var.num_cache_clusters >= 1
+    condition     = var.num_cache_clusters == null || var.num_cache_clusters >= 1
     error_message = "num_cache_clusters must be at least 1."
   }
 }
@@ -137,8 +137,38 @@ variable "preferred_cache_cluster_azs" {
 }
 
 # Global Replication
+variable "create_global_replication_group" {
+  description = "Whether to create a global replication group for multi-region deployment (only applies to primary cluster)"
+  type        = bool
+  default     = false
+}
+
 variable "global_replication_group_id" {
-  description = "(Optional) The ID of the global replication group to which this replication group should belong"
+  description = "(Optional) The ID of the global replication group to which this replication group should belong. If not provided, will be auto-generated"
+  type        = string
+  default     = null
+}
+
+variable "global_deletion_protection" {
+  description = "Whether deletion protection is enabled for the global replication group"
+  type        = bool
+  default     = true
+}
+
+variable "is_secondary_region" {
+  description = "Whether this is a secondary region in a global replication setup (attaches to existing global replication group)"
+  type        = bool
+  default     = false
+}
+
+variable "use_existing_as_global_primary" {
+  description = "Whether to use existing cluster as primary for global replication group (links existing cluster instead of creating new)"
+  type        = bool
+  default     = false
+}
+
+variable "source_replication_group_id" {
+  description = "ARN of existing replication group to use as primary for global replication group (only used when use_existing_as_global_primary is true)"
   type        = string
   default     = null
 }
@@ -245,7 +275,13 @@ variable "snapshot_arns" {
 }
 
 variable "snapshot_name" {
-  description = "(Optional) Name of a snapshot from which to restore data into the new node group. Changing this forces a new resource"
+  description = "(Optional) The name of a snapshot from which to restore data into the new node group"
+  type        = string
+  default     = null
+}
+
+variable "snapshot_arn" {
+  description = "(Optional) The ARN of a snapshot from which to restore data into the new node group (for cross-region or cross-account restoration)"
   type        = string
   default     = null
 }

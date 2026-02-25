@@ -127,8 +127,38 @@ variable "preferred_cache_cluster_azs" {
 }
 
 # Global Replication
+variable "create_global_replication_group" {
+  description = "Enable Global Replication Group for multi-region deployment"
+  type        = bool
+  default     = false
+}
+
 variable "global_replication_group_id" {
-  description = "Global replication group ID"
+  description = "Global replication group ID for multi-region Redis"
+  type        = string
+  default     = null
+}
+
+variable "global_deletion_protection" {
+  description = "Enable deletion protection for global replication group"
+  type        = bool
+  default     = true
+}
+
+variable "is_secondary_region" {
+  description = "Whether this is a secondary region in a global replication setup (attaches to existing global replication group)"
+  type        = bool
+  default     = false
+}
+
+variable "use_existing_as_global_primary" {
+  description = "Whether to use existing cluster as primary for global replication group (links existing cluster instead of creating new)"
+  type        = bool
+  default     = false
+}
+
+variable "source_replication_group_id" {
+  description = "ARN of existing replication group to use as primary for global replication group (only used when use_existing_as_global_primary is true)"
   type        = string
   default     = null
 }

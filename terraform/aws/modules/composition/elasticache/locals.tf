@@ -14,7 +14,10 @@ locals {
 
   elasticache_subnet_group_name = var.elasticache_subnet_group_name != null ? var.elasticache_subnet_group_name : "${local.name_prefix}-subnet-group"
 
-  security_group_name = var.security_group_name != null ? var.security_group_name : "${local.name_prefix}-sg"
+  security_group_name        = var.security_group_name != null ? var.security_group_name : "${local.name_prefix}-sg"
   security_group_description = var.security_group_description != null ? var.security_group_description : "Security group for ${var.project_name} ${var.environment} ElastiCache"
 
+  # Global Replication Configuration
+  global_replication_group_id = var.global_replication_group_id != null ? var.global_replication_group_id : "${local.name_prefix}-global"
+  is_secondary_cluster        = var.is_secondary_region
 }
