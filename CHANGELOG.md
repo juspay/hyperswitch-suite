@@ -1130,8 +1130,6 @@ This version of the Hyperswitch SDK is compatible with the following versions of
 | Card Vault          | [v0.7.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.7.0)    |
 | Key Manager         | [v0.1.12](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.12)    |
 
----
-
 **Full Changelog**: https://github.com/juspay/hyperswitch-web/compare/v0.128.0...v0.129.0
 
 ### [Hyperswitch Encryption Service v0.1.12 (2026-01-22)](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.12)
