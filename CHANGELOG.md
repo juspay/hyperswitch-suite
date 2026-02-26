@@ -4,7 +4,7 @@ All notable changes to Hyperswitch will be documented here.
 
 ## Hyperswitch Suite v1.15
 
-### [Hyperswitch App Server v1.121.0 (2025-2-24)](https://github.com/juspay/hyperswitch/releases/tag/v1.121.0)
+### [Hyperswitch App Server v1.121.0 (2026-2-24)](https://github.com/juspay/hyperswitch/releases/tag/v1.121.0)
 
 #### Docker Images
 
