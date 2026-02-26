@@ -1098,6 +1098,42 @@ This version of the Hyperswitch Control Center is compatible with the following 
 
 **Full Changelog**: https://github.com/juspay/hyperswitch-control-center/compare/v1.38.1...v1.38.2
 
+### [Hyperswitch Web v0.129.0 (2026-02-26)](https://github.com/juspay/hyperswitch-web/releases/tag/v0.129.0)
+
+#### Features
+- feat: added get intent call for v2 ([#1207](https://github.com/juspay/hyperswitch-web/pull/1207))
+- feat: add support for givex ([#1333](https://github.com/juspay/hyperswitch-web/pull/1333))
+- feat: add check balance and apply api call ([#1335](https://github.com/juspay/hyperswitch-web/pull/1335))
+- feat: custom TnC for all payment methods ([#1336](https://github.com/juspay/hyperswitch-web/pull/1336))
+- feat: gift card form ([#1342](https://github.com/juspay/hyperswitch-web/pull/1342))
+- feat: split payments ([#1344](https://github.com/juspay/hyperswitch-web/pull/1344))
+- feat: logger for payment element options ([#1322](https://github.com/juspay/hyperswitch-web/pull/1322))
+- feat: payment methods management changes ([#1353](https://github.com/juspay/hyperswitch-web/pull/1353))
+
+#### Fixes
+- fix: correct headers for confirm call v2 ([#1340](https://github.com/juspay/hyperswitch-web/pull/1340))
+
+#### Refactor
+- refactor: updated security check condition to throw integration error ([#1350](https://github.com/juspay/hyperswitch-web/pull/1350))
+
+#### CI/CD
+- release: v0.128.0 ([#1349](https://github.com/juspay/hyperswitch-web/pull/1349))
+
+#### Compatibility
+This version of the Hyperswitch SDK is compatible with the following versions of other components:
+
+| Component           | Version |
+|---------------------|---------|
+| Control Center      | [v1.38.2](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.38.2)  |
+| App Server          | [v1.121.0](https://github.com/juspay/hyperswitch/releases/tag/v1.121.0)    |
+| WooCommerce Plugin  | [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)    |
+| Card Vault          | [v0.7.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.7.0)    |
+| Key Manager         | [v0.1.12](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.12)    |
+
+---
+
+**Full Changelog**: https://github.com/juspay/hyperswitch-web/compare/v0.128.0...v0.129.0
+
 ### [Hyperswitch Encryption Service v0.1.12 (2026-01-22)](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.12)
 
 #### Refactors
