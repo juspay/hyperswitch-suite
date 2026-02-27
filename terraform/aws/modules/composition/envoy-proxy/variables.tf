@@ -536,6 +536,12 @@ variable "internal_loadbalancer_dns" {
   default     = ""
 }
 
+variable "eks_cluster_name" {
+  description = "EKS cluster name for Envoy upstream (for envoy.yaml templating). If not provided, defaults to '<environment>-<project_name>-cluster-01'"
+  type        = string
+  default     = ""
+}
+
 variable "enable_detailed_monitoring" {
   description = "Enable detailed CloudWatch monitoring (ignored if use_existing_launch_template = true)"
   type        = bool

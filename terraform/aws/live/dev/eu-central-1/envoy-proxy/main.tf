@@ -54,6 +54,7 @@ module "envoy_proxy" {
   # Template variables for envoy.yaml
   hyperswitch_cloudfront_dns = var.hyperswitch_cloudfront_dns
   internal_loadbalancer_dns  = var.internal_loadbalancer_dns
+  eks_cluster_name           = var.eks_cluster_name
 
   # S3 Logs Bucket - create or use existing
   create_logs_bucket = var.create_logs_bucket

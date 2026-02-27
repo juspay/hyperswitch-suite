@@ -21,6 +21,9 @@ locals {
     }
   )
 
+  # Actual EKS cluster name to use (variable takes precedence over computed value)
+  actual_eks_cluster_name = var.eks_cluster_name != "" ? var.eks_cluster_name : "${var.environment}-${var.project_name}-cluster-01"
+
   # Envoy configuration templating - replace placeholders with actual values
   # Supports: {{hyperswitch_cloudfront_dns}}, {{internal_loadbalancer_dns}}, {{eks_cluster_name}}
   envoy_config_content = replace(
@@ -31,7 +34,7 @@ locals {
       ),
       "{{internal_loadbalancer_dns}}", var.internal_loadbalancer_dns
     ),
-    "{{eks_cluster_name}}", "${var.environment}-${var.project_name}-cluster"
+    "{{eks_cluster_name}}", local.actual_eks_cluster_name
   )
 
   # Logs bucket selection - use created or existing

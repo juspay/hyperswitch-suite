@@ -39,7 +39,7 @@ variable "lb_subnet_ids" {
 variable "alb_http_listener_port" {
   description = "Port for ALB HTTP listener"
   type        = number
-  default     = 80  # Dev uses standard HTTP port
+  default     = 80 # Dev uses standard HTTP port
 }
 
 variable "alb_https_listener_port" {
@@ -51,7 +51,7 @@ variable "alb_https_listener_port" {
 variable "envoy_traffic_port" {
   description = "Port where Envoy instances listen for traffic from ALB (target group port) - ALB forwards traffic to this port"
   type        = number
-  default     = 80  # Dev uses port 80
+  default     = 80 # Dev uses port 80
 }
 
 
@@ -241,6 +241,12 @@ variable "hyperswitch_cloudfront_dns" {
 
 variable "internal_loadbalancer_dns" {
   description = "Internal ALB DNS (for envoy.yaml templating)"
+  type        = string
+  default     = ""
+}
+
+variable "eks_cluster_name" {
+  description = "EKS cluster name for Envoy upstream (for envoy.yaml templating). If not provided, defaults to '<environment>-<project_name>-cluster'"
   type        = string
   default     = ""
 }

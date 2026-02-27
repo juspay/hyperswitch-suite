@@ -317,11 +317,12 @@ envoy_config_filename = "envoy.yaml"
 
 hyperswitch_cloudfront_dns = "dXXXXXXXXXXXXX.cloudfront.net"  # Replace with your CloudFront distribution DNS
 internal_loadbalancer_dns  = "your-internal-alb-XXXXXXXXXX.eu-central-1.elb.amazonaws.com"  # Replace with your internal ALB DNS
+eks_cluster_name = "dev-hyperswitch-cluster-01"  
 
 # Template placeholders in envoy.yaml:
 # {{hyperswitch_cloudfront_dns}} - Replaced with above value
 # {{internal_loadbalancer_dns}}  - Replaced with above value
-# {{eks_cluster_name}}           - Replaced with "dev-hyperswitch-cluster"
+# {{eks_cluster_name}}           - Replaced with eks_cluster_name variable (or defaults to "dev-hyperswitch-cluster-01")
 
 #=======================================================================
 # LOAD BALANCER CONFIGURATION
