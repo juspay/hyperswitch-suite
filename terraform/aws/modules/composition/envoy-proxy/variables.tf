@@ -536,6 +536,12 @@ variable "internal_loadbalancer_dns" {
   default     = ""
 }
 
+variable "eks_cluster_name" {
+  description = "EKS cluster name (for envoy.yaml templating)"
+  type        = string
+  default     = ""
+}
+
 variable "enable_detailed_monitoring" {
   description = "Enable detailed CloudWatch monitoring (ignored if use_existing_launch_template = true)"
   type        = bool
