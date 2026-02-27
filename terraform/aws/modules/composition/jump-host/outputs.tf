@@ -91,21 +91,22 @@ output "connection_guide" {
     1. Connect to External Jump Host (via Session Manager):
        aws ssm start-session --target ${module.external_jump_instance.id}
 
-    ${var.enable_internal_jump_ssm ? "2. Connect to Internal Jump Host (via Session Manager):\n       aws ssm start-session --target ${module.internal_jump_instance.id}\n\n    3. From External Jump, SSH to Internal Jump (alternative method):\n       ssh internal-jump\n       (SSH key is automatically configured in ec2-user's home directory)\n\n    4. Manual SSH to Internal Jump (if needed):\n       ssh -i /home/ec2-user/.ssh/internal_jump_key ec2-user@${module.internal_jump_instance.private_ip}" : "2. From External Jump, SSH to Internal Jump:\n       ssh internal-jump\n       (SSH key is automatically configured in ec2-user's home directory)\n\n    3. Manual SSH to Internal Jump (if needed):\n       ssh -i /home/ec2-user/.ssh/internal_jump_key ec2-user@${module.internal_jump_instance.private_ip}"}
+    ${var.enable_internal_jump_ssm ? "2. Connect to Internal Jump Host (via Session Manager):\n       aws ssm start-session --target ${module.internal_jump_instance.id}\n\n    a. From External Jump, SSH to Internal Jump (alternative method):\n       ssh internal-jump\n       (SSH key is automatically configured in ${var.ssm_os_username}'s home directory)\n\n    b. Manual SSH to Internal Jump (if needed):\n       ssh -i /home/${var.ssm_os_username}/.ssh/internal_jump_key ec2-user@${module.internal_jump_instance.private_ip}" : "2. From External Jump, SSH to Internal Jump:\n       ssh internal-jump\n       (SSH key is automatically configured in ${var.ssm_os_username}'s home directory)\n\n    a. Manual SSH to Internal Jump (if needed):\n       ssh -i /home/${var.ssm_os_username}/.ssh/internal_jump_key ec2-user@${module.internal_jump_instance.private_ip}"}
 
-    ${var.enable_internal_jump_ssm ? "5." : "4."} Retrieve Internal Jump SSH Key (from your local machine):
+    3. Retrieve Internal Jump SSH Key (from your local machine):
        ${module.internal_jump_ssh_key_parameter.ssm_parameter_name}
        aws ssm get-parameter --name ${module.internal_jump_ssh_key_parameter.ssm_parameter_name} --with-decryption --query 'Parameter.Value' --output text > internal_jump_key.pem
        chmod 400 internal_jump_key.pem
 
-    ${var.enable_internal_jump_ssm ? "6." : "5."} View Logs:
+    4. View Logs:
        External: aws logs tail ${aws_cloudwatch_log_group.jump_host["external"].name} --follow
        Internal: aws logs tail ${aws_cloudwatch_log_group.jump_host["internal"].name} --follow
 
     IMPORTANT NOTES:
     - External Jump: Accessible via Session Manager (IAM-based auth)
+    - Default user: ${var.ssm_os_username} (Amazon Linux 2023 via SSM)
     - Internal Jump: ${var.enable_internal_jump_ssm ? "Accessible via Session Manager AND SSH from external jump" : "NO Session Manager access (must SSH from external jump)"}
-    - Default user: ec2-user (Amazon Linux 2)
+    - Default user: ec2-user (Amazon Linux 2023)
     - SSH key stored in SSM Parameter Store: ${module.internal_jump_ssh_key_parameter.ssm_parameter_name}
 
     Prerequisites:
