@@ -77,9 +77,9 @@ resource "aws_default_network_acl" "default" {
 
 # Default security group - restrict by default
 resource "aws_default_security_group" "default" {
-  count = var.manage_default_security_group ? 1 : 0
+  count = var.create && var.manage_default_security_group ? 1 : 0
 
-  vpc_id = aws_vpc.main.id
+  vpc_id = aws_vpc.main[0].id
 
   tags = merge(
     var.tags,
@@ -94,9 +94,9 @@ resource "aws_default_security_group" "default" {
 
 # Default route table
 resource "aws_default_route_table" "default" {
-  count = var.manage_default_route_table ? 1 : 0
+  count = var.create && var.manage_default_route_table ? 1 : 0
 
-  default_route_table_id = aws_vpc.main.default_route_table_id
+  default_route_table_id = aws_vpc.main[0].default_route_table_id
 
   tags = merge(
     var.tags,
