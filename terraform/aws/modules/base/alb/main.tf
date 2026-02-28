@@ -1,4 +1,6 @@
 resource "aws_lb" "this" {
+  count = var.create ? 1 : 0
+
   name               = var.name
   internal           = var.internal
   load_balancer_type = var.load_balancer_type

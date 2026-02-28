@@ -1,3 +1,9 @@
+variable "create" {
+  description = "Controls if resources should be created"
+  type        = bool
+  default     = true
+}
+
 variable "name" {
   description = "Name of the load balancer"
   type        = string
