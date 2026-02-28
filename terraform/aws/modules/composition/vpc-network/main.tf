@@ -45,7 +45,7 @@ module "vpc" {
 ###################
 module "external_incoming_subnets" {
   source = "../../base/subnet"
-  count  = length(var.external_incoming_subnet_cidrs)
+  count  = var.create ? length(var.external_incoming_subnet_cidrs) : 0
 
   vpc_id            = module.vpc.vpc_id
   subnet_name       = "${var.vpc_name}-external-incoming-${var.availability_zones[count.index]}"
@@ -79,7 +79,7 @@ module "external_incoming_subnets" {
 ###################
 module "management_subnets" {
   source = "../../base/subnet"
-  count  = length(var.management_subnet_cidrs)
+  count  = var.create ? length(var.management_subnet_cidrs) : 0
 
   vpc_id            = module.vpc.vpc_id
   subnet_name       = "${var.vpc_name}-management-${var.availability_zones[count.index]}"
@@ -108,7 +108,7 @@ module "management_subnets" {
 ###################
 module "eks_workers_subnets" {
   source = "../../base/subnet"
-  count  = length(var.eks_workers_subnet_cidrs)
+  count  = var.create ? length(var.eks_workers_subnet_cidrs) : 0
 
   vpc_id            = module.vpc.vpc_id
   subnet_name       = "${var.vpc_name}-eks-workers-${var.availability_zones[count.index]}"
@@ -136,7 +136,7 @@ module "eks_workers_subnets" {
 ###################
 module "eks_control_plane_subnets" {
   source = "../../base/subnet"
-  count  = length(var.eks_control_plane_subnet_cidrs)
+  count  = var.create ? length(var.eks_control_plane_subnet_cidrs) : 0
 
   vpc_id            = module.vpc.vpc_id
   subnet_name       = "${var.vpc_name}-eks-control-plane-${var.availability_zones[count.index]}"
@@ -163,7 +163,7 @@ module "eks_control_plane_subnets" {
 ###################
 module "database_subnets" {
   source = "../../base/subnet"
-  count  = length(var.database_subnet_cidrs)
+  count  = var.create ? length(var.database_subnet_cidrs) : 0
 
   vpc_id            = module.vpc.vpc_id
   subnet_name       = "${var.vpc_name}-database-${var.availability_zones[count.index]}"
@@ -190,7 +190,7 @@ module "database_subnets" {
 ###################
 module "locker_database_subnets" {
   source = "../../base/subnet"
-  count  = length(var.locker_database_subnet_cidrs)
+  count  = var.create ? length(var.locker_database_subnet_cidrs) : 0
 
   vpc_id            = module.vpc.vpc_id
   subnet_name       = "${var.vpc_name}-locker-database-${var.availability_zones[count.index]}"
@@ -218,7 +218,7 @@ module "locker_database_subnets" {
 ###################
 module "locker_server_subnets" {
   source = "../../base/subnet"
-  count  = length(var.locker_server_subnet_cidrs)
+  count  = var.create ? length(var.locker_server_subnet_cidrs) : 0
 
   vpc_id            = module.vpc.vpc_id
   subnet_name       = "${var.vpc_name}-locker-server-${var.availability_zones[count.index]}"
@@ -246,7 +246,7 @@ module "locker_server_subnets" {
 ###################
 module "elasticache_subnets" {
   source = "../../base/subnet"
-  count  = length(var.elasticache_subnet_cidrs)
+  count  = var.create ? length(var.elasticache_subnet_cidrs) : 0
 
   vpc_id            = module.vpc.vpc_id
   subnet_name       = "${var.vpc_name}-elasticache-${var.availability_zones[count.index]}"
@@ -273,7 +273,7 @@ module "elasticache_subnets" {
 ###################
 module "data_stack_subnets" {
   source = "../../base/subnet"
-  count  = length(var.data_stack_subnet_cidrs)
+  count  = var.create ? length(var.data_stack_subnet_cidrs) : 0
 
   vpc_id            = module.vpc.vpc_id
   subnet_name       = "${var.vpc_name}-data-stack-${var.availability_zones[count.index]}"
@@ -300,7 +300,7 @@ module "data_stack_subnets" {
 ###################
 module "incoming_envoy_subnets" {
   source = "../../base/subnet"
-  count  = length(var.incoming_envoy_subnet_cidrs)
+  count  = var.create ? length(var.incoming_envoy_subnet_cidrs) : 0
 
   vpc_id            = module.vpc.vpc_id
   subnet_name       = "${var.vpc_name}-incoming-envoy-${var.availability_zones[count.index]}"
@@ -327,7 +327,7 @@ module "incoming_envoy_subnets" {
 ###################
 module "outgoing_proxy_subnets" {
   source = "../../base/subnet"
-  count  = length(var.outgoing_proxy_subnet_cidrs)
+  count  = var.create ? length(var.outgoing_proxy_subnet_cidrs) : 0
 
   vpc_id            = module.vpc.vpc_id
   subnet_name       = "${var.vpc_name}-outgoing-proxy-${var.availability_zones[count.index]}"
@@ -354,7 +354,7 @@ module "outgoing_proxy_subnets" {
 ###################
 module "utils_subnets" {
   source = "../../base/subnet"
-  count  = length(var.utils_subnet_cidrs)
+  count  = var.create ? length(var.utils_subnet_cidrs) : 0
 
   vpc_id            = module.vpc.vpc_id
   subnet_name       = "${var.vpc_name}-utils-${var.availability_zones[count.index]}"
@@ -381,7 +381,7 @@ module "utils_subnets" {
 ###################
 module "lambda_subnets" {
   source = "../../base/subnet"
-  count  = length(var.lambda_subnet_cidrs)
+  count  = var.create ? length(var.lambda_subnet_cidrs) : 0
 
   vpc_id            = module.vpc.vpc_id
   subnet_name       = "${var.vpc_name}-lambda-${var.availability_zones[count.index]}"
@@ -408,7 +408,7 @@ module "lambda_subnets" {
 ###################
 module "custom_subnets" {
   source   = "../../base/subnet"
-  for_each = var.custom_subnet_groups
+  for_each = var.create ? var.custom_subnet_groups : {}
 
   vpc_id            = module.vpc.vpc_id
   subnet_name       = "${var.vpc_name}-${each.key}-${each.value.availability_zone}"
