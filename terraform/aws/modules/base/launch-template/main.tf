@@ -6,6 +6,8 @@ locals {
 }
 
 resource "aws_launch_template" "this" {
+  count = var.create ? 1 : 0
+
   name_prefix            = "${var.name}-"
   description            = var.description
   image_id               = var.ami_id
