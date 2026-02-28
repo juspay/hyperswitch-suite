@@ -1,6 +1,6 @@
 # ElastiCache Global Replication Group
 resource "aws_elasticache_global_replication_group" "main" {
-  count = var.create_global_replication_group && !local.is_secondary_cluster ? 1 : 0
+  count = var.create && var.create_global_replication_group && !local.is_secondary_cluster ? 1 : 0
 
   global_replication_group_id_suffix = replace(local.global_replication_group_id, "${local.name_prefix}-", "")
   primary_replication_group_id       = var.use_existing_as_global_primary ? var.source_replication_group_id : aws_elasticache_replication_group.main.id
@@ -20,7 +20,7 @@ resource "aws_elasticache_global_replication_group" "main" {
 
 # ElastiCache Subnet Group
 resource "aws_elasticache_subnet_group" "elasticache_subnet_group" {
-  count = var.create_elasticache_subnet_group ? 1 : 0
+  count = var.create && var.create_elasticache_subnet_group ? 1 : 0
 
   name        = local.elasticache_subnet_group_name
   subnet_ids  = var.subnet_ids
@@ -33,7 +33,7 @@ resource "aws_elasticache_subnet_group" "elasticache_subnet_group" {
 
 # Security Group for ElastiCache
 resource "aws_security_group" "elasticache_sg" {
-  count = var.create_security_group ? 1 : 0
+  count = var.create && var.create_security_group ? 1 : 0
 
   name                   = local.security_group_name
   description            = local.security_group_description
