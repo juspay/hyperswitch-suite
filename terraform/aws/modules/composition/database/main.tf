@@ -6,7 +6,7 @@ data "aws_region" "current" {}
 # This resource creates the global cluster that spans multiple regions
 # Only created when create_global_cluster is true and this is not a secondary cluster
 resource "aws_rds_global_cluster" "main" {
-  count = var.create_global_cluster && !local.is_secondary_cluster ? 1 : 0
+  count = var.create && var.create_global_cluster && !local.is_secondary_cluster ? 1 : 0
 
   global_cluster_identifier    = local.global_cluster_identifier
   source_db_cluster_identifier = var.use_existing_as_global_primary ? var.source_db_cluster_identifier : null
@@ -34,7 +34,7 @@ resource "aws_rds_global_cluster" "main" {
 
 # DB Subnet Group
 resource "aws_db_subnet_group" "main" {
-  count = var.create_db_subnet_group ? 1 : 0
+  count = var.create && var.create_db_subnet_group ? 1 : 0
 
   name        = local.db_subnet_group_name
   subnet_ids  = var.subnet_ids
@@ -47,7 +47,7 @@ resource "aws_db_subnet_group" "main" {
 
 # Security Group for RDS
 resource "aws_security_group" "rds_sg" {
-  count = var.create_security_group ? 1 : 0
+  count = var.create && var.create_security_group ? 1 : 0
 
   name                   = local.security_group_name
   description            = local.security_group_description
@@ -61,6 +61,7 @@ resource "aws_security_group" "rds_sg" {
 
 # RDS Cluster
 resource "aws_rds_cluster" "main" {
+  count = var.create ? 1 : 0
   # Core Configuration
   cluster_identifier        = local.cluster_identifier
   cluster_identifier_prefix = var.cluster_identifier_prefix
