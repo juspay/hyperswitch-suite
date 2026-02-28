@@ -1,4 +1,6 @@
 resource "aws_vpc" "main" {
+  count = var.create ? 1 : 0
+
   cidr_block = var.vpc_cidr
 
   enable_dns_hostnames             = var.enable_dns_hostnames
@@ -20,17 +22,17 @@ resource "aws_vpc" "main" {
 
 # Secondary CIDR blocks for pod networking, expansion, etc.
 resource "aws_vpc_ipv4_cidr_block_association" "secondary" {
-  count = length(var.secondary_cidr_blocks)
+  count = var.create ? length(var.secondary_cidr_blocks) : 0
 
-  vpc_id     = aws_vpc.main.id
+  vpc_id     = aws_vpc.main[0].id
   cidr_block = var.secondary_cidr_blocks[count.index]
 }
 
 # Internet Gateway
 resource "aws_internet_gateway" "main" {
-  count = var.create_internet_gateway ? 1 : 0
+  count = var.create && var.create_internet_gateway ? 1 : 0
 
-  vpc_id = aws_vpc.main.id
+  vpc_id = aws_vpc.main[0].id
 
   tags = merge(
     var.tags,
@@ -42,7 +44,7 @@ resource "aws_internet_gateway" "main" {
 
 # Elastic IPs for NAT Gateways
 resource "aws_eip" "nat" {
-  count = var.enable_nat_gateway ? var.nat_gateway_count : 0
+  count = var.create && var.enable_nat_gateway ? var.nat_gateway_count : 0
 
   domain = "vpc"
 
