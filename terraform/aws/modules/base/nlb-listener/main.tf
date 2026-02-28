@@ -1,4 +1,6 @@
 resource "aws_lb_listener" "this" {
+  count = var.create ? 1 : 0
+
   load_balancer_arn = var.load_balancer_arn
   port              = var.port
   protocol          = var.protocol
