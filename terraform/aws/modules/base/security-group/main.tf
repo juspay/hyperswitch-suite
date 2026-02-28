@@ -1,4 +1,6 @@
 resource "aws_security_group" "this" {
+  count = var.create ? 1 : 0
+
   name                   = var.name
   description            = var.description
   vpc_id                 = var.vpc_id
@@ -23,9 +25,9 @@ resource "aws_security_group" "this" {
 
 # Ingress rules
 resource "aws_vpc_security_group_ingress_rule" "this" {
-  for_each = { for idx, rule in var.ingress_rules : idx => rule }
+  for_each = var.create ? { for idx, rule in var.ingress_rules : idx => rule } : {}
 
-  security_group_id = aws_security_group.this.id
+  security_group_id = aws_security_group.this[0].id
   description       = each.value.description
   from_port         = each.value.from_port
   to_port           = each.value.to_port
@@ -40,9 +42,9 @@ resource "aws_vpc_security_group_ingress_rule" "this" {
 
 # Egress rules
 resource "aws_vpc_security_group_egress_rule" "this" {
-  for_each = { for idx, rule in var.egress_rules : idx => rule }
+  for_each = var.create ? { for idx, rule in var.egress_rules : idx => rule } : {}
 
-  security_group_id = aws_security_group.this.id
+  security_group_id = aws_security_group.this[0].id
   description       = each.value.description
   from_port         = each.value.from_port
   to_port           = each.value.to_port
