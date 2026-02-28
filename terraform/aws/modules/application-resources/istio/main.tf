@@ -37,7 +37,7 @@ provider "helm" {
 # ============================================================================
 
 resource "aws_security_group" "lb_security_group" {
-  count = var.create_lb_security_group ? 1 : 0
+  count = var.create && var.create_lb_security_group ? 1 : 0
 
   name        = "${local.name_prefix}-lb-sg"
   description = "Security group for Istio Gateway Load Balancer"
