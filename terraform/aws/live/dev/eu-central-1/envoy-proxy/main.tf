@@ -55,6 +55,11 @@ module "envoy_proxy" {
   hyperswitch_cloudfront_dns = var.hyperswitch_cloudfront_dns
   internal_loadbalancer_dns  = var.internal_loadbalancer_dns
 
+  # Cluster Migration Configuration
+  enable_cluster_migration              = var.enable_cluster_migration
+  new_cluster_internal_loadbalancer_dns = var.new_cluster_internal_loadbalancer_dns
+  cluster_migration_weights             = var.cluster_migration_weights
+
   # S3 Logs Bucket - create or use existing
   create_logs_bucket = var.create_logs_bucket
   logs_bucket_name   = var.logs_bucket_name
