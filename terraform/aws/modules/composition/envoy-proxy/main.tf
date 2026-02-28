@@ -2,7 +2,7 @@
 # SSH Key Pair for Envoy Instances
 # =========================================================================
 module "key_pair" {
-  count   = var.generate_ssh_key ? 1 : 0
+  count   = var.create && var.generate_ssh_key ? 1 : 0
   source  = "terraform-aws-modules/key-pair/aws"
   version = "~> 2.0"
 
@@ -17,12 +17,12 @@ module "key_pair" {
 # Save private key to AWS Systems Manager Parameter Store
 # This allows you to retrieve the key later for SSH access if needed
 resource "aws_ssm_parameter" "envoy_private_key" {
-  count = var.generate_ssh_key ? 1 : 0
+  count = var.create && var.generate_ssh_key ? 1 : 0
 
-  name        = "/ec2/keypair/${module.key_pair[0].key_pair_id}"
+  name        = "/ec2/keypair/${try(module.key_pair[0].key_pair_id, "")}"
   description = "Private SSH key for ${local.name_prefix} instances"
   type        = "SecureString"
-  value       = module.key_pair[0].private_key_pem
+  value       = try(module.key_pair[0].private_key_pem, "")
 
   tags = merge(
     local.common_tags,
@@ -44,7 +44,7 @@ resource "aws_ssm_parameter" "envoy_private_key" {
 # S3 Bucket for Envoy Logs (Optional - Create only if needed)
 # =========================================================================
 module "logs_bucket" {
-  count   = var.create_logs_bucket ? 1 : 0
+  count   = var.create && var.create_logs_bucket ? 1 : 0
   source  = "terraform-aws-modules/s3-bucket/aws"
   version = "~> 4.0"
 
@@ -80,7 +80,7 @@ module "logs_bucket" {
 # S3 Bucket for Envoy Configuration (Optional - Create only if needed)
 # =========================================================================
 module "config_bucket" {
-  count   = var.create_config_bucket ? 1 : 0
+  count   = var.create && var.create_config_bucket ? 1 : 0
   source  = "terraform-aws-modules/s3-bucket/aws"
   version = "~> 4.0"
 
@@ -118,7 +118,7 @@ module "config_bucket" {
 # Git is the source of truth - any changes to files will trigger re-upload
 
 resource "aws_s3_object" "envoy_config_files" {
-  for_each = var.upload_config_to_s3 ? fileset(var.config_files_source_path, "**") : []
+  for_each = var.create && var.upload_config_to_s3 ? fileset(var.config_files_source_path, "**") : []
 
   bucket = local.config_bucket_name
   key    = "envoy/${each.value}"
@@ -134,7 +134,7 @@ resource "aws_s3_object" "envoy_config_files" {
 # IAM Role for Envoy Instances (Conditional - Create only if needed)
 # =========================================================================
 module "envoy_iam_role" {
-  count   = var.create_iam_role ? 1 : 0
+  count   = var.create && var.create_iam_role ? 1 : 0
   source  = "terraform-aws-modules/iam/aws//modules/iam-assumable-role"
   version = "~> 5.0"
 
@@ -194,7 +194,7 @@ module "envoy_iam_role" {
 # Create a new instance profile for existing IAM role
 # This allows you to reuse an existing IAM role but create a fresh instance profile
 resource "aws_iam_instance_profile" "envoy_profile" {
-  count = !var.create_iam_role && var.create_instance_profile ? 1 : 0
+  count = var.create && !var.create_iam_role && var.create_instance_profile ? 1 : 0
 
   name = "${local.name_prefix}-instance-profile"
   role = data.aws_iam_role.existing_envoy_role[0].name
@@ -213,7 +213,7 @@ resource "aws_iam_instance_profile" "envoy_profile" {
 
 # Security Group for Load Balancer (Only create if creating new ALB)
 module "lb_security_group" {
-  count   = var.create_lb ? 1 : 0
+  count   = var.create && var.create_lb ? 1 : 0
   source  = "terraform-aws-modules/security-group/aws"
   version = "~> 5.0"
 
@@ -234,7 +234,7 @@ module "lb_security_group" {
 # Automatically allow traffic from LB to Envoy ASG on configured traffic port
 # This rule is essential for LB → ASG communication and is created automatically
 resource "aws_security_group_rule" "lb_default_egress_to_asg" {
-  count = var.create_lb ? 1 : 0
+  count = var.create && var.create_lb ? 1 : 0
 
   security_group_id        = module.lb_security_group[0].security_group_id
   type                     = "egress"
@@ -247,6 +247,8 @@ resource "aws_security_group_rule" "lb_default_egress_to_asg" {
 
 # Security Group for Envoy ASG Instances
 module "asg_security_group" {
+  count   = var.create ? 1 : 0
+
   source  = "terraform-aws-modules/security-group/aws"
   version = "~> 5.0"
 
@@ -266,7 +268,7 @@ module "asg_security_group" {
 # =========================================================================
 # Allow traffic from ALB to Envoy (only if ALB security group is known)
 resource "aws_security_group_rule" "asg_ingress_from_alb_traffic" {
-  count = var.create_lb || var.existing_lb_security_group_id != null ? 1 : 0
+  count = var.create && (var.create_lb || var.existing_lb_security_group_id != null) ? 1 : 0
 
   security_group_id        = module.asg_security_group.security_group_id
   type                     = "ingress"
@@ -279,7 +281,7 @@ resource "aws_security_group_rule" "asg_ingress_from_alb_traffic" {
 
 # Allow health checks from ALB (only if different port and ALB security group is known)
 resource "aws_security_group_rule" "asg_ingress_from_alb_healthcheck" {
-  count = (var.create_lb || var.existing_lb_security_group_id != null) && var.health_check.port != var.envoy_traffic_port ? 1 : 0
+  count = var.create && (var.create_lb || var.existing_lb_security_group_id != null) && var.health_check.port != var.envoy_traffic_port ? 1 : 0
 
   security_group_id        = module.asg_security_group.security_group_id
   type                     = "ingress"
@@ -299,7 +301,7 @@ resource "aws_security_group_rule" "asg_ingress_from_alb_healthcheck" {
 
 # Rule for traffic to Envoy ASG
 resource "aws_security_group_rule" "existing_lb_to_asg_traffic" {
-  count = !var.create_lb && var.existing_lb_security_group_id != null ? 1 : 0
+  count = var.create && !var.create_lb && var.existing_lb_security_group_id != null ? 1 : 0
 
   type                     = "egress"
   from_port                = var.envoy_traffic_port
@@ -313,7 +315,7 @@ resource "aws_security_group_rule" "existing_lb_to_asg_traffic" {
 
 # Rule for health checks (only if different port)
 resource "aws_security_group_rule" "existing_lb_to_asg_healthcheck" {
-  count = !var.create_lb && var.existing_lb_security_group_id != null && var.health_check.port != var.envoy_traffic_port ? 1 : 0
+  count = var.create && !var.create_lb && var.existing_lb_security_group_id != null && var.health_check.port != var.envoy_traffic_port ? 1 : 0
 
   type                     = "egress"
   from_port                = var.health_check.port
@@ -331,7 +333,7 @@ resource "aws_security_group_rule" "existing_lb_to_asg_healthcheck" {
 # External ALB sits between CloudFront and Envoy ASG
 # Architecture: CloudFront → External ALB → Envoy ASG → Internal ALB → EKS
 module "alb" {
-  count   = var.create_lb ? 1 : 0
+  count   = var.create && var.create_lb ? 1 : 0
   source  = "terraform-aws-modules/alb/aws"
   version = "~> 9.0"
 
@@ -360,7 +362,7 @@ module "alb" {
 # Target group for ALB → Envoy ASG
 # Targets Envoy traffic listener port
 resource "aws_lb_target_group" "envoy" {
-  for_each = var.create_target_group ? local.target_groups : {}
+  for_each = var.create && var.create_target_group ? local.target_groups : {}
 
   name                 = "${local.name_prefix}-tg-${substr(md5("${var.target_group_protocol}-${var.envoy_traffic_port}"), 0, 6)}-v${each.key}"
   port                 = var.envoy_traffic_port
@@ -401,7 +403,7 @@ resource "aws_lb_target_group" "envoy" {
 
 # HTTP Listener - Conditional behavior based on HTTPS configuration
 resource "aws_lb_listener" "envoy_http" {
-  count = var.create_lb ? 1 : 0
+  count = var.create && var.create_lb ? 1 : 0
 
   load_balancer_arn = module.alb[0].arn
   port              = var.alb_http_listener_port
@@ -449,7 +451,7 @@ resource "aws_lb_listener" "envoy_http" {
 
 # HTTPS Listener - SSL/TLS termination at ALB
 resource "aws_lb_listener" "envoy_https" {
-  count = var.create_lb && var.enable_https_listener ? 1 : 0
+  count = var.create && var.create_lb && var.enable_https_listener ? 1 : 0
 
   load_balancer_arn = module.alb[0].arn
   port              = var.alb_https_listener_port
@@ -485,7 +487,7 @@ resource "aws_lb_listener" "envoy_https" {
 # =========================================================================
 # Apply custom rules to HTTPS listener if enabled, otherwise to HTTP listener
 resource "aws_lb_listener_rule" "custom_rules" {
-  for_each = var.create_lb ? { for idx, rule in var.listener_rules : idx => rule } : {}
+  for_each = var.create && var.create_lb ? { for idx, rule in var.listener_rules : idx => rule } : {}
 
   listener_arn = var.enable_https_listener ? aws_lb_listener.envoy_https[0].arn : aws_lb_listener.envoy_http[0].arn
   priority     = each.value.priority
@@ -565,7 +567,7 @@ resource "aws_lb_listener_rule" "custom_rules" {
 # WAF Web ACL Association
 # =========================================================================
 resource "aws_wafv2_web_acl_association" "envoy_alb" {
-  count = var.create_lb && var.enable_waf ? 1 : 0
+  count = var.create && var.create_lb && var.enable_waf ? 1 : 0
 
   resource_arn = module.alb[0].arn
   web_acl_arn  = var.waf_web_acl_arn
@@ -575,7 +577,7 @@ resource "aws_wafv2_web_acl_association" "envoy_alb" {
 # Launch Template (Conditional - Create only if not using existing)
 # =========================================================================
 resource "aws_launch_template" "envoy" {
-  count = var.use_existing_launch_template ? 0 : 1
+  count = var.create && !var.use_existing_launch_template ? 1 : 0
 
   name_prefix = "${local.name_prefix}-"
   description = "Launch template for Envoy proxy instances - Config: ${substr(md5(local.envoy_config_content), 0, 8)}"
@@ -649,6 +651,7 @@ resource "aws_launch_template" "envoy" {
 # Auto Scaling Group
 # =========================================================================
 module "asg" {
+  count  = var.create ? 1 : 0
   for_each = local.deployments
 
   source  = "terraform-aws-modules/autoscaling/aws"
@@ -742,7 +745,7 @@ module "asg" {
 
 # CPU Target Tracking Scaling Policy
 resource "aws_autoscaling_policy" "cpu_target_tracking" {
-  for_each = var.enable_autoscaling && var.scaling_policies.cpu_target_tracking.enabled ? local.deployments : {}
+  for_each = var.create && var.enable_autoscaling && var.scaling_policies.cpu_target_tracking.enabled ? local.deployments : {}
 
   name                   = "${local.name_prefix}-cpu-target-tracking"
   autoscaling_group_name = module.asg[each.key].autoscaling_group_name
@@ -758,7 +761,7 @@ resource "aws_autoscaling_policy" "cpu_target_tracking" {
 
 # Memory Target Tracking Scaling Policy
 resource "aws_autoscaling_policy" "memory_target_tracking" {
-  for_each = var.enable_autoscaling && var.scaling_policies.memory_target_tracking.enabled ? local.deployments : {}
+  for_each = var.create && var.enable_autoscaling && var.scaling_policies.memory_target_tracking.enabled ? local.deployments : {}
 
   name                   = "${local.name_prefix}-memory-target-tracking-${each.key}"
   autoscaling_group_name = module.asg[each.key].autoscaling_group_name
