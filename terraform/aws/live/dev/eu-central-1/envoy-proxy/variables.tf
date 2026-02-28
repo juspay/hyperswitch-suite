@@ -245,6 +245,35 @@ variable "internal_loadbalancer_dns" {
   default     = ""
 }
 
+# =========================================================================
+# EKS Cluster Migration Configuration
+# Enable weighted traffic routing between old and new EKS clusters
+# =========================================================================
+
+variable "enable_cluster_migration" {
+  description = "Enable weighted traffic routing between old and new EKS clusters for migration"
+  type        = bool
+  default     = false
+}
+
+variable "new_cluster_internal_loadbalancer_dns" {
+  description = "DNS of the new EKS cluster's internal load balancer (required when enable_cluster_migration = true and new_cluster_weight > 0)"
+  type        = string
+  default     = ""
+}
+
+variable "cluster_migration_weights" {
+  description = "Traffic weights for cluster migration (old_cluster_weight + new_cluster_weight must equal 100)"
+  type = object({
+    old_cluster_weight = number
+    new_cluster_weight = number
+  })
+  default = {
+    old_cluster_weight = 100
+    new_cluster_weight = 0
+  }
+}
+
 variable "create_lb" {
   description = "Create new LB or use existing"
   type        = bool
