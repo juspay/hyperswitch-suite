@@ -1,5 +1,6 @@
 # CloudWatch Log Group for jump host logs
 resource "aws_cloudwatch_log_group" "jump_host" {
+  count = var.create ? 1 : 0
   for_each = toset(["external", "internal"])
 
   name              = "/aws/ec2/jump-host/${var.environment}/${each.key}"
@@ -15,19 +16,23 @@ resource "aws_cloudwatch_log_group" "jump_host" {
 
 # Generate SSH key pair for internal jump access
 resource "tls_private_key" "internal_jump" {
+  count = var.create ? 1 : 0
+
   algorithm = "RSA"
   rsa_bits  = 4096
 }
 
 # Store private key in SSM Parameter Store
 module "internal_jump_ssh_key_parameter" {
+  count = var.create ? 1 : 0
+
   source  = "terraform-aws-modules/ssm-parameter/aws"
   version = "~> 1.0"
 
   name        = "/jump-host/${var.environment}/internal/ssh-private-key"
   description = "Private SSH key for accessing internal jump host from external jump"
   type        = "SecureString"
-  value       = tls_private_key.internal_jump.private_key_pem
+  value       = try(tls_private_key.internal_jump[0].private_key_pem, "")
   secure_type = true
 
   tags = merge(
@@ -40,6 +45,8 @@ module "internal_jump_ssh_key_parameter" {
 
 # IAM Role for External Jump Host
 module "external_jump_iam_role" {
+  count = var.create ? 1 : 0
+
   source  = "terraform-aws-modules/iam/aws//modules/iam-role"
   version = "~> 6.2"
 
@@ -151,6 +158,8 @@ module "external_jump_iam_role" {
 
 # IAM Role for Internal Jump Host (Optional SSM Session Manager)
 module "internal_jump_iam_role" {
+  count = var.create ? 1 : 0
+
   source  = "terraform-aws-modules/iam/aws//modules/iam-role"
   version = "~> 6.2"
 
@@ -230,6 +239,8 @@ module "internal_jump_iam_role" {
 
 # Security Group for External Jump Host
 module "external_jump_sg" {
+  count = var.create ? 1 : 0
+
   source  = "terraform-aws-modules/security-group/aws"
   version = "~> 5.0"
 
@@ -252,6 +263,8 @@ module "external_jump_sg" {
 
 # Security Group for Internal Jump Host
 module "internal_jump_sg" {
+  count = var.create ? 1 : 0
+
   source  = "terraform-aws-modules/security-group/aws"
   version = "~> 5.0"
 
@@ -278,7 +291,9 @@ module "internal_jump_sg" {
 # =========================================================================
 # Default egress to internal jump on SSH
 resource "aws_security_group_rule" "external_jump_default_egress_to_internal" {
-  security_group_id        = module.external_jump_sg.security_group_id
+  count = var.create ? 1 : 0
+
+  security_group_id        = try(module.external_jump_sg[0].security_group_id, "")
   type                     = "egress"
   from_port                = 22
   to_port                  = 22
@@ -289,7 +304,9 @@ resource "aws_security_group_rule" "external_jump_default_egress_to_internal" {
 
 # Default egress for HTTPS (Session Manager, package downloads)
 resource "aws_security_group_rule" "external_jump_default_egress_https" {
-  security_group_id = module.external_jump_sg.security_group_id
+  count = var.create ? 1 : 0
+
+  security_group_id = try(module.external_jump_sg[0].security_group_id, "")
   type              = "egress"
   from_port         = 443
   to_port           = 443
@@ -304,7 +321,9 @@ resource "aws_security_group_rule" "external_jump_default_egress_https" {
 # =========================================================================
 # Default ingress from external jump on SSH
 resource "aws_security_group_rule" "internal_jump_default_ingress_from_external" {
-  security_group_id        = module.internal_jump_sg.security_group_id
+  count = var.create ? 1 : 0
+
+  security_group_id        = try(module.internal_jump_sg[0].security_group_id, "")
   type                     = "ingress"
   from_port                = 22
   to_port                  = 22
@@ -316,8 +335,10 @@ resource "aws_security_group_rule" "internal_jump_default_ingress_from_external"
 
 # Create AWS key pair for internal jump (public key only)
 resource "aws_key_pair" "internal_jump" {
+  count = var.create ? 1 : 0
+
   key_name   = "${local.internal_name_prefix}-keypair"
-  public_key = tls_private_key.internal_jump.public_key_openssh
+  public_key = try(tls_private_key.internal_jump[0].public_key_openssh, "")
 
   tags = merge(
     local.common_tags,
@@ -329,6 +350,8 @@ resource "aws_key_pair" "internal_jump" {
 
 # Internal Jump Host Instance (must be created first to get its IP)
 module "internal_jump_instance" {
+  count = var.create ? 1 : 0
+
   source  = "terraform-aws-modules/ec2-instance/aws"
   version = "~> 6.0"
 
@@ -337,9 +360,9 @@ module "internal_jump_instance" {
   ami                    = local.internal_ami_id
   instance_type          = var.instance_type
   subnet_id              = var.private_subnet_id
-  vpc_security_group_ids = [module.internal_jump_sg.security_group_id]
-  iam_instance_profile   = module.internal_jump_iam_role.instance_profile_name
-  key_name               = aws_key_pair.internal_jump.key_name
+  vpc_security_group_ids = [try(module.internal_jump_sg[0].security_group_id, "")]
+  iam_instance_profile   = try(module.internal_jump_iam_role[0].instance_profile_name, "")
+  key_name               = try(aws_key_pair.internal_jump[0].key_name, "")
 
   create_security_group = false
 
@@ -369,10 +392,16 @@ module "internal_jump_instance" {
     aws_cloudwatch_log_group.jump_host,
     aws_key_pair.internal_jump
   ]
+
+  lifecycle {
+    ignore_changes = [ami]
+  }
 }
 
 # External Jump Host Instance (created after internal to get its IP)
 module "external_jump_instance" {
+  count = var.create ? 1 : 0
+
   source  = "terraform-aws-modules/ec2-instance/aws"
   version = "~> 6.0"
 
@@ -381,19 +410,19 @@ module "external_jump_instance" {
   ami                    = local.external_ami_id
   instance_type          = var.instance_type
   subnet_id              = var.public_subnet_id
-  vpc_security_group_ids = [module.external_jump_sg.security_group_id]
-  iam_instance_profile   = module.external_jump_iam_role.instance_profile_name
+  vpc_security_group_ids = [try(module.external_jump_sg[0].security_group_id, "")]
+  iam_instance_profile   = try(module.external_jump_iam_role[0].instance_profile_name, "")
 
   create_security_group = false
 
   associate_public_ip_address = true
   monitoring                  = true
-  user_data_base64 = base64encode(templatefile("${path.module}/templates/userdata.sh", {
+  user_data_base64 = var.create ? base64encode(templatefile("${path.module}/templates/userdata.sh", {
     jump_type         = "external"
     environment       = var.environment
     cloudwatch_region = data.aws_region.current.id
-    internal_jump_ip  = module.internal_jump_instance.private_ip
-  }))
+    internal_jump_ip  = try(module.internal_jump_instance[0].private_ip, "")
+  })) : ""
 
   # Root volume configuration
   root_block_device = {
@@ -418,4 +447,8 @@ module "external_jump_instance" {
     module.internal_jump_instance,
     module.internal_jump_ssh_key_parameter
   ]
+
+  lifecycle {
+    ignore_changes = [ami]
+  }
 }
