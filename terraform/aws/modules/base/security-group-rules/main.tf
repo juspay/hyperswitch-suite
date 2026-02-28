@@ -9,7 +9,7 @@
 # ============================================================================
 
 resource "aws_security_group_rule" "rules" {
-  for_each = { for idx, rule in var.rules : idx => rule }
+  for_each = var.create ? { for idx, rule in var.rules : idx => rule } : {}
 
   security_group_id = var.security_group_id
   type              = each.value.type

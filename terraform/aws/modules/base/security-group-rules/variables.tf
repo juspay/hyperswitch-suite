@@ -1,3 +1,9 @@
+variable "create" {
+  description = "Controls if resources should be created"
+  type        = bool
+  default     = true
+}
+
 variable "security_group_id" {
   description = "The security group ID to attach the rules to"
   type        = string
