@@ -1,4 +1,10 @@
 # Core Variables
+variable "create" {
+  description = "Controls if resources should be created"
+  type        = bool
+  default     = true
+}
+
 variable "project_name" {
   description = "Name of the project"
   type        = string
