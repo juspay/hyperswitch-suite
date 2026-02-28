@@ -303,9 +303,9 @@ module "locker_instance" {
   key_name                    = local.key_name
   monitoring                  = true
   subnet_id                   = local.locker_subnet_id
-  vpc_security_group_ids      = [local.locker_security_group_id]
+  vpc_security_group_ids      = [try(aws_security_group.locker[0].id, "")]
   associate_public_ip_address = false
-  iam_instance_profile        = aws_iam_instance_profile.locker.name
+  iam_instance_profile        = try(aws_iam_instance_profile.locker[0].name, "")
   create_security_group       = false
 
   tags = merge(local.common_tags, {
