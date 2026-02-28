@@ -1,3 +1,9 @@
+variable "create" {
+  description = "Controls if resources should be created"
+  type        = bool
+  default     = true
+}
+
 variable "name" {
   description = "Name for the Auto Scaling Group"
   type        = string

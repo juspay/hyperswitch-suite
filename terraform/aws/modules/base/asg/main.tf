@@ -1,4 +1,6 @@
 resource "aws_autoscaling_group" "this" {
+  count = var.create ? 1 : 0
+
   name                      = var.name
   vpc_zone_identifier       = var.subnet_ids
   min_size                  = var.min_size
@@ -117,10 +119,10 @@ resource "aws_autoscaling_group" "this" {
 # Automatically scales to maintain target CPU utilization
 # AWS manages both scale-up and scale-down automatically
 resource "aws_autoscaling_policy" "cpu_target_tracking" {
-  count = var.enable_scaling_policies && var.scaling_policies.cpu_target_tracking.enabled ? 1 : 0
+  count = var.create && var.enable_scaling_policies && var.scaling_policies.cpu_target_tracking.enabled ? 1 : 0
 
   name                   = "${var.name}-cpu-target-tracking"
-  autoscaling_group_name = aws_autoscaling_group.this.name
+  autoscaling_group_name = aws_autoscaling_group.this[0].name
   policy_type            = "TargetTrackingScaling"
 
   target_tracking_configuration {
@@ -135,10 +137,10 @@ resource "aws_autoscaling_policy" "cpu_target_tracking" {
 # Automatically scales to maintain target memory utilization
 # Note: Requires CloudWatch agent installed on instances to publish memory metrics
 resource "aws_autoscaling_policy" "memory_target_tracking" {
-  count = var.enable_scaling_policies && var.scaling_policies.memory_target_tracking.enabled ? 1 : 0
+  count = var.create && var.enable_scaling_policies && var.scaling_policies.memory_target_tracking.enabled ? 1 : 0
 
   name                   = "${var.name}-memory-target-tracking"
-  autoscaling_group_name = aws_autoscaling_group.this.name
+  autoscaling_group_name = aws_autoscaling_group.this[0].name
   policy_type            = "TargetTrackingScaling"
 
   target_tracking_configuration {
