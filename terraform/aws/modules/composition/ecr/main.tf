@@ -4,7 +4,7 @@ provider "aws" {
 
 # ECR Repositories
 resource "aws_ecr_repository" "repositories" {
-  for_each = var.repositories
+  for_each = var.create ? var.repositories : {}
 
   name                 = each.value.name
   image_tag_mutability = each.value.image_tag_mutability
@@ -37,8 +37,8 @@ resource "aws_ecr_repository" "repositories" {
 
 # ECR Repository Policies
 resource "aws_ecr_repository_policy" "policies" {
-  for_each = { for k, v in var.repositories : k => v if v.repository_policy != null }
+  for_each = var.create ? { for k, v in var.repositories : k => v if v.repository_policy != null } : {}
 
-  repository = aws_ecr_repository.repositories[each.key].name
+  repository = try(aws_ecr_repository.repositories[each.key].name, "")
   policy     = jsonencode(each.value.repository_policy)
 }
