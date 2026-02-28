@@ -21,17 +21,35 @@ locals {
     }
   )
 
+  # Cluster migration configuration
+  enable_cluster_migration = var.enable_cluster_migration
+  old_cluster_weight       = var.cluster_migration_weights.old_cluster_weight
+  new_cluster_weight       = var.cluster_migration_weights.new_cluster_weight
+
   # Envoy configuration templating - replace placeholders with actual values
   # Supports: {{hyperswitch_cloudfront_dns}}, {{internal_loadbalancer_dns}}, {{eks_cluster_name}}
+  # Supports cluster migration: {{old_cluster_dns}}, {{new_cluster_dns}}, {{old_cluster_weight}}, {{new_cluster_weight}}
   envoy_config_content = replace(
     replace(
       replace(
-        var.envoy_config_template,
-        "{{hyperswitch_cloudfront_dns}}", var.hyperswitch_cloudfront_dns
+        replace(
+          replace(
+            replace(
+              replace(
+                var.envoy_config_template,
+                "{{hyperswitch_cloudfront_dns}}", var.hyperswitch_cloudfront_dns
+              ),
+              "{{internal_loadbalancer_dns}}", var.internal_loadbalancer_dns
+            ),
+            "{{eks_cluster_name}}", "${var.environment}-${var.project_name}-cluster"
+          ),
+          "{{old_cluster_dns}}", var.internal_loadbalancer_dns
+        ),
+        "{{new_cluster_dns}}", var.new_cluster_internal_loadbalancer_dns
       ),
-      "{{internal_loadbalancer_dns}}", var.internal_loadbalancer_dns
+      "{{old_cluster_weight}}", tostring(local.old_cluster_weight)
     ),
-    "{{eks_cluster_name}}", "${var.environment}-${var.project_name}-cluster"
+    "{{new_cluster_weight}}", tostring(local.new_cluster_weight)
   )
 
   # Logs bucket selection - use created or existing
