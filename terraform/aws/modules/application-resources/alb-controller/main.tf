@@ -46,7 +46,8 @@ module "aws_load_balancer_controller_irsa" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
   version = "~> 5.0"
 
-  role_name = "${local.name_prefix}-role"
+  create_role = var.create
+  role_name   = "${local.name_prefix}-role"
 
   attach_load_balancer_controller_policy = true
 
@@ -65,7 +66,7 @@ module "aws_load_balancer_controller_irsa" {
 # Create Kubernetes service account for AWS Load Balancer Controller
 # This is optional and controlled by var.create_alb_controller_service_account
 resource "kubernetes_service_account_v1" "alb_controller" {
-  count = var.create_alb_controller_service_account ? 1 : 0
+  count = var.create && var.create_alb_controller_service_account ? 1 : 0
 
   metadata {
     name      = var.alb_controller_service_account_name
@@ -87,7 +88,7 @@ resource "kubernetes_service_account_v1" "alb_controller" {
 # Deploy AWS Load Balancer Controller using Helm
 # This is optional and controlled by var.create_helm_release
 resource "helm_release" "alb_controller" {
-  count = var.create_helm_release ? 1 : 0
+  count = var.create && var.create_helm_release ? 1 : 0
 
   name       = var.helm_release_name
   repository = var.helm_chart_repository
