@@ -108,7 +108,7 @@ static_resources:
                           direct_response:
                             status: 200
                             body:
-                              inline_string: "Upstream: {{internal_loadbalancer_dns}}"
+                              inline_string: "Upstream Old: {{old_cluster_dns}} | New: {{new_cluster_dns}} | Weights: {{old_cluster_weight}}/{{new_cluster_weight}}"
                         - match:
                             prefix: "/"
                             headers:
@@ -121,7 +121,12 @@ static_resources:
                                       descriptor_key: "api_key_category_A"
                             timeout: 60s
                             idle_timeout: 60s
-                            cluster: "{{eks_cluster_name}}"
+                            weighted_clusters:
+                              clusters:
+                                - name: old_eks_cluster
+                                  weight: {{old_cluster_weight}}
+                                - name: new_eks_cluster
+                                  weight: {{new_cluster_weight}}
                         - match:
                             prefix: "/"
                           route:
@@ -131,21 +136,40 @@ static_resources:
                                       descriptor_value: "api_key_category_B"
                             timeout: 60s
                             idle_timeout: 60s
-                            cluster: "{{eks_cluster_name}}"
+                            weighted_clusters:
+                              clusters:
+                                - name: old_eks_cluster
+                                  weight: {{old_cluster_weight}}
+                                - name: new_eks_cluster
+                                  weight: {{new_cluster_weight}}
   clusters:
-    - name: "{{eks_cluster_name}}"
+    - name: old_eks_cluster
       connect_timeout: 0.25s
       type: LOGICAL_DNS
       dns_lookup_family: V4_ONLY
       lb_policy: ROUND_ROBIN
       load_assignment:
-        cluster_name: "{{eks_cluster_name}}"
+        cluster_name: old_eks_cluster
         endpoints:
           - lb_endpoints:
               - endpoint:
                   address:
                     socket_address:
-                      address: "{{internal_loadbalancer_dns}}"
+                      address: "{{old_cluster_dns}}"
+                      port_value: 80
+    - name: new_eks_cluster
+      connect_timeout: 0.25s
+      type: LOGICAL_DNS
+      dns_lookup_family: V4_ONLY
+      lb_policy: ROUND_ROBIN
+      load_assignment:
+        cluster_name: new_eks_cluster
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address:
+                      address: "{{new_cluster_dns}}"
                       port_value: 80
     # - name: ratelimit_service
     #   connect_timeout: 0.25s
