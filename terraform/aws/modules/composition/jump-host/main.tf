@@ -1,7 +1,6 @@
 # CloudWatch Log Group for jump host logs
 resource "aws_cloudwatch_log_group" "jump_host" {
-  count = var.create ? 1 : 0
-  for_each = toset(["external", "internal"])
+  for_each = var.create ? toset(["external", "internal"]) : []
 
   name              = "/aws/ec2/jump-host/${var.environment}/${each.key}"
   retention_in_days = var.log_retention_days
