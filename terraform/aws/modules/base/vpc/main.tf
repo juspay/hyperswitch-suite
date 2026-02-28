@@ -147,8 +147,8 @@ resource "aws_vpc_dhcp_options" "main" {
 }
 
 resource "aws_vpc_dhcp_options_association" "main" {
-  count = var.create_dhcp_options ? 1 : 0
+  count = var.create && var.create_dhcp_options ? 1 : 0
 
-  vpc_id          = aws_vpc.main.id
+  vpc_id          = aws_vpc.main[0].id
   dhcp_options_id = aws_vpc_dhcp_options.main[0].id
 }
