@@ -1,29 +1,29 @@
 output "bucket_id" {
   description = "The ID (name) of the bucket"
-  value       = aws_s3_bucket.this.id
+  value       = try(aws_s3_bucket.this[0].id, "")
 }
 
 output "bucket_name" {
   description = "The name of the bucket (alias for bucket_id)"
-  value       = aws_s3_bucket.this.id
+  value       = try(aws_s3_bucket.this[0].id, "")
 }
 
 output "bucket_arn" {
   description = "The ARN of the bucket"
-  value       = aws_s3_bucket.this.arn
+  value       = try(aws_s3_bucket.this[0].arn, "")
 }
 
 output "bucket_domain_name" {
   description = "The bucket domain name"
-  value       = aws_s3_bucket.this.bucket_domain_name
+  value       = try(aws_s3_bucket.this[0].bucket_domain_name, "")
 }
 
 output "bucket_regional_domain_name" {
   description = "The bucket regional domain name"
-  value       = aws_s3_bucket.this.bucket_regional_domain_name
+  value       = try(aws_s3_bucket.this[0].bucket_regional_domain_name, "")
 }
 
 output "bucket_region" {
   description = "The AWS region of the bucket"
-  value       = aws_s3_bucket.this.region
+  value       = try(aws_s3_bucket.this[0].region, "")
 }
