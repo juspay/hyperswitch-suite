@@ -66,7 +66,7 @@ resource "aws_route_table_association" "existing" {
 
 # Internet Gateway Route (for public subnets)
 resource "aws_route" "internet_gateway" {
-  count = var.create_route_table && var.create_internet_gateway_route ? 1 : 0
+  count = var.create && var.create_route_table && var.create_internet_gateway_route ? 1 : 0
 
   route_table_id         = aws_route_table.main[0].id
   destination_cidr_block = "0.0.0.0/0"
@@ -75,10 +75,10 @@ resource "aws_route" "internet_gateway" {
 
 # NAT Gateway
 resource "aws_nat_gateway" "main" {
-  count = var.create_nat_gateway ? 1 : 0
+  count = var.create && var.create_nat_gateway ? 1 : 0
 
   allocation_id = var.nat_gateway_eip_allocation_id
-  subnet_id     = aws_subnet.main.id
+  subnet_id     = aws_subnet.main[0].id
 
   connectivity_type = var.nat_gateway_connectivity_type
 
