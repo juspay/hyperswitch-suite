@@ -1,4 +1,6 @@
 resource "aws_dynamodb_table" "this" {
+  count = var.create ? 1 : 0
+
   name         = var.table_name
   billing_mode = var.billing_mode
   hash_key     = var.hash_key

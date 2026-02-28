@@ -1,3 +1,9 @@
+variable "create" {
+  description = "Controls if resources should be created"
+  type        = bool
+  default     = true
+}
+
 variable "table_name" {
   description = "Name of the DynamoDB table"
   type        = string
