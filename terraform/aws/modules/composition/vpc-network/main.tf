@@ -4,6 +4,7 @@
 module "vpc" {
   source = "../../base/vpc"
 
+  create   = var.create
   vpc_name = var.vpc_name
   vpc_cidr = var.vpc_cidr
 
