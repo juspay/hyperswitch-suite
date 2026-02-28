@@ -88,8 +88,8 @@ resource "aws_rds_cluster" "main" {
 
   # Network Configuration
   availability_zones     = var.availability_zones
-  db_subnet_group_name   = var.create_db_subnet_group ? aws_db_subnet_group.main[0].name : var.db_subnet_group_name
-  vpc_security_group_ids = concat(var.vpc_security_group_ids, var.create_security_group ? [aws_security_group.rds_sg[0].id] : [])
+  db_subnet_group_name   = var.create && var.create_db_subnet_group ? aws_db_subnet_group.main[0].name : var.db_subnet_group_name
+  vpc_security_group_ids = concat(var.vpc_security_group_ids, var.create && var.create_security_group ? [aws_security_group.rds_sg[0].id] : [])
   network_type           = var.network_type
   port                   = var.port
 
@@ -161,7 +161,7 @@ resource "aws_rds_cluster" "main" {
   # 1. Creating new cluster for global DB (create_global_cluster=true, use_existing_as_global_primary=false)
   # 2. This is a secondary cluster (local.is_secondary_cluster=true, pass via var.global_cluster_identifier)
   # Do NOT set if use_existing_as_global_primary=true - AWS handles relationship via source_db_cluster_identifier
-  global_cluster_identifier      = var.create_global_cluster && !local.is_secondary_cluster && !var.use_existing_as_global_primary ? aws_rds_global_cluster.main[0].id : (local.is_secondary_cluster ? var.global_cluster_identifier : null)
+  global_cluster_identifier      = var.create && var.create_global_cluster && !local.is_secondary_cluster && !var.use_existing_as_global_primary ? aws_rds_global_cluster.main[0].id : (local.is_secondary_cluster ? var.global_cluster_identifier : null)
   enable_global_write_forwarding = var.enable_global_write_forwarding
 
   # Local Write Forwarding
@@ -227,12 +227,12 @@ resource "aws_rds_cluster" "main" {
 
 # RDS Cluster Instances
 resource "aws_rds_cluster_instance" "instances" {
-  for_each = var.cluster_instances
+  for_each = var.create ? var.cluster_instances : {}
 
   # Identifiers
   identifier         = each.value.identifier != null ? each.value.identifier : "${local.cluster_identifier}-${each.key}"
   identifier_prefix  = each.value.identifier_prefix
-  cluster_identifier = aws_rds_cluster.main.id
+  cluster_identifier = aws_rds_cluster.main[0].id
 
   # Instance Configuration
   instance_class = each.value.instance_class
@@ -242,7 +242,7 @@ resource "aws_rds_cluster_instance" "instances" {
   # Network Configuration
   publicly_accessible  = each.value.publicly_accessible
   availability_zone    = each.value.availability_zone
-  db_subnet_group_name = var.create_db_subnet_group ? aws_db_subnet_group.main[0].name : var.db_subnet_group_name
+  db_subnet_group_name = var.create && var.create_db_subnet_group ? aws_db_subnet_group.main[0].name : var.db_subnet_group_name
 
   # Parameter Group
   db_parameter_group_name = each.value.db_parameter_group_name
