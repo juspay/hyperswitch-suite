@@ -21,6 +21,7 @@
 module "state_bucket" {
   source = "../../base/s3-bucket"
 
+  create            = var.create
   bucket_name       = var.state_bucket_name
   force_destroy     = var.allow_destroy
   enable_versioning = true
@@ -53,6 +54,8 @@ module "state_bucket" {
 
 # Bucket policy to enforce TLS (prevent unencrypted access)
 resource "aws_s3_bucket_policy" "enforce_tls" {
+  count = var.create ? 1 : 0
+
   bucket = module.state_bucket.bucket_id
 
   policy = jsonencode({
@@ -64,8 +67,8 @@ resource "aws_s3_bucket_policy" "enforce_tls" {
         Principal = "*"
         Action    = "s3:*"
         Resource = [
-          module.state_bucket.bucket_arn,
-          "${module.state_bucket.bucket_arn}/*"
+          try(module.state_bucket.bucket_arn, ""),
+          "${try(module.state_bucket.bucket_arn, "")}/*"
         ]
         Condition = {
           Bool = {
@@ -81,6 +84,7 @@ resource "aws_s3_bucket_policy" "enforce_tls" {
 module "lock_table" {
   source = "../../base/dynamodb-table"
 
+  create       = var.create
   table_name   = var.dynamodb_table_name
   billing_mode = var.dynamodb_billing_mode
   hash_key     = "LockID"
