@@ -1,3 +1,9 @@
+variable "create" {
+  description = "Controls if resources should be created"
+  type        = bool
+  default     = true
+}
+
 variable "policies" {
   description = "Map of IAM policies to create"
   type = map(object({

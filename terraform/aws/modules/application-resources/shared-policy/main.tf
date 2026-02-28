@@ -3,7 +3,7 @@
 # ============================================================================
 
 resource "aws_iam_policy" "this" {
-  for_each = var.policies
+  for_each = var.create ? var.policies : {}
 
   name        = each.value.name
   description = each.value.description
