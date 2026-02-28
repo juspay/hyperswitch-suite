@@ -1,3 +1,9 @@
+variable "create" {
+  description = "Controls if resources should be created"
+  type        = bool
+  default     = true
+}
+
 variable "environment" {
   description = "Environment name (e.g., dev, integ, prod)"
   type        = string

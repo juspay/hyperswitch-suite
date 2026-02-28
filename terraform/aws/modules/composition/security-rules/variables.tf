@@ -1,6 +1,12 @@
 # =========================================================================
 # SECURITY RULES MODULE VARIABLES
 # =========================================================================
+
+variable "create" {
+  description = "Controls if resources should be created"
+  type        = bool
+  default     = true
+}
 # This module now accepts only ingress_rules and egress_rules.
 # The live layer is responsible for:
 #   1. Fetching security group IDs via terraform_remote_state
