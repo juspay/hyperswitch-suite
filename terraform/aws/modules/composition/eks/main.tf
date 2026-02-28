@@ -1,5 +1,7 @@
 # Custom IAM Role for EKS Cluster with optional ArgoCD trust policy
 resource "aws_iam_role" "cluster" {
+  count = var.create ? 1 : 0
+
   name = "${var.environment}-${var.project_name}-cluster-role"
 
   assume_role_policy = jsonencode({
@@ -31,14 +33,18 @@ resource "aws_iam_role" "cluster" {
 
 # Attach required EKS cluster policy
 resource "aws_iam_role_policy_attachment" "cluster_policy" {
+  count = var.create ? 1 : 0
+
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
-  role       = aws_iam_role.cluster.name
+  role       = aws_iam_role.cluster[0].name
 }
 
 # EKS Cluster using terraform-aws-modules/eks
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 20.0"
+
+  create = var.create
 
   cluster_name    = "${var.environment}-${var.project_name}-cluster-${var.cluster_name_version}"
   cluster_version = var.cluster_version
