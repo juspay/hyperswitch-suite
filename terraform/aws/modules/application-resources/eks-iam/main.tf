@@ -50,6 +50,8 @@ locals {
 }
 
 resource "aws_iam_role" "this" {
+  count = var.create ? 1 : 0
+
   name                  = var.role_name != null ? var.role_name : "${local.name_prefix}-role"
   description           = var.role_description != null ? var.role_description : "IAM role for ${var.app_name} EKS application"
   path                  = var.role_path
@@ -61,24 +63,24 @@ resource "aws_iam_role" "this" {
 }
 
 resource "aws_iam_role_policy_attachment" "aws_managed" {
-  for_each = toset(var.aws_managed_policy_names)
+  for_each = var.create ? toset(var.aws_managed_policy_names) : []
 
-  role       = aws_iam_role.this.name
+  role       = aws_iam_role.this[0].name
   policy_arn = "arn:aws:iam::aws:policy/${each.value}"
 }
 
 resource "aws_iam_role_policy_attachment" "customer_managed" {
-  for_each = toset(var.customer_managed_policy_arns)
+  for_each = var.create ? toset(var.customer_managed_policy_arns) : []
 
-  role       = aws_iam_role.this.name
+  role       = aws_iam_role.this[0].name
   policy_arn = each.value
 }
 
 resource "aws_iam_role_policy" "inline" {
-  for_each = var.inline_policies
+  for_each = var.create ? var.inline_policies : {}
 
   name   = each.key
-  role   = aws_iam_role.this.name
+  role   = aws_iam_role.this[0].name
   policy = each.value
 }
 
