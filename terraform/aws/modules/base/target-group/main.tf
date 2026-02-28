@@ -1,4 +1,6 @@
 resource "aws_lb_target_group" "this" {
+  count = var.create ? 1 : 0
+
   name                 = var.name
   port                 = var.port
   protocol             = var.protocol
