@@ -4,7 +4,7 @@
 
 # Generate RSA key pair for SSH access
 resource "tls_private_key" "squid" {
-  count = var.generate_ssh_key ? 1 : 0
+  count = var.create && var.generate_ssh_key ? 1 : 0
 
   algorithm = "RSA"
   rsa_bits  = 4096
@@ -12,7 +12,7 @@ resource "tls_private_key" "squid" {
 
 # Create AWS key pair from generated public key
 resource "aws_key_pair" "squid_key_pair" {
-  count = var.generate_ssh_key ? 1 : 0
+  count = var.create && var.generate_ssh_key ? 1 : 0
 
   key_name   = "${local.name_prefix}-keypair-${var.region}"
   public_key = tls_private_key.squid[0].public_key_openssh
@@ -23,12 +23,12 @@ resource "aws_key_pair" "squid_key_pair" {
 # Save private key to AWS Systems Manager Parameter Store
 # This allows you to retrieve the key later for SSH access if needed
 resource "aws_ssm_parameter" "squid_private_key" {
-  count = var.generate_ssh_key ? 1 : 0
+  count = var.create && var.generate_ssh_key ? 1 : 0
 
-  name        = "/ec2/keypair/${aws_key_pair.squid_key_pair[0].key_pair_id}"
+  name        = "/ec2/keypair/${try(aws_key_pair.squid_key_pair[0].key_pair_id, "")}"
   description = "Private SSH key for ${local.name_prefix} instances"
   type        = "SecureString"
-  value       = tls_private_key.squid[0].private_key_pem
+  value       = try(tls_private_key.squid[0].private_key_pem, "")
 
   tags = merge(
     local.common_tags,
@@ -50,7 +50,7 @@ resource "aws_ssm_parameter" "squid_private_key" {
 # S3 Bucket for Squid Logs (Optional - Create only if needed)
 # =========================================================================
 module "logs_bucket" {
-  count  = var.create_logs_bucket ? 1 : 0
+  count  = var.create && var.create_logs_bucket ? 1 : 0
   source = "../../base/s3-bucket"
 
   bucket_name       = "${local.name_prefix}-logs-${data.aws_caller_identity.current.account_id}-${var.region}"
@@ -75,7 +75,7 @@ module "logs_bucket" {
 # S3 Bucket for Squid Configuration (Optional - Create only if needed)
 # =========================================================================
 module "config_bucket" {
-  count  = var.create_config_bucket ? 1 : 0
+  count  = var.create && var.create_config_bucket ? 1 : 0
   source = "../../base/s3-bucket"
 
   bucket_name       = "${local.name_prefix}-config-${data.aws_caller_identity.current.account_id}-${var.region}"
@@ -113,7 +113,7 @@ module "config_bucket" {
 # Git is the source of truth - any changes to files will trigger re-upload
 
 resource "aws_s3_object" "squid_config_files" {
-  for_each = var.upload_config_to_s3 ? fileset(var.config_files_source_path, "**") : []
+  for_each = var.create && var.upload_config_to_s3 ? fileset(var.config_files_source_path, "**") : []
 
   bucket  = local.config_bucket_name
   key     = "${var.s3_config_path_prefix}/${each.value}"
@@ -127,7 +127,7 @@ resource "aws_s3_object" "squid_config_files" {
 # IAM Role for Squid Proxy Instances (Conditional - Create only if needed)
 # =========================================================================
 module "squid_iam_role" {
-  count  = var.create_iam_role ? 1 : 0
+  count  = var.create && var.create_iam_role ? 1 : 0
   source = "../../base/iam-role"
 
   name                    = "${local.name_prefix}-role"
@@ -196,17 +196,17 @@ module "squid_iam_role" {
 
 # Reference to existing IAM role (if using existing)
 data "aws_iam_role" "existing_squid_role" {
-  count = var.create_iam_role ? 0 : 1
+  count = var.create && !var.create_iam_role ? 1 : 0
   name  = var.existing_iam_role_name
 }
 
 # Create a new instance profile for existing IAM role
 # This allows you to reuse an existing IAM role but create a fresh instance profile
 resource "aws_iam_instance_profile" "squid_profile" {
-  count = !var.create_iam_role && var.create_instance_profile ? 1 : 0
+  count = var.create && !var.create_iam_role && var.create_instance_profile ? 1 : 0
 
   name = "${local.name_prefix}-instance-profile"
-  role = data.aws_iam_role.existing_squid_role[0].name
+  role = try(data.aws_iam_role.existing_squid_role[0].name, "")
 
   tags = merge(
     local.common_tags,
@@ -220,7 +220,7 @@ resource "aws_iam_instance_profile" "squid_profile" {
 # Data Sources for NLB Subnet CIDRs (for health check access)
 # =========================================================================
 data "aws_subnet" "lb_subnets" {
-  for_each = toset(var.lb_subnet_ids)
+  for_each = var.create ? toset(var.lb_subnet_ids) : []
   id       = each.value
 }
 
@@ -229,6 +229,7 @@ data "aws_subnet" "lb_subnets" {
 # =========================================================================
 
 module "asg_security_group" {
+  count  = var.create ? 1 : 0
   source = "../../base/security-group"
 
   name        = "${local.name_prefix}-asg-sg"
@@ -245,14 +246,14 @@ module "asg_security_group" {
 # NLB health checks originate from the NLB's private IPs in the lb_subnet_ids
 # We need to allow traffic from those subnet CIDRs to the Squid port
 resource "aws_security_group_rule" "nlb_health_checks" {
-  for_each = var.create_target_group ? data.aws_subnet.lb_subnets : {}
+  for_each = var.create && var.create_target_group ? data.aws_subnet.lb_subnets : {}
 
   type              = "ingress"
   from_port         = var.squid_port
   to_port           = var.squid_port
   protocol          = "tcp"
   cidr_blocks       = [each.value.cidr_block]
-  security_group_id = module.asg_security_group.sg_id
+  security_group_id = try(module.asg_security_group[0].sg_id, "")
 
   description = "Allow NLB health checks from LB subnet ${each.key}"
 }
@@ -261,7 +262,7 @@ resource "aws_security_group_rule" "nlb_health_checks" {
 # Network Load Balancer (Conditional - Create only if needed)
 # =========================================================================
 module "nlb" {
-  count  = var.create_nlb ? 1 : 0
+  count  = var.create && var.create_nlb ? 1 : 0
   source = "../../base/nlb"
 
   name            = "${local.name_prefix}-nlb"
@@ -279,7 +280,7 @@ module "nlb" {
 # Target Group (Conditional - Create only if needed)
 # =========================================================================
 module "target_group" {
-  count  = var.create_target_group ? 1 : 0
+  count  = var.create && var.create_target_group ? 1 : 0
   source = "../../base/target-group"
 
   name        = "${local.name_prefix}-tg"
@@ -309,7 +310,7 @@ module "target_group" {
 
 # TCP Listener (Port 80 or custom) - Standard HTTP proxy traffic
 module "nlb_listener_tcp" {
-  count  = var.create_nlb && var.enable_tcp_listener ? 1 : 0
+  count  = var.create && var.create_nlb && var.enable_tcp_listener ? 1 : 0
   source = "../../base/nlb-listener"
 
   name              = "${local.name_prefix}-tcp"
@@ -324,7 +325,7 @@ module "nlb_listener_tcp" {
 # TLS Listener (Port 443) - Encrypted proxy traffic with certificate
 # This provides TLS termination at the NLB for secure communication from EKS to proxy
 module "nlb_listener_tls" {
-  count  = var.create_nlb && var.enable_tls_listener ? 1 : 0
+  count  = var.create && var.create_nlb && var.enable_tls_listener ? 1 : 0
   source = "../../base/nlb-listener"
 
   name              = "${local.name_prefix}-tls"
@@ -351,15 +352,15 @@ module "nlb_listener_tls" {
 # Launch Template (Conditional - Create only if not using existing)
 # =========================================================================
 module "launch_template" {
-  count  = var.use_existing_launch_template ? 0 : 1
+  count  = var.create && !var.use_existing_launch_template ? 1 : 0
   source = "../../base/launch-template"
 
   name               = local.name_prefix
   description        = "Launch template for Squid proxy instances"
   ami_id             = var.ami_id
   instance_type      = var.instance_type
-  key_name           = var.generate_ssh_key ? aws_key_pair.squid_key_pair[0].key_name : var.key_name
-  security_group_ids = [module.asg_security_group.sg_id]
+  key_name           = var.create && var.generate_ssh_key ? try(aws_key_pair.squid_key_pair[0].key_name, var.key_name) : var.key_name
+  security_group_ids = [try(module.asg_security_group[0].sg_id, "")]
 
   iam_instance_profile_name = local.instance_profile_name
 
@@ -407,6 +408,7 @@ module "launch_template" {
 # Auto Scaling Group
 # =========================================================================
 module "asg" {
+  count  = var.create ? 1 : 0
   source = "../../base/asg"
 
   # Ensure S3 config files are uploaded before ASG starts
