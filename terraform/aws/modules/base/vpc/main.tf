@@ -130,7 +130,7 @@ resource "aws_flow_log" "main" {
 
 # DHCP Options Set
 resource "aws_vpc_dhcp_options" "main" {
-  count = var.create_dhcp_options ? 1 : 0
+  count = var.create && var.create_dhcp_options ? 1 : 0
 
   domain_name          = var.dhcp_options_domain_name
   domain_name_servers  = var.dhcp_options_domain_name_servers
