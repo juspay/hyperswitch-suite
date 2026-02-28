@@ -2,6 +2,8 @@
 # DATA SOURCES
 # =========================================================================
 data "aws_availability_zones" "available" {
+  count = var.create ? 1 : 0
+
   state = "available"
 }
 
@@ -9,10 +11,10 @@ data "aws_availability_zones" "available" {
 # NETWORK RESOURCES
 # =========================================================================
 resource "aws_subnet" "locker" {
-  count             = var.create_subnet ? 1 : 0
+  count             = var.create && var.create_subnet ? 1 : 0
   vpc_id            = var.vpc_id
   cidr_block        = var.subnet_cidr_block
-  availability_zone = var.subnet_availability_zone != null ? var.subnet_availability_zone : data.aws_availability_zones.available.names[0]
+  availability_zone = var.subnet_availability_zone != null ? var.subnet_availability_zone : try(data.aws_availability_zones.available[0].names[0], "")
 
   tags = merge(
     local.common_tags,
@@ -27,27 +29,27 @@ resource "aws_subnet" "locker" {
 # =========================================================================
 # Auto-generate SSH key pair if public_key not provided
 resource "tls_private_key" "locker" {
-  count     = var.create_key_pair && var.public_key == null ? 1 : 0
+  count     = var.create && var.create_key_pair && var.public_key == null ? 1 : 0
   algorithm = "RSA"
   rsa_bits  = 4096
 }
 
 # Create AWS key pair (from provided or generated public key)
 resource "aws_key_pair" "locker" {
-  count      = var.create_key_pair ? 1 : 0
+  count      = var.create && var.create_key_pair ? 1 : 0
   key_name   = local.key_pair_name
-  public_key = var.public_key != null ? var.public_key : tls_private_key.locker[0].public_key_openssh
+  public_key = var.public_key != null ? var.public_key : try(tls_private_key.locker[0].public_key_openssh, "")
 
   tags = local.common_tags
 }
 
 # Store auto-generated private key in SSM Parameter Store
 resource "aws_ssm_parameter" "locker_private_key" {
-  count       = var.create_key_pair && var.public_key == null ? 1 : 0
+  count       = var.create && var.create_key_pair && var.public_key == null ? 1 : 0
   name        = "/${var.environment}/${var.project_name}/locker/ssh-private-key"
   description = "Auto-generated SSH private key for locker instance"
   type        = "SecureString"
-  value       = tls_private_key.locker[0].private_key_pem
+  value       = try(tls_private_key.locker[0].private_key_pem, "")
 
   tags = merge(
     local.common_tags,
@@ -61,6 +63,8 @@ resource "aws_ssm_parameter" "locker_private_key" {
 # SECURITY - LOCKER SECURITY GROUP
 # =========================================================================
 resource "aws_security_group" "locker" {
+  count = var.create ? 1 : 0
+
   name        = "${local.name_prefix}-sg"
   description = "Security group for locker instance"
   vpc_id      = var.vpc_id
@@ -72,12 +76,14 @@ resource "aws_security_group" "locker" {
 # =========================================================================
 # Internal rule: Allow traffic from NLB (required for module functionality)
 resource "aws_security_group_rule" "locker_ingress_from_nlb" {
-  security_group_id        = local.locker_security_group_id
+  count = var.create ? 1 : 0
+
+  security_group_id        = try(aws_security_group.locker[0].id, "")
   type                     = "ingress"
   from_port                = var.locker_port
   to_port                  = var.locker_port
   protocol                 = "tcp"
-  source_security_group_id = aws_security_group.nlb.id
+  source_security_group_id = try(aws_security_group.nlb[0].id, "")
   description              = "Allow traffic from NLB to locker instance"
 }
 
@@ -85,6 +91,8 @@ resource "aws_security_group_rule" "locker_ingress_from_nlb" {
 # SECURITY - NLB SECURITY GROUP
 # =========================================================================
 resource "aws_security_group" "nlb" {
+  count = var.create ? 1 : 0
+
   name        = "${local.name_prefix}-nlb-sg"
   description = "Security group for locker Network Load Balancer"
   vpc_id      = var.vpc_id
@@ -96,12 +104,14 @@ resource "aws_security_group" "nlb" {
 # =========================================================================
 # Internal rule: Allow NLB to send traffic to locker instance (required for module functionality)
 resource "aws_security_group_rule" "nlb_egress_to_locker" {
-  security_group_id        = aws_security_group.nlb.id
+  count = var.create ? 1 : 0
+
+  security_group_id        = try(aws_security_group.nlb[0].id, "")
   type                     = "egress"
   from_port                = var.locker_port
   to_port                  = var.locker_port
   protocol                 = "tcp"
-  source_security_group_id = local.locker_security_group_id
+  source_security_group_id = try(aws_security_group.locker[0].id, "")
   description              = "Allow NLB to send traffic to locker instance"
 }
 
@@ -109,6 +119,8 @@ resource "aws_security_group_rule" "nlb_egress_to_locker" {
 # MONITORING - CLOUDWATCH LOGS
 # =========================================================================
 resource "aws_cloudwatch_log_group" "locker" {
+  count = var.create ? 1 : 0
+
   name              = "/aws/ec2/locker/${var.environment}"
   retention_in_days = var.log_retention_days
 
@@ -124,6 +136,8 @@ resource "aws_cloudwatch_log_group" "locker" {
 # IAM - ROLE & INSTANCE PROFILE
 # =========================================================================
 resource "aws_iam_role" "locker" {
+  count = var.create ? 1 : 0
+
   name        = "${local.name_prefix}-role"
   description = "IAM role for locker card vault instance"
   path        = "/"
@@ -142,8 +156,10 @@ resource "aws_iam_role" "locker" {
 }
 
 resource "aws_iam_instance_profile" "locker" {
+  count = var.create ? 1 : 0
+
   name = "${local.name_prefix}-profile"
-  role = aws_iam_role.locker.name
+  role = try(aws_iam_role.locker[0].name, "")
 
   tags = local.common_tags
 }
@@ -153,6 +169,8 @@ resource "aws_iam_instance_profile" "locker" {
 # =========================================================================
 # CloudWatch Logs Policy
 resource "aws_iam_policy" "locker_logs" {
+  count = var.create ? 1 : 0
+
   name = "${local.name_prefix}-logs-policy"
   policy = jsonencode({
     Version = "2012-10-17"
@@ -164,7 +182,7 @@ resource "aws_iam_policy" "locker_logs" {
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ]
-        Resource = [aws_cloudwatch_log_group.locker.arn]
+        Resource = [try(aws_cloudwatch_log_group.locker[0].arn, "")]
       }
     ]
   })
@@ -174,6 +192,8 @@ resource "aws_iam_policy" "locker_logs" {
 
 # ECR Policy
 resource "aws_iam_policy" "locker_ecr" {
+  count = var.create ? 1 : 0
+
   name = "${local.name_prefix}-ecr-policy"
   policy = jsonencode({
     Version = "2012-10-17"
@@ -192,6 +212,8 @@ resource "aws_iam_policy" "locker_ecr" {
 
 # KMS Policy
 resource "aws_iam_policy" "locker_kms" {
+  count = var.create ? 1 : 0
+
   name = "${local.name_prefix}-kms-policy"
   policy = jsonencode({
     Version = "2012-10-17"
@@ -223,33 +245,45 @@ resource "aws_iam_policy" "locker_kms" {
 # =========================================================================
 # Custom Policy Attachments
 resource "aws_iam_role_policy_attachment" "locker_logs" {
-  role       = aws_iam_role.locker.name
-  policy_arn = aws_iam_policy.locker_logs.arn
+  count = var.create ? 1 : 0
+
+  role       = try(aws_iam_role.locker[0].name, "")
+  policy_arn = try(aws_iam_policy.locker_logs[0].arn, "")
 }
 
 resource "aws_iam_role_policy_attachment" "locker_ecr" {
-  role       = aws_iam_role.locker.name
-  policy_arn = aws_iam_policy.locker_ecr.arn
+  count = var.create ? 1 : 0
+
+  role       = try(aws_iam_role.locker[0].name, "")
+  policy_arn = try(aws_iam_policy.locker_ecr[0].arn, "")
 }
 
 resource "aws_iam_role_policy_attachment" "locker_kms" {
-  role       = aws_iam_role.locker.name
-  policy_arn = aws_iam_policy.locker_kms.arn
+  count = var.create ? 1 : 0
+
+  role       = try(aws_iam_role.locker[0].name, "")
+  policy_arn = try(aws_iam_policy.locker_kms[0].arn, "")
 }
 
 # AWS Managed Policy Attachments
 resource "aws_iam_role_policy_attachment" "ecr_readonly" {
-  role       = aws_iam_role.locker.name
+  count = var.create ? 1 : 0
+
+  role       = try(aws_iam_role.locker[0].name, "")
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
 resource "aws_iam_role_policy_attachment" "s3_fullaccess" {
-  role       = aws_iam_role.locker.name
+  count = var.create ? 1 : 0
+
+  role       = try(aws_iam_role.locker[0].name, "")
   policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
 }
 
 resource "aws_iam_role_policy_attachment" "cloudwatch_agent" {
-  role       = aws_iam_role.locker.name
+  count = var.create ? 1 : 0
+
+  role       = try(aws_iam_role.locker[0].name, "")
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
 }
 
@@ -257,7 +291,7 @@ resource "aws_iam_role_policy_attachment" "cloudwatch_agent" {
 # COMPUTE - EC2 INSTANCES
 # =========================================================================
 module "locker_instance" {
-  count = var.instance_count
+  count = var.create ? var.instance_count : 0
 
   source  = "terraform-aws-modules/ec2-instance/aws"
   version = "~> 6.1.5"
@@ -283,11 +317,13 @@ module "locker_instance" {
 # LOAD BALANCER - NETWORK LOAD BALANCER
 # =========================================================================
 resource "aws_lb" "locker_nlb" {
+  count = var.create ? 1 : 0
+
   name               = "${local.name_prefix}-nlb"
   internal           = true
   load_balancer_type = "network"
   subnets            = [local.locker_subnet_id]
-  security_groups    = [aws_security_group.nlb.id]
+  security_groups    = [try(aws_security_group.nlb[0].id, "")]
 
   tags = local.common_tags
 }
@@ -296,6 +332,8 @@ resource "aws_lb" "locker_nlb" {
 # LOAD BALANCER - TARGET GROUP
 # =========================================================================
 resource "aws_lb_target_group" "locker" {
+  count = var.create ? 1 : 0
+
   name     = "${local.name_prefix}-tg"
   port     = var.locker_port
   protocol = "TCP"
@@ -310,9 +348,9 @@ resource "aws_lb_target_group" "locker" {
 }
 
 resource "aws_lb_target_group_attachment" "locker" {
-  count            = var.instance_count
+  count            = var.create ? var.instance_count : 0
 
-  target_group_arn = aws_lb_target_group.locker.arn
+  target_group_arn = try(aws_lb_target_group.locker[0].arn, "")
   target_id        = module.locker_instance[count.index].id
   port             = var.locker_port
 }
@@ -321,14 +359,14 @@ resource "aws_lb_target_group_attachment" "locker" {
 # LOAD BALANCER - LISTENERS
 # =========================================================================
 resource "aws_lb_listener" "locker" {
-  for_each = var.nlb_listeners
+  for_each = var.create ? var.nlb_listeners : {}
 
-  load_balancer_arn = aws_lb.locker_nlb.arn
+  load_balancer_arn = try(aws_lb.locker_nlb[0].arn, "")
   port              = each.value.port
   protocol          = each.value.protocol
 
   default_action {
     type             = "forward"
-    target_group_arn = each.value.target_group_arn != null ? each.value.target_group_arn : aws_lb_target_group.locker.arn
+    target_group_arn = each.value.target_group_arn != null ? each.value.target_group_arn : try(aws_lb_target_group.locker[0].arn, "")
   }
 }
