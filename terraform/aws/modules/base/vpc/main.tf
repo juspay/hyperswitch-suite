@@ -60,9 +60,9 @@ resource "aws_eip" "nat" {
 
 # Default NACL - make it deny all by default for security
 resource "aws_default_network_acl" "default" {
-  count = var.manage_default_network_acl ? 1 : 0
+  count = var.create && var.manage_default_network_acl ? 1 : 0
 
-  default_network_acl_id = aws_vpc.main.default_network_acl_id
+  default_network_acl_id = aws_vpc.main[0].default_network_acl_id
 
   tags = merge(
     var.tags,
