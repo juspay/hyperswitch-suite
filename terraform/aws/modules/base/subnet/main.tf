@@ -1,4 +1,6 @@
 resource "aws_subnet" "main" {
+  count = var.create ? 1 : 0
+
   vpc_id            = var.vpc_id
   cidr_block        = var.cidr_block
   availability_zone = var.availability_zone
@@ -33,7 +35,7 @@ resource "aws_subnet" "main" {
 
 # Route Table
 resource "aws_route_table" "main" {
-  count = var.create_route_table ? 1 : 0
+  count = var.create && var.create_route_table ? 1 : 0
 
   vpc_id = var.vpc_id
 
@@ -48,17 +50,17 @@ resource "aws_route_table" "main" {
 
 # Route Table Association
 resource "aws_route_table_association" "main" {
-  count = var.create_route_table ? 1 : 0
+  count = var.create && var.create_route_table ? 1 : 0
 
-  subnet_id      = aws_subnet.main.id
+  subnet_id      = aws_subnet.main[0].id
   route_table_id = aws_route_table.main[0].id
 }
 
 # Associate with existing route table if provided
 resource "aws_route_table_association" "existing" {
-  count = var.create_route_table ? 0 : (var.route_table_id != "" ? 1 : 0)
+  count = var.create && !var.create_route_table && var.route_table_id != "" ? 1 : 0
 
-  subnet_id      = aws_subnet.main.id
+  subnet_id      = aws_subnet.main[0].id
   route_table_id = var.route_table_id
 }
 
