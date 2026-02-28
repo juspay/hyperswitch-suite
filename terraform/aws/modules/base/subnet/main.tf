@@ -94,7 +94,7 @@ resource "aws_nat_gateway" "main" {
 
 # NAT Gateway Route (for private subnets with internet access)
 resource "aws_route" "nat_gateway" {
-  count = var.create_route_table && var.create_nat_gateway_route ? 1 : 0
+  count = var.create && var.create_route_table && var.create_nat_gateway_route ? 1 : 0
 
   route_table_id         = aws_route_table.main[0].id
   destination_cidr_block = "0.0.0.0/0"
