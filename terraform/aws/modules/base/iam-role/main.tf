@@ -15,6 +15,8 @@ locals {
 }
 
 resource "aws_iam_role" "this" {
+  count = var.create ? 1 : 0
+
   name                 = var.name
   description          = var.description
   assume_role_policy   = local.assume_role_policy
@@ -31,27 +33,27 @@ resource "aws_iam_role" "this" {
 
 # Attach managed policies
 resource "aws_iam_role_policy_attachment" "managed" {
-  for_each = toset(var.managed_policy_arns)
+  for_each = var.create ? toset(var.managed_policy_arns) : []
 
-  role       = aws_iam_role.this.name
+  role       = aws_iam_role.this[0].name
   policy_arn = each.value
 }
 
 # Create inline policies
 resource "aws_iam_role_policy" "inline" {
-  for_each = var.inline_policies
+  for_each = var.create ? var.inline_policies : {}
 
   name   = each.key
-  role   = aws_iam_role.this.id
+  role   = aws_iam_role.this[0].id
   policy = each.value
 }
 
 # Create instance profile if requested
 resource "aws_iam_instance_profile" "this" {
-  count = var.create_instance_profile ? 1 : 0
+  count = var.create && var.create_instance_profile ? 1 : 0
 
   name = var.name
-  role = aws_iam_role.this.name
+  role = aws_iam_role.this[0].name
   path = var.path
 
   tags = merge(
