@@ -65,15 +65,74 @@ External ALB (HTTP/HTTPS)
   ↓ SSL termination
 Envoy ASG (ports 80, 9901)
   ↓ Advanced routing
-Internal ALB
+Internal ALB(s)
   ↓
-EKS Cluster
+EKS Cluster(s)
 ```
 
 **Key Points:**
 - ALB handles SSL termination
 - Envoy.yaml templating for CloudFront DNS and Internal ALB DNS
 - Header-based and path-based routing
+- Weighted cluster routing for EKS cluster migration
+
+### EKS Cluster Migration Flow
+
+During EKS cluster migration, traffic can be gradually shifted from the old cluster to the new cluster using weighted routing at the Envoy level:
+
+```
+CloudFront
+  ↓
+External ALB
+  ↓
+Envoy ASG
+  ├─ 90% → Old EKS Cluster (Internal ALB)
+  └─ 10% → New EKS Cluster (New Internal ALB)
+```
+
+**Migration Workflow:**
+
+1. **Initial State** (100% to old cluster):
+   ```hcl
+   enable_cluster_migration = false
+   ```
+
+2. **Start Migration** (90/10 split):
+   ```hcl
+   enable_cluster_migration = true
+   new_cluster_internal_loadbalancer_dns = "new-eks-alb.amazonaws.com"
+   cluster_migration_weights = {
+     old_cluster_weight = 90
+     new_cluster_weight = 10
+   }
+   ```
+
+3. **Increase Traffic** (gradual shift):
+   ```hcl
+   cluster_migration_weights = {
+     old_cluster_weight = 50
+     new_cluster_weight = 50
+   }
+   ```
+
+4. **Complete Migration** (100% to new cluster):
+   ```hcl
+   cluster_migration_weights = {
+     old_cluster_weight = 0
+     new_cluster_weight = 100
+   }
+   ```
+
+5. **Cleanup** (disable migration, update primary DNS):
+   ```hcl
+   enable_cluster_migration = false
+   internal_loadbalancer_dns = "new-eks-alb.amazonaws.com"
+   ```
+
+**Validation:**
+- Weights must sum to 100
+- Each weight must be between 0 and 100
+- New cluster DNS required when new_cluster_weight > 0
 
 ## Security Architecture
 
