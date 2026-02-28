@@ -1,3 +1,9 @@
+variable "create" {
+  description = "Controls if resources should be created"
+  type        = bool
+  default     = true
+}
+
 variable "bucket_name" {
   description = "Name of the S3 bucket"
   type        = string

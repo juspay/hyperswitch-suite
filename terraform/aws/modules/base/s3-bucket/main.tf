@@ -1,4 +1,6 @@
 resource "aws_s3_bucket" "this" {
+  count = var.create ? 1 : 0
+
   bucket        = var.bucket_name
   force_destroy = var.force_destroy
 
@@ -12,7 +14,9 @@ resource "aws_s3_bucket" "this" {
 
 # Public access block
 resource "aws_s3_bucket_public_access_block" "this" {
-  bucket = aws_s3_bucket.this.id
+  count = var.create ? 1 : 0
+
+  bucket = aws_s3_bucket.this[0].id
 
   block_public_acls       = var.block_public_acls
   block_public_policy     = var.block_public_policy
@@ -22,7 +26,9 @@ resource "aws_s3_bucket_public_access_block" "this" {
 
 # Server-side encryption
 resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
-  bucket = aws_s3_bucket.this.id
+  count = var.create ? 1 : 0
+
+  bucket = aws_s3_bucket.this[0].id
 
   rule {
     apply_server_side_encryption_by_default {
@@ -35,8 +41,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
 
 # Versioning
 resource "aws_s3_bucket_versioning" "this" {
-  count  = var.enable_versioning ? 1 : 0
-  bucket = aws_s3_bucket.this.id
+  count  = var.create && var.enable_versioning ? 1 : 0
+  bucket = aws_s3_bucket.this[0].id
 
   versioning_configuration {
     status = var.versioning_status
@@ -45,8 +51,8 @@ resource "aws_s3_bucket_versioning" "this" {
 
 # Lifecycle rules
 resource "aws_s3_bucket_lifecycle_configuration" "this" {
-  count  = length(var.lifecycle_rules) > 0 ? 1 : 0
-  bucket = aws_s3_bucket.this.id
+  count  = var.create && length(var.lifecycle_rules) > 0 ? 1 : 0
+  bucket = aws_s3_bucket.this[0].id
 
   dynamic "rule" {
     for_each = var.lifecycle_rules
