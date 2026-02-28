@@ -110,12 +110,12 @@ resource "aws_default_route_table" "default" {
 
 # VPC Flow Logs for security monitoring
 resource "aws_flow_log" "main" {
-  count = var.enable_flow_logs ? 1 : 0
+  count = var.create && var.enable_flow_logs ? 1 : 0
 
   iam_role_arn    = var.flow_logs_iam_role_arn
   log_destination = var.flow_logs_destination_arn
   traffic_type    = var.flow_logs_traffic_type
-  vpc_id          = aws_vpc.main.id
+  vpc_id          = aws_vpc.main[0].id
 
   log_destination_type = var.flow_logs_destination_type
   log_format          = var.flow_logs_log_format
