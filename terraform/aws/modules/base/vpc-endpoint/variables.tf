@@ -1,3 +1,9 @@
+variable "create" {
+  description = "Controls if resources should be created"
+  type        = bool
+  default     = true
+}
+
 variable "vpc_id" {
   description = "The ID of the VPC"
   type        = string

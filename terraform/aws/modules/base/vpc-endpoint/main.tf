@@ -1,4 +1,6 @@
 resource "aws_vpc_endpoint" "main" {
+  count = var.create ? 1 : 0
+
   vpc_id            = var.vpc_id
   service_name      = var.service_name
   vpc_endpoint_type = var.vpc_endpoint_type
@@ -44,7 +46,7 @@ resource "aws_vpc_endpoint" "main" {
 
 # Security Group for Interface Endpoints
 resource "aws_security_group" "endpoint" {
-  count = var.create_security_group && var.vpc_endpoint_type == "Interface" ? 1 : 0
+  count = var.create && var.create_security_group && var.vpc_endpoint_type == "Interface" ? 1 : 0
 
   name_prefix = "${var.endpoint_name}-"
   description = "Security group for VPC endpoint ${var.endpoint_name}"
@@ -64,7 +66,7 @@ resource "aws_security_group" "endpoint" {
 
 # Ingress rule - Allow HTTPS from VPC
 resource "aws_security_group_rule" "endpoint_ingress_https" {
-  count = var.create_security_group && var.vpc_endpoint_type == "Interface" ? 1 : 0
+  count = var.create && var.create_security_group && var.vpc_endpoint_type == "Interface" ? 1 : 0
 
   type              = "ingress"
   from_port         = 443
@@ -77,7 +79,7 @@ resource "aws_security_group_rule" "endpoint_ingress_https" {
 
 # Custom ingress rules
 resource "aws_security_group_rule" "endpoint_ingress_custom" {
-  for_each = var.create_security_group && var.vpc_endpoint_type == "Interface" ? var.custom_ingress_rules : {}
+  for_each = var.create && var.create_security_group && var.vpc_endpoint_type == "Interface" ? var.custom_ingress_rules : {}
 
   type              = "ingress"
   from_port         = each.value.from_port
@@ -90,7 +92,7 @@ resource "aws_security_group_rule" "endpoint_ingress_custom" {
 
 # Egress rule - Allow all outbound
 resource "aws_security_group_rule" "endpoint_egress" {
-  count = var.create_security_group && var.vpc_endpoint_type == "Interface" ? 1 : 0
+  count = var.create && var.create_security_group && var.vpc_endpoint_type == "Interface" ? 1 : 0
 
   type              = "egress"
   from_port         = -1
