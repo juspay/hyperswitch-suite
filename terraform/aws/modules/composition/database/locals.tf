@@ -16,4 +16,8 @@ locals {
   db_subnet_group_name       = var.db_subnet_group_name != null ? var.db_subnet_group_name : "${local.name_prefix}-subnet-group"
   security_group_name        = var.security_group_name != null ? var.security_group_name : "${local.name_prefix}-sg"
   security_group_description = var.security_group_description != null ? var.security_group_description : "Security group for ${var.project_name} ${var.environment} RDS"
+
+  # Global Cluster Configuration
+  global_cluster_identifier = var.global_cluster_identifier != null ? var.global_cluster_identifier : "${local.name_prefix}-global"
+  is_secondary_cluster      = var.replication_source_identifier != null
 }
