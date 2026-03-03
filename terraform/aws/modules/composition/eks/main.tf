@@ -3,7 +3,6 @@
 # Backend is configured by Terragrunt
 # -----------------------------------------------------------------------------
 terraform {
-  backend "s3" {}
 
   required_providers {
     aws = {
