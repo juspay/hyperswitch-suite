@@ -73,3 +73,34 @@ output "eks_managed_node_groups_iam_role_name" {
   description = "IAM role name for EKS managed node groups"
   value       = try(module.eks.eks_managed_node_groups_iam_role_name, null)
 }
+
+# -----------------------------------------------------------------------------
+# Cluster Autoscaler Outputs
+# -----------------------------------------------------------------------------
+output "cluster_autoscaler_image" {
+  description = "Full image URL for cluster autoscaler (ECR or public)"
+  value       = local.cluster_autoscaler_image
+}
+
+output "cluster_autoscaler_ecr_repository_url" {
+  description = "ECR repository URL for cluster autoscaler image"
+  value       = try(aws_ecr_repository.cluster_autoscaler[0].repository_url, null)
+}
+
+# -----------------------------------------------------------------------------
+# Kubernetes Resources Outputs
+# -----------------------------------------------------------------------------
+output "default_storage_class_name" {
+  description = "Name of the default storage class (if created)"
+  value       = var.create_default_storage_class ? var.default_storage_class_name : null
+}
+
+output "hyperswitch_namespace" {
+  description = "Name of the Hyperswitch namespace (if created)"
+  value       = var.enable_helm_deployments ? kubernetes_namespace_v1.hyperswitch[0].metadata[0].name : null
+}
+
+output "hyperswitch_helm_release_status" {
+  description = "Status of the Hyperswitch Helm release (if deployed)"
+  value       = var.enable_helm_deployments ? helm_release.hyperswitch_stack[0].status : null
+}

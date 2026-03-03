@@ -1,3 +1,34 @@
+# -----------------------------------------------------------------------------
+# Terraform Configuration
+# Backend is configured by Terragrunt
+# -----------------------------------------------------------------------------
+terraform {
+  backend "s3" {}
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 3.0"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 3.1"
+    }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.9"
+    }
+  }
+}
+
 # Custom IAM Role for EKS Cluster with optional ArgoCD trust policy
 resource "aws_iam_role" "cluster" {
   name = "${var.environment}-${var.project_name}-cluster-role"
@@ -71,8 +102,9 @@ module "eks" {
   # EKS Cluster access entries for IAM principals
   access_entries = var.cluster_access_entries
 
-  # EKS Managed Node Groups
-  eks_managed_node_groups = var.node_groups
+  # Disable EKS module's managed node groups - we create our own with shared IAM role
+  # This prevents duplicate node groups and IAM roles
+  eks_managed_node_groups = {}
 
   # KMS encryption configuration
   kms_key_administrators = var.kms_key_administrators
@@ -117,4 +149,44 @@ module "ebs_csi_irsa" {
   }
 
   tags = var.tags
+}
+
+# -----------------------------------------------------------------------------
+# Data source for Kubernetes authentication
+# -----------------------------------------------------------------------------
+data "aws_eks_cluster_auth" "cluster" {
+  name = module.eks.cluster_name
+}
+
+# -----------------------------------------------------------------------------
+# Terraform data for cluster readiness check
+# -----------------------------------------------------------------------------
+resource "terraform_data" "eks_ready" {
+  triggers_replace = [
+    module.eks.cluster_id,
+    module.eks.cluster_endpoint,
+    module.eks.cluster_certificate_authority_data
+  ]
+}
+
+# -----------------------------------------------------------------------------
+# Kubernetes Provider Configuration
+# Uses try() to handle initial cluster creation when endpoint is empty
+# -----------------------------------------------------------------------------
+provider "kubernetes" {
+  host                   = try(module.eks.cluster_endpoint, "")
+  cluster_ca_certificate = try(base64decode(module.eks.cluster_certificate_authority_data), "")
+  token                  = try(data.aws_eks_cluster_auth.cluster.token, "")
+}
+
+# -----------------------------------------------------------------------------
+# Helm Provider Configuration
+# Uses try() to handle initial cluster creation when endpoint is empty
+# -----------------------------------------------------------------------------
+provider "helm" {
+  kubernetes = {
+    host                   = try(module.eks.cluster_endpoint, "")
+    cluster_ca_certificate = try(base64decode(module.eks.cluster_certificate_authority_data), "")
+    token                  = try(data.aws_eks_cluster_auth.cluster.token, "")
+  }
 }
