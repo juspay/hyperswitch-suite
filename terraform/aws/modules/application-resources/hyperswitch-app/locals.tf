@@ -43,6 +43,10 @@ locals {
   assume_role_arns       = local.assume_role_enabled ? try(var.assume_role.target_role_arns, []) : []
   assume_role_account_id = local.assume_role_enabled ? try(var.assume_role.account_id, null) : null
 
+  # Lambda feature
+  lambda_enabled      = var.lambda != {} && try(var.lambda.enabled, false)
+  lambda_function_arns = local.lambda_enabled ? try(var.lambda.function_arns, []) : []
+
   # =========================================================================
   # OIDC Configuration
   # =========================================================================

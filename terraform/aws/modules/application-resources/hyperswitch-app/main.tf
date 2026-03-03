@@ -280,3 +280,56 @@ resource "aws_iam_role_policy_attachment" "assume_role_policy_attachment" {
   role       = aws_iam_role.iam_role.name
   policy_arn = aws_iam_policy.assume_role_policy[0].arn
 }
+
+# =========================================================================
+# IAM - LAMBDA POLICY
+# =========================================================================
+resource "aws_iam_policy" "lambda_policy" {
+  count = local.lambda_enabled ? 1 : 0
+
+  name = "${local.name_prefix}-lambda-policy"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = concat(
+      # Global Lambda permissions (list/get/create operations)
+      [
+        {
+          Sid    = "AllowLambdaGlobalOperations"
+          Effect = "Allow"
+          Action = [
+            "lambda:ListFunctions",
+            "lambda:ListEventSourceMappings",
+            "lambda:ListLayerVersions",
+            "lambda:ListLayers",
+            "lambda:GetAccountSettings",
+            "lambda:CreateEventSourceMapping",
+            "lambda:ListCodeSigningConfigs",
+            "lambda:CreateCodeSigningConfig"
+          ]
+          Resource = "*"
+        }
+      ],
+      # Specific Lambda function permissions (invoke and all operations)
+      length(local.lambda_function_arns) > 0 ? [
+        {
+          Sid    = "AllowLambdaFunctionOperations"
+          Effect = "Allow"
+          Action = [
+            "lambda:InvokeFunction",
+            "lambda:*"
+          ]
+          Resource = local.lambda_function_arns
+        }
+      ] : []
+    )
+  })
+
+  tags = local.common_tags
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_policy_attachment" {
+  count = local.lambda_enabled ? 1 : 0
+
+  role       = aws_iam_role.iam_role.name
+  policy_arn = aws_iam_policy.lambda_policy[0].arn
+}

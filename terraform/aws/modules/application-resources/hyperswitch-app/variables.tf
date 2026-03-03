@@ -162,6 +162,22 @@ variable "secrets_manager" {
 }
 
 # =========================================================================
+# Feature: Lambda Functions
+# =========================================================================
+# Set to {} to disable Lambda policy
+# Set enabled=true and provide function_arns for specific function permissions
+
+variable "lambda" {
+  description = "Lambda function configuration. Set to {} to disable Lambda policy. Set enabled=true to allow Lambda operations on specific functions."
+  type = object({
+    enabled      = optional(bool, false)
+    function_arns = optional(list(string), []) # List of Lambda function ARNs to allow invoke/all operations on
+    # If empty list, only list/get/create permissions will be granted (no specific function access)
+  })
+  default = {}
+}
+
+# =========================================================================
 # Feature: Cross-Account Assume Role
 # =========================================================================
 

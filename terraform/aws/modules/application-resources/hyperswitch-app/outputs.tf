@@ -141,3 +141,21 @@ output "assume_role_policy_arn" {
   description = "ARN of the assume role IAM policy (if enabled)"
   value       = local.assume_role_enabled ? aws_iam_policy.assume_role_policy[0].arn : null
 }
+
+# =========================================================================
+# LAMBDA OUTPUTS
+# =========================================================================
+output "lambda_enabled" {
+  description = "Whether Lambda feature is enabled"
+  value       = local.lambda_enabled
+}
+
+output "lambda_policy_arn" {
+  description = "ARN of the Lambda IAM policy (if enabled)"
+  value       = local.lambda_enabled ? aws_iam_policy.lambda_policy[0].arn : null
+}
+
+output "lambda_function_arns" {
+  description = "List of Lambda function ARNs configured for access"
+  value       = local.lambda_function_arns
+}
