@@ -657,7 +657,7 @@ module "asg" {
   # Ensure S3 config files are uploaded before ASG starts
   depends_on = [aws_s3_object.envoy_config_files, aws_launch_template.envoy]
 
-  name = "${local.name_prefix}-asg-v${each.key}"
+  name = each.value.name
 
   # =========================================================================
   # Launch Template Configuration Strategy
@@ -710,8 +710,8 @@ module "asg" {
 
   # Traffic sources (replaces target_group_arns in v8+)
   traffic_source_attachments = var.create_target_group || var.existing_tg_arn != null ? {
-    envoy_tg = {
-      traffic_source_identifier = each.value.target_group_arns
+    for idx, arn in each.value.target_group_arns : "envoy_tg_${idx}" => {
+      traffic_source_identifier = arn
       traffic_source_type       = "elbv2"
     }
   } : null

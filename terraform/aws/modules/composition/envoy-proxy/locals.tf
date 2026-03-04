@@ -97,6 +97,7 @@ locals {
         deployment        = "blue"
         target_group_arns = data.aws_autoscaling_group.asg_blue[0].target_group_arns
         weight            = var.blue_green_rollout.blue_weight
+        name              = data.aws_autoscaling_group.asg_blue[0].name
       }
     } : {},
     try(var.blue_green_rollout.green_weight, null) != null ? {
@@ -106,6 +107,7 @@ locals {
         deployment        = "green"
         target_group_arns = local.target_group_arns
         weight            = var.blue_green_rollout.green_weight
+        name              = "${local.name_prefix}-asg-v${local.rollout_version + 1}"
       }
     } : {}
     ) : {
@@ -115,6 +117,7 @@ locals {
       deployment        = "blue"
       target_group_arns = local.target_group_arns
       weight            = 100
+      name              = "${local.name_prefix}-asg-v${local.standard_version}"
     }
   }
 
