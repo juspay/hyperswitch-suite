@@ -586,7 +586,8 @@ resource "aws_launch_template" "envoy" {
   vpc_security_group_ids = [module.asg_security_group.security_group_id]
   ebs_optimized          = var.ebs_optimized
   user_data              = base64encode(local.userdata_content)
-  update_default_version = true
+  update_default_version = var.update_default_version
+  default_version = var.set_lt_default_version
 
   iam_instance_profile {
     name = local.instance_profile_name
