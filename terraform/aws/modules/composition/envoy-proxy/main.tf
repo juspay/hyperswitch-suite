@@ -6,7 +6,7 @@ module "key_pair" {
   source  = "terraform-aws-modules/key-pair/aws"
   version = "~> 2.0"
 
-  key_name              = "${local.name_prefix}-keypair-${data.aws_region.current.name}"
+  key_name              = "${local.name_prefix}-keypair-${data.aws_region.current.region}"
   create_private_key    = true
   private_key_algorithm = "RSA"
   private_key_rsa_bits  = 4096
@@ -48,7 +48,7 @@ module "logs_bucket" {
   source  = "terraform-aws-modules/s3-bucket/aws"
   version = "~> 4.0"
 
-  bucket        = "${local.name_prefix}-logs-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
+  bucket        = "${local.name_prefix}-logs-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.region}"
   force_destroy = var.environment != "prod" ? true : false
 
   # Versioning
@@ -84,7 +84,7 @@ module "config_bucket" {
   source  = "terraform-aws-modules/s3-bucket/aws"
   version = "~> 4.0"
 
-  bucket        = "${local.name_prefix}-config-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
+  bucket        = "${local.name_prefix}-config-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.region}"
   force_destroy = var.environment != "prod" ? true : false
 
   # Versioning - Enable to track config changes
