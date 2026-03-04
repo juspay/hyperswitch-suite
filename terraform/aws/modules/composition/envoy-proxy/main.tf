@@ -696,7 +696,7 @@ module "asg" {
 
 
   # VPC and networking
-  vpc_zone_identifier = var.proxy_subnet_ids
+  vpc_zone_identifier = each.value.vpc_zone_identifier
 
   # Capacity
   min_size         = var.min_size
