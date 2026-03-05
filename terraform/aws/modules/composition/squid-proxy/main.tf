@@ -240,6 +240,54 @@ module "asg_security_group" {
 }
 
 # =========================================================================
+# NLB Security Group
+# =========================================================================
+# NOTE: This security group is for the Network Load Balancer.
+# INBOUND RULES (who can access the NLB) should be defined in the 
+# security-rules module at the live layer to support cross-module 
+# connectivity (e.g., EKS pods → Squid NLB).
+# Only internal rules (NLB → ASG) are defined here.
+# =========================================================================
+module "nlb_security_group" {
+  count  = var.create_nlb ? 1 : 0
+  source = "../../base/security-group"
+
+  name        = "${local.name_prefix}-nlb-sg"
+  description = "Security group for Squid proxy NLB"
+  vpc_id      = var.vpc_id
+
+  tags = local.common_tags
+}
+
+# Outbound rule from NLB to Squid ASG instances
+resource "aws_security_group_rule" "nlb_to_squid_outbound" {
+  count = var.create_nlb ? 1 : 0
+
+  type                     = "egress"
+  from_port                = var.squid_port
+  to_port                  = var.squid_port
+  protocol                 = "tcp"
+  source_security_group_id = module.asg_security_group.sg_id
+  security_group_id        = module.nlb_security_group[0].sg_id
+
+  description = "Allow outbound traffic from NLB to Squid instances"
+}
+
+# Inbound rule on Squid ASG from NLB security group
+resource "aws_security_group_rule" "squid_from_nlb_inbound" {
+  count = var.create_nlb ? 1 : 0
+
+  type                     = "ingress"
+  from_port                = var.squid_port
+  to_port                  = var.squid_port
+  protocol                 = "tcp"
+  source_security_group_id = module.nlb_security_group[0].sg_id
+  security_group_id        = module.asg_security_group.sg_id
+
+  description = "Allow inbound traffic from NLB to Squid instances on port ${var.squid_port}"
+}
+
+# =========================================================================
 # Allow NLB Health Checks from LB Subnets
 # =========================================================================
 # NLB health checks originate from the NLB's private IPs in the lb_subnet_ids
@@ -267,7 +315,7 @@ module "nlb" {
   name            = "${local.name_prefix}-nlb"
   internal        = true
   subnets         = var.lb_subnet_ids
-  security_groups = []
+  security_groups = [module.nlb_security_group[0].sg_id]
 
   enable_deletion_protection       = var.environment == "prod" ? true : false
   enable_cross_zone_load_balancing = true

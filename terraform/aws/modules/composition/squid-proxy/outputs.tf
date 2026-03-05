@@ -66,6 +66,11 @@ output "asg_security_group_id" {
   value       = module.asg_security_group.sg_id
 }
 
+output "nlb_security_group_id" {
+  description = "Security group ID for Network Load Balancer (null if NLB not created)"
+  value       = var.create_nlb ? module.nlb_security_group[0].sg_id : null
+}
+
 output "logs_bucket_name" {
   description = "Name of the S3 bucket for logs (created or existing)"
   value       = local.logs_bucket_name
