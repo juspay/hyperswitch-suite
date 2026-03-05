@@ -386,3 +386,47 @@ variable "scaling_policies" {
     }
   }
 }
+
+# =========================================================================
+# Spot Instance Configuration
+# =========================================================================
+
+variable "enable_spot_instances" {
+  description = "Enable mixed instances policy with spot instances for cost optimization"
+  type        = bool
+  default     = false
+}
+
+variable "spot_instance_percentage" {
+  description = "Percentage of spot instances in the ASG (0-100). Remaining will be on-demand."
+  type        = number
+  default     = 50
+
+  validation {
+    condition     = var.spot_instance_percentage >= 0 && var.spot_instance_percentage <= 100
+    error_message = "Spot instance percentage must be between 0 and 100"
+  }
+}
+
+variable "on_demand_base_capacity" {
+  description = "Minimum number of on-demand instances to maintain (useful for baseline capacity)"
+  type        = number
+  default     = 0
+}
+
+variable "spot_allocation_strategy" {
+  description = "Strategy for allocating spot instances (lowest-price, capacity-optimized, capacity-optimized-prioritized)"
+  type        = string
+  default     = "capacity-optimized"
+
+  validation {
+    condition     = contains(["lowest-price", "capacity-optimized", "capacity-optimized-prioritized"], var.spot_allocation_strategy)
+    error_message = "Spot allocation strategy must be one of: lowest-price, capacity-optimized, capacity-optimized-prioritized"
+  }
+}
+
+variable "enable_capacity_rebalance" {
+  description = "Enable capacity rebalancing for spot instances. When enabled, ASG proactively replaces spot instances before they are interrupted."
+  type        = bool
+  default     = false
+}
