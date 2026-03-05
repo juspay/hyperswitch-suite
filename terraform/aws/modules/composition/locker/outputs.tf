@@ -60,3 +60,59 @@ output "nlb_listener_details" {
     protocol = listener.protocol
   }}
 }
+
+# =========================================================================
+# KMS Outputs
+# =========================================================================
+output "kms_key_arn" {
+  description = "The ARN of the created KMS key"
+  value       = local.kms_create ? module.kms[0].key_arn : null
+}
+
+output "kms_key_id" {
+  description = "The ID of the created KMS key"
+  value       = local.kms_create ? module.kms[0].key_id : null
+}
+
+output "kms_key_aliases" {
+  description = "The aliases of the created KMS key"
+  value       = local.kms_create ? module.kms[0].aliases : null
+}
+
+output "kms_key_arns" {
+  description = "List of all KMS key ARNs (created + additional)"
+  value       = local.kms_key_arns
+}
+
+# =========================================================================
+# Database Outputs
+# =========================================================================
+output "db_cluster_endpoint" {
+  description = "The cluster endpoint of the RDS Aurora database"
+  value       = var.create_locker_database && var.database_config != null ? module.database[0].cluster_endpoint : null
+}
+
+output "db_cluster_reader_endpoint" {
+  description = "The reader endpoint of the RDS Aurora database"
+  value       = var.create_locker_database && var.database_config != null ? module.database[0].cluster_reader_endpoint : null
+}
+
+output "db_cluster_arn" {
+  description = "The ARN of the RDS Aurora database cluster"
+  value       = var.create_locker_database && var.database_config != null ? module.database[0].cluster_arn : null
+}
+
+output "db_security_group_id" {
+  description = "The security group ID of the RDS database"
+  value       = var.create_locker_database && var.database_config != null ? module.database[0].security_group_id : null
+}
+
+output "db_subnet_group_id" {
+  description = "The subnet group ID of the RDS database"
+  value       = var.create_locker_database && var.database_config != null ? module.database[0].db_subnet_group_id : null
+}
+
+output "db_instance_endpoints" {
+  description = "Map of instance endpoints for the RDS cluster"
+  value       = var.create_locker_database && var.database_config != null ? module.database[0].cluster_instance_endpoints : null
+}

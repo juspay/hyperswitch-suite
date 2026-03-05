@@ -23,3 +23,8 @@ output "repository_policies" {
   description = "Map of repository keys to their policies"
   value       = { for k, v in aws_ecr_repository_policy.policies : k => v.policy }
 }
+
+output "lifecycle_policies" {
+  description = "Map of repository keys to their lifecycle policies"
+  value       = { for k, v in aws_ecr_lifecycle_policy.lifecycle_policies : k => v.policy }
+}

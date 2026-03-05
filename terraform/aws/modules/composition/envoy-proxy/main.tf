@@ -6,7 +6,7 @@ module "key_pair" {
   source  = "terraform-aws-modules/key-pair/aws"
   version = "~> 2.0"
 
-  key_name              = "${local.name_prefix}-keypair-${data.aws_region.current.name}"
+  key_name              = "${local.name_prefix}-keypair-${data.aws_region.current.region}"
   create_private_key    = true
   private_key_algorithm = "RSA"
   private_key_rsa_bits  = 4096
@@ -48,7 +48,7 @@ module "logs_bucket" {
   source  = "terraform-aws-modules/s3-bucket/aws"
   version = "~> 4.0"
 
-  bucket        = "${local.name_prefix}-logs-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
+  bucket        = "${local.name_prefix}-logs-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.region}"
   force_destroy = var.environment != "prod" ? true : false
 
   # Versioning
@@ -84,7 +84,7 @@ module "config_bucket" {
   source  = "terraform-aws-modules/s3-bucket/aws"
   version = "~> 4.0"
 
-  bucket        = "${local.name_prefix}-config-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.name}"
+  bucket        = "${local.name_prefix}-config-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.region}"
   force_destroy = var.environment != "prod" ? true : false
 
   # Versioning - Enable to track config changes
@@ -586,7 +586,8 @@ resource "aws_launch_template" "envoy" {
   vpc_security_group_ids = [module.asg_security_group.security_group_id]
   ebs_optimized          = var.ebs_optimized
   user_data              = base64encode(local.userdata_content)
-  update_default_version = true
+  update_default_version = var.update_default_version
+  default_version = var.set_lt_default_version
 
   iam_instance_profile {
     name = local.instance_profile_name
@@ -657,7 +658,7 @@ module "asg" {
   # Ensure S3 config files are uploaded before ASG starts
   depends_on = [aws_s3_object.envoy_config_files, aws_launch_template.envoy]
 
-  name = "${local.name_prefix}-asg-v${each.key}"
+  name = each.value.name
 
   # =========================================================================
   # Launch Template Configuration Strategy
@@ -696,7 +697,7 @@ module "asg" {
 
 
   # VPC and networking
-  vpc_zone_identifier = var.proxy_subnet_ids
+  vpc_zone_identifier = each.value.vpc_zone_identifier
 
   # Capacity
   min_size         = var.min_size
@@ -710,8 +711,8 @@ module "asg" {
 
   # Traffic sources (replaces target_group_arns in v8+)
   traffic_source_attachments = var.create_target_group || var.existing_tg_arn != null ? {
-    envoy_tg = {
-      traffic_source_identifier = each.value.target_group_arns
+    for idx, arn in each.value.target_group_arns : "envoy_tg_${idx}" => {
+      traffic_source_identifier = arn
       traffic_source_type       = "elbv2"
     }
   } : null

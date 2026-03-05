@@ -1,3 +1,9 @@
+variable "region" {
+  description = "(Optional) Region where this resource will be managed. Defaults to the Region set in the provider configuration"
+  type        = string
+  default     = null
+}
+
 variable "environment" {
   description = "Environment name (e.g., dev, integ, prod)"
   type        = string
@@ -80,4 +86,10 @@ variable "enable_internal_jump_ssm" {
   description = "Enable SSM Session Manager access for internal jump host. When true, adds SSM policies to internal jump IAM role"
   type        = bool
   default     = false
+}
+
+variable "ssm_os_username" {
+  description = "OS username for SSM Session Manager access. Defaults to the standard username used by SSM Agent. Can be overridden based on your environment and SSM config."
+  type        = string
+  default     = "ssm-user"
 }

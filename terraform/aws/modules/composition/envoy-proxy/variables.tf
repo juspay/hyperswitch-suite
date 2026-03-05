@@ -206,6 +206,18 @@ variable "instance_type" {
   default     = "t3.medium"
 }
 
+variable "set_lt_default_version" {
+  description = "Value of launch template version to be set as default. Conflicts with update_default_version"
+  type = string
+  default = null
+}
+
+variable "update_default_version" {
+  description = "Whether to update default version of launch template on every update. Conflicts with set_lt_default_version"
+  type        = bool
+  default     = false
+}
+
 variable "use_existing_launch_template" {
   description = "Whether to use an existing launch template instead of creating a new one"
   type        = bool
@@ -532,6 +544,12 @@ variable "hyperswitch_cloudfront_dns" {
 
 variable "internal_loadbalancer_dns" {
   description = "Internal load balancer DNS (for envoy.yaml templating)"
+  type        = string
+  default     = ""
+}
+
+variable "eks_cluster_name" {
+  description = "EKS cluster name (for envoy.yaml templating)"
   type        = string
   default     = ""
 }

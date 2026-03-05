@@ -20,6 +20,7 @@ module "jump_host" {
 
   environment  = var.environment
   project_name = var.project_name
+  region = var.region
 
   # Network Configuration
   vpc_id            = var.vpc_id

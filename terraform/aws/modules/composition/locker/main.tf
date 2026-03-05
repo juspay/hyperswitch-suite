@@ -1,3 +1,7 @@
+provider "aws" {
+  region = var.region
+}
+
 # =========================================================================
 # DATA SOURCES
 # =========================================================================
@@ -192,6 +196,8 @@ resource "aws_iam_policy" "locker_ecr" {
 
 # KMS Policy
 resource "aws_iam_policy" "locker_kms" {
+  count = var.kms != null ? 1 : 0
+
   name = "${local.name_prefix}-kms-policy"
   policy = jsonencode({
     Version = "2012-10-17"
@@ -210,7 +216,7 @@ resource "aws_iam_policy" "locker_kms" {
           "kms:CreateKey",
           "kms:CreateCustomKeyStore"
         ]
-        Resource = "*"
+        Resources = local.kms_key_arns
       }
     ]
   })
@@ -310,7 +316,7 @@ resource "aws_lb_target_group" "locker" {
 }
 
 resource "aws_lb_target_group_attachment" "locker" {
-  count            = var.instance_count
+  count = var.instance_count
 
   target_group_arn = aws_lb_target_group.locker.arn
   target_id        = module.locker_instance[count.index].id

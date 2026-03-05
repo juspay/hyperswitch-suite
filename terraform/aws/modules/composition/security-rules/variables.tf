@@ -9,6 +9,12 @@
 #   4. Passing merged lists to this module
 # =========================================================================
 
+variable "region" {
+  description = "AWS Region"
+  type        = string
+  default     = null
+}
+
 variable "ingress_rules" {
   description = "List of ingress rules grouped by security group ID"
   type = list(object({

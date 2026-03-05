@@ -132,5 +132,12 @@ module "squid_proxy" {
   enable_autoscaling = var.enable_autoscaling
   scaling_policies   = var.scaling_policies
 
+  # Spot Instance Configuration
+  enable_spot_instances       = var.enable_spot_instances
+  spot_instance_percentage    = var.spot_instance_percentage
+  on_demand_base_capacity     = var.on_demand_base_capacity
+  spot_allocation_strategy    = var.spot_allocation_strategy
+  enable_capacity_rebalance   = var.enable_capacity_rebalance
+
   tags = var.common_tags
 }

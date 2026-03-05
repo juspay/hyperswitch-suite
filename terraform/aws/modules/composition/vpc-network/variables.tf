@@ -26,7 +26,7 @@ variable "availability_zones" {
   type        = list(string)
 }
 
-variable "aws_region" {
+variable "region" {
   description = "AWS region for VPC endpoints"
   type        = string
 }

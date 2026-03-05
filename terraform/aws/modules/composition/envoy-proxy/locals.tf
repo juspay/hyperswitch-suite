@@ -21,6 +21,9 @@ locals {
     }
   )
 
+  default_eks_cluster_name = "${var.environment}-${var.project_name}-cluster"
+  eks_cluster_name = var.eks_cluster_name != "" ? var.eks_cluster_name : local.default_eks_cluster_name
+
   # Envoy configuration templating - replace placeholders with actual values
   # Supports: {{hyperswitch_cloudfront_dns}}, {{internal_loadbalancer_dns}}, {{eks_cluster_name}}
   envoy_config_content = replace(
@@ -31,7 +34,7 @@ locals {
       ),
       "{{internal_loadbalancer_dns}}", var.internal_loadbalancer_dns
     ),
-    "{{eks_cluster_name}}", "${var.environment}-${var.project_name}-cluster"
+    "{{eks_cluster_name}}", local.eks_cluster_name
   )
 
   # Logs bucket selection - use created or existing
@@ -92,29 +95,35 @@ locals {
   deployments = local.enable_bg_rollout ? merge(
     try(var.blue_green_rollout.blue_weight, null) != null ? {
       (local.rollout_version) = {
-        lt_version        = data.aws_autoscaling_group.asg_blue[0].launch_template[0].version
-        lt_id             = data.aws_autoscaling_group.asg_blue[0].launch_template[0].id
-        deployment        = "blue"
-        target_group_arns = data.aws_autoscaling_group.asg_blue[0].target_group_arns
-        weight            = var.blue_green_rollout.blue_weight
+        lt_version          = data.aws_autoscaling_group.asg_blue[0].launch_template[0].version
+        lt_id               = data.aws_autoscaling_group.asg_blue[0].launch_template[0].id
+        deployment          = "blue"
+        target_group_arns   = data.aws_autoscaling_group.asg_blue[0].target_group_arns
+        weight              = var.blue_green_rollout.blue_weight
+        name                = data.aws_autoscaling_group.asg_blue[0].name
+        vpc_zone_identifier = data.aws_autoscaling_group.asg_blue[0].vpc_zone_identifier
       }
     } : {},
     try(var.blue_green_rollout.green_weight, null) != null ? {
       (local.rollout_version + 1) = {
-        lt_version        = local.launch_template_version
-        lt_id             = local.launch_template_id
-        deployment        = "green"
-        target_group_arns = local.target_group_arns
-        weight            = var.blue_green_rollout.green_weight
+        lt_version          = local.launch_template_version
+        lt_id               = local.launch_template_id
+        deployment          = "green"
+        target_group_arns   = local.target_group_arns
+        weight              = var.blue_green_rollout.green_weight
+        name                = "${local.name_prefix}-asg-v${local.rollout_version + 1}"
+        vpc_zone_identifier = var.proxy_subnet_ids
       }
     } : {}
     ) : {
     (local.standard_version) = {
-      lt_version        = local.launch_template_version
-      lt_id             = local.launch_template_id
-      deployment        = "blue"
-      target_group_arns = local.target_group_arns
-      weight            = 100
+      lt_version          = local.launch_template_version
+      lt_id               = local.launch_template_id
+      deployment          = "blue"
+      target_group_arns   = local.target_group_arns
+      weight              = 100
+      name                = "${local.name_prefix}-asg-v${local.standard_version}"
+      vpc_zone_identifier = var.proxy_subnet_ids
     }
   }
 

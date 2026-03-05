@@ -23,4 +23,10 @@ locals {
   # Auto-generate key pair name if not provided
   key_pair_name = var.key_name != null ? var.key_name : "${local.name_prefix}-key"
 
+  # KMS logic - concat created key ARN with additional key ARNs
+  kms_create   = var.kms != null ? var.kms.create : false
+  kms_key_arns = concat(
+    local.kms_create ? [module.kms[0].key_arn] : [],
+    try(var.kms.key_arns, [])
+  )
 }
