@@ -33,7 +33,7 @@ locals {
   # Flatten the ingress rules structure for easier iteration
   # Creates a map with unique keys combining sg_id and rule hash
   ingress_rules_flat = merge([
-    for group in var.ingress_rules : {
+    for group_name, group in var.ingress_rules : {
       for rule in group.rules :
       "${group.sg_id}_${sha256(jsonencode(rule))}" => {
         sg_id           = group.sg_id
@@ -51,7 +51,7 @@ locals {
 
   # Flatten the egress rules structure for easier iteration
   egress_rules_flat = merge([
-    for group in var.egress_rules : {
+    for group_name, group in var.egress_rules : {
       for rule in group.rules :
       "${group.sg_id}_${sha256(jsonencode(rule))}" => {
         sg_id           = group.sg_id

@@ -16,8 +16,8 @@ variable "region" {
 }
 
 variable "ingress_rules" {
-  description = "List of ingress rules grouped by security group ID"
-  type = list(object({
+  description = "Map of ingress rules grouped by security group ID, keyed by rule name"
+  type = map(object({
     sg_id = string
     rules = list(object({
       description     = string
@@ -30,7 +30,7 @@ variable "ingress_rules" {
       prefix_list_ids = optional(list(string))    # VPC Endpoint Prefix Lists
     }))
   }))
-  default = []
+  default = {}
 
   validation {
     condition = alltrue(flatten([
@@ -45,8 +45,8 @@ variable "ingress_rules" {
 }
 
 variable "egress_rules" {
-  description = "List of egress rules grouped by security group ID"
-  type = list(object({
+  description = "Map of egress rules grouped by security group ID, keyed by rule name"
+  type = map(object({
     sg_id = string
     rules = list(object({
       description     = string
@@ -59,7 +59,7 @@ variable "egress_rules" {
       prefix_list_ids = optional(list(string))    # VPC Endpoint Prefix Lists
     }))
   }))
-  default = []
+  default = {}
 
   validation {
     condition = alltrue(flatten([
