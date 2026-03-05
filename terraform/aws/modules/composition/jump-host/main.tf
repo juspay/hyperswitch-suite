@@ -1,3 +1,7 @@
+provider "aws" {
+  region = var.region
+}
+
 # CloudWatch Log Group for jump host logs
 resource "aws_cloudwatch_log_group" "jump_host" {
   for_each = toset(["external", "internal"])
