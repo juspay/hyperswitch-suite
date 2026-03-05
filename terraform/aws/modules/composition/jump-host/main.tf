@@ -393,6 +393,7 @@ module "external_jump_instance" {
     environment       = var.environment
     cloudwatch_region = data.aws_region.current.id
     internal_jump_ip  = module.internal_jump_instance.private_ip
+    os_username       = var.ssm_os_username
   }))
 
   # Root volume configuration
