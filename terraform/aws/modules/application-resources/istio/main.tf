@@ -112,12 +112,12 @@ resource "helm_release" "istio_gateway" {
 
   values = concat(
     [
-    yamlencode({
-      service = {
-        type = "ClusterIP"
-        annotations = {}
-      }
-    })
+      yamlencode({
+        service = {
+          type        = "ClusterIP"
+          annotations = {}
+        }
+      })
     ],
     local.istio_gateway.values_file != "" ? [file(local.istio_gateway.values_file)] : [],
     local.istio_gateway.values
@@ -141,7 +141,10 @@ resource "kubernetes_ingress_v1" "istio_gateway" {
     namespace = var.istio_namespace
     annotations = merge(
       local.ingress_annotations,
-      var.ingress_annotations
+      var.ingress_annotations,
+      var.alb.enabled ? {
+        "alb.ingress.kubernetes.io/load-balancer-name" = var.alb.name != null ? var.alb.name : "${local.name_prefix}-alb"
+      } : {}
     )
   }
 
@@ -184,4 +187,53 @@ resource "kubernetes_ingress_v1" "istio_gateway" {
   depends_on = [
     helm_release.istio_gateway
   ]
+}
+
+# ============================================================================
+# Application Load Balancer (using terraform-aws-modules/alb/aws)
+# ============================================================================
+
+module "alb" {
+  source  = "terraform-aws-modules/alb/aws"
+  version = "10.5.0"
+
+  create = var.alb.enabled
+
+  name = var.alb.name != null ? var.alb.name : "${local.name_prefix}-alb"
+
+  load_balancer_type = "application"
+  internal           = var.alb.internal
+  vpc_id             = var.vpc_id
+  subnets            = var.lb_subnet_ids
+
+  create_security_group = false
+  security_groups = compact(concat(
+    var.create_lb_security_group ? [aws_security_group.lb_security_group[0].id] : [],
+    var.lb_security_groups
+  ))
+
+  enable_deletion_protection = var.alb.enable_deletion_protection
+  enable_http2               = var.alb.enable_http2
+  enable_waf_fail_open       = var.alb.enable_waf_fail_open
+  drop_invalid_header_fields = var.alb.drop_invalid_header_fields
+  idle_timeout               = var.alb.idle_timeout
+  ip_address_type            = var.alb.ip_address_type
+
+  access_logs       = var.alb.access_logs
+  connection_logs   = var.alb.connection_logs
+  health_check_logs = var.alb.health_check_logs
+
+  listeners                           = var.alb.listeners
+  target_groups                       = var.alb.target_groups
+  additional_target_group_attachments = var.alb.additional_target_group_attachments
+  route53_records                     = var.alb.route53_records
+
+  associate_web_acl          = var.alb.associate_web_acl
+  web_acl_arn                = var.alb.web_acl_arn
+  desync_mitigation_mode     = var.alb.desync_mitigation_mode
+  preserve_host_header       = var.alb.preserve_host_header
+  xff_header_processing_mode = var.alb.xff_header_processing_mode
+  client_keep_alive          = var.alb.client_keep_alive
+
+  tags = merge(local.common_tags, var.alb.tags)
 }
