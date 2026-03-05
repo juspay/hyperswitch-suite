@@ -1,6 +1,11 @@
 ###################
 # VPC
 ###################
+
+provider "aws" {
+  region = var.region
+}
+
 module "vpc" {
   source = "../../base/vpc"
 
