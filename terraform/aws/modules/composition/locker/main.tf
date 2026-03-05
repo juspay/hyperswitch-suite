@@ -74,39 +74,39 @@ resource "aws_security_group" "locker" {
 # =========================================================================
 # LOCKER SECURITY GROUP - INGRESS RULES
 # =========================================================================
-# Internal rule: Allow traffic from NLB (required for module functionality)
-resource "aws_security_group_rule" "locker_ingress_from_nlb" {
+# Internal rule: Allow traffic from ALB (required for module functionality)
+resource "aws_security_group_rule" "locker_ingress_from_alb" {
   security_group_id        = local.locker_security_group_id
   type                     = "ingress"
   from_port                = var.locker_port
   to_port                  = var.locker_port
   protocol                 = "tcp"
-  source_security_group_id = aws_security_group.nlb.id
-  description              = "Allow traffic from NLB to locker instance"
+  source_security_group_id = aws_security_group.alb.id
+  description              = "Allow traffic from ALB to locker instance"
 }
 
 # =========================================================================
-# SECURITY - NLB SECURITY GROUP
+# SECURITY - ALB SECURITY GROUP
 # =========================================================================
-resource "aws_security_group" "nlb" {
-  name        = "${local.name_prefix}-nlb-sg"
-  description = "Security group for locker Network Load Balancer"
+resource "aws_security_group" "alb" {
+  name        = "${local.name_prefix}-alb-sg"
+  description = "Security group for locker Application Load Balancer"
   vpc_id      = var.vpc_id
   tags        = local.common_tags
 }
 
 # =========================================================================
-# NLB SECURITY GROUP - EGRESS RULES
+# ALB SECURITY GROUP - EGRESS RULES
 # =========================================================================
-# Internal rule: Allow NLB to send traffic to locker instance (required for module functionality)
-resource "aws_security_group_rule" "nlb_egress_to_locker" {
-  security_group_id        = aws_security_group.nlb.id
+# Internal rule: Allow ALB to send traffic to locker instance (required for module functionality)
+resource "aws_security_group_rule" "alb_egress_to_locker" {
+  security_group_id        = aws_security_group.alb.id
   type                     = "egress"
   from_port                = var.locker_port
   to_port                  = var.locker_port
   protocol                 = "tcp"
   source_security_group_id = local.locker_security_group_id
-  description              = "Allow NLB to send traffic to locker instance"
+  description              = "Allow ALB to send traffic to locker instance"
 }
 
 # =========================================================================
@@ -286,30 +286,40 @@ module "locker_instance" {
 }
 
 # =========================================================================
-# LOAD BALANCER - NETWORK LOAD BALANCER
+# LOAD BALANCER - APPLICATION LOAD BALANCER
 # =========================================================================
-resource "aws_lb" "locker_nlb" {
-  name               = "${local.name_prefix}-nlb"
+resource "aws_lb" "locker_alb" {
+  name               = "${local.name_prefix}-alb"
   internal           = true
-  load_balancer_type = "network"
+  load_balancer_type = "application"
   subnets            = [local.locker_subnet_id]
-  security_groups    = [aws_security_group.nlb.id]
+  security_groups    = [aws_security_group.alb.id]
 
   tags = local.common_tags
 }
 
 # =========================================================================
-# LOAD BALANCER - TARGET GROUP
+# LOAD BALANCER - TARGET GROUPS (One per instance for weighted routing)
 # =========================================================================
 resource "aws_lb_target_group" "locker" {
-  name     = "${local.name_prefix}-tg"
-  port     = var.locker_port
-  protocol = "TCP"
-  vpc_id   = var.vpc_id
+  count = var.instance_count
+
+  name        = "${local.name_prefix}-tg-${count.index}"
+  port        = var.locker_port
+  protocol    = "HTTP"
+  vpc_id      = var.vpc_id
+  target_type = "instance"
 
   health_check {
-    port     = var.locker_port
-    protocol = "TCP"
+    enabled             = true
+    healthy_threshold   = 2
+    interval            = 30
+    matcher             = "200"
+    path                = "/health"
+    port                = var.locker_port
+    protocol            = "HTTP"
+    timeout             = 5
+    unhealthy_threshold = 2
   }
 
   tags = local.common_tags
@@ -318,7 +328,7 @@ resource "aws_lb_target_group" "locker" {
 resource "aws_lb_target_group_attachment" "locker" {
   count = var.instance_count
 
-  target_group_arn = aws_lb_target_group.locker.arn
+  target_group_arn = aws_lb_target_group.locker[count.index].arn
   target_id        = module.locker_instance[count.index].id
   port             = var.locker_port
 }
@@ -327,14 +337,24 @@ resource "aws_lb_target_group_attachment" "locker" {
 # LOAD BALANCER - LISTENERS
 # =========================================================================
 resource "aws_lb_listener" "locker" {
-  for_each = var.nlb_listeners
+  for_each = var.alb_listeners
 
-  load_balancer_arn = aws_lb.locker_nlb.arn
+  load_balancer_arn = aws_lb.locker_alb.arn
   port              = each.value.port
   protocol          = each.value.protocol
+  ssl_policy        = each.value.protocol == "HTTPS" ? "ELBSecurityPolicy-2016-08" : null
+  certificate_arn   = each.value.certificate_arn
 
   default_action {
-    type             = "forward"
-    target_group_arn = each.value.target_group_arn != null ? each.value.target_group_arn : aws_lb_target_group.locker.arn
+    type = "forward"
+    forward {
+      dynamic "target_group" {
+        for_each = aws_lb_target_group.locker
+        content {
+          arn    = target_group.value.arn
+          weight = 1
+        }
+      }
+    }
   }
 }

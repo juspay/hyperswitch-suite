@@ -23,9 +23,9 @@ output "security_group_id" {
   value       = local.locker_security_group_id
 }
 
-output "nlb_security_group_id" {
-  description = "Security group ID of the locker NLB"
-  value       = aws_security_group.nlb.id
+output "alb_security_group_id" {
+  description = "Security group ID of the locker ALB"
+  value       = aws_security_group.alb.id
 }
 
 output "subnet_id" {
@@ -43,19 +43,19 @@ output "ssh_private_key_ssm_parameter" {
   value       = var.create_key_pair && var.public_key == null ? aws_ssm_parameter.locker_private_key[0].name : null
 }
 
-output "nlb_dns_name" {
-  description = "DNS name of the Network Load Balancer"
-  value       = aws_lb.locker_nlb.dns_name
+output "alb_dns_name" {
+  description = "DNS name of the Application Load Balancer"
+  value       = aws_lb.locker_alb.dns_name
 }
 
-output "nlb_listener_arns" {
-  description = "ARNs of the NLB listeners"
+output "alb_listener_arns" {
+  description = "ARNs of the ALB listeners"
   value       = { for key, listener in aws_lb_listener.locker : key => listener.arn }
 }
 
-output "nlb_listener_details" {
-  description = "Details of the NLB listeners (port and protocol)"
-  value       = { for key, listener in var.nlb_listeners : key => {
+output "alb_listener_details" {
+  description = "Details of the ALB listeners (port and protocol)"
+  value       = { for key, listener in var.alb_listeners : key => {
     port     = listener.port
     protocol = listener.protocol
   }}
