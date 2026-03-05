@@ -219,3 +219,50 @@ variable "database_config" {
   })
   default = null
 }
+
+variable "kms" {
+  description = "KMS key configuration. Set to {} to disable KMS key and policy. Set create=true to create key, or create=false with key_arn to use existing key. Policy and tags are handled internally by the module."
+  type = object({
+    # Key source: either create new or use existing
+    create  = optional(bool, false)  # Set true to create KMS key, false to use existing
+    key_arns = optional(list(string), []) # Existing KMS key ARN (used when create=false)
+
+    # Key creation settings (used when create=true)
+    description = optional(string, null)
+    multi_region = optional(bool, false)
+
+    # Replica key settings
+    create_replica           = optional(bool, false)
+    create_replica_external  = optional(bool, false)
+    primary_key_arn          = optional(string, null)
+    primary_external_key_arn = optional(string, null)
+
+    # External key settings
+    create_external       = optional(bool, false)
+    key_material_base64   = optional(string, null)
+    valid_to              = optional(string, null)
+
+    # Key specifications
+    key_usage                = optional(string, null)
+    customer_master_key_spec = optional(string, null)
+    key_spec                 = optional(string, null)
+    deletion_window_in_days  = optional(number, null)
+
+    # Key settings
+    is_enabled                         = optional(bool, null)
+    enable_key_rotation                = optional(bool, true)
+    rotation_period_in_days            = optional(number, null)
+    bypass_policy_lockout_safety_check = optional(bool, null)
+
+    # Aliases
+    aliases                 = optional(list(string), [])
+    aliases_use_name_prefix = optional(bool, false)
+
+    # Access control (for key policy)
+    key_administrators     = optional(list(string), [])
+    key_users              = optional(list(string), [])
+    key_service_users      = optional(list(string), [])
+    key_owners             = optional(list(string), [])
+  })
+  default = {}
+}
