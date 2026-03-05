@@ -1,254 +1,217 @@
-# EKS Cluster - Development Environment
+# =============================================================================
+# EKS Cluster - Dev Environment (eks-03)
+# =============================================================================
+# This is a thin wrapper around the EKS composition module.
+# All configuration values are passed via terraform.tfvars.
+# JSON policies are defined in locals (jsonencode cannot be used in tfvars).
+# =============================================================================
+
+# AWS Provider Configuration
 provider "aws" {
   region = var.region
 }
 
+terraform {
+  # Backend Configuration
+  backend "s3" {
+    bucket  = "hyperswitch-dev-terraform-state"
+    key     = "dev/eu-central-1/eks/terraform.tfstate"
+    region  = "eu-central-1"
+    encrypt = true
+  }
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.9"
+    }
+  }
+}
+
+# =============================================================================
+# Local Values - JSON Policies (jsonencode cannot be used in tfvars)
+# =============================================================================
+locals {
+  # Cluster IAM Role Assume Role Policy
+  # EKS service + ArgoCD from management cluster
+  cluster_iam_role_assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "eks.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      },
+      {
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::XXXXXXXXXXXX:role/argocd-management-role"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+
+  # Node Group IAM Role Assume Role Policy
+  node_group_iam_role_assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+
+  # Node Group Custom Policy (Observability)
+  node_group_custom_policy_json = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "CloudWatchLogsObservability"
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:DescribeAlarmsForMetric",
+          "cloudwatch:DescribeAlarmHistory",
+          "cloudwatch:DescribeAlarms",
+          "cloudwatch:ListMetrics",
+          "cloudwatch:GetMetricData",
+          "cloudwatch:GetInsightRuleReport",
+          "logs:DescribeLogGroups",
+          "logs:GetLogGroupFields",
+          "logs:StartQuery",
+          "logs:StopQuery",
+          "logs:GetQueryResults",
+          "logs:GetLogEvents",
+          "ec2:DescribeTags",
+          "ec2:DescribeInstances",
+          "ec2:DescribeRegions",
+          "tag:GetResources"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+
+  # Cross-Account Role Assume Role Policy
+  # ArgoCD, Atlantis from management cluster
+  cross_account_assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          AWS = [
+            "arn:aws:iam::XXXXXXXXXXXX:role/argocd-management-role",
+            # "arn:aws:iam::XXXXXXXXXXXX:role/atlantis-role",
+          ]
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+
+  # Cross-Account Role Policy (what external principals can do)
+  cross_account_policy_json = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "eks:DescribeCluster",
+          "eks:ListClusters",
+          "eks:DescribeNodegroup",
+          "eks:ListNodegroups",
+          "eks:DescribeFargateProfile",
+          "eks:ListFargateProfiles",
+          "eks:DescribeUpdate",
+          "eks:ListUpdates"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# =============================================================================
+# EKS Composition Module
+# =============================================================================
 module "eks" {
   source = "../../../../modules/composition/eks"
 
-  project_name = var.project_name
-  environment  = var.environment
-
-  cluster_version = var.cluster_version
+  # Core Configuration
+  project_name         = var.project_name
+  environment          = var.environment
   cluster_name_version = var.cluster_name_version
+  cluster_version      = var.cluster_version
+  region               = var.region
+  tags                 = var.tags
 
-  vpc_id     = var.vpc_id
-  subnet_ids = var.subnet_ids
+  # Networking
+  vpc_id                   = var.vpc_id
+  subnet_ids               = var.subnet_ids
+  control_plane_subnet_ids = var.control_plane_subnet_ids
 
-  # Cluster endpoint access configuration
+  # Cluster Endpoint Access
   cluster_endpoint_public_access       = var.cluster_endpoint_public_access
   cluster_endpoint_private_access      = var.cluster_endpoint_private_access
   cluster_endpoint_public_access_cidrs = var.cluster_endpoint_public_access_cidrs
+  vpn_cidr_blocks                      = var.vpn_cidr_blocks
 
-  # Node groups managed independently outside this module for better control
-  node_groups = {}
+  # Cluster Access
+  cluster_access_entries = var.cluster_access_entries
+  kms_key_administrators = var.kms_key_administrators
 
-  # VPN access configuration
-  vpn_cidr_blocks = var.vpn_cidr_blocks
+  # Cluster IAM Role Configuration (using locals for JSON policies)
+  create_cluster_iam_role             = var.create_cluster_iam_role
+  cluster_iam_role_arn                = var.cluster_iam_role_arn
+  cluster_iam_role_name               = var.cluster_iam_role_name
+  cluster_iam_role_assume_role_policy = local.cluster_iam_role_assume_role_policy
+  cluster_iam_role_policies           = var.cluster_iam_role_policies
+  cluster_custom_policy_json          = var.cluster_custom_policy_json
 
-  # ArgoCD assume role configuration
-  argocd_assume_role_principal_arn = var.argocd_assume_role_principal_arn
+  # Node Group IAM Role Configuration (using locals for JSON policies)
+  create_node_group_iam_role             = var.create_node_group_iam_role
+  node_group_iam_role_arn                = var.node_group_iam_role_arn
+  node_group_iam_role_name               = var.node_group_iam_role_name
+  node_group_iam_role_assume_role_policy = local.node_group_iam_role_assume_role_policy
+  node_group_iam_role_policies           = var.node_group_iam_role_policies
+  node_group_custom_policy_json          = local.node_group_custom_policy_json
 
-  # Cluster access entries
-  cluster_access_entries = merge(var.cluster_access_entries, {
-      "argo_cross_account" = {
-        principal_arn = aws_iam_role.argocd_cross_account.arn
-        type          = "STANDARD"
+  # Cross-Account Role Configuration (using locals for JSON policies)
+  create_cross_account_role        = var.create_cross_account_role
+  cross_account_role_name          = var.cross_account_role_name
+  cross_account_assume_role_policy = local.cross_account_assume_role_policy
+  cross_account_policy_json        = local.cross_account_policy_json
+  cross_account_policy_arns        = var.cross_account_policy_arns
 
-        policy_associations = {
-          cluster_admin = {
-            policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-            access_scope = {
-              type = "cluster"
-            }
-          }
-        }
-      }
-  })
+  # Node Groups
+  node_groups = var.node_groups
 
-  tags = var.tags
-}
+  # Launch Template Configuration
+  default_ami_id                = var.default_ami_id
+  default_block_device_mappings = var.default_block_device_mappings
+  default_metadata_options      = var.default_metadata_options
+  custom_userdata_template_path = var.custom_userdata_template_path
 
-# EKS cluster add ons 
+  # SSH Key Configuration
+  create_ssh_key = var.create_ssh_key
+  ssh_key_name   = var.ssh_key_name
+  ssh_public_key = var.ssh_public_key
 
-resource "aws_eks_addon" "vpc_cni" {
-  cluster_name                      = module.eks.cluster_name
-  addon_name                        = "vpc-cni"
-  addon_version                     = var.eks_addon_versions["vpc-cni"]
-  resolve_conflicts_on_create       = "OVERWRITE"
-  resolve_conflicts_on_update       = "OVERWRITE"
-
-  depends_on = [
-    module.eks
-  ]
-}
-
-resource "aws_eks_addon" "coredns" {
-  cluster_name                      = module.eks.cluster_name
-  addon_name                        = "coredns"
-  addon_version                     = var.eks_addon_versions["coredns"]
-  resolve_conflicts_on_create       = "OVERWRITE"
-  resolve_conflicts_on_update       = "OVERWRITE"
-
-  depends_on = [
-    aws_eks_node_group.custom_nodes
-  ]
-}
-
-resource "aws_eks_addon" "kube_proxy" {
-  cluster_name                      = module.eks.cluster_name
-  addon_name                        = "kube-proxy"
-  addon_version                     = var.eks_addon_versions["kube-proxy"]
-  resolve_conflicts_on_create       = "OVERWRITE"
-  resolve_conflicts_on_update       = "OVERWRITE"
-
-  depends_on = [
-    module.eks
-  ]
-}
-
-resource "aws_eks_addon" "aws_ebs_csi_driver" {
-  cluster_name                      = module.eks.cluster_name
-  addon_name                        = "aws-ebs-csi-driver"
-  addon_version                     = var.eks_addon_versions["aws-ebs-csi-driver"]
-  service_account_role_arn          = module.eks.ebs_csi_iam_role_arn
-  resolve_conflicts_on_create       = "OVERWRITE"
-  resolve_conflicts_on_update       = "OVERWRITE"
-
-  depends_on = [
-    aws_eks_node_group.custom_nodes
-  ]
-}
-
-resource "aws_eks_addon" "snapshot_controller" {
-  cluster_name                      = module.eks.cluster_name
-  addon_name                        = "snapshot-controller"
-  addon_version                     = var.eks_addon_versions["snapshot-controller"]
-  resolve_conflicts_on_create       = "OVERWRITE"
-  resolve_conflicts_on_update       = "OVERWRITE"
-
-  depends_on = [
-    aws_eks_node_group.custom_nodes
-  ]
-}
-
-resource "aws_eks_addon" "metrics_server" {
-  cluster_name                      = module.eks.cluster_name
-  addon_name                        = "metrics-server"
-  addon_version                     = var.eks_addon_versions["metrics-server"]
-  resolve_conflicts_on_create       = "OVERWRITE"
-  resolve_conflicts_on_update       = "OVERWRITE"
-
-  depends_on = [
-    aws_eks_node_group.custom_nodes
-  ]
-}
-
-# Data source to get EKS cluster authentication token
-data "aws_eks_cluster_auth" "cluster" {
-  name = module.eks.cluster_name
-}
-
-# terraform_data to ensure Kubernetes resources are created after cluster is ready
-resource "terraform_data" "eks_ready" {
-  triggers_replace = [
-    module.eks.cluster_id,
-    module.eks.cluster_endpoint,
-    module.eks.cluster_certificate_authority_data
-  ]
-}
-
-# Kubernetes Provider Configuration
-provider "kubernetes" {
-  host                   = try(module.eks.cluster_endpoint, "")
-  cluster_ca_certificate = try(base64decode(module.eks.cluster_certificate_authority_data), "")
-  token                  = try(data.aws_eks_cluster_auth.cluster.token, "")
-}
-
-# Helm Provider Configuration
-provider "helm" {
-  kubernetes = {
-    host                   = try(module.eks.cluster_endpoint, "")
-    cluster_ca_certificate = try(base64decode(module.eks.cluster_certificate_authority_data), "")
-    token                  = try(data.aws_eks_cluster_auth.cluster.token, "")
-  }
-}
-
-
-# Kubernetes namespace for Hyperswitch
-# Only create if Helm deployments are enabled
-resource "kubernetes_namespace_v1" "hyperswitch" {
-  count = var.enable_helm_deployments ? 1 : 0
-
-  metadata {
-    name = "hyperswitch"
-
-    labels = {
-      name        = "hyperswitch"
-      environment = var.environment
-    }
-  }
-
-  depends_on = [terraform_data.eks_ready]
-}
-
-# Data source to get ECR authorization token
-# Only needed if Helm deployments are enabled
-data "aws_ecr_authorization_token" "token" {
-  count = var.enable_helm_deployments ? 1 : 0
-}
-
-# ECR Registry Secret for pulling images
-# Only create if Helm deployments are enabled
-resource "kubernetes_secret_v1" "ecr_registry" {
-  count = var.enable_helm_deployments ? 1 : 0
-
-  metadata {
-    name      = "ecr-registry-secret"
-    namespace = kubernetes_namespace_v1.hyperswitch[0].metadata[0].name
-  }
-
-  type = "kubernetes.io/dockerconfigjson"
-
-  data = {
-    ".dockerconfigjson" = jsonencode({
-      auths = {
-        "${data.aws_ecr_authorization_token.token[0].proxy_endpoint}" = {
-          auth = data.aws_ecr_authorization_token.token[0].authorization_token
-        }
-      }
-    })
-  }
-
-  depends_on = [kubernetes_namespace_v1.hyperswitch]
-}
-
-# Default StorageClass for EBS volumes
-resource "kubernetes_storage_class_v1" "ebs_gp3" {
-  metadata {
-    name = "ebs-gp3"
-    annotations = {
-      "storageclass.kubernetes.io/is-default-class" = "true"
-    }
-  }
-
-  storage_provisioner    = "ebs.csi.aws.com"
-  volume_binding_mode    = "WaitForFirstConsumer"
-  allow_volume_expansion = true
-
-  parameters = {
-    type      = "gp3"
-    encrypted = "true"
-    fsType    = "ext4"
-  }
-
-  depends_on = [terraform_data.eks_ready]
-}
-
-# Hyperswitch Helm Release
-# Only deploy if Helm deployments are enabled (not managed by ArgoCD)
-resource "helm_release" "hyperswitch_stack" {
-  count = var.enable_helm_deployments ? 1 : 0
-
-  name       = "hyperswitch-stack"
-  repository = "https://juspay.github.io/hyperswitch-helm"
-  chart      = "hyperswitch-stack"
-  namespace  = kubernetes_namespace_v1.hyperswitch[0].metadata[0].name
-
-  # Use custom values file for ECR image overrides (if present)
-  values = fileexists("${path.module}/hyperswitch-values.yaml") ? [
-    file("${path.module}/hyperswitch-values.yaml")
-  ] : []
-
-  # Wait for resources to be ready
-  wait          = true
-  wait_for_jobs = true
-  timeout       = 900 # 15 minutes
-
-  depends_on = [
-    terraform_data.eks_ready,
-    kubernetes_namespace_v1.hyperswitch,
-    kubernetes_secret_v1.ecr_registry,
-    kubernetes_storage_class_v1.ebs_gp3
-  ]
+  # EKS Addons
+  eks_addons = var.eks_addons
 }

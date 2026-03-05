@@ -1,103 +1,67 @@
-# Basic EKS Configuration
+# =============================================================================
+# EKS Cluster - Variable Values
+# =============================================================================
+# This configuration creates AWS infrastructure for EKS:
+# - EKS cluster
+# - IAM roles (cluster, IRSA for autoscaler, EBS CSI)
+# - Node groups, launch templates
+#
+# Kubernetes resources (RBAC, storage classes, deployments) are created by
+# the eks-03-k8s-resources module which depends on this one.
+#
+# NOTE: JSON policies (assume role policies, custom policies) are defined
+# in main.tf locals because jsonencode() cannot be used in tfvars files.
+# =============================================================================
+
+# =============================================================================
+# CORE CONFIGURATION
+# =============================================================================
+
 project_name         = "hyperswitch"
 environment          = "dev"
-cluster_version      = "1.34"
 region               = "eu-central-1"
-cluster_name_version = "03"
+cluster_version      = "1.35"
+cluster_name_version = "01"
 
-# EKS Cluster Endpoint Access Configuration
-# Control access to the EKS API server endpoint
+tags = {
+  Environment = "dev"
+  Project     = "hyperswitch"
+  ManagedBy   = "terraform"
+  Team        = "platform"
+}
+
+# =============================================================================
+# NETWORKING
+# =============================================================================
+
+vpc_id     = "vpc-XXXXXXXXXXXXXXXXX"
+subnet_ids = ["subnet-XXXXXXXXXXXXXXXXX", "subnet-XXXXXXXXXXXXXXXXX"]
+
+# Cluster endpoint access
 cluster_endpoint_public_access  = true
 cluster_endpoint_private_access = true
 
-# Public API Server Endpoint Access Allowlist
-# Only these CIDR blocks can access the public EKS API endpoint
+# CIDR blocks allowed to access public endpoint
 cluster_endpoint_public_access_cidrs = [
-  "XX.XXX.XX.XXX/32",   # Access point 1
-  "XX.XXX.XX.XXX/32",   # Access point 2
-  "XX.XXX.XX.XXX/32",   # Access point 3
-  "XX.XXX.XX.XXX/32",   # Access point 4
-  "XX.XXX.XX.XXX/32",   # Access point 5
-  "XX.XXX.XX.XXX/32",   # Access point 6
-  "XX.XXX.XX.XXX/32",   # Access point 7
-  "XX.XXX.XX.XXX/32",   # Access point 8
-  "XX.XXX.XX.XXX/32"    # Access point 9
+  "X.X.X.X/32", # Office IP 1
+  "X.X.X.X/32", # Office IP 2
+  "X.X.X.X/32", # VPN IP
 ]
 
-# VPN Access Configuration
-# VPN IP addresses for accessing EKS cluster
-vpn_cidr_blocks = ["XX.XXX.XX.XXX/32","XX.XXX.XX.XXX/32","XX.XXX.XX.XXX/32"]
-
-# Deployment Management
-# Set to false if using ArgoCD from another cluster to manage deployments
-enable_helm_deployments = false
-
-enable_cluster_autoscaler = false
-
-# Networking - REPLACE WITH YOUR ACTUAL VALUES
-vpc_id = "vpc-XXXXXXXXXXXXXXXXX"  # Replace with your VPC ID
-subnet_ids = [            # Replace with your subnet IDs
-  "subnet-XXXXXXXXXXXXXXXXX",     # Subnet 1
-  "subnet-XXXXXXXXXXXXXXXXX",     # Subnet 2
+# VPN CIDR blocks for private access
+vpn_cidr_blocks = [
+  "X.X.X.X/32", # Office IP 1
+  "X.X.X.X/32", # Office IP 2
+  "X.X.X.X/32",
 ]
 
-argocd_assume_role_principal_arn = "arn:aws:iam::XXXXXXXXXXXX:role/AmazonEKSAutoClusterRole"
+# =============================================================================
+# CLUSTER ACCESS
+# =============================================================================
 
-node_groups = {
-  node_group_1 = {
-    capacity_type = "ON_DEMAND"
-    min_size      = 1 
-    max_size      = 2
-    desired_size  = 1 
-    instance_types = ["t3.small"]
-    subnet_ids   = [  "subnet-XXXXXXXXXXXXXXXXX","subnet-XXXXXXXXXXXXXXXXX" ]  
-
-    labels = {
-      "node-type" = "node-group-1"
-    }
-    tags = {
-      stack = "hyperswitch"
-    }
-  }
-
-# node group two with custom security group
-  node_group_2 = {
-    capacity_type = "ON_DEMAND"
-    min_size      = 1
-    max_size      = 2
-    desired_size  = 1
-    instance_types = ["t3.small"]
-    subnet_ids   = [  "subnet-XXXXXXXXXXXXXXXXX","subnet-XXXXXXXXXXXXXXXXX" ] 
-    custom_launch_template_config = {
-      additional_security_group_ids = ["sg-XXXXXXXXXXXXXXXXX"]  # Additional SGs
-    }
-    labels = {
-      "node-type" = "node-group-2"
-    }
-    tags = {
-      stack = "hyperswitch"
-    }
-  }
-}
-
-# EKS Addon Versions
-# Pinned addon versions for Kubernetes 1.34
-eks_addon_versions = {
-  vpc-cni             = "v1.21.1-eksbuild.1"
-  coredns             = "v1.12.4-eksbuild.1"
-  kube-proxy          = "v1.34.1-eksbuild.2"
-  aws-ebs-csi-driver  = "v1.54.0-eksbuild.1"
-  snapshot-controller = "v8.3.0-eksbuild.1"
-  metrics-server      = "v0.8.0-eksbuild.6"
-}
-
-# EKS Cluster Access Entries
-# Grant IAM principals access to the cluster
 cluster_access_entries = {
   admin_sso_role = {
-    # SSO role ARN with correct path including region for accessing locally
-    principal_arn = "arn:aws:iam::XXXXXXXXXXXX:role/aws-reserved/sso.amazonaws.com/REGION/AWSReservedSSO_AWSAdministratorAccess_XXXXXXXXXXXXXXXX"
-
+    principal_arn = "arn:aws:iam::XXXXXXXXXXXX:role/aws-reserved/sso.amazonaws.com/ap-south-1/AWSReservedSSO_AWSAdministratorAccess_XXXXXXXXXXXXXXXX"
     policy_associations = {
       admin = {
         policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
@@ -109,9 +73,139 @@ cluster_access_entries = {
   }
 }
 
-# Tags
-tags = {
-  Environment = "dev"
-  Project     = "hyperswitch"
-  ManagedBy   = "terraform"
+kms_key_administrators = [
+  "arn:aws:iam::XXXXXXXXXXXX:role/aws-reserved/sso.amazonaws.com/ap-south-1/AWSReservedSSO_AWSAdministratorAccess_XXXXXXXXXXXXXXXX"
+]
+
+# =============================================================================
+# CLUSTER IAM ROLE CONFIGURATION
+# All policies defined explicitly in live layer - no hidden defaults
+# NOTE: Assume role policy is defined in main.tf locals
+# =============================================================================
+
+create_cluster_iam_role = true
+
+# Cluster IAM role policies
+cluster_iam_role_policies = {
+  AmazonEKSClusterPolicy = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
+}
+
+# Custom policy for cluster IAM role (optional - set to null to skip)
+cluster_custom_policy_json = null
+
+# =============================================================================
+# NODE GROUP IAM ROLE CONFIGURATION
+# All policies defined explicitly in live layer - no hidden defaults
+# NOTE: Assume role policy and custom policy are defined in main.tf locals
+# =============================================================================
+
+create_node_group_iam_role = true
+
+# Node group IAM role policies
+node_group_iam_role_policies = {
+  AmazonEKSWorkerNodePolicy          = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
+  AmazonEKS_CNI_Policy               = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+  AmazonEC2ContainerRegistryReadOnly = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+  AmazonSSMManagedInstanceCore       = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+  AWSXrayFullAccess                  = "arn:aws:iam::aws:policy/AWSXrayFullAccess"
+  CloudWatchAgentServerPolicy        = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+
+# =============================================================================
+# CROSS-ACCOUNT ROLE CONFIGURATION
+# For ArgoCD, Atlantis, CI/CD from management cluster
+# NOTE: Assume role policy and policy JSON are defined in main.tf locals
+# =============================================================================
+
+create_cross_account_role = true
+
+# =============================================================================
+# LAUNCH TEMPLATE CONFIGURATION
+# =============================================================================
+
+default_ami_id = "ami-0d763d29517d87c99"
+
+# =============================================================================
+# SSH KEY CONFIGURATION
+# =============================================================================
+
+create_ssh_key = true
+ssh_key_name   = null
+ssh_public_key = null
+
+# =============================================================================
+# DEFAULT BLOCK DEVICE CONFIGURATION
+# =============================================================================
+
+default_block_device_mappings = [
+  {
+    device_name           = "/dev/xvda"
+    volume_size           = 20
+    volume_type           = "gp3"
+    delete_on_termination = true
+    encrypted             = true
+  }
+]
+
+# =============================================================================
+# DEFAULT METADATA OPTIONS (IMDS)
+# =============================================================================
+
+default_metadata_options = {
+  http_endpoint               = "enabled"
+  http_tokens                 = "required"
+  http_put_response_hop_limit = 2
+  instance_metadata_tags      = "enabled"
+}
+
+# =============================================================================
+# NODE GROUPS CONFIGURATION
+# =============================================================================
+
+node_groups = {
+  system_nodes = {
+    capacity_type  = "SPOT"
+    instance_types = ["t3.medium"]
+    subnet_ids     = ["subnet-XXXXXXXXXXXXXXXXX"]
+
+    desired_size = 1
+    min_size     = 0
+    max_size     = 1
+
+    max_unavailable_percentage = 33
+
+    labels = {
+      "node-type" = "system"
+    }
+
+    tags = {
+      Workload = "system"
+    }
+  }
+}
+
+# =============================================================================
+# EKS ADDONS CONFIGURATION
+# =============================================================================
+
+eks_addons = {
+  "vpc-cni" = {
+    addon_version = "v1.21.1-eksbuild.3"
+  }
+  "kube-proxy" = {
+    addon_version = "v1.35.0-eksbuild.2"
+  }
+  "coredns" = {
+    addon_version = "v1.13.2-eksbuild.1"
+  }
+  "aws-ebs-csi-driver" = {
+    addon_version        = "v1.55.0-eksbuild.1"
+    service_account_role = "ebs_csi"
+  }
+  "snapshot-controller" = {
+    addon_version = "v8.3.0-eksbuild.1"
+  }
+  "metrics-server" = {
+    addon_version = "v0.8.0-eksbuild.6"
+  }
 }
