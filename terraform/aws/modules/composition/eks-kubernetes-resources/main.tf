@@ -310,19 +310,22 @@ locals {
 
   # Final image URL:
   # 1. Use explicit image if provided
-  # 2. Use existing ECR URL if provided
+  # 2. Use existing ECR URL if provided (with version tag appended)
   # 3. Use created ECR if cluster_autoscaler_use_ecr = true
   # 4. Use public registry otherwise
   cluster_autoscaler_final_image = coalesce(
     var.cluster_autoscaler_image,
-    var.cluster_autoscaler_ecr_repository_url,
+    var.cluster_autoscaler_ecr_repository_url != null ? "${var.cluster_autoscaler_ecr_repository_url}:${local.cluster_autoscaler_version}" : null,
     local.create_cluster_autoscaler_ecr ? "${aws_ecr_repository.cluster_autoscaler[0].repository_url}:${local.cluster_autoscaler_version}" : null,
     local.cluster_autoscaler_source_image
   )
 
   # Determine if we should sync image to ECR
-  # Sync if: ECR enabled AND image sync enabled AND (no existing ECR URL)
-  should_sync_cluster_autoscaler_image = var.enable_cluster_autoscaler && var.cluster_autoscaler_use_ecr && var.cluster_autoscaler_enable_image_sync && var.cluster_autoscaler_ecr_repository_url == null
+  # Sync if: ECR enabled AND image sync enabled (works with both new and existing ECR repos)
+  should_sync_cluster_autoscaler_image = var.enable_cluster_autoscaler && var.cluster_autoscaler_use_ecr && var.cluster_autoscaler_enable_image_sync
+
+  # Target ECR URL for image sync (use provided URL or newly created repo)
+  cluster_autoscaler_ecr_target_url = var.cluster_autoscaler_ecr_repository_url != null ? var.cluster_autoscaler_ecr_repository_url : (local.create_cluster_autoscaler_ecr ? aws_ecr_repository.cluster_autoscaler[0].repository_url : null)
 
   # Multi-arch source images for each architecture
   # Format: registry/autoscaling/cluster-autoscaler-<arch>:version
@@ -427,7 +430,7 @@ resource "terraform_data" "sync_cluster_autoscaler_image" {
 
   triggers_replace = [
     local.cluster_autoscaler_version,
-    aws_ecr_repository.cluster_autoscaler[0].arn,
+    local.cluster_autoscaler_ecr_target_url,
     join(",", var.cluster_autoscaler_architectures)
   ]
 
@@ -438,7 +441,7 @@ resource "terraform_data" "sync_cluster_autoscaler_image" {
     command = <<-EOT
       set +e  # Don't exit on error
       
-      ECR_URL="${aws_ecr_repository.cluster_autoscaler[0].repository_url}"
+      ECR_URL="${local.cluster_autoscaler_ecr_target_url}"
       VERSION="${local.cluster_autoscaler_version}"
       ARCHS="${join(",", var.cluster_autoscaler_architectures)}"
       REGION="${local.ecr_region}"
