@@ -1,10 +1,10 @@
 # =============================================================================
 # EKS Kubernetes Resources Module
 # =============================================================================
-# This module creates Kubernetes resources that depend on an existing EKS cluster.
-# It MUST be used as a separate module from the EKS cluster to avoid the
-# chicken-and-egg problem where the Kubernetes provider can't connect during
-# terraform plan when the cluster doesn't exist yet.
+# This module manages Kubernetes resources that require an operational EKS cluster.
+# To prevent provider initialization failures, this module must be applied separately
+# from the EKS cluster infrastructure, as the Kubernetes provider requires valid
+# cluster endpoints and authentication credentials before it can plan resources.
 #
 # Usage:
 #   1. Create EKS cluster using the eks composition module
@@ -64,7 +64,6 @@ resource "terraform_data" "cluster_ready" {
 
 # -----------------------------------------------------------------------------
 # Kubernetes Provider Configuration
-# Uses actual values from variables - no try() fallbacks
 # -----------------------------------------------------------------------------
 provider "kubernetes" {
   host                   = var.cluster_endpoint
