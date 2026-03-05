@@ -89,12 +89,12 @@ output "kms_key_arns" {
 # =========================================================================
 output "db_cluster_endpoint" {
   description = "The cluster endpoint of the RDS Aurora database"
-  value       = var.create_locker_database && var.database_config != null ? module.database[0].cluster_endpoint : null
+  value       = var.create_locker_database && var.database_config != null ? module.database[0].endpoint : null
 }
 
 output "db_cluster_reader_endpoint" {
   description = "The reader endpoint of the RDS Aurora database"
-  value       = var.create_locker_database && var.database_config != null ? module.database[0].cluster_reader_endpoint : null
+  value       = var.create_locker_database && var.database_config != null ? module.database[0].reader_endpoint : null
 }
 
 output "db_cluster_arn" {
