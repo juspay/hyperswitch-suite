@@ -1,7 +1,3 @@
-provider "aws" {
-  region = var.region
-}
-
 # ECR Repositories
 resource "aws_ecr_repository" "repositories" {
   for_each = var.repositories
