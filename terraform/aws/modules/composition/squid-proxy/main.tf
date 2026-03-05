@@ -444,6 +444,19 @@ module "asg" {
   enable_scaling_policies = var.enable_autoscaling
   scaling_policies        = var.scaling_policies
 
+  # Spot Instance Configuration
+  enable_mixed_instances_policy = var.enable_spot_instances
+
+  mixed_instances_policy = var.enable_spot_instances ? {
+    on_demand_base_capacity                  = var.on_demand_base_capacity
+    on_demand_percentage_above_base_capacity = 100 - var.spot_instance_percentage
+    spot_allocation_strategy                 = var.spot_allocation_strategy
+    spot_instance_pools                      = 2
+    spot_max_price                           = null
+  } : null
+
+  capacity_rebalance = var.enable_capacity_rebalance
+
   tags          = local.common_tags
   instance_tags = {}
 }
