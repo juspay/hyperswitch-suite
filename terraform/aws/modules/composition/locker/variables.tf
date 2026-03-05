@@ -146,12 +146,12 @@ variable "database_config" {
   description = "Configuration object for the RDS Aurora PostgreSQL database"
   type = object({
     subnet_ids                            = list(string)
-    cluster_identifier                    = string
+    cluster_identifier                    = optional(string, null)
     cluster_identifier_prefix             = optional(string, null)
     database_name                         = optional(string, null)
-    engine                                = string
-    engine_version                        = string
-    engine_mode                           = string
+    engine                                = optional(string, "aurora-postgresql")
+    engine_version                        = optional(string, null)
+    engine_mode                           = optional(string, "provisioned")
     engine_lifecycle_support              = optional(string, "open-source-rds-extended-support")
     cluster_scalability_type              = optional(string, null)
     master_username                       = string
