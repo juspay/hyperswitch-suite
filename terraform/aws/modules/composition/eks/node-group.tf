@@ -1,8 +1,6 @@
 # =============================================================================
 # EKS Composition Module - Node Group IAM and Node Groups
 # =============================================================================
-# All IAM policies MUST be passed from the live layer - no defaults.
-# =============================================================================
 
 # -----------------------------------------------------------------------------
 # SSH Key Pair (Optional)
@@ -43,8 +41,7 @@ resource "aws_ssm_parameter" "node_group_private_key" {
 
 # -----------------------------------------------------------------------------
 # IAM Role for EKS Node Groups
-# Single shared role for all node groups (avoids eks module creating one per group)
-# Policy provided from live layer - no defaults
+# Single shared role for all node groups 
 # -----------------------------------------------------------------------------
 resource "aws_iam_role" "node_group" {
   count = local.create_node_groups && var.create_node_group_iam_role ? 1 : 0

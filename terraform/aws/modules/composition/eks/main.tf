@@ -1,6 +1,5 @@
 # -----------------------------------------------------------------------------
 # Terraform Configuration
-# Backend is configured by Terragrunt
 # -----------------------------------------------------------------------------
 terraform {
   required_providers {
