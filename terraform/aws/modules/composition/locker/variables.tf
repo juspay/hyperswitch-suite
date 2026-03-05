@@ -217,4 +217,5 @@ variable "database_config" {
     cluster_instances                     = optional(any, {})
     tags                                  = optional(map(string), {})
   })
+  default = null
 }
