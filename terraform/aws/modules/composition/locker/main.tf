@@ -248,7 +248,7 @@ module "locker_instance" {
   instance_type               = var.instance_type
   key_name                    = local.key_name
   monitoring                  = true
-  subnet_id                   = local.locker_subnet_id
+  subnet_id                   = local.locker_subnet_ids[count.index % length(local.locker_subnet_ids)]
   vpc_security_group_ids      = [local.locker_security_group_id]
   associate_public_ip_address = false
   iam_instance_profile        = aws_iam_instance_profile.locker.name

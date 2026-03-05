@@ -81,9 +81,9 @@ variable "tags" {
   default     = {}
 }
 
-variable "locker_subnet_id" {
-  description = "Subnet ID for the locker instance"
-  type        = string
+variable "locker_subnet_ids" {
+  description = "List of subnet IDs for the locker instances. Instances will be distributed across these subnets."
+  type        = list(string)
 }
 
 variable "alb_subnet_ids" {

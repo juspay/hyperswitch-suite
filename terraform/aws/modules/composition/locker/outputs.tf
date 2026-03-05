@@ -28,9 +28,9 @@ output "alb_security_group_id" {
   value       = aws_security_group.alb.id
 }
 
-output "subnet_id" {
-  description = "Subnet ID where the locker instance is deployed"
-  value       = local.locker_subnet_id
+output "subnet_ids" {
+  description = "Subnet IDs where the locker instances are deployed"
+  value       = local.locker_subnet_ids
 }
 
 output "key_name" {
