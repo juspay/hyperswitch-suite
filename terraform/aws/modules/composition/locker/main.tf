@@ -1,28 +1,4 @@
 # =========================================================================
-# DATA SOURCES
-# =========================================================================
-data "aws_availability_zones" "available" {
-  state = "available"
-}
-
-# =========================================================================
-# NETWORK RESOURCES
-# =========================================================================
-resource "aws_subnet" "locker" {
-  count             = var.create_subnet ? 1 : 0
-  vpc_id            = var.vpc_id
-  cidr_block        = var.subnet_cidr_block
-  availability_zone = var.subnet_availability_zone != null ? var.subnet_availability_zone : data.aws_availability_zones.available.names[0]
-
-  tags = merge(
-    local.common_tags,
-    {
-      Name = "${local.name_prefix}-subnet"
-    }
-  )
-}
-
-# =========================================================================
 # SECURITY - SSH KEY PAIR
 # =========================================================================
 # Auto-generate SSH key pair if public_key not provided
@@ -212,7 +188,7 @@ resource "aws_iam_policy" "locker_kms" {
           "kms:CreateKey",
           "kms:CreateCustomKeyStore"
         ]
-        Resources = local.kms_key_arns
+        Resource = local.kms_key_arns
       }
     ]
   })
@@ -290,7 +266,7 @@ resource "aws_lb" "locker_alb" {
   name               = "${local.name_prefix}-alb"
   internal           = true
   load_balancer_type = "application"
-  subnets            = [local.locker_subnet_id]
+  subnets            = var.alb_subnet_ids
   security_groups    = [aws_security_group.alb.id]
 
   tags = local.common_tags

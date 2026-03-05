@@ -30,7 +30,7 @@ module "database" {
   network_type                          = var.database_config.network_type
   port                                  = var.database_config.port
   create_db_subnet_group                = var.database_config.create_db_subnet_group
-  db_subnet_group_name                  = var.database_config.db_subnet_group_name
+  db_subnet_group_name                  = var.database_config.db_subnet_group_name != null ? var.database_config.db_subnet_group_name : "${local.name_prefix}-db-subnet-group"
   vpc_security_group_ids                = var.database_config.vpc_security_group_ids
   db_cluster_parameter_group_name       = var.database_config.db_cluster_parameter_group_name
   db_instance_parameter_group_name      = var.database_config.db_instance_parameter_group_name
@@ -66,8 +66,8 @@ module "database" {
   ca_certificate_identifier             = var.database_config.ca_certificate_identifier
   db_system_id                          = var.database_config.db_system_id
   create_security_group                 = var.database_config.create_security_group
-  security_group_name                   = var.database_config.security_group_name
-  security_group_description            = var.database_config.security_group_description
+  security_group_name                   = var.database_config.security_group_name != null ? var.database_config.security_group_name : "${local.name_prefix}-db-sg"
+  security_group_description            = var.database_config.security_group_description != null ? var.database_config.security_group_description : "Security group for locker database"
   scaling_configuration                 = var.database_config.scaling_configuration
   serverlessv2_scaling_configuration    = var.database_config.serverlessv2_scaling_configuration
   restore_to_point_in_time              = var.database_config.restore_to_point_in_time

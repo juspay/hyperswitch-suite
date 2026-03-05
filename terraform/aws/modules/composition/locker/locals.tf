@@ -11,9 +11,8 @@ locals {
     var.tags
   )
 
-  # Determine which resources to use (created or provided)
   locker_security_group_id = aws_security_group.locker.id
-  locker_subnet_id         = var.locker_subnet_id != null ? var.locker_subnet_id : aws_subnet.locker[0].id
+  locker_subnet_id         = var.locker_subnet_id
 
   # Key pair logic:
   # - If create_key_pair is true, use the created key pair

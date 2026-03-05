@@ -82,35 +82,18 @@ variable "tags" {
 }
 
 variable "locker_subnet_id" {
-  description = "Subnet ID for the locker instance. Required if create_subnet is false"
+  description = "Subnet ID for the locker instance"
   type        = string
-  default     = null
+}
+
+variable "alb_subnet_ids" {
+  description = "List of subnet IDs for the Application Load Balancer. At least two subnets in two different Availability Zones are required."
+  type        = list(string)
+
   validation {
-    condition     = var.create_subnet || var.locker_subnet_id != null
-    error_message = "locker_subnet_id must be provided when create_subnet is false"
+    condition     = length(var.alb_subnet_ids) >= 2
+    error_message = "At least two subnets in two different Availability Zones must be specified for the ALB."
   }
-}
-
-variable "create_subnet" {
-  description = "Whether to create a new subnet for the locker instance. If true, subnet_cidr_block must be provided"
-  type        = bool
-  default     = false
-}
-
-variable "subnet_cidr_block" {
-  description = "CIDR block for the new subnet. Required if create_subnet is true"
-  type        = string
-  default     = null
-  validation {
-    condition     = var.create_subnet ? var.subnet_cidr_block != null : true
-    error_message = "subnet_cidr_block must be provided when create_subnet is true"
-  }
-}
-
-variable "subnet_availability_zone" {
-  description = "Availability zone for the new subnet. If not provided, will use the first available AZ in the region"
-  type        = string
-  default     = null
 }
 
 variable "alb_listeners" {
@@ -203,7 +186,7 @@ variable "database_config" {
     db_system_id                          = optional(string, null)
     create_security_group                 = optional(bool, true)
     security_group_name                   = optional(string, null)
-    security_group_description            = optional(string, "RDS")
+    security_group_description            = optional(string, null)
     scaling_configuration                 = optional(any, null)
     serverlessv2_scaling_configuration    = optional(any, null)
     restore_to_point_in_time              = optional(any, null)
