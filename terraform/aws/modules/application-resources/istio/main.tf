@@ -206,6 +206,7 @@ module "alb" {
   vpc_id             = var.vpc_id
   subnets            = var.lb_subnet_ids
 
+  create_security_group = false
   security_groups = compact(concat(
     var.create_lb_security_group ? [aws_security_group.lb_security_group[0].id] : [],
     var.lb_security_groups
