@@ -63,12 +63,12 @@ output "asg_name" {
 
 output "asg_security_group_id" {
   description = "Security group ID for ASG instances"
-  value       = module.asg_security_group.sg_id
+  value       = aws_security_group.asg.id
 }
 
 output "nlb_security_group_id" {
   description = "Security group ID for Network Load Balancer (null if NLB not created)"
-  value       = var.create_nlb ? module.nlb_security_group[0].sg_id : null
+  value       = var.create_nlb ? aws_security_group.nlb[0].id : null
 }
 
 output "logs_bucket_name" {
