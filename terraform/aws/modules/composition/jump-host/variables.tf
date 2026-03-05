@@ -1,3 +1,9 @@
+variable "region" {
+  description = "(Optional) Region where this resource will be managed. Defaults to the Region set in the provider configuration"
+  type        = string
+  default     = null
+}
+
 variable "environment" {
   description = "Environment name (e.g., dev, integ, prod)"
   type        = string
