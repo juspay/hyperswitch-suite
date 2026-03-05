@@ -113,26 +113,26 @@ variable "subnet_availability_zone" {
   default     = null
 }
 
-variable "nlb_listeners" {
-  description = "NLB listener configurations for the Network Load Balancer"
+variable "alb_listeners" {
+  description = "ALB listener configurations for the Application Load Balancer"
   type = map(object({
     port             = number
     protocol         = string
     target_group_arn = optional(string) # If not provided, will use the default locker target group
-    certificate_arn  = optional(string) # Required for TLS/HTTPS protocol
+    certificate_arn  = optional(string) # Required for HTTPS protocol
   }))
   default = {
     "http" = {
       port     = 80
-      protocol = "TCP"
+      protocol = "HTTP"
     }
   }
   validation {
     condition = alltrue([
-      for key, listener in var.nlb_listeners :
-      contains(["TCP", "UDP", "TCP_UDP", "TLS", "HTTP", "HTTPS"], listener.protocol)
+      for key, listener in var.alb_listeners :
+      contains(["HTTP", "HTTPS"], listener.protocol)
     ])
-    error_message = "Listener protocol must be one of: TCP, UDP, TCP_UDP, TLS, HTTP, HTTPS"
+    error_message = "Listener protocol must be one of: HTTP, HTTPS"
   }
 }
 
