@@ -6,7 +6,7 @@ locals {
   # Gateway endpoints (S3)
   gateway_endpoints = {
     s3 = {
-      service_name = "com.amazonaws.${var.aws_region}.s3"
+      service_name = "com.amazonaws.${var.region}.s3"
       type         = "Gateway"
     }
   }
@@ -14,107 +14,107 @@ locals {
   # Interface endpoints (common AWS services)
   interface_endpoints = {
     ec2 = {
-      service_name = "com.amazonaws.${var.aws_region}.ec2"
+      service_name = "com.amazonaws.${var.region}.ec2"
       type         = "Interface"
     }
     ecr_api = {
-      service_name = "com.amazonaws.${var.aws_region}.ecr.api"
+      service_name = "com.amazonaws.${var.region}.ecr.api"
       type         = "Interface"
     }
     ecr_dkr = {
-      service_name = "com.amazonaws.${var.aws_region}.ecr.dkr"
+      service_name = "com.amazonaws.${var.region}.ecr.dkr"
       type         = "Interface"
     }
     ecs = {
-      service_name = "com.amazonaws.${var.aws_region}.ecs"
+      service_name = "com.amazonaws.${var.region}.ecs"
       type         = "Interface"
     }
     ecs_telemetry = {
-      service_name = "com.amazonaws.${var.aws_region}.ecs-telemetry"
+      service_name = "com.amazonaws.${var.region}.ecs-telemetry"
       type         = "Interface"
     }
     ecs_agent = {
-      service_name = "com.amazonaws.${var.aws_region}.ecs-agent"
+      service_name = "com.amazonaws.${var.region}.ecs-agent"
       type         = "Interface"
     }
     elasticloadbalancing = {
-      service_name = "com.amazonaws.${var.aws_region}.elasticloadbalancing"
+      service_name = "com.amazonaws.${var.region}.elasticloadbalancing"
       type         = "Interface"
     }
     logs = {
-      service_name = "com.amazonaws.${var.aws_region}.logs"
+      service_name = "com.amazonaws.${var.region}.logs"
       type         = "Interface"
     }
     monitoring = {
-      service_name = "com.amazonaws.${var.aws_region}.monitoring"
+      service_name = "com.amazonaws.${var.region}.monitoring"
       type         = "Interface"
     }
     secretsmanager = {
-      service_name = "com.amazonaws.${var.aws_region}.secretsmanager"
+      service_name = "com.amazonaws.${var.region}.secretsmanager"
       type         = "Interface"
     }
     ssm = {
-      service_name = "com.amazonaws.${var.aws_region}.ssm"
+      service_name = "com.amazonaws.${var.region}.ssm"
       type         = "Interface"
     }
     ssmmessages = {
-      service_name = "com.amazonaws.${var.aws_region}.ssmmessages"
+      service_name = "com.amazonaws.${var.region}.ssmmessages"
       type         = "Interface"
     }
     ec2messages = {
-      service_name = "com.amazonaws.${var.aws_region}.ec2messages"
+      service_name = "com.amazonaws.${var.region}.ec2messages"
       type         = "Interface"
     }
     kms = {
-      service_name = "com.amazonaws.${var.aws_region}.kms"
+      service_name = "com.amazonaws.${var.region}.kms"
       type         = "Interface"
     }
     lambda = {
-      service_name = "com.amazonaws.${var.aws_region}.lambda"
+      service_name = "com.amazonaws.${var.region}.lambda"
       type         = "Interface"
     }
     sns = {
-      service_name = "com.amazonaws.${var.aws_region}.sns"
+      service_name = "com.amazonaws.${var.region}.sns"
       type         = "Interface"
     }
     sqs = {
-      service_name = "com.amazonaws.${var.aws_region}.sqs"
+      service_name = "com.amazonaws.${var.region}.sqs"
       type         = "Interface"
     }
     rds = {
-      service_name = "com.amazonaws.${var.aws_region}.rds"
+      service_name = "com.amazonaws.${var.region}.rds"
       type         = "Interface"
     }
     athena = {
-      service_name = "com.amazonaws.${var.aws_region}.athena"
+      service_name = "com.amazonaws.${var.region}.athena"
       type         = "Interface"
     }
     kinesis_streams = {
-      service_name = "com.amazonaws.${var.aws_region}.kinesis-streams"
+      service_name = "com.amazonaws.${var.region}.kinesis-streams"
       type         = "Interface"
     }
     kinesis_firehose = {
-      service_name = "com.amazonaws.${var.aws_region}.kinesis-firehose"
+      service_name = "com.amazonaws.${var.region}.kinesis-firehose"
       type         = "Interface"
     }
     glue = {
-      service_name = "com.amazonaws.${var.aws_region}.glue"
+      service_name = "com.amazonaws.${var.region}.glue"
       type         = "Interface"
     }
     states = {
-      service_name = "com.amazonaws.${var.aws_region}.states"
+      service_name = "com.amazonaws.${var.region}.states"
       type         = "Interface"
     }
     events = {
-      service_name = "com.amazonaws.${var.aws_region}.events"
+      service_name = "com.amazonaws.${var.region}.events"
       type         = "Interface"
     }
     sts = {
-      service_name = "com.amazonaws.${var.aws_region}.sts"
+      service_name = "com.amazonaws.${var.region}.sts"
       type         = "Interface"
     }
     autoscaling = {
-      service_name = "com.amazonaws.${var.aws_region}.autoscaling"
+      service_name = "com.amazonaws.${var.region}.autoscaling"
       type         = "Interface"
     }
   }
