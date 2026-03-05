@@ -136,10 +136,15 @@ variable "nlb_listeners" {
   }
 }
 
+variable "create_locker_database" {
+  description = "Create a RDS Aurora PostgreSQL database for Locker"
+  type        = bool
+  default     = false
+}
+
 variable "database_config" {
   description = "Configuration object for the RDS Aurora PostgreSQL database"
   type = object({
-    create                                = optional(bool, true)
     subnet_ids                            = list(string)
     cluster_identifier                    = string
     cluster_identifier_prefix             = optional(string, null)
