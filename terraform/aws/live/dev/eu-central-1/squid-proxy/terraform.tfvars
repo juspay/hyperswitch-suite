@@ -426,6 +426,73 @@ tls_alpn_policy = "None"
 # ============================================================================
 
 # ============================================================================
+# Spot Instance Configuration (Cost Optimization)
+# ============================================================================
+# Enable spot instances to reduce costs by up to 90% compared to on-demand.
+# Spot instances use spare EC2 capacity at discounted rates but can be
+# interrupted by AWS with 2-minute warning when capacity is needed.
+#
+# How it works:
+# - Mixed instances policy combines on-demand and spot instances
+# - On-demand instances provide baseline capacity (always available)
+# - Spot instances provide additional capacity at lower cost
+# - If spot instances are interrupted, ASG replaces them automatically
+#
+# Configuration options:
+# - enable_spot_instances:      Enable mixed instances policy (true/false)
+# - spot_instance_percentage:   Percentage of spot instances (0-100)
+# - on_demand_base_capacity:    Minimum on-demand instances (baseline)
+# - spot_allocation_strategy:   How to allocate spot capacity
+# - enable_capacity_rebalance:  Proactively replace spot instances before interruption
+#
+# Spot Allocation Strategies:
+# - capacity-optimized:         Best availability (recommended for most workloads)
+# - lowest-price:               Lowest cost (higher interruption risk)
+# - capacity-optimized-prioritized: Prioritize instance types by order specified
+#
+# Example configurations:
+#
+# 1. Dev/Test (cost optimized, some interruption tolerance):
+#    enable_spot_instances    = true
+#    spot_instance_percentage = 100
+#    on_demand_base_capacity  = 0
+#    enable_capacity_rebalance = true
+#
+# 2. Production (balanced cost and availability):
+#    enable_spot_instances    = true
+#    spot_instance_percentage = 50
+#    on_demand_base_capacity  = 1
+#    enable_capacity_rebalance = true
+#
+# 3. Critical workloads (maximum availability):
+#    enable_spot_instances    = false
+#    spot_instance_percentage = 0
+#    on_demand_base_capacity  = 0
+#
+# IMPORTANT: When using spot instances:
+# - Ensure your application handles interruptions gracefully
+# - Use multiple instance types for better spot availability
+# - Enable capacity rebalancing for proactive replacement
+# - Monitor spot interruption rates in CloudWatch
+# ============================================================================
+
+# Spot instances disabled by default for dev environment
+enable_spot_instances = false
+
+# When enabled, use 50% spot instances (remaining 50% on-demand)
+spot_instance_percentage = 50
+
+# Maintain at least 1 on-demand instance for baseline capacity
+on_demand_base_capacity = 1
+
+# Use capacity-optimized strategy for best spot availability
+spot_allocation_strategy = "capacity-optimized"
+
+# Enable capacity rebalancing to proactively replace spot instances
+# before they are interrupted (recommended when using spot)
+enable_capacity_rebalance = false
+
+# ============================================================================
 # Tags
 # ============================================================================
 common_tags = {
