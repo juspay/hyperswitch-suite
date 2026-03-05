@@ -1,7 +1,3 @@
-provider "aws" {
-  region = var.region
-}
-
 # ElastiCache Global Replication Group
 resource "aws_elasticache_global_replication_group" "main" {
   count = var.create_global_replication_group && !local.is_secondary_cluster ? 1 : 0
