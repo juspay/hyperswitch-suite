@@ -1,10 +1,288 @@
 # =============================================================================
-# EKS Composition Module - Cluster Autoscaler
+# EKS Kubernetes Resources Module
 # =============================================================================
-# This module creates:
-# 1. ECR repository for cluster-autoscaler image (if using ECR)
-# 2. Image sync from public registry to ECR (multi-arch support)
-# 3. Kubernetes resources: ServiceAccount, RBAC, Deployment
+# This module creates Kubernetes resources that depend on an existing EKS cluster.
+# It MUST be used as a separate module from the EKS cluster to avoid the
+# chicken-and-egg problem where the Kubernetes provider can't connect during
+# terraform plan when the cluster doesn't exist yet.
+#
+# Usage:
+#   1. Create EKS cluster using the eks composition module
+#   2. Pass cluster endpoint, CA data, and OIDC info to this module
+#   3. This module creates RBAC, storage classes, and other K8s resources
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Terraform Configuration
+# -----------------------------------------------------------------------------
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 3.0"
+    }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 3.1"
+    }
+  }
+}
+
+# -----------------------------------------------------------------------------
+# Data source for Kubernetes authentication
+# -----------------------------------------------------------------------------
+data "aws_eks_cluster_auth" "cluster" {
+  name = var.cluster_name
+}
+
+# -----------------------------------------------------------------------------
+# Terraform data for cluster readiness verification
+# This ensures the cluster is accessible before creating K8s resources
+# -----------------------------------------------------------------------------
+resource "terraform_data" "cluster_ready" {
+  triggers_replace = [
+    var.cluster_id,
+    var.cluster_endpoint,
+    var.cluster_certificate_authority_data
+  ]
+
+  lifecycle {
+    precondition {
+      condition     = var.cluster_endpoint != null && var.cluster_endpoint != ""
+      error_message = "Cluster endpoint must be provided and non-empty. The EKS cluster must exist before creating Kubernetes resources."
+    }
+    precondition {
+      condition     = var.cluster_certificate_authority_data != null && var.cluster_certificate_authority_data != ""
+      error_message = "Cluster certificate authority data must be provided. The EKS cluster must exist before creating Kubernetes resources."
+    }
+  }
+}
+
+# -----------------------------------------------------------------------------
+# Kubernetes Provider Configuration
+# Uses actual values from variables - no try() fallbacks
+# -----------------------------------------------------------------------------
+provider "kubernetes" {
+  host                   = var.cluster_endpoint
+  cluster_ca_certificate = base64decode(var.cluster_certificate_authority_data)
+  token                  = data.aws_eks_cluster_auth.cluster.token
+}
+
+# -----------------------------------------------------------------------------
+# Helm Provider Configuration
+# -----------------------------------------------------------------------------
+provider "helm" {
+  kubernetes = {
+    host                   = var.cluster_endpoint
+    cluster_ca_certificate = base64decode(var.cluster_certificate_authority_data)
+    token                  = data.aws_eks_cluster_auth.cluster.token
+  }
+}
+
+# =============================================================================
+# RBAC Resources
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# ClusterRole: Developer
+# -----------------------------------------------------------------------------
+resource "kubernetes_cluster_role_v1" "developer" {
+  count = var.create_default_rbac_roles ? 1 : 0
+
+  metadata {
+    name = "cluster-developer"
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["pods", "pods/log", "pods/exec", "pods/portforward", "services", "endpoints", "persistentvolumeclaims", "configmaps", "secrets"]
+    verbs      = ["get", "list", "watch", "create", "update", "patch", "delete"]
+  }
+
+  rule {
+    api_groups = ["apps"]
+    resources  = ["deployments", "daemonsets", "statefulsets", "replicasets"]
+    verbs      = ["get", "list", "watch", "create", "update", "patch", "delete"]
+  }
+
+  rule {
+    api_groups = ["batch"]
+    resources  = ["jobs", "cronjobs"]
+    verbs      = ["get", "list", "watch", "create", "update", "patch", "delete"]
+  }
+
+  rule {
+    api_groups = ["networking.k8s.io"]
+    resources  = ["ingresses", "networkpolicies"]
+    verbs      = ["get", "list", "watch", "create", "update", "patch", "delete"]
+  }
+
+  rule {
+    api_groups = ["extensions"]
+    resources  = ["ingresses"]
+    verbs      = ["get", "list", "watch", "create", "update", "patch", "delete"]
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["namespaces", "nodes"]
+    verbs      = ["get", "list", "watch"]
+  }
+
+  rule {
+    api_groups = ["rbac.authorization.k8s.io"]
+    resources  = ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
+    verbs      = ["get", "list", "watch"]
+  }
+
+  depends_on = [terraform_data.cluster_ready]
+}
+
+# -----------------------------------------------------------------------------
+# ClusterRole: ReadOnly
+# -----------------------------------------------------------------------------
+resource "kubernetes_cluster_role_v1" "readonly" {
+  count = var.create_default_rbac_roles ? 1 : 0
+
+  metadata {
+    name = "cluster-readonly"
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["pods", "pods/log", "services", "endpoints", "persistentvolumeclaims", "configmaps", "secrets", "namespaces", "nodes"]
+    verbs      = ["get", "list", "watch"]
+  }
+
+  rule {
+    api_groups = ["apps"]
+    resources  = ["deployments", "daemonsets", "statefulsets", "replicasets"]
+    verbs      = ["get", "list", "watch"]
+  }
+
+  rule {
+    api_groups = ["batch"]
+    resources  = ["jobs", "cronjobs"]
+    verbs      = ["get", "list", "watch"]
+  }
+
+  rule {
+    api_groups = ["networking.k8s.io"]
+    resources  = ["ingresses", "networkpolicies"]
+    verbs      = ["get", "list", "watch"]
+  }
+
+  rule {
+    api_groups = ["rbac.authorization.k8s.io"]
+    resources  = ["roles", "rolebindings", "clusterroles", "clusterrolebindings"]
+    verbs      = ["get", "list", "watch"]
+  }
+
+  depends_on = [terraform_data.cluster_ready]
+}
+
+# -----------------------------------------------------------------------------
+# ClusterRole: CI/CD
+# -----------------------------------------------------------------------------
+resource "kubernetes_cluster_role_v1" "cicd" {
+  count = var.create_default_rbac_roles ? 1 : 0
+
+  metadata {
+    name = "cluster-cicd"
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["pods", "pods/log", "services", "endpoints", "persistentvolumeclaims", "configmaps", "secrets"]
+    verbs      = ["get", "list", "watch", "create", "update", "patch", "delete"]
+  }
+
+  rule {
+    api_groups = ["apps"]
+    resources  = ["deployments", "daemonsets", "statefulsets", "replicasets"]
+    verbs      = ["get", "list", "watch", "create", "update", "patch", "delete"]
+  }
+
+  rule {
+    api_groups = ["batch"]
+    resources  = ["jobs", "cronjobs"]
+    verbs      = ["get", "list", "watch", "create", "update", "patch", "delete"]
+  }
+
+  rule {
+    api_groups = ["networking.k8s.io"]
+    resources  = ["ingresses"]
+    verbs      = ["get", "list", "watch", "create", "update", "patch", "delete"]
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["namespaces"]
+    verbs      = ["get", "list", "watch", "create"]
+  }
+
+  depends_on = [terraform_data.cluster_ready]
+}
+
+# -----------------------------------------------------------------------------
+# Custom RBAC Roles
+# -----------------------------------------------------------------------------
+resource "kubernetes_cluster_role_v1" "custom_roles" {
+  for_each = var.custom_rbac_roles
+
+  metadata {
+    name = "cluster-${each.key}"
+  }
+
+  dynamic "rule" {
+    for_each = each.value.rules
+    content {
+      api_groups     = rule.value.api_groups
+      resources      = rule.value.resources
+      verbs          = rule.value.verbs
+      resource_names = try(rule.value.resource_names, [])
+    }
+  }
+
+  depends_on = [terraform_data.cluster_ready]
+}
+
+# =============================================================================
+# Storage Class Resources
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Default StorageClass for EBS volumes
+# -----------------------------------------------------------------------------
+resource "kubernetes_storage_class_v1" "ebs_gp3" {
+  count = var.create_default_storage_class ? 1 : 0
+
+  metadata {
+    name = var.default_storage_class_name
+    annotations = {
+      "storageclass.kubernetes.io/is-default-class" = "true"
+    }
+  }
+
+  storage_provisioner    = "ebs.csi.aws.com"
+  volume_binding_mode    = "WaitForFirstConsumer"
+  allow_volume_expansion = true
+
+  parameters = {
+    type      = "gp3"
+    encrypted = "true"
+    fsType    = "ext4"
+  }
+
+  depends_on = [terraform_data.cluster_ready]
+}
+
+# =============================================================================
+# Cluster Autoscaler ECR Resources (Optional)
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -14,7 +292,8 @@ locals {
   # Determine cluster autoscaler image version
   cluster_autoscaler_version = coalesce(
     var.cluster_autoscaler_image_version,
-    "v${var.cluster_version}.0"
+    var.cluster_autoscaler_cluster_version != null ? "v${var.cluster_autoscaler_cluster_version}.0" : null,
+    "v1.30.0"  # Default fallback
   )
 
   # Source image from public registry
@@ -31,18 +310,20 @@ locals {
   create_cluster_autoscaler_ecr = var.enable_cluster_autoscaler && var.cluster_autoscaler_use_ecr && var.cluster_autoscaler_ecr_repository_url == null
 
   # Final image URL:
-  # 1. Use existing ECR URL if provided
-  # 2. Use created ECR if cluster_autoscaler_use_ecr = true
-  # 3. Use public registry otherwise
-  cluster_autoscaler_image = coalesce(
+  # 1. Use explicit image if provided
+  # 2. Use existing ECR URL if provided
+  # 3. Use created ECR if cluster_autoscaler_use_ecr = true
+  # 4. Use public registry otherwise
+  cluster_autoscaler_final_image = coalesce(
+    var.cluster_autoscaler_image,
     var.cluster_autoscaler_ecr_repository_url,
-    var.enable_cluster_autoscaler && var.cluster_autoscaler_use_ecr ? "${aws_ecr_repository.cluster_autoscaler[0].repository_url}:${local.cluster_autoscaler_version}" : null,
+    local.create_cluster_autoscaler_ecr ? "${aws_ecr_repository.cluster_autoscaler[0].repository_url}:${local.cluster_autoscaler_version}" : null,
     local.cluster_autoscaler_source_image
   )
 
   # Determine if we should sync image to ECR
-  # Sync if: ECR enabled AND (no existing ECR URL OR skip_image_sync = false)
-  should_sync_image = var.enable_cluster_autoscaler && var.cluster_autoscaler_use_ecr && var.cluster_autoscaler_ecr_repository_url == null && !var.cluster_autoscaler_skip_image_sync
+  # Sync if: ECR enabled AND image sync enabled AND (no existing ECR URL)
+  should_sync_cluster_autoscaler_image = var.enable_cluster_autoscaler && var.cluster_autoscaler_use_ecr && var.cluster_autoscaler_enable_image_sync && var.cluster_autoscaler_ecr_repository_url == null
 
   # Multi-arch source images for each architecture
   # Format: registry/autoscaling/cluster-autoscaler-<arch>:version
@@ -51,24 +332,35 @@ locals {
     "${var.cluster_autoscaler_source_registry}/autoscaling/cluster-autoscaler-${arch}:${local.cluster_autoscaler_version}"
   ]
 
-  # Build command for cluster autoscaler
-  # Use full override if provided, otherwise build default with extra args
-  cluster_autoscaler_command = var.cluster_autoscaler_command != null ? var.cluster_autoscaler_command : concat(
-    [
-      "./cluster-autoscaler",
-      "--v=${var.cluster_autoscaler_log_level}",
-      "--stderrthreshold=info",
-      "--cloud-provider=aws",
-      "--skip-nodes-with-local-storage=${var.cluster_autoscaler_skip_local_storage}",
-      "--expander=${var.cluster_autoscaler_expander}",
-      "--node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/${module.eks.cluster_name}",
-      "--balance-similar-node-groups",
-      "--skip-nodes-with-system-pods=${var.cluster_autoscaler_skip_system_pods}"
-    ],
-    var.cluster_autoscaler_extra_args,
-    var.cluster_autoscaler_command_extra_args
-  )
+  # AWS region for ECR operations
+  ecr_region = coalesce(var.region, "eu-central-1")
 }
+
+# =============================================================================
+# Cluster Autoscaler IRSA (IAM Role for Service Accounts)
+# =============================================================================
+
+module "cluster_autoscaler_irsa" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+  version = "5.44.0"
+
+  count = var.enable_cluster_autoscaler ? 1 : 0
+
+  role_name = "${var.environment}-${var.project_name}-cluster-autoscaler"
+
+  attach_cluster_autoscaler_policy = true
+  cluster_autoscaler_cluster_names = [var.cluster_name]
+
+  oidc_providers = {
+    main = {
+      provider_arn               = var.oidc_provider_arn
+      namespace_service_accounts = ["kube-system:cluster-autoscaler"]
+    }
+  }
+
+  tags = var.tags
+}
+
 
 # =============================================================================
 # ECR Repository (Optional - for private VPCs without internet access)
@@ -132,7 +424,7 @@ resource "aws_ecr_lifecycle_policy" "cluster_autoscaler" {
 # Fails silently to not block deployment
 # -----------------------------------------------------------------------------
 resource "terraform_data" "sync_cluster_autoscaler_image" {
-  count = local.should_sync_image ? 1 : 0
+  count = local.should_sync_cluster_autoscaler_image ? 1 : 0
 
   triggers_replace = [
     local.cluster_autoscaler_version,
@@ -150,6 +442,7 @@ resource "terraform_data" "sync_cluster_autoscaler_image" {
       ECR_URL="${aws_ecr_repository.cluster_autoscaler[0].repository_url}"
       VERSION="${local.cluster_autoscaler_version}"
       ARCHS="${join(",", var.cluster_autoscaler_architectures)}"
+      REGION="${local.ecr_region}"
       
       echo "=============================================="
       echo "Cluster Autoscaler Image Sync"
@@ -184,7 +477,7 @@ resource "terraform_data" "sync_cluster_autoscaler_image" {
       # Get ECR login
       # =========================================
       echo "Logging in to ECR..."
-      aws ecr get-login-password --region ${var.region} | docker login --username AWS --password-stdin $ECR_URL
+      aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ECR_URL
       LOGIN_STATUS=$?
       if [ $LOGIN_STATUS -ne 0 ]; then
         echo "=============================================="
@@ -331,8 +624,9 @@ resource "terraform_data" "sync_cluster_autoscaler_image" {
   ]
 }
 
+
 # =============================================================================
-# Kubernetes Resources
+# Cluster Autoscaler Kubernetes Resources
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -349,11 +643,11 @@ resource "kubernetes_service_account_v1" "cluster_autoscaler" {
       "app"       = "cluster-autoscaler"
     }
     annotations = {
-      "eks.amazonaws.com/role-arn" = module.cluster_autoscaler_irsa.iam_role_arn
+      "eks.amazonaws.com/role-arn" = module.cluster_autoscaler_irsa[0].iam_role_arn
     }
   }
 
-  depends_on = [terraform_data.eks_ready]
+  depends_on = [terraform_data.cluster_ready]
 }
 
 # -----------------------------------------------------------------------------
@@ -425,11 +719,11 @@ resource "kubernetes_cluster_role_v1" "cluster_autoscaler" {
     resource_names = ["cluster-autoscaler"]
   }
 
-  depends_on = [terraform_data.eks_ready]
+  depends_on = [terraform_data.cluster_ready]
 }
 
 # -----------------------------------------------------------------------------
-# ClusterRoleBinding
+# ClusterRoleBinding for Cluster Autoscaler
 # -----------------------------------------------------------------------------
 resource "kubernetes_cluster_role_binding_v1" "cluster_autoscaler" {
   count = var.enable_cluster_autoscaler ? 1 : 0
@@ -461,7 +755,7 @@ resource "kubernetes_cluster_role_binding_v1" "cluster_autoscaler" {
 }
 
 # -----------------------------------------------------------------------------
-# Role for kube-system namespace
+# Role for kube-system namespace (Cluster Autoscaler)
 # -----------------------------------------------------------------------------
 resource "kubernetes_role_v1" "cluster_autoscaler" {
   count = var.enable_cluster_autoscaler ? 1 : 0
@@ -488,11 +782,11 @@ resource "kubernetes_role_v1" "cluster_autoscaler" {
     resource_names = ["cluster-autoscaler-status"]
   }
 
-  depends_on = [terraform_data.eks_ready]
+  depends_on = [terraform_data.cluster_ready]
 }
 
 # -----------------------------------------------------------------------------
-# RoleBinding for kube-system namespace
+# RoleBinding for kube-system namespace (Cluster Autoscaler)
 # -----------------------------------------------------------------------------
 resource "kubernetes_role_binding_v1" "cluster_autoscaler" {
   count = var.enable_cluster_autoscaler ? 1 : 0
@@ -525,8 +819,27 @@ resource "kubernetes_role_binding_v1" "cluster_autoscaler" {
 }
 
 # -----------------------------------------------------------------------------
-# Deployment
+# Cluster Autoscaler Deployment
 # -----------------------------------------------------------------------------
+locals {
+  # Build command for cluster autoscaler
+  cluster_autoscaler_command = var.cluster_autoscaler_command != null ? var.cluster_autoscaler_command : concat(
+    [
+      "./cluster-autoscaler",
+      "--v=${var.cluster_autoscaler_log_level}",
+      "--stderrthreshold=info",
+      "--cloud-provider=aws",
+      "--skip-nodes-with-local-storage=${var.cluster_autoscaler_skip_local_storage}",
+      "--expander=${var.cluster_autoscaler_expander}",
+      "--node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/${var.cluster_name}",
+      "--balance-similar-node-groups",
+      "--skip-nodes-with-system-pods=${var.cluster_autoscaler_skip_system_pods}"
+    ],
+    var.cluster_autoscaler_extra_args,
+    var.cluster_autoscaler_command_extra_args
+  )
+}
+
 resource "kubernetes_deployment_v1" "cluster_autoscaler" {
   count = var.enable_cluster_autoscaler ? 1 : 0
 
@@ -566,7 +879,7 @@ resource "kubernetes_deployment_v1" "cluster_autoscaler" {
 
         container {
           name  = "cluster-autoscaler"
-          image = local.cluster_autoscaler_image
+          image = local.cluster_autoscaler_final_image
 
           command = concat(
             ["./cluster-autoscaler"],
@@ -629,7 +942,86 @@ resource "kubernetes_deployment_v1" "cluster_autoscaler" {
   depends_on = [
     kubernetes_service_account_v1.cluster_autoscaler,
     kubernetes_cluster_role_binding_v1.cluster_autoscaler,
-    kubernetes_role_binding_v1.cluster_autoscaler,
-    terraform_data.sync_cluster_autoscaler_image
+    kubernetes_role_binding_v1.cluster_autoscaler
+  ]
+}
+
+# =============================================================================
+# Kubernetes Namespace Resources
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Kubernetes Namespaces
+# -----------------------------------------------------------------------------
+resource "kubernetes_namespace_v1" "hyperswitch" {
+  count = var.enable_helm_deployments ? 1 : 0
+
+  metadata {
+    name = var.hyperswitch_namespace
+
+    labels = {
+      name        = var.hyperswitch_namespace
+      environment = var.environment
+    }
+  }
+
+  depends_on = [terraform_data.cluster_ready]
+}
+
+# -----------------------------------------------------------------------------
+# ECR Registry Secret for pulling images
+# -----------------------------------------------------------------------------
+data "aws_ecr_authorization_token" "token" {
+  count = var.enable_helm_deployments && var.create_ecr_registry_secret ? 1 : 0
+}
+
+resource "kubernetes_secret_v1" "ecr_registry" {
+  count = var.enable_helm_deployments && var.create_ecr_registry_secret ? 1 : 0
+
+  metadata {
+    name      = "ecr-registry-secret"
+    namespace = kubernetes_namespace_v1.hyperswitch[0].metadata[0].name
+  }
+
+  type = "kubernetes.io/dockerconfigjson"
+
+  data = {
+    ".dockerconfigjson" = jsonencode({
+      auths = {
+        "${data.aws_ecr_authorization_token.token[0].proxy_endpoint}" = {
+          auth = data.aws_ecr_authorization_token.token[0].authorization_token
+        }
+      }
+    })
+  }
+
+  depends_on = [kubernetes_namespace_v1.hyperswitch]
+}
+
+# -----------------------------------------------------------------------------
+# Hyperswitch Helm Release
+# -----------------------------------------------------------------------------
+resource "helm_release" "hyperswitch_stack" {
+  count = var.enable_helm_deployments ? 1 : 0
+
+  name       = var.hyperswitch_release_name
+  repository = var.hyperswitch_helm_repository
+  chart      = var.hyperswitch_helm_chart
+  namespace  = kubernetes_namespace_v1.hyperswitch[0].metadata[0].name
+  version    = var.hyperswitch_chart_version
+
+  values = var.hyperswitch_values_file != null ? [
+    file(var.hyperswitch_values_file)
+  ] : []
+
+  wait          = true
+  wait_for_jobs = true
+  timeout       = var.hyperswitch_helm_timeout
+
+  depends_on = [
+    terraform_data.cluster_ready,
+    kubernetes_namespace_v1.hyperswitch,
+    kubernetes_secret_v1.ecr_registry,
+    kubernetes_storage_class_v1.ebs_gp3
   ]
 }

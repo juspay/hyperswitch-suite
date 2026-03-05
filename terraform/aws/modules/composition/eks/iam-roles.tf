@@ -1,71 +1,54 @@
 # =============================================================================
-# EKS Composition Module - IAM Roles (ArgoCD Cross-Account)
+# EKS Composition Module - IAM Roles (Cross-Account / Management)
+# =============================================================================
+# This file contains optional IAM roles for cross-account access patterns.
+# All configurations MUST be passed from the live layer - no defaults.
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# IAM Role for ArgoCD Cross-Account Access
-# Allows ArgoCD from another AWS account to access this EKS cluster
+# IAM Role for Cross-Account Access (e.g., ArgoCD, Atlantis, CI/CD)
+# Allows external principals to access this EKS cluster
 # -----------------------------------------------------------------------------
-resource "aws_iam_role" "argocd_cross_account" {
-  count = var.create_argocd_cross_account_role ? 1 : 0
+resource "aws_iam_role" "cross_account" {
+  count = var.create_cross_account_role ? 1 : 0
 
-  name = "${var.environment}-${var.project_name}-argocd-cross-account"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          AWS = var.argocd_assume_role_principal_arn
-        }
-        Action = "sts:AssumeRole"
-      }
-    ]
-  })
+  name               = local.cross_account_role_name
+  assume_role_policy = var.cross_account_assume_role_policy
 
   tags = var.tags
 }
 
 # -----------------------------------------------------------------------------
-# IAM Policy for EKS Access
-# Grants permissions to describe and interact with the EKS cluster
+# IAM Policy for Cross-Account Access (Custom Policy JSON)
 # -----------------------------------------------------------------------------
-resource "aws_iam_policy" "argocd_eks_access" {
-  count = var.create_argocd_cross_account_role ? 1 : 0
+resource "aws_iam_policy" "cross_account" {
+  count = var.create_cross_account_role && var.cross_account_policy_json != null ? 1 : 0
 
-  name        = "${var.environment}-${var.project_name}-argocd-eks-access"
-  description = "Policy for ArgoCD cross-account EKS access"
+  name        = "${var.environment}-${var.project_name}-cross-account-access"
+  description = "Policy for cross-account EKS access"
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "eks:DescribeCluster",
-          "eks:ListClusters",
-          "eks:DescribeNodegroup",
-          "eks:ListNodegroups",
-          "eks:DescribeFargateProfile",
-          "eks:ListFargateProfiles",
-          "eks:DescribeUpdate",
-          "eks:ListUpdates"
-        ]
-        Resource = "*"
-      }
-    ]
-  })
+  policy = var.cross_account_policy_json
 
   tags = var.tags
 }
 
 # -----------------------------------------------------------------------------
-# Attach EKS access policy to ArgoCD role
+# Attach custom policy to cross-account role
 # -----------------------------------------------------------------------------
-resource "aws_iam_role_policy_attachment" "argocd_eks_access" {
-  count = var.create_argocd_cross_account_role ? 1 : 0
+resource "aws_iam_role_policy_attachment" "cross_account_custom" {
+  count = var.create_cross_account_role && var.cross_account_policy_json != null ? 1 : 0
 
-  role       = aws_iam_role.argocd_cross_account[0].name
-  policy_arn = aws_iam_policy.argocd_eks_access[0].arn
+  role       = aws_iam_role.cross_account[0].name
+  policy_arn = aws_iam_policy.cross_account[0].arn
+}
+
+# -----------------------------------------------------------------------------
+# Attach additional policy ARNs to cross-account role
+# For when you want to use existing managed policies
+# -----------------------------------------------------------------------------
+resource "aws_iam_role_policy_attachment" "cross_account_policy_arns" {
+  count = var.create_cross_account_role ? length(var.cross_account_policy_arns) : 0
+
+  role       = aws_iam_role.cross_account[0].name
+  policy_arn = var.cross_account_policy_arns[count.index]
 }

@@ -1,4 +1,10 @@
+# =============================================================================
 # EKS Cluster Outputs
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Cluster Information
+# -----------------------------------------------------------------------------
 output "cluster_id" {
   description = "The ID of the EKS cluster"
   value       = module.eks.cluster_id
@@ -27,6 +33,7 @@ output "cluster_version" {
 output "cluster_certificate_authority_data" {
   description = "Base64 encoded certificate data required to communicate with the cluster"
   value       = module.eks.cluster_certificate_authority_data
+  sensitive   = true
 }
 
 output "cluster_oidc_issuer_url" {
@@ -39,6 +46,9 @@ output "cluster_service_cidr" {
   value       = try(module.eks.cluster_service_cidr, null)
 }
 
+# -----------------------------------------------------------------------------
+# Security Groups
+# -----------------------------------------------------------------------------
 output "cluster_security_group_id" {
   description = "Cluster security group that was created by Amazon EKS for the cluster"
   value       = module.eks.cluster_security_group_id
@@ -49,19 +59,12 @@ output "node_security_group_id" {
   value       = module.eks.node_security_group_id
 }
 
+# -----------------------------------------------------------------------------
+# Node Groups
+# -----------------------------------------------------------------------------
 output "eks_managed_node_groups" {
   description = "Map of attribute maps for all EKS managed node groups created"
   value       = module.eks.eks_managed_node_groups
-}
-
-output "cluster_autoscaler_iam_role_arn" {
-  description = "IAM role ARN for Cluster Autoscaler"
-  value       = module.cluster_autoscaler_irsa.iam_role_arn
-}
-
-output "ebs_csi_iam_role_arn" {
-  description = "IAM role ARN for EBS CSI Driver"
-  value       = module.ebs_csi_irsa.iam_role_arn
 }
 
 output "eks_managed_node_groups_iam_role_arn" {
@@ -75,32 +78,34 @@ output "eks_managed_node_groups_iam_role_name" {
 }
 
 # -----------------------------------------------------------------------------
-# Cluster Autoscaler Outputs
+# IAM Role Outputs (for use with eks-kubernetes-resources module)
 # -----------------------------------------------------------------------------
-output "cluster_autoscaler_image" {
-  description = "Full image URL for cluster autoscaler (ECR or public)"
-  value       = local.cluster_autoscaler_image
+output "cluster_iam_role_arn" {
+  description = "IAM role ARN for the EKS cluster"
+  value       = var.create_cluster_iam_role ? aws_iam_role.cluster[0].arn : var.cluster_iam_role_arn
 }
 
-output "cluster_autoscaler_ecr_repository_url" {
-  description = "ECR repository URL for cluster autoscaler image"
-  value       = try(aws_ecr_repository.cluster_autoscaler[0].repository_url, null)
+
+output "ebs_csi_iam_role_arn" {
+  description = "IAM role ARN for EBS CSI Driver"
+  value       = module.ebs_csi_irsa.iam_role_arn
+}
+
+output "oidc_provider_arn" {
+  description = "The ARN of the OIDC Provider"
+  value       = module.eks.oidc_provider_arn
 }
 
 # -----------------------------------------------------------------------------
-# Kubernetes Resources Outputs
+# Cross-Account Role Outputs
 # -----------------------------------------------------------------------------
-output "default_storage_class_name" {
-  description = "Name of the default storage class (if created)"
-  value       = var.create_default_storage_class ? var.default_storage_class_name : null
+output "cross_account_role_arn" {
+  description = "IAM role ARN for cross-account access (ArgoCD, Atlantis, etc.)"
+  value       = var.create_cross_account_role ? aws_iam_role.cross_account[0].arn : null
 }
 
-output "hyperswitch_namespace" {
-  description = "Name of the Hyperswitch namespace (if created)"
-  value       = var.enable_helm_deployments ? kubernetes_namespace_v1.hyperswitch[0].metadata[0].name : null
+output "cross_account_role_name" {
+  description = "IAM role name for cross-account access"
+  value       = var.create_cross_account_role ? aws_iam_role.cross_account[0].name : null
 }
 
-output "hyperswitch_helm_release_status" {
-  description = "Status of the Hyperswitch Helm release (if deployed)"
-  value       = var.enable_helm_deployments ? helm_release.hyperswitch_stack[0].status : null
-}

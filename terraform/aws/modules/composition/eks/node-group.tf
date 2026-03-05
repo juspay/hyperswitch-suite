@@ -1,82 +1,8 @@
 # =============================================================================
 # EKS Composition Module - Node Group IAM and Node Groups
 # =============================================================================
-
-# -----------------------------------------------------------------------------
-# Default Observability Policy (used when node_group_custom_policy = "default")
-# -----------------------------------------------------------------------------
-locals {
-  default_observability_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "CloudWatchLogsObservability"
-        Effect = "Allow"
-        Action = [
-          "cloudwatch:DescribeAlarmsForMetric",
-          "cloudwatch:DescribeAlarmHistory",
-          "cloudwatch:DescribeAlarms",
-          "cloudwatch:ListMetrics",
-          "cloudwatch:GetMetricData",
-          "cloudwatch:GetInsightRuleReport",
-          "logs:DescribeLogGroups",
-          "logs:GetLogGroupFields",
-          "logs:StartQuery",
-          "logs:StopQuery",
-          "logs:GetQueryResults",
-          "logs:GetLogEvents",
-          "ec2:DescribeTags",
-          "ec2:DescribeInstances",
-          "ec2:DescribeRegions",
-          "tag:GetResources"
-        ]
-        Resource = "*"
-      }
-    ]
-  })
-
-  # Determine if we need node group resources
-  create_node_groups = length(var.node_groups) > 0
-
-  # Node groups that need a security group created
-  node_groups_needing_sg = {
-    for k, v in var.node_groups : k => v
-    if try(v.create_security_group, false) == true
-  }
-
-  # Node groups that need a custom launch template:
-  # - Has create_security_group = true
-  # - Has custom ami_id
-  # - Has additional_security_group_ids
-  # - Has custom block_device_mappings
-  # - Has custom metadata_options
-  node_groups_needing_custom_lt = {
-    for k, v in var.node_groups : k => v
-    if try(v.create_security_group, false) == true ||
-    (try(v.launch_template, null) != null && (
-      try(v.launch_template.ami_id, null) != null ||
-      try(v.launch_template.additional_security_group_ids, null) != null ||
-      try(v.launch_template.block_device_mappings, null) != null ||
-      try(v.launch_template.metadata_options, null) != null
-    ))
-  }
-
-  # SSH Key logic:
-  # - If create_ssh_key = true, use created key
-  # - Otherwise, use provided ssh_key_name
-  ssh_key_name = var.create_ssh_key ? aws_key_pair.node_group[0].key_name : var.ssh_key_name
-
-  # Auto-generate key pair name if not provided
-  ssh_key_pair_name = var.ssh_key_name != null ? var.ssh_key_name : "${var.environment}-${var.project_name}-eks-node-key"
-
-  # Default metadata options merged with user overrides
-  default_metadata = merge({
-    http_endpoint               = "enabled"
-    http_tokens                 = "required"
-    http_put_response_hop_limit = 2
-    instance_metadata_tags      = "enabled"
-  }, var.default_metadata_options)
-}
+# All IAM policies MUST be passed from the live layer - no defaults.
+# =============================================================================
 
 # -----------------------------------------------------------------------------
 # SSH Key Pair (Optional)
@@ -118,24 +44,13 @@ resource "aws_ssm_parameter" "node_group_private_key" {
 # -----------------------------------------------------------------------------
 # IAM Role for EKS Node Groups
 # Single shared role for all node groups (avoids eks module creating one per group)
+# Policy provided from live layer - no defaults
 # -----------------------------------------------------------------------------
 resource "aws_iam_role" "node_group" {
-  count = local.create_node_groups ? 1 : 0
+  count = local.create_node_groups && var.create_node_group_iam_role ? 1 : 0
 
-  name = coalesce(var.node_group_iam_role_name, "${var.environment}-${var.project_name}-node-group-role")
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "ec2.amazonaws.com"
-        }
-        Action = "sts:AssumeRole"
-      }
-    ]
-  })
+  name               = local.node_group_iam_role_name
+  assume_role_policy = var.node_group_iam_role_assume_role_policy
 
   tags = var.tags
 }
@@ -144,31 +59,31 @@ resource "aws_iam_role" "node_group" {
 # Managed IAM Policy Attachments (using for_each)
 # -----------------------------------------------------------------------------
 resource "aws_iam_role_policy_attachment" "node_group_policies" {
-  for_each = local.create_node_groups ? var.node_group_iam_policies : {}
+  for_each = local.create_node_groups && var.create_node_group_iam_role ? var.node_group_iam_role_policies : {}
 
   policy_arn = each.value
   role       = aws_iam_role.node_group[0].name
 }
 
 # -----------------------------------------------------------------------------
-# Custom Observability Policy (optional)
-# Created when node_group_custom_policy is set to "default" or custom JSON
+# Custom Policy for Node Group (e.g., Observability)
+# Created when node_group_custom_policy_json is provided
 # -----------------------------------------------------------------------------
-resource "aws_iam_policy" "node_group_observability" {
-  count = local.create_node_groups && var.node_group_custom_policy != null ? 1 : 0
+resource "aws_iam_policy" "node_group_custom" {
+  count = local.create_node_groups && var.create_node_group_iam_role && var.node_group_custom_policy_json != null ? 1 : 0
 
-  name        = "${var.environment}-${var.project_name}-node-observability"
-  description = "Enhanced observability permissions for EKS nodes"
+  name        = "${var.environment}-${var.project_name}-node-custom"
+  description = "Custom policy for EKS nodes"
 
-  policy = var.node_group_custom_policy == "default" ? local.default_observability_policy : var.node_group_custom_policy
+  policy = var.node_group_custom_policy_json
 
   tags = var.tags
 }
 
-resource "aws_iam_role_policy_attachment" "node_group_observability" {
-  count = local.create_node_groups && var.node_group_custom_policy != null ? 1 : 0
+resource "aws_iam_role_policy_attachment" "node_group_custom" {
+  count = local.create_node_groups && var.create_node_group_iam_role && var.node_group_custom_policy_json != null ? 1 : 0
 
-  policy_arn = aws_iam_policy.node_group_observability[0].arn
+  policy_arn = aws_iam_policy.node_group_custom[0].arn
   role       = aws_iam_role.node_group[0].name
 }
 
@@ -183,7 +98,6 @@ resource "aws_security_group" "node_group" {
   name        = "${var.environment}-${var.project_name}-${each.key}-sg"
   description = "Security group for ${each.key} node group"
   vpc_id      = var.vpc_id
-
 
   tags = merge(var.tags, {
     Name      = "${var.environment}-${var.project_name}-${each.key}-sg"
@@ -204,7 +118,7 @@ resource "aws_eks_node_group" "custom_nodes" {
 
   cluster_name           = module.eks.cluster_name
   node_group_name_prefix = "${each.key}-"
-  node_role_arn          = aws_iam_role.node_group[0].arn
+  node_role_arn          = var.create_node_group_iam_role ? aws_iam_role.node_group[0].arn : var.node_group_iam_role_arn
 
   # Use per-node-group subnets if specified, otherwise use cluster subnets
   subnet_ids = try(each.value.subnet_ids, null) != null ? each.value.subnet_ids : var.subnet_ids
@@ -260,3 +174,23 @@ resource "aws_eks_node_group" "custom_nodes" {
     aws_eks_addon.before_nodes
   ]
 }
+
+# # -----------------------------------------------------------------------------
+# # EKS Access Entry for Node IAM Role
+# # Required for nodes to authenticate with the cluster
+# # -----------------------------------------------------------------------------
+# resource "aws_eks_access_entry" "node_role" {
+#   count = local.create_node_groups && var.create_node_group_iam_role ? 1 : 0
+
+#   cluster_name  = module.eks.cluster_name
+#   principal_arn = aws_iam_role.node_group[0].arn
+#   type          = "EC2_LINUX"
+
+#   # EC2_LINUX type automatically includes system:nodes group
+#   # But for AL2023 bootstrap, we also need system:bootstrappers
+#   # This is handled by EKS for EC2_LINUX type
+
+#   tags = var.tags
+
+#   depends_on = [module.eks]
+# }

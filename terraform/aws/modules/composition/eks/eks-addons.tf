@@ -12,8 +12,7 @@ locals {
 
   # Map service account role short names to module outputs
   service_account_role_map = {
-    "cluster_autoscaler" = module.cluster_autoscaler_irsa.iam_role_arn
-    "ebs_csi"            = module.ebs_csi_irsa.iam_role_arn
+    "ebs_csi" = module.ebs_csi_irsa.iam_role_arn
   }
 }
 

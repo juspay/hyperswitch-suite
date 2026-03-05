@@ -1,4 +1,10 @@
+# =============================================================================
+# EKS Composition Module - Variables
+# =============================================================================
+
+# -----------------------------------------------------------------------------
 # Core Variables
+# -----------------------------------------------------------------------------
 variable "project_name" {
   description = "Name of the project"
   type        = string
@@ -15,7 +21,6 @@ variable "cluster_name_version" {
   default     = "v1"
 }
 
-# EKS Configuration
 variable "cluster_version" {
   description = "Kubernetes version for the EKS cluster"
   type        = string
@@ -52,13 +57,125 @@ variable "cluster_access_entries" {
   default     = {}
 }
 
-variable "argocd_assume_role_principal_arn" {
-  description = "ARN of the ArgoCD IAM role that can assume the EKS cluster role"
+variable "tags" {
+  description = "Tags to apply to all resources"
+  type        = map(string)
+  default     = {}
+}
+
+# -----------------------------------------------------------------------------
+# Cluster IAM Role Configuration (Required from Live Layer)
+# -----------------------------------------------------------------------------
+variable "create_cluster_iam_role" {
+  description = "Whether to create a custom IAM role for the EKS cluster. Set to false if using existing role."
+  type        = bool
+  default     = true
+}
+
+variable "cluster_iam_role_arn" {
+  description = "Existing IAM role ARN for EKS cluster (required if create_cluster_iam_role = false)"
   type        = string
   default     = null
 }
 
+variable "cluster_iam_role_name" {
+  description = "Custom name for the EKS cluster IAM role (auto-generated if null)"
+  type        = string
+  default     = null
+}
+
+variable "cluster_iam_role_assume_role_policy" {
+  description = "Assume role policy JSON for EKS cluster IAM role. MUST be provided from live layer."
+  type        = string
+}
+
+variable "cluster_iam_role_policies" {
+  description = "Map of IAM policy ARNs to attach to the cluster IAM role"
+  type        = map(string)
+  default     = {}
+}
+
+variable "cluster_custom_policy_json" {
+  description = "Custom IAM policy JSON for cluster role (additional permissions). Set to null to skip."
+  type        = string
+  default     = null
+}
+
+# -----------------------------------------------------------------------------
+# Node Group IAM Role Configuration (Required from Live Layer)
+# -----------------------------------------------------------------------------
+variable "create_node_group_iam_role" {
+  description = "Whether to create a custom IAM role for node groups. Set to false if using existing role."
+  type        = bool
+  default     = true
+}
+
+variable "node_group_iam_role_arn" {
+  description = "Existing IAM role ARN for node groups (required if create_node_group_iam_role = false)"
+  type        = string
+  default     = null
+}
+
+variable "node_group_iam_role_name" {
+  description = "Custom name for the node group IAM role (auto-generated if null)"
+  type        = string
+  default     = null
+}
+
+variable "node_group_iam_role_assume_role_policy" {
+  description = "Assume role policy JSON for node group IAM role. MUST be provided from live layer."
+  type        = string
+}
+
+variable "node_group_iam_role_policies" {
+  description = "Map of IAM policy ARNs to attach to the node group IAM role"
+  type        = map(string)
+  default     = {}
+}
+
+variable "node_group_custom_policy_json" {
+  description = "Custom IAM policy JSON for node group (e.g., observability). Set to null to skip."
+  type        = string
+  default     = null
+}
+
+# -----------------------------------------------------------------------------
+# Cross-Account Role Configuration (Required from Live Layer)
+# For ArgoCD, Atlantis, CI/CD from management cluster
+# -----------------------------------------------------------------------------
+variable "create_cross_account_role" {
+  description = "Whether to create IAM role for cross-account access"
+  type        = bool
+  default     = false
+}
+
+variable "cross_account_role_name" {
+  description = "Custom name for cross-account role (auto-generated if null)"
+  type        = string
+  default     = null
+}
+
+variable "cross_account_assume_role_policy" {
+  description = "Assume role policy JSON for cross-account role. MUST be provided if create_cross_account_role = true."
+  type        = string
+  default     = null
+}
+
+variable "cross_account_policy_json" {
+  description = "IAM policy JSON for cross-account role. MUST be provided if create_cross_account_role = true."
+  type        = string
+  default     = null
+}
+
+variable "cross_account_policy_arns" {
+  description = "List of IAM policy ARNs to attach to cross-account role (alternative to policy JSON)"
+  type        = list(string)
+  default     = []
+}
+
+# -----------------------------------------------------------------------------
 # Networking
+# -----------------------------------------------------------------------------
 variable "vpc_id" {
   description = "VPC ID where the cluster will be created"
   type        = string
@@ -75,265 +192,24 @@ variable "control_plane_subnet_ids" {
   default     = null
 }
 
+# -----------------------------------------------------------------------------
 # Node Groups
+# -----------------------------------------------------------------------------
 variable "node_groups" {
   description = "EKS managed node groups configuration"
   type        = any
   default     = {}
 }
 
+# -----------------------------------------------------------------------------
 # KMS Configuration
+# -----------------------------------------------------------------------------
 variable "kms_key_administrators" {
   description = "A list of IAM ARNs for key administrators. If no value is provided, the current caller identity is used to ensure at least one key admin is available"
   type        = list(string)
   default     = []
 }
 
-# Tags
-variable "tags" {
-  description = "Tags to apply to all resources"
-  type        = map(string)
-  default     = {}
-}
-
-# -----------------------------------------------------------------------------
-# Cluster Autoscaler Configuration
-# -----------------------------------------------------------------------------
-variable "enable_cluster_autoscaler" {
-  description = "Whether to deploy Cluster Autoscaler"
-  type        = bool
-  default     = false
-}
-
-variable "cluster_autoscaler_image_version" {
-  description = "Cluster Autoscaler image version tag (e.g., 'v1.35.0'). Auto-detected from cluster version if null"
-  type        = string
-  default     = null
-}
-
-variable "cluster_autoscaler_source_registry" {
-  description = "Container registry for cluster autoscaler image source"
-  type        = string
-  default     = "registry.k8s.io"
-}
-
-variable "cluster_autoscaler_architectures" {
-  description = "List of CPU architectures for multi-arch image sync (e.g., ['amd64', 'arm64'])"
-  type        = list(string)
-  default     = ["amd64", "arm64"]
-}
-
-variable "cluster_autoscaler_use_ecr" {
-  description = "Whether to use ECR for cluster autoscaler image (required for private VPCs)"
-  type        = bool
-  default     = true
-}
-
-variable "cluster_autoscaler_ecr_repo_name" {
-  description = "Custom ECR repository name for cluster autoscaler (auto-generated if null)"
-  type        = string
-  default     = null
-}
-
-variable "cluster_autoscaler_ecr_max_images" {
-  description = "Maximum number of images to keep in ECR lifecycle policy"
-  type        = number
-  default     = 5
-}
-
-variable "cluster_autoscaler_service_account_name" {
-  description = "Service account name for cluster autoscaler"
-  type        = string
-  default     = null
-}
-
-variable "cluster_autoscaler_resources" {
-  description = "Resource requests and limits for cluster autoscaler"
-  type = object({
-    requests_cpu    = optional(string, "100m")
-    requests_memory = optional(string, "600Mi")
-    limits_cpu      = optional(string, "100m")
-    limits_memory   = optional(string, "600Mi")
-  })
-  default = {}
-}
-
-variable "cluster_autoscaler_log_level" {
-  description = "Log level for cluster autoscaler (1-5)"
-  type        = number
-  default     = 4
-}
-
-variable "cluster_autoscaler_expander" {
-  description = "Expander strategy for cluster autoscaler (least-waste, most-pods, priority, random)"
-  type        = string
-  default     = "least-waste"
-}
-
-variable "cluster_autoscaler_extra_args" {
-  description = "Additional command line arguments for cluster autoscaler"
-  type        = list(string)
-  default     = []
-}
-
-variable "cluster_autoscaler_node_selector" {
-  description = "Node selector for scheduling cluster autoscaler pod"
-  type        = map(string)
-  default     = {}
-}
-
-variable "cluster_autoscaler_tolerations" {
-  description = "Tolerations for scheduling cluster autoscaler pod"
-  type = list(object({
-    key      = string
-    operator = string
-    value    = optional(string)
-    effect   = string
-  }))
-  default = []
-}
-
-variable "cluster_autoscaler_pod_annotations" {
-  description = "Additional pod annotations for cluster autoscaler"
-  type        = map(string)
-  default     = {}
-}
-
-variable "cluster_autoscaler_ecr_repository_url" {
-  description = "Existing ECR repository URL for cluster autoscaler (skips ECR creation if provided)"
-  type        = string
-  default     = null
-}
-
-variable "cluster_autoscaler_skip_image_sync" {
-  description = "Skip automatic image sync to ECR (set true if you manage image sync separately)"
-  type        = bool
-  default     = false
-}
-
-# -----------------------------------------------------------------------------
-# RBAC Configuration
-# -----------------------------------------------------------------------------
-variable "create_default_rbac_roles" {
-  description = "Whether to create default RBAC roles (developer, readonly, cicd)"
-  type        = bool
-  default     = true
-}
-
-variable "custom_rbac_roles" {
-  description = "Additional custom RBAC roles to create"
-  type = map(object({
-    rules = list(object({
-      api_groups     = list(string)
-      resources      = list(string)
-      verbs          = list(string)
-      resource_names = optional(list(string), [])
-    }))
-  }))
-  default = {}
-}
-
-# -----------------------------------------------------------------------------
-# Kubernetes Resources Configuration
-# -----------------------------------------------------------------------------
-variable "create_default_storage_class" {
-  description = "Whether to create default gp3 storage class for EBS volumes"
-  type        = bool
-  default     = true
-}
-
-variable "default_storage_class_name" {
-  description = "Name of the default storage class"
-  type        = string
-  default     = "ebs-gp3"
-}
-
-# -----------------------------------------------------------------------------
-# Helm Deployment Configuration
-# -----------------------------------------------------------------------------
-variable "enable_helm_deployments" {
-  description = "Enable Helm deployments managed by Terraform. Set to false if using ArgoCD from another cluster"
-  type        = bool
-  default     = false
-}
-
-variable "create_ecr_registry_secret" {
-  description = "Whether to create ECR registry secret for pulling images"
-  type        = bool
-  default     = true
-}
-
-# -----------------------------------------------------------------------------
-# Hyperswitch Helm Configuration
-# -----------------------------------------------------------------------------
-variable "hyperswitch_namespace" {
-  description = "Kubernetes namespace for Hyperswitch deployment"
-  type        = string
-  default     = "hyperswitch"
-}
-
-variable "hyperswitch_release_name" {
-  description = "Helm release name for Hyperswitch stack"
-  type        = string
-  default     = "hyperswitch-stack"
-}
-
-variable "hyperswitch_helm_repository" {
-  description = "Helm repository URL for Hyperswitch chart"
-  type        = string
-  default     = "https://juspay.github.io/hyperswitch-helm"
-}
-
-variable "hyperswitch_helm_chart" {
-  description = "Helm chart name for Hyperswitch"
-  type        = string
-  default     = "hyperswitch-stack"
-}
-
-variable "hyperswitch_chart_version" {
-  description = "Helm chart version for Hyperswitch (null for latest)"
-  type        = string
-  default     = null
-}
-
-variable "hyperswitch_values_file" {
-  description = "Path to custom Helm values file for Hyperswitch (null for defaults)"
-  type        = string
-  default     = null
-}
-
-variable "hyperswitch_helm_timeout" {
-  description = "Timeout in seconds for Helm deployment"
-  type        = number
-  default     = 900
-}
-
-# -----------------------------------------------------------------------------
-# Additional Cluster Autoscaler Variables
-# -----------------------------------------------------------------------------
-variable "cluster_autoscaler_command" {
-  description = "Full command override for cluster autoscaler (replaces default command if provided)"
-  type        = list(string)
-  default     = null
-}
-
-variable "cluster_autoscaler_command_extra_args" {
-  description = "Additional command line arguments appended to default command"
-  type        = list(string)
-  default     = []
-}
-
-variable "cluster_autoscaler_skip_local_storage" {
-  description = "Skip nodes with local storage"
-  type        = bool
-  default     = false
-}
-
-variable "cluster_autoscaler_skip_system_pods" {
-  description = "Skip nodes with system pods"
-  type        = bool
-  default     = false
-}
 
 # -----------------------------------------------------------------------------
 # Region Variable
@@ -357,15 +233,6 @@ variable "eks_addons" {
 }
 
 # -----------------------------------------------------------------------------
-# ArgoCD Cross-Account Role
-# -----------------------------------------------------------------------------
-variable "create_argocd_cross_account_role" {
-  description = "Whether to create IAM role for ArgoCD cross-account access"
-  type        = bool
-  default     = false
-}
-
-# -----------------------------------------------------------------------------
 # SSH Key Configuration
 # -----------------------------------------------------------------------------
 variable "create_ssh_key" {
@@ -384,21 +251,6 @@ variable "ssh_public_key" {
   description = "Public key material for creating SSH key pair. If not provided when create_ssh_key=true, a new key will be auto-generated and stored in SSM."
   type        = string
   default     = null
-}
-
-# -----------------------------------------------------------------------------
-# Node Group IAM Configuration
-# -----------------------------------------------------------------------------
-variable "node_group_iam_role_name" {
-  description = "Custom name for node group IAM role (auto-generated if null)"
-  type        = string
-  default     = null
-}
-
-variable "node_group_custom_policy" {
-  description = "Custom observability policy - set to 'default' for built-in policy, null to skip, or provide JSON"
-  type        = string
-  default     = "default"
 }
 
 # -----------------------------------------------------------------------------
@@ -454,18 +306,4 @@ variable "custom_userdata_template_path" {
   description = "Path to custom user data template file. Uses default bootstrap template if null"
   type        = string
   default     = null
-}
-
-# -----------------------------------------------------------------------------
-# Node Group IAM Policies
-# -----------------------------------------------------------------------------
-variable "node_group_iam_policies" {
-  description = "Map of IAM policy ARNs to attach to the node group IAM role"
-  type        = map(string)
-  default = {
-    amazon_eks_worker_node             = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
-    amazon_eks_cni_policy              = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
-    amazon_ec2_container_registry_read = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
-    amazon_ssm_managed_instance        = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-  }
 }
