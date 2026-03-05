@@ -235,8 +235,10 @@ resource "aws_iam_role_policy_attachment" "locker_ecr" {
 }
 
 resource "aws_iam_role_policy_attachment" "locker_kms" {
+  count = var.kms != null ? 1 : 0
+
   role       = aws_iam_role.locker.name
-  policy_arn = aws_iam_policy.locker_kms.arn
+  policy_arn = aws_iam_policy.locker_kms[0].arn
 }
 
 # AWS Managed Policy Attachments
