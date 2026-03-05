@@ -228,15 +228,69 @@ data "aws_subnet" "lb_subnets" {
 # Security Groups
 # =========================================================================
 
-module "asg_security_group" {
-  source = "../../base/security-group"
-
+resource "aws_security_group" "asg" {
   name        = "${local.name_prefix}-asg-sg"
   description = "Security group for Squid proxy ASG instances"
   vpc_id      = var.vpc_id
 
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-asg-sg"
+    }
+  )
+}
 
-  tags = local.common_tags
+# =========================================================================
+# NLB Security Group
+# =========================================================================
+# NOTE: This security group is for the Network Load Balancer.
+# INBOUND RULES (who can access the NLB) should be defined in the 
+# security-rules module at the live layer to support cross-module 
+# connectivity (e.g., EKS pods → Squid NLB).
+# Only internal rules (NLB → ASG) are defined here.
+# =========================================================================
+resource "aws_security_group" "nlb" {
+  count = var.create_nlb ? 1 : 0
+
+  name        = "${local.name_prefix}-nlb-sg"
+  description = "Security group for Squid proxy NLB"
+  vpc_id      = var.vpc_id
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-nlb-sg"
+    }
+  )
+}
+
+# Outbound rule from NLB to Squid ASG instances
+resource "aws_security_group_rule" "nlb_to_squid_outbound" {
+  count = var.create_nlb ? 1 : 0
+
+  type                     = "egress"
+  from_port                = var.squid_port
+  to_port                  = var.squid_port
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.asg.id
+  security_group_id        = aws_security_group.nlb[0].id
+
+  description = "Allow outbound traffic from NLB to Squid instances"
+}
+
+# Inbound rule on Squid ASG from NLB security group
+resource "aws_security_group_rule" "squid_from_nlb_inbound" {
+  count = var.create_nlb ? 1 : 0
+
+  type                     = "ingress"
+  from_port                = var.squid_port
+  to_port                  = var.squid_port
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.nlb[0].id
+  security_group_id        = aws_security_group.asg.id
+
+  description = "Allow inbound traffic from NLB to Squid instances on port ${var.squid_port}"
 }
 
 # =========================================================================
@@ -252,7 +306,7 @@ resource "aws_security_group_rule" "nlb_health_checks" {
   to_port           = var.squid_port
   protocol          = "tcp"
   cidr_blocks       = [each.value.cidr_block]
-  security_group_id = module.asg_security_group.sg_id
+  security_group_id = aws_security_group.asg.id
 
   description = "Allow NLB health checks from LB subnet ${each.key}"
 }
@@ -267,7 +321,7 @@ module "nlb" {
   name            = "${local.name_prefix}-nlb"
   internal        = true
   subnets         = var.lb_subnet_ids
-  security_groups = []
+  security_groups = [aws_security_group.nlb[0].id]
 
   enable_deletion_protection       = var.environment == "prod" ? true : false
   enable_cross_zone_load_balancing = true
@@ -359,7 +413,7 @@ module "launch_template" {
   ami_id             = var.ami_id
   instance_type      = var.instance_type
   key_name           = var.generate_ssh_key ? aws_key_pair.squid_key_pair[0].key_name : var.key_name
-  security_group_ids = [module.asg_security_group.sg_id]
+  security_group_ids = [aws_security_group.asg.id]
 
   iam_instance_profile_name = local.instance_profile_name
 
