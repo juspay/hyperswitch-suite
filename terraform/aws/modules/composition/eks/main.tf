@@ -174,7 +174,22 @@ module "eks" {
   }
 
   # EKS Cluster access entries for IAM principals
-  access_entries = var.cluster_access_entries
+  access_entries = merge(
+    var.cluster_access_entries,
+    var.create_cross_account_role ? {
+      cross_account = {
+        principal_arn = aws_iam_role.cross_account[0].arn
+        policy_associations = {
+          admin = {
+            policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+            access_scope = {
+              type = "cluster"
+            }
+          }
+        }
+      }
+    } : {}
+  )
 
   # Disable EKS module's managed node groups - we create our own with shared IAM role
   eks_managed_node_groups = {}
