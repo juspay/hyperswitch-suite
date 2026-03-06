@@ -638,7 +638,7 @@ resource "kubernetes_service_account_v1" "cluster_autoscaler" {
   count = var.enable_cluster_autoscaler ? 1 : 0
 
   metadata {
-    name      = coalesce(var.cluster_autoscaler_service_account_name, "cluster-autoscaler")
+    name      = coalesce(var.cluster_autoscaler_service_account_name, "${var.environment}-${var.project_name}-cluster-autoscaler")
     namespace = "kube-system"
     labels = {
       "k8s-addon" = "cluster-autoscaler.addons.k8s.io"
