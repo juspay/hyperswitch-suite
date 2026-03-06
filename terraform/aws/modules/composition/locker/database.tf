@@ -10,7 +10,7 @@ module "database" {
   vpc_id = var.vpc_id
 
   subnet_ids                            = var.database_config.subnet_ids
-  cluster_identifier                    = var.database_config.cluster_identifier
+  cluster_identifier                    = var.database_config.cluster_identifier != null ? var.database_config.cluster_identifier : "${local.name_prefix}-db"
   cluster_identifier_prefix             = var.database_config.cluster_identifier_prefix
   database_name                         = var.database_config.database_name
   engine                                = var.database_config.engine
@@ -78,7 +78,15 @@ module "database" {
   enable_global_write_forwarding        = var.database_config.enable_global_write_forwarding
   use_existing_as_global_primary        = var.database_config.use_existing_as_global_primary
   source_db_cluster_identifier          = var.database_config.source_db_cluster_identifier
-  cluster_instances                     = var.database_config.cluster_instances
+
+  cluster_instances = {
+    for key, instance in var.database_config.cluster_instances : key => merge(
+      instance,
+      {
+        identifier = instance.identifier != null ? instance.identifier : "${local.name_prefix}-db-${key}"
+      }
+    )
+  }
 
   tags = merge(local.common_tags, var.database_config.tags)
 }
