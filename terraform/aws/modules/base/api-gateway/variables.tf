@@ -87,6 +87,18 @@ variable "stage_variables" {
   default     = {}
 }
 
+variable "access_log_destination_arn" {
+  description = "ARN of the CloudWatch log group for API Gateway access logs"
+  type        = string
+  default     = null
+}
+
+variable "access_log_format" {
+  description = "Format of access logs for API Gateway"
+  type        = string
+  default     = null
+}
+
 # ============================================================================
 # Tags
 # ============================================================================

@@ -156,6 +156,23 @@ resource "aws_api_gateway_stage" "this" {
 
   variables = var.stage_variables
 
+  dynamic "access_log_settings" {
+    for_each = var.access_log_destination_arn != null ? [1] : []
+    content {
+      destination_arn = var.access_log_destination_arn
+      format          = var.access_log_format != null ? var.access_log_format : jsonencode({
+        requestId      = "$context.requestId"
+        ip             = "$context.identity.sourceIp"
+        requestTime    = "$context.requestTime"
+        httpMethod     = "$context.httpMethod"
+        routeKey       = "$context.routeKey"
+        status         = "$context.status"
+        protocol       = "$context.protocol"
+        responseLength = "$context.responseLength"
+      })
+    }
+  }
+
   tags = merge(
     var.tags,
     {

@@ -95,6 +95,7 @@ module "cassandra_intra_cluster_rules" {
 resource "aws_cloudwatch_log_group" "cassandra" {
   name              = "/aws/ec2/cassandra/${var.environment}"
   retention_in_days = var.log_retention_days
+  kms_key_id        = var.kms_key_id
 
   tags = merge(
     local.common_tags,
@@ -150,6 +151,24 @@ module "seed_discovery_lambda" {
 }
 
 # =========================================================================
+# SEED DISCOVERY - API GATEWAY ACCESS LOGS
+# =========================================================================
+resource "aws_cloudwatch_log_group" "api_gateway_access" {
+  count = local.create_seed_discovery ? 1 : 0
+
+  name              = "/aws/apigateway/${local.name_prefix}-seed-api/access"
+  retention_in_days = var.log_retention_days
+  kms_key_id        = var.kms_key_id
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-api-access-logs"
+    }
+  )
+}
+
+# =========================================================================
 # SEED DISCOVERY - API GATEWAY (via base module)
 # =========================================================================
 module "seed_discovery_api" {
@@ -187,8 +206,9 @@ module "seed_discovery_api" {
     }
   ]
 
-  stage_name        = "default"
-  stage_description = "Default stage for Cassandra seed discovery API"
+  stage_name                 = "default"
+  stage_description          = "Default stage for Cassandra seed discovery API"
+  access_log_destination_arn = aws_cloudwatch_log_group.api_gateway_access[0].arn
 
   tags = local.common_tags
 }
@@ -288,6 +308,14 @@ resource "aws_instance" "cassandra" {
     volume_size = var.ebs_volume_size
     volume_type = var.ebs_volume_type
     encrypted   = true
+  }
+
+  # IMDSv2 enforcement (security best practice)
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 1
+    instance_metadata_tags      = "enabled"
   }
 
   tags = merge(

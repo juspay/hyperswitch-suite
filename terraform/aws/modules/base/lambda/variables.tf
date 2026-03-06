@@ -136,6 +136,12 @@ variable "log_retention_days" {
   default     = 30
 }
 
+variable "kms_key_id" {
+  description = "KMS key ID for CloudWatch log group encryption"
+  type        = string
+  default     = null
+}
+
 # ============================================================================
 # Tags
 # ============================================================================
