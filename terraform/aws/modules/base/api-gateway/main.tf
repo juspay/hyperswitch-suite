@@ -35,10 +35,8 @@ resource "aws_api_gateway_resource" "this" {
   for_each = { for r in var.resources : r.path_part => r }
 
   rest_api_id = aws_api_gateway_rest_api.this.id
-  parent_id = each.value.parent_path == "/" ? aws_api_gateway_rest_api.this.root_resource_id : (
-    one([for r in aws_api_gateway_resource.this : r.id if r.path_part == each.value.parent_path])
-  )
-  path_part = each.value.path_part
+  parent_id   = aws_api_gateway_rest_api.this.root_resource_id
+  path_part   = each.value.path_part
 
   depends_on = [aws_api_gateway_rest_api.this]
 }
