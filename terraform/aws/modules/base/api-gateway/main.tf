@@ -1,0 +1,165 @@
+# ============================================================================
+# LOCALS
+# ============================================================================
+locals {
+  # Build a map of path_part -> resource for easy lookup
+  resource_map = {
+    for r in var.resources : r.path_part => r
+  }
+}
+
+# ============================================================================
+# REST API
+# ============================================================================
+resource "aws_api_gateway_rest_api" "this" {
+  name        = var.name
+  description = var.description
+
+  endpoint_configuration {
+    types            = [var.endpoint_type]
+    vpc_endpoint_ids = var.endpoint_type == "PRIVATE" ? var.vpc_endpoint_ids : null
+  }
+
+  tags = merge(
+    var.tags,
+    {
+      Name = var.name
+    }
+  )
+}
+
+# ============================================================================
+# RESOURCES
+# ============================================================================
+resource "aws_api_gateway_resource" "this" {
+  for_each = { for r in var.resources : r.path_part => r }
+
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  parent_id = each.value.parent_path == "/" ? aws_api_gateway_rest_api.this.root_resource_id : (
+    one([for r in aws_api_gateway_resource.this : r.id if r.path_part == each.value.parent_path])
+  )
+  path_part = each.value.path_part
+
+  depends_on = [aws_api_gateway_rest_api.this]
+}
+
+# ============================================================================
+# METHODS
+# ============================================================================
+resource "aws_api_gateway_method" "this" {
+  for_each = { for i, m in var.methods : "${m.resource_path}-${m.http_method}" => m }
+
+  rest_api_id      = aws_api_gateway_rest_api.this.id
+  resource_id      = each.value.resource_path == "/" ? aws_api_gateway_rest_api.this.root_resource_id : aws_api_gateway_resource.this[each.value.resource_path].id
+  http_method      = each.value.http_method
+  authorization    = each.value.authorization
+  authorizer_id    = each.value.authorizer_id
+  api_key_required = each.value.api_key_required
+
+  request_parameters = each.value.request_parameters
+}
+
+# ============================================================================
+# LAMBDA INTEGRATIONS
+# ============================================================================
+resource "aws_api_gateway_integration" "lambda" {
+  for_each = { for i, li in var.lambda_integrations : "${li.resource_path}-${li.http_method}" => li }
+
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = each.value.resource_path == "/" ? aws_api_gateway_rest_api.this.root_resource_id : aws_api_gateway_resource.this[each.value.resource_path].id
+  http_method = aws_api_gateway_method.this[each.key].http_method
+
+  integration_http_method = "POST"
+  type                    = each.value.integration_type
+  uri                     = each.value.lambda_arn
+
+  depends_on = [aws_api_gateway_method.this]
+}
+
+# ============================================================================
+# METHOD RESPONSES (for Lambda proxy integration)
+# ============================================================================
+resource "aws_api_gateway_method_response" "this" {
+  for_each = { for i, li in var.lambda_integrations : "${li.resource_path}-${li.http_method}" => li }
+
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = each.value.resource_path == "/" ? aws_api_gateway_rest_api.this.root_resource_id : aws_api_gateway_resource.this[each.value.resource_path].id
+  http_method = aws_api_gateway_method.this[each.key].http_method
+  status_code = "200"
+
+  response_models = {
+    "application/json" = "Empty"
+  }
+
+  depends_on = [aws_api_gateway_integration.lambda]
+}
+
+# ============================================================================
+# INTEGRATION RESPONSES
+# ============================================================================
+resource "aws_api_gateway_integration_response" "this" {
+  for_each = { for i, li in var.lambda_integrations : "${li.resource_path}-${li.http_method}" => li }
+
+  rest_api_id = aws_api_gateway_rest_api.this.id
+  resource_id = each.value.resource_path == "/" ? aws_api_gateway_rest_api.this.root_resource_id : aws_api_gateway_resource.this[each.value.resource_path].id
+  http_method = aws_api_gateway_method.this[each.key].http_method
+  status_code = aws_api_gateway_method_response.this[each.key].status_code
+
+  depends_on = [aws_api_gateway_integration.lambda]
+}
+
+# ============================================================================
+# LAMBDA PERMISSIONS
+# ============================================================================
+resource "aws_lambda_permission" "api_gateway" {
+  for_each = { for i, li in var.lambda_integrations : "${li.resource_path}-${li.http_method}" => li }
+
+  statement_id  = "AllowAPIGatewayInvoke-${replace(each.key, "/", "-")}"
+  action        = "lambda:InvokeFunction"
+  function_name = replace(each.value.lambda_arn, regex("arn:aws:lambda:[^:]+:[^:]+:function:([^:]+)(?::\\d+)?", each.value.lambda_arn)[0], "$1")
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.this.execution_arn}/*/${each.value.http_method}${each.value.resource_path == "/" ? "" : each.value.resource_path}"
+
+  depends_on = [aws_api_gateway_rest_api.this]
+}
+
+# ============================================================================
+# DEPLOYMENT
+# ============================================================================
+resource "aws_api_gateway_deployment" "this" {
+  rest_api_id = aws_api_gateway_rest_api.this.id
+
+  triggers = {
+    redeployment = sha1(jsonencode([
+      for r in aws_api_gateway_resource.this : r.id
+    ]))
+  }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  depends_on = [
+    aws_api_gateway_integration.lambda,
+    aws_api_gateway_integration_response.this
+  ]
+}
+
+# ============================================================================
+# STAGE
+# ============================================================================
+resource "aws_api_gateway_stage" "this" {
+  deployment_id = aws_api_gateway_deployment.this.id
+  rest_api_id   = aws_api_gateway_rest_api.this.id
+  stage_name    = var.stage_name
+  description   = var.stage_description
+
+  variables = var.stage_variables
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.name}-${var.stage_name}"
+    }
+  )
+}

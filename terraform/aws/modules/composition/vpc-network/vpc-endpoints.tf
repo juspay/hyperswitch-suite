@@ -117,6 +117,11 @@ locals {
       service_name = "com.amazonaws.${var.region}.autoscaling"
       type         = "Interface"
     }
+    execute_api = {
+      service_name        = "com.amazonaws.${var.region}.execute-api"
+      type                = "Interface"
+      private_dns_enabled = false
+    }
   }
 
   # Merge user-provided endpoints
@@ -145,9 +150,9 @@ module "gateway_vpc_endpoints" {
   source   = "../../base/vpc-endpoint"
   for_each = local.enabled_gateway_endpoints
 
-  vpc_id           = module.vpc.vpc_id
-  endpoint_name    = "${var.vpc_name}-${each.key}-endpoint"
-  service_name     = each.value.service_name
+  vpc_id            = module.vpc.vpc_id
+  endpoint_name     = "${var.vpc_name}-${each.key}-endpoint"
+  service_name      = each.value.service_name
   vpc_endpoint_type = each.value.type
 
   route_table_ids = local.gateway_route_table_ids
@@ -174,7 +179,7 @@ module "interface_vpc_endpoints" {
   subnet_ids         = module.eks_workers_subnets[*].subnet_id
   security_group_ids = var.create_vpc_endpoint_security_group ? [module.vpc_endpoint_sg[0].sg_id] : var.vpc_endpoint_security_group_ids
 
-  private_dns_enabled = var.vpc_endpoint_private_dns_enabled
+  private_dns_enabled = lookup(each.value, "private_dns_enabled", var.vpc_endpoint_private_dns_enabled)
 
   tags = merge(
     var.tags,
