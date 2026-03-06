@@ -27,8 +27,8 @@ locals {
   # Seed discovery - create if not provided and enabled
   create_seed_discovery = var.create_seed_discovery && var.seeds_url == null
 
-  # Seed discovery Lambda code - must be provided when create_seed_discovery is true
-  seed_discovery_lambda_code = var.seed_discovery_lambda_source
+  # Seed discovery Lambda source path - must be provided when create_seed_discovery is true
+  # The path to the Lambda source file (e.g., "/path/to/index.mjs")
 
   # User data configuration passed to EC2 instances
   user_data_config = jsonencode({

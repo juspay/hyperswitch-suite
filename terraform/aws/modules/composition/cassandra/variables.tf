@@ -161,14 +161,14 @@ variable "create_seed_discovery" {
   default     = true
 }
 
-variable "seed_discovery_lambda_source" {
-  description = "Source code for the seed discovery Lambda function. Required when create_seed_discovery is true and seeds_url is not provided."
+variable "seed_discovery_lambda_source_path" {
+  description = "Path to the seed discovery Lambda function source file. Required when create_seed_discovery is true and seeds_url is not provided."
   type        = string
   default     = null
 
   validation {
-    condition     = !(var.create_seed_discovery && var.seeds_url == null) || var.seed_discovery_lambda_source != null
-    error_message = "seed_discovery_lambda_source is required when create_seed_discovery is true and seeds_url is not provided."
+    condition     = !(var.create_seed_discovery && var.seeds_url == null) || var.seed_discovery_lambda_source_path != null
+    error_message = "seed_discovery_lambda_source_path is required when create_seed_discovery is true and seeds_url is not provided."
   }
 }
 

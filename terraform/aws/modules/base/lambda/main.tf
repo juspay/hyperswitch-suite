@@ -10,10 +10,6 @@ locals {
     subnet_ids         = var.subnet_ids
     security_group_ids = var.security_group_ids
   } : null
-
-  # Source code handling
-  use_inline_code = var.source_code_content != null
-  use_file_code   = var.source_code_path != null && !local.use_inline_code
 }
 
 # ============================================================================
@@ -106,34 +102,13 @@ resource "aws_iam_role_policy" "inline" {
 # SOURCE CODE ARCHIVE
 # ============================================================================
 data "archive_file" "this" {
-  count = local.use_inline_code || local.use_file_code ? 1 : 0
+  count = var.source_code_path != null ? 1 : 0
 
   type        = "zip"
   output_path = "${path.module}/lambda-${var.function_name}.zip"
 
-  dynamic "source" {
-    for_each = local.use_inline_code ? [1] : []
-    content {
-      content  = var.source_code_content
-      filename = var.source_code_filename
-    }
-  }
-
-  dynamic "source_dir" {
-    for_each = local.use_file_code && fileexists(var.source_code_path) && !can(file(var.source_code_path)) ? [1] : []
-    content {
-      path = var.source_code_path
-    }
-  }
-
-  # For single file source
-  dynamic "source" {
-    for_each = local.use_file_code && can(file(var.source_code_path)) ? [1] : []
-    content {
-      content  = file(var.source_code_path)
-      filename = basename(var.source_code_path)
-    }
-  }
+  # Single file source - path should be a file (e.g., index.mjs, index.js)
+  source_file = var.source_code_path
 }
 
 # ============================================================================

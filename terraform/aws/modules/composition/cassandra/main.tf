@@ -115,8 +115,7 @@ module "seed_discovery_lambda" {
   timeout       = 30
   memory_size   = 128
 
-  source_code_content  = local.seed_discovery_lambda_code
-  source_code_filename = "index.mjs"
+  source_code_path = var.seed_discovery_lambda_source_path
 
   managed_policy_arns = []
   inline_policies = {
