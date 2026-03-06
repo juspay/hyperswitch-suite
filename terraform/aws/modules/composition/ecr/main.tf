@@ -36,7 +36,7 @@ resource "aws_ecr_repository_policy" "policies" {
   for_each = { for k, v in var.repositories : k => v if v.repository_policy != null }
 
   repository = aws_ecr_repository.repositories[each.key].name
-  policy     = jsonencode(each.value.repository_policy)
+  policy     = each.value.repository_policy
 }
 
 # ECR Lifecycle Policies
@@ -44,5 +44,5 @@ resource "aws_ecr_lifecycle_policy" "lifecycle_policies" {
   for_each = { for k, v in var.repositories : k => v if v.lifecycle_policy != null }
 
   repository = aws_ecr_repository.repositories[each.key].name
-  policy     = jsonencode(each.value.lifecycle_policy)
+  policy     = each.value.lifecycle_policy
 }

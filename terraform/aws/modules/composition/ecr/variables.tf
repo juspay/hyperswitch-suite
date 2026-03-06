@@ -32,8 +32,8 @@ variable "repositories" {
     encryption_type      = optional(string, "AES256")
     kms_key              = optional(string)
     force_delete         = optional(bool, false)
-    repository_policy    = optional(any)
-    lifecycle_policy     = optional(any)
+    repository_policy    = optional(string)
+    lifecycle_policy     = optional(string)
     image_tag_mutability_exclusion_filters = optional(list(object({
       filter      = string
       filter_type = string
