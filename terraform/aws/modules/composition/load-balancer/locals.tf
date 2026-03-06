@@ -11,6 +11,8 @@ locals {
     var.tags
   )
 
+  lb_name = var.name != null ? var.name : local.name_prefix
+
   # Determine if ACM certificate should be created
   create_acm_certificate = var.acm != null && var.acm.create_certificate
 
