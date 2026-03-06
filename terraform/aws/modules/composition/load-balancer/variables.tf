@@ -1,0 +1,228 @@
+# =========================================================================
+# REQUIRED VARIABLES
+# =========================================================================
+
+variable "name" {
+  description = "Name of the load balancer"
+  type        = string
+}
+
+variable "environment" {
+  description = "Environment name (dev/integ/prod)"
+  type        = string
+}
+
+variable "vpc_id" {
+  description = "VPC ID where the load balancer will be created"
+  type        = string
+}
+
+variable "subnets" {
+  description = "List of subnet IDs to attach to the load balancer"
+  type        = list(string)
+}
+
+# =========================================================================
+# OPTIONAL VARIABLES
+# =========================================================================
+
+variable "project_name" {
+  description = "Project name for resource naming"
+  type        = string
+  default     = "hyperswitch"
+}
+
+variable "internal" {
+  description = "Whether the load balancer is internal or external"
+  type        = bool
+  default     = false
+}
+
+variable "enable_deletion_protection" {
+  description = "Enable deletion protection on the load balancer"
+  type        = bool
+  default     = false
+}
+
+variable "enable_cross_zone_load_balancing" {
+  description = "Enable cross-zone load balancing"
+  type        = bool
+  default     = true
+}
+
+variable "enable_http2" {
+  description = "Enable HTTP/2"
+  type        = bool
+  default     = true
+}
+
+variable "enable_waf_fail_open" {
+  description = "Enable WAF fail open mode"
+  type        = bool
+  default     = false
+}
+
+variable "drop_invalid_header_fields" {
+  description = "Drop invalid header fields"
+  type        = bool
+  default     = false
+}
+
+variable "idle_timeout" {
+  description = "Time in seconds that the connection is allowed to be idle"
+  type        = number
+  default     = 60
+
+  validation {
+    condition     = var.idle_timeout >= 1 && var.idle_timeout <= 4000
+    error_message = "Idle timeout must be between 1 and 4000 seconds"
+  }
+}
+
+variable "access_logs" {
+  description = "Access logs configuration"
+  type = object({
+    enabled = optional(bool, false)
+    bucket  = optional(string, null)
+    prefix  = optional(string, null)
+  })
+  default = {
+    enabled = false
+  }
+}
+
+variable "ingress_rules" {
+  description = "Map of ingress rules for the load balancer security group"
+  type = map(object({
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    cidr_blocks = list(string)
+    description = string
+  }))
+  default = {
+    "http" = {
+      from_port   = 80
+      to_port     = 80
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+      description = "Allow HTTP traffic"
+    }
+    "https" = {
+      from_port   = 443
+      to_port     = 443
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+      description = "Allow HTTPS traffic"
+    }
+  }
+}
+
+variable "egress_rules" {
+  description = "Map of egress rules for the load balancer security group"
+  type = map(object({
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    cidr_blocks = list(string)
+    description = string
+  }))
+  default = {}
+}
+
+variable "listeners" {
+  description = "Map of listener configurations"
+  type = map(object({
+    port                = number
+    protocol            = string
+    ssl_policy          = optional(string, "ELBSecurityPolicy-TLS13-1-2-2021-06")
+    certificate_arn     = optional(string, null)
+    alpn_policy         = optional(string, null)
+    default_action_type = optional(string, "forward")
+    target_group_arn    = optional(string, null)
+    redirect_config = optional(object({
+      protocol    = optional(string, "#{protocol}")
+      port        = optional(string, "#{port}")
+      host        = optional(string, "#{host}")
+      path        = optional(string, "/#{path}")
+      query       = optional(string, "#{query}")
+      status_code = optional(string, "HTTP_301")
+    }), null)
+    fixed_response_config = optional(object({
+      content_type = optional(string, "text/plain")
+      message_body = optional(string, null)
+      status_code  = optional(string, "200")
+    }), null)
+  }))
+  default = {
+    "http" = {
+      port                = 80
+      protocol            = "HTTP"
+      default_action_type = "fixed-response"
+      fixed_response_config = {
+        content_type = "text/plain"
+        message_body = "OK"
+        status_code  = "200"
+      }
+    }
+  }
+
+  validation {
+    condition = alltrue([
+      for key, listener in var.listeners : contains(["HTTP", "HTTPS"], listener.protocol)
+    ])
+    error_message = "Listener protocol must be one of: HTTP, HTTPS"
+  }
+
+  validation {
+    condition = alltrue([
+      for key, listener in var.listeners : contains(["forward", "redirect", "fixed-response"], listener.default_action_type)
+    ])
+    error_message = "Default action type must be one of: forward, redirect, fixed-response"
+  }
+}
+
+variable "additional_certificates" {
+  description = "Map of additional certificates to attach to listeners"
+  type = map(object({
+    listener_key    = string
+    certificate_arn = string
+  }))
+  default = {}
+}
+
+variable "certificate_arn" {
+  description = "ARN of an existing certificate to use for HTTPS listeners (used when ACM creation is disabled)"
+  type        = string
+  default     = null
+}
+
+variable "acm" {
+  description = "ACM certificate configuration. Set to null to disable ACM certificate creation"
+  type = object({
+    create_certificate                          = optional(bool, true)
+    domain_name                                 = string
+    subject_alternative_names                   = optional(list(string), [])
+    zone_id                                     = optional(string, null)
+    validation_method                           = optional(string, "DNS")
+    create_route53_records                      = optional(bool, true)
+    validate_certificate                        = optional(bool, true)
+    wait_for_validation                         = optional(bool, true)
+    validation_timeout                          = optional(string, null)
+    validation_allow_overwrite_records          = optional(bool, true)
+    certificate_transparency_logging_preference = optional(bool, true)
+    validation_record_fqdns                     = optional(list(string), [])
+    zones                                       = optional(map(string), {})
+    create_route53_records_only                 = optional(bool, false)
+    distinct_domain_names                       = optional(list(string), [])
+    acm_certificate_domain_validation_options   = optional(any, {})
+    tags                                        = optional(map(string), {})
+  })
+  default = null
+}
+
+variable "tags" {
+  description = "Map of tags to apply to resources"
+  type        = map(string)
+  default     = {}
+}
