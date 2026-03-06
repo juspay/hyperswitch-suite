@@ -178,6 +178,7 @@ module "interface_vpc_endpoints" {
 
   subnet_ids = distinct(compact(concat(
     module.eks_workers_subnets[*].subnet_id,
+    module.management_subnets[*].subnet_id,
     module.utils_subnets[*].subnet_id,
     module.lambda_subnets[*].subnet_id,
     module.data_stack_subnets[*].subnet_id,
