@@ -41,12 +41,3 @@ output "cluster_service_accounts" {
     cluster_name => statement.subjects
   }
 }
-
-# Legacy output for backward compatibility
-output "service_accounts" {
-  description = "[DEPRECATED] List of service accounts - use cluster_service_accounts instead"
-  value = try([
-    for sa in var.argocd_service_accounts :
-    "system:serviceaccount:${var.argocd_namespace}:${sa}"
-  ], [])
-}
