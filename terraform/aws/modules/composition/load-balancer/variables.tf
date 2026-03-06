@@ -118,6 +118,18 @@ variable "ingress_rules" {
   }
 }
 
+variable "egress_rules" {
+  description = "Map of egress rules for the load balancer security group"
+  type = map(object({
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    cidr_blocks = list(string)
+    description = string
+  }))
+  default = {}
+}
+
 variable "listeners" {
   description = "Map of listener configurations"
   type = map(object({

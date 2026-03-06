@@ -5,7 +5,7 @@ locals {
     {
       "Environment" = var.environment
       "Project"     = var.project_name
-      "Component"   = "utils-load-balancer"
+      "Component"   = "load-balancer"
       "ManagedBy"   = "terraform"
     },
     var.tags

@@ -74,13 +74,15 @@ resource "aws_security_group_rule" "ingress" {
 # SECURITY GROUP RULES - EGRESS
 # =========================================================================
 resource "aws_security_group_rule" "egress" {
+  for_each = var.egress_rules
+
   security_group_id = aws_security_group.this.id
   type              = "egress"
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  cidr_blocks       = ["0.0.0.0/0"]
-  description       = "Allow all outbound traffic"
+  from_port         = each.value.from_port
+  to_port           = each.value.to_port
+  protocol          = each.value.protocol
+  cidr_blocks       = each.value.cidr_blocks
+  description       = each.value.description
 }
 
 # =========================================================================
