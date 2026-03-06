@@ -89,7 +89,7 @@ resource "aws_security_group_rule" "egress" {
 # APPLICATION LOAD BALANCER
 # =========================================================================
 resource "aws_lb" "this" {
-  name               = "${local.name_prefix}-${var.name}"
+  name               = local.lb_name
   internal           = var.internal
   load_balancer_type = "application"
   subnets            = var.subnets
