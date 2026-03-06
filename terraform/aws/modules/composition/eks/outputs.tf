@@ -59,6 +59,11 @@ output "node_security_group_id" {
   value       = module.eks.node_security_group_id
 }
 
+output "node_group_security_group_ids" {
+  description = "Map of node group names to their security group IDs"
+  value       = { for k, v in aws_security_group.node_group : k => v.id }
+}
+
 # -----------------------------------------------------------------------------
 # Node Groups
 # -----------------------------------------------------------------------------
