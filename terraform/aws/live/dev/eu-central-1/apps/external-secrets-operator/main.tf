@@ -1,66 +1,42 @@
-locals {
-  # ============================================================================
-  # OIDC Providers Configuration
-  # ============================================================================
-  # The following configurations are kept as examples for the open source community.
+# ============================================================================
+# External Secrets Operator IAM Role - Dev Environment
+# ============================================================================
+# This configuration deploys the External Secrets Operator IAM role:
+#   - IAM role with OIDC provider trust for External Secrets service account
+#   - Secrets Manager access policy (GetSecretValue, DescribeSecret)
+#
+# The role enables External Secrets Operator to sync secrets from AWS Secrets Manager
+# to Kubernetes secrets.
+# ============================================================================
 
-  oidc_providers = {
-    # ACTIVE CONFIGURATION
-    # Set the oidc_provider_arn variable in terraform.tfvars or pass via -var
-    # Example: oidc_provider_arn = "arn:aws:iam::XXXXXXXXXXXX:oidc-provider/oidc.eks.REGION.amazonaws.com/id/XXXXXXXXXXXXXXXXXXXXXXXXXX"
-    eks_cluster = {
-      provider_arn = var.oidc_provider_arn
-      conditions = [
-        {
-          type   = "StringEquals"
-          claim  = "aud"
-          values = ["sts.amazonaws.com"]
-        },
-        {
-          type   = "StringEquals"
-          claim  = "sub"
-          values = ["system:serviceaccount:external-secrets-operator:external-secrets-sa"]
-        }
-      ]
-    }
-  }
-
-  # ============================================================================
-  # Inline Policies
-  # ============================================================================
-  # All resources set to "*" for open source community use.
-  # Modify to restrict access to specific secrets in production.
-
-  inline_policies = {
-    external_secrets_read = jsonencode({
-      Version = "2012-10-17"
-      Statement = [
-        {
-          Sid    = "VisualEditor0"
-          Effect = "Allow"
-          Action = [
-            "secretsmanager:GetSecretValue",
-            "secretsmanager:DescribeSecret"
-          ]
-          Resource = "*"
-        }
-      ]
-    })
-  }
+provider "aws" {
+  region = var.region
 }
 
-module "eks_iam" {
-  source = "../../../../../modules/application-resources/eks-iam"
+module "external_secrets_operator" {
+  source = "../../../../../modules/application-resources/external-secrets-operator"
 
+  # Environment & Project Configuration
   region       = var.region
   environment  = var.environment
   project_name = var.project_name
-  app_name     = "external-secrets-operator"
-  role_name    = var.role_name
 
-  oidc_providers = local.oidc_providers
+  # IAM Role Configuration
+  role_name            = var.role_name
+  role_description     = var.role_description
+  role_path            = var.role_path
+  max_session_duration = var.max_session_duration
 
-  inline_policies = local.inline_policies
+  # Trust Policy Configuration
+  aws_account_id = var.aws_account_id
 
+  # OIDC and Service Account Configuration
+  cluster_service_accounts          = var.cluster_service_accounts
+  additional_assume_role_statements = var.additional_assume_role_statements
+
+  # Additional Policies
+  additional_policy_arns = var.additional_policy_arns
+
+  # Tags
   common_tags = var.common_tags
 }
