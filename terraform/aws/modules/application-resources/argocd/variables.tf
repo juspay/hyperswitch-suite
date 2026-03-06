@@ -113,16 +113,6 @@ variable "cluster_service_accounts" {
   # }
 }
 
-variable "oidc_provider_arns" {
-  description = "Map of cluster names to their OIDC provider ARNs. Must match the keys in cluster_service_accounts."
-  type        = map(string)
-  default     = {}
-  
-  # Example:
-  # {
-  #   "dev-eks-cluster" = "arn:aws:iam::123456789:oidc-provider/oidc.eks.region.amazonaws.com/id/XXXXX"
-  # }
-}
 
 variable "additional_assume_role_statements" {
   description = "Additional IAM policy statements to add to the role's assume role policy"

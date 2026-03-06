@@ -2,14 +2,6 @@
 # Data Sources
 # ============================================================================
 
-data "aws_caller_identity" "current" {}
-
-# Fetch OIDC provider details for each cluster
-data "aws_iam_openid_connect_provider" "oidc" {
-  for_each = var.oidc_provider_arns
-  arn      = each.value
-}
-
 # Policy document for cross-account role assumption
 data "aws_iam_policy_document" "cross_account_assume" {
   count = var.create_assume_role_policy && length(var.cross_account_roles) > 0 ? 1 : 0
