@@ -72,51 +72,19 @@ module "cassandra_intra_cluster_rules" {
   rules = [
     {
       type        = "ingress"
-      description = "Cassandra inter-node communication (storage)"
-      from_port   = var.cassandra_ports.storage
-      to_port     = var.cassandra_ports.storage
-      protocol    = "tcp"
-      sg_id       = [module.cassandra_sg.sg_id]
-    },
-    {
-      type        = "ingress"
-      description = "Cassandra inter-node SSL communication"
-      from_port   = var.cassandra_ports.storage_ssl
-      to_port     = var.cassandra_ports.storage_ssl
-      protocol    = "tcp"
-      sg_id       = [module.cassandra_sg.sg_id]
-    },
-    {
-      type        = "ingress"
-      description = "Cassandra JMX monitoring"
-      from_port   = var.cassandra_ports.jmx
-      to_port     = var.cassandra_ports.jmx
-      protocol    = "tcp"
-      sg_id       = [module.cassandra_sg.sg_id]
-    },
-    {
-      type        = "ingress"
-      description = "Cassandra CQL native transport (intra-cluster)"
-      from_port   = var.cassandra_ports.native
-      to_port     = var.cassandra_ports.native
-      protocol    = "tcp"
-      sg_id       = [module.cassandra_sg.sg_id]
-    },
-    {
-      type        = "ingress"
-      description = "Cassandra Thrift client (intra-cluster)"
-      from_port   = var.cassandra_ports.thrift
-      to_port     = var.cassandra_ports.thrift
+      description = "Allow all TCP traffic from itself"
+      from_port   = 0
+      to_port     = 65535
       protocol    = "tcp"
       sg_id       = [module.cassandra_sg.sg_id]
     },
     {
       type        = "egress"
-      description = "Allow all outbound traffic"
+      description = "Allow all TCP traffic to itself"
       from_port   = 0
-      to_port     = 0
-      protocol    = "-1"
-      cidr        = ["0.0.0.0/0"]
+      to_port     = 65535
+      protocol    = "tcp"
+      sg_id       = [module.cassandra_sg.sg_id]
     }
   ]
 }

@@ -466,15 +466,7 @@ locals {
   # Cross-module rules for Cassandra cluster
   # Internal/intra-cluster rules are managed in the Cassandra composition module
   cassandra_ingress_rules = [
-    # CQL access from EKS worker nodes (uncomment and configure when EKS is ready)
-    # {
-    #   description = "CQL access from EKS worker nodes"
-    #   from_port   = 9042
-    #   to_port     = 9042
-    #   protocol    = "tcp"
-    #   sg_id       = [data.terraform_remote_state.eks.outputs.eks_worker_security_group_id]
-    # },
-    # SSH access from jump host (emergency access)
+    # SSH access from jump host
     {
       description = "SSH access from jump host"
       from_port   = 22
