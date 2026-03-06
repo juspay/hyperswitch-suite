@@ -176,14 +176,7 @@ module "interface_vpc_endpoints" {
   service_name      = each.value.service_name
   vpc_endpoint_type = each.value.type
 
-  subnet_ids = distinct(compact(concat(
-    module.eks_workers_subnets[*].subnet_id,
-    module.management_subnets[*].subnet_id,
-    module.utils_subnets[*].subnet_id,
-    module.lambda_subnets[*].subnet_id,
-    module.data_stack_subnets[*].subnet_id,
-    module.outgoing_proxy_subnets[*].subnet_id
-  )))
+  subnet_ids         = module.eks_workers_subnets[*].subnet_id
   security_group_ids = var.create_vpc_endpoint_security_group ? [module.vpc_endpoint_sg[0].sg_id] : var.vpc_endpoint_security_group_ids
 
   private_dns_enabled = lookup(each.value, "private_dns_enabled", var.vpc_endpoint_private_dns_enabled)
