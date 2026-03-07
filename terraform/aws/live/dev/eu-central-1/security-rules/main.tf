@@ -55,6 +55,15 @@ data "terraform_remote_state" "jump_host" {
   }
 }
 
+data "terraform_remote_state" "cassandra" {
+  backend = "s3"
+  config = {
+    bucket = "hyperswitch-dev-terraform-state"
+    key    = "dev/eu-central-1/cassandra/terraform.tfstate"
+    region = "eu-central-1"
+  }
+}
+
 # EKS module state (uncomment when ready)
 # data "terraform_remote_state" "eks" {
 #   backend = "s3"
@@ -408,6 +417,14 @@ locals {
       protocol    = "tcp"
       sg_id       = [data.terraform_remote_state.squid_proxy.outputs.squid_asg_security_group_id]
     },
+    # SSH to cassandra cluster
+    {
+      description = "SSH to cassandra cluster"
+      from_port   = 22
+      to_port     = 22
+      protocol    = "tcp"
+      sg_id       = [data.terraform_remote_state.cassandra.outputs.cassandra_security_group_id]
+    },
     {
       description = "Monitoring system access"
       from_port   = 1514
@@ -444,6 +461,27 @@ locals {
   ]
 
   # =========================================================================
+  # CASSANDRA COMPONENT RULES
+  # =========================================================================
+  # Cross-module rules for Cassandra cluster
+  # Internal/intra-cluster rules are managed in the Cassandra composition module
+  cassandra_ingress_rules = [
+    # SSH access from jump host
+    {
+      description = "SSH access from jump host"
+      from_port   = 22
+      to_port     = 22
+      protocol    = "tcp"
+      sg_id       = [data.terraform_remote_state.jump_host.outputs.external_security_group_id]
+    },
+  ]
+
+  cassandra_egress_rules = [
+    # Additional egress rules beyond the default allow-all in composition module
+    # (if needed for specific destinations)
+  ]
+
+  # =========================================================================
   # CONSOLIDATED INGRESS RULES
   # =========================================================================
   # Merge all component ingress rules into a single list
@@ -475,6 +513,10 @@ locals {
     length(local.int_jump_host_ingress_rules) > 0 ? [{
       sg_id = data.terraform_remote_state.jump_host.outputs.internal_security_group_id
       rules = local.int_jump_host_ingress_rules
+    }] : [],
+    length(local.cassandra_ingress_rules) > 0 ? [{
+      sg_id = data.terraform_remote_state.cassandra.outputs.cassandra_security_group_id
+      rules = local.cassandra_ingress_rules
     }] : []
   )
 
@@ -510,6 +552,10 @@ locals {
     length(local.int_jump_host_egress_rules) > 0 ? [{
       sg_id = data.terraform_remote_state.jump_host.outputs.internal_security_group_id
       rules = local.int_jump_host_egress_rules
+    }] : [],
+    length(local.cassandra_egress_rules) > 0 ? [{
+      sg_id = data.terraform_remote_state.cassandra.outputs.cassandra_security_group_id
+      rules = local.cassandra_egress_rules
     }] : []
   )
 }
