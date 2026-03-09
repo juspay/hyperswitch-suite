@@ -8,7 +8,7 @@ locals {
   }
 
   # Get region from provider
-  region = data.aws_region.current.name
+  region = data.aws_region.current.region
 }
 
 # ============================================================================
