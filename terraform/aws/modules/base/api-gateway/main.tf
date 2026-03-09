@@ -28,6 +28,30 @@ resource "aws_api_gateway_rest_api" "this" {
     vpc_endpoint_ids = var.endpoint_type == "PRIVATE" ? var.vpc_endpoint_ids : null
   }
 
+  # Resource policy for PRIVATE API Gateway
+  policy = var.endpoint_type == "PRIVATE" ? jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "execute-api:Invoke"
+        Resource  = "execute-api:/*"
+        Condition = {
+          StringNotEquals = {
+            "aws:sourceVpce" = var.vpc_endpoint_ids[0]
+          }
+        }
+      },
+      {
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = "execute-api:Invoke"
+        Resource  = "execute-api:/*"
+      }
+    ]
+  }) : null
+
   tags = merge(
     var.tags,
     {
