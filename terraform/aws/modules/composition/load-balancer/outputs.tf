@@ -97,3 +97,36 @@ output "distinct_domain_names" {
   description = "Distinct domain names for the certificate"
   value       = local.create_acm_certificate ? module.acm[0].distinct_domain_names : null
 }
+
+# =========================================================================
+# ROUTE53 ZONE OUTPUTS
+# =========================================================================
+output "route53_zone_id" {
+  description = "ID of the Route53 hosted zone (if created)"
+  value       = var.route53_zone.create ? aws_route53_zone.this[0].zone_id : var.route53_zone.zone_id
+}
+
+output "route53_zone_arn" {
+  description = "ARN of the Route53 hosted zone (if created)"
+  value       = var.route53_zone.create ? aws_route53_zone.this[0].arn : null
+}
+
+output "route53_name_servers" {
+  description = "Name servers of the created Route53 hosted zone (for delegation)"
+  value       = var.route53_zone.create ? aws_route53_zone.this[0].name_servers : null
+}
+
+output "route53_record_fqdns" {
+  description = "FQDNs of the created Route53 records"
+  value       = { for key, record in aws_route53_record.alb : key => record.fqdn }
+}
+
+output "route53_zone_name" {
+  description = "Name of the Route53 hosted zone (if created)"
+  value       = var.route53_zone.create ? aws_route53_zone.this[0].name : null
+}
+
+output "route53_record_names" {
+  description = "Names of the created Route53 records"
+  value       = { for key, record in aws_route53_record.alb : key => record.name }
+}

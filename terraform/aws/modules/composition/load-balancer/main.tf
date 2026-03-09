@@ -189,3 +189,56 @@ resource "aws_lb_listener_certificate" "this" {
   listener_arn    = aws_lb_listener.this[each.value.listener_key].arn
   certificate_arn = each.value.certificate_arn
 }
+
+# =========================================================================
+# ROUTE53 HOSTED ZONE
+# =========================================================================
+resource "aws_route53_zone" "this" {
+  count = var.route53_zone.create ? 1 : 0
+
+  name              = var.route53_zone.name
+  comment           = var.route53_zone.comment
+  force_destroy     = var.route53_zone.force_destroy
+  delegation_set_id = var.route53_zone.delegation_set_id
+
+  # VPC association for private hosted zones
+  dynamic "vpc" {
+    for_each = var.route53_zone.vpc != null && var.route53_zone.vpc.vpc_id != null ? [var.route53_zone.vpc] : []
+    content {
+      vpc_id     = vpc.value.vpc_id
+      vpc_region = vpc.value.vpc_region
+    }
+  }
+
+  tags = merge(
+    local.common_tags,
+    var.route53_zone.tags,
+    {
+      Name = var.route53_zone.name
+    }
+  )
+}
+
+# =========================================================================
+# ROUTE53 RECORDS
+# =========================================================================
+resource "aws_route53_record" "alb" {
+  for_each = var.route53_records
+
+  zone_id         = var.route53_zone.create ? aws_route53_zone.this[0].zone_id : var.route53_zone.zone_id
+  name            = each.value.name
+  type            = each.value.type
+  ttl             = each.value.ttl
+  records         = each.value.records
+  allow_overwrite = each.value.allow_overwrite
+
+  # Alias block only for A/AAAA records pointing to ALB
+  dynamic "alias" {
+    for_each = contains(["A", "AAAA"], each.value.type) ? [1] : []
+    content {
+      name                   = aws_lb.this.dns_name
+      zone_id                = aws_lb.this.zone_id
+      evaluate_target_health = each.value.alias_evaluate_target_health
+    }
+  }
+}

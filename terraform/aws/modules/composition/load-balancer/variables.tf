@@ -226,3 +226,53 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+# =========================================================================
+# ROUTE53 HOSTED ZONE CONFIGURATION
+# =========================================================================
+
+variable "route53_zone" {
+  description = "Route53 hosted zone configuration. Either provide an existing zone_id or create a new zone"
+  type = object({
+    create            = optional(bool, false)
+    zone_id           = optional(string, null)
+    name              = optional(string, null)
+    comment           = optional(string, "Managed by Terraform")
+    force_destroy     = optional(bool, false)
+    delegation_set_id = optional(string, null)
+    # VPC configuration for private hosted zones
+    vpc = optional(object({
+      vpc_id     = optional(string, null)
+      vpc_region = optional(string, null)
+    }), null)
+    tags = optional(map(string), {})
+  })
+  default = {
+    create = false
+  }
+}
+
+variable "route53_records" {
+  description = "Map of Route53 DNS records to create for the load balancer. For alias records (A/AAAA pointing to ALB), leave ttl and records empty. For CNAME/text records, specify ttl and records."
+  type = map(object({
+    name                         = string
+    type                         = optional(string, "A")
+    ttl                          = optional(number, null)
+    records                      = optional(list(string), null)
+    alias_evaluate_target_health = optional(bool, true)
+    allow_overwrite              = optional(bool, true)
+  }))
+  default = {}
+
+  validation {
+    condition = alltrue([
+      for key, record in var.route53_records : (
+        # Alias records: type is A or AAAA, ttl and records should be null/empty
+        (contains(["A", "AAAA"], record.type) && record.ttl == null && record.records == null) ||
+        # Non-alias records: ttl and records must be provided
+        (!contains(["A", "AAAA"], record.type) && record.ttl != null && record.records != null)
+      )
+    ])
+    error_message = "For alias records (A/AAAA), ttl and records must be null. For non-alias records (CNAME, TXT, etc.), ttl and records must be provided."
+  }
+}
