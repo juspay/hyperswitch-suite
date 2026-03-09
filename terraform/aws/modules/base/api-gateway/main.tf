@@ -6,7 +6,15 @@ locals {
   resource_map = {
     for r in var.resources : r.path_part => r
   }
+
+  # Get region from provider
+  region = data.aws_region.current.name
 }
+
+# ============================================================================
+# DATA SOURCES
+# ============================================================================
+data "aws_region" "current" {}
 
 # ============================================================================
 # REST API
@@ -69,7 +77,7 @@ resource "aws_api_gateway_integration" "lambda" {
 
   integration_http_method = "POST"
   type                    = each.value.integration_type
-  uri                     = each.value.lambda_arn
+  uri                     = "arn:aws:apigateway:${local.region}:lambda:path/2015-03-31/functions/${each.value.lambda_arn}/invocations"
 
   depends_on = [aws_api_gateway_method.this]
 }
@@ -114,7 +122,7 @@ resource "aws_lambda_permission" "api_gateway" {
 
   statement_id  = "AllowAPIGatewayInvoke-${replace(each.key, "/", "-")}"
   action        = "lambda:InvokeFunction"
-  function_name = replace(each.value.lambda_arn, regex("arn:aws:lambda:[^:]+:[^:]+:function:([^:]+)(?::\\d+)?", each.value.lambda_arn)[0], "$1")
+  function_name = each.value.lambda_arn
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_api_gateway_rest_api.this.execution_arn}/*/${each.value.http_method}${each.value.resource_path == "/" ? "" : each.value.resource_path}"
 

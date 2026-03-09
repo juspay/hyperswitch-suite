@@ -137,7 +137,6 @@ module "seed_discovery_lambda" {
   environment_variables = {
     DEFAULT_TAG_NAME  = local.cluster_tag_name
     DEFAULT_TAG_VALUE = local.cluster_tag_value
-    MAX_SEEDS         = "5"
   }
 
   log_retention_days = var.log_retention_days
@@ -186,7 +185,7 @@ module "seed_discovery_api" {
   methods = [
     {
       resource_path    = "CassandraSeedNode"
-      http_method      = "GET"
+      http_method      = "ANY"
       authorization    = "NONE"
       api_key_required = false
     }
@@ -195,7 +194,7 @@ module "seed_discovery_api" {
   lambda_integrations = [
     {
       resource_path    = "CassandraSeedNode"
-      http_method      = "GET"
+      http_method      = "ANY"
       lambda_arn       = module.seed_discovery_lambda[0].function_arn
       integration_type = "AWS_PROXY"
     }
