@@ -115,7 +115,7 @@ resource "aws_lb" "this" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${local.name_prefix}-${var.name}"
+      Name = local.lb_name
     }
   )
 
