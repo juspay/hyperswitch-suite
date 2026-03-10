@@ -258,7 +258,7 @@ variable "route53_records" {
   type = map(object({
     name                         = string
     type                         = optional(string, "A")
-    create_as_alias              = optional(bool, true)
+    create_as_alias              = optional(bool, false)
     ttl                          = optional(number, null)
     alias_evaluate_target_health = optional(bool, true)
     allow_overwrite              = optional(bool, true)
