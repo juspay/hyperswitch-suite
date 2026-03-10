@@ -228,13 +228,13 @@ resource "aws_route53_record" "alb" {
   zone_id         = var.route53_zone.create ? aws_route53_zone.this[0].zone_id : var.route53_zone.zone_id
   name            = each.value.name
   type            = each.value.type
-  ttl             = each.value.ttl
-  records         = each.value.records
+  ttl             = each.value.create_as_alias ? null : each.value.ttl
+  records         = each.value.create_as_alias ? null : [aws_lb.this.dns_name]
   allow_overwrite = each.value.allow_overwrite
 
-  # Alias block only for A/AAAA records pointing to ALB
+  # Alias block for alias records pointing to ALB
   dynamic "alias" {
-    for_each = contains(["A", "AAAA"], each.value.type) ? [1] : []
+    for_each = each.value.create_as_alias ? [1] : []
     content {
       name                   = aws_lb.this.dns_name
       zone_id                = aws_lb.this.zone_id

@@ -254,12 +254,12 @@ variable "route53_zone" {
 }
 
 variable "route53_records" {
-  description = "Map of Route53 DNS records to create for the load balancer. For alias records (A/AAAA pointing to ALB), leave ttl and records empty. For CNAME/text records, specify ttl and records."
+  description = "Map of Route53 DNS records to create for the load balancer. When create_as_alias is true, creates an alias record pointing to the ALB. When false, creates a standard record with ttl that defaults to ALB DNS."
   type = map(object({
     name                         = string
     type                         = optional(string, "A")
+    create_as_alias              = optional(bool, true)
     ttl                          = optional(number, null)
-    records                      = optional(list(string), null)
     alias_evaluate_target_health = optional(bool, true)
     allow_overwrite              = optional(bool, true)
   }))
@@ -268,12 +268,9 @@ variable "route53_records" {
   validation {
     condition = alltrue([
       for key, record in var.route53_records : (
-        # Alias records: type is A or AAAA, ttl and records should be null/empty
-        (contains(["A", "AAAA"], record.type) && record.ttl == null && record.records == null) ||
-        # Non-alias records: ttl and records must be provided
-        (!contains(["A", "AAAA"], record.type) && record.ttl != null && record.records != null)
+        !record.create_as_alias ? record.ttl != null : true
       )
     ])
-    error_message = "For alias records (A/AAAA), ttl and records must be null. For non-alias records (CNAME, TXT, etc.), ttl and records must be provided."
+    error_message = "When create_as_alias is false, ttl must be provided."
   }
 }
