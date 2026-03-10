@@ -5,6 +5,7 @@
 variable "name" {
   description = "Name of the load balancer"
   type        = string
+  default     = null
 }
 
 variable "environment" {
@@ -225,4 +226,51 @@ variable "tags" {
   description = "Map of tags to apply to resources"
   type        = map(string)
   default     = {}
+}
+
+# =========================================================================
+# ROUTE53 HOSTED ZONE CONFIGURATION
+# =========================================================================
+
+variable "route53_zone" {
+  description = "Route53 hosted zone configuration. Either provide an existing zone_id or create a new zone"
+  type = object({
+    create            = optional(bool, false)
+    zone_id           = optional(string, null)
+    name              = optional(string, null)
+    comment           = optional(string, "Managed by Terraform")
+    force_destroy     = optional(bool, false)
+    delegation_set_id = optional(string, null)
+    # VPC configuration for private hosted zones
+    vpc = optional(object({
+      vpc_id     = optional(string, null)
+      vpc_region = optional(string, null)
+    }), null)
+    tags = optional(map(string), {})
+  })
+  default = {
+    create = false
+  }
+}
+
+variable "route53_records" {
+  description = "Map of Route53 DNS records to create for the load balancer. When create_as_alias is true, creates an alias record pointing to the ALB. When false, creates a standard record with ttl that defaults to ALB DNS."
+  type = map(object({
+    name                         = string
+    type                         = optional(string, "A")
+    create_as_alias              = optional(bool, true)
+    ttl                          = optional(number, null)
+    alias_evaluate_target_health = optional(bool, true)
+    allow_overwrite              = optional(bool, true)
+  }))
+  default = {}
+
+  validation {
+    condition = alltrue([
+      for key, record in var.route53_records : (
+        !record.create_as_alias ? record.ttl != null : true
+      )
+    ])
+    error_message = "When create_as_alias is false, ttl must be provided."
+  }
 }
