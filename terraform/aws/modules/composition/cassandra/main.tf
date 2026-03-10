@@ -119,14 +119,17 @@ module "seed_discovery_lambda" {
 
   managed_policy_arns = []
   inline_policies = {
-    ec2-describe = jsonencode({
+    ec2-operations = jsonencode({
       Version = "2012-10-17"
       Statement = [
         {
           Effect = "Allow"
           Action = [
             "ec2:DescribeInstances",
-            "ec2:DescribeNetworkInterfaces"
+            "ec2:DescribeNetworkInterfaces",
+            "ec2:CreateNetworkInterface",
+            "ec2:DeleteNetworkInterface",
+            "ec2:TerminateInstances"
           ]
           Resource = "*"
         }
@@ -142,24 +145,6 @@ module "seed_discovery_lambda" {
   log_retention_days = var.log_retention_days
 
   tags = local.common_tags
-}
-
-# =========================================================================
-# SEED DISCOVERY - API GATEWAY ACCESS LOGS
-# =========================================================================
-resource "aws_cloudwatch_log_group" "api_gateway_access" {
-  count = local.create_seed_discovery ? 1 : 0
-
-  name              = "/aws/apigateway/${local.name_prefix}-seed-api/access"
-  retention_in_days = var.log_retention_days
-  kms_key_id        = var.kms_key_id
-
-  tags = merge(
-    local.common_tags,
-    {
-      Name = "${local.name_prefix}-api-access-logs"
-    }
-  )
 }
 
 # =========================================================================
@@ -200,9 +185,8 @@ module "seed_discovery_api" {
     }
   ]
 
-  stage_name                 = "default"
-  stage_description          = "Default stage for Cassandra seed discovery API"
-  access_log_destination_arn = aws_cloudwatch_log_group.api_gateway_access[0].arn
+  stage_name        = "default"
+  stage_description = "Default stage for Cassandra seed discovery API"
 
   tags = local.common_tags
 }
