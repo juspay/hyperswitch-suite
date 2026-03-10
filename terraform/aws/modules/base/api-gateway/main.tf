@@ -148,7 +148,7 @@ resource "aws_lambda_permission" "api_gateway" {
   action        = "lambda:InvokeFunction"
   function_name = each.value.lambda_arn
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_api_gateway_rest_api.this.execution_arn}/*/${each.value.http_method}${each.value.resource_path == "/" ? "" : each.value.resource_path}"
+  source_arn    = "${aws_api_gateway_rest_api.this.execution_arn}/*/${each.value.http_method == "ANY" ? "*" : each.value.http_method}${each.value.resource_path == "/" ? "" : "/${each.value.resource_path}"}"
 
   depends_on = [aws_api_gateway_rest_api.this]
 }
