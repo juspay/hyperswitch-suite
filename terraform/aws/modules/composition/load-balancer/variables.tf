@@ -5,6 +5,7 @@
 variable "name" {
   description = "Name of the load balancer"
   type        = string
+  default     = null
 }
 
 variable "environment" {
