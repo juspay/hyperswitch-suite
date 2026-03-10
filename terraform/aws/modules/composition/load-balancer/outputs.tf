@@ -130,3 +130,8 @@ output "route53_record_names" {
   description = "Names of the created Route53 records"
   value       = { for key, record in aws_route53_record.alb : key => record.name }
 }
+
+output "ingress_group_name" {
+  description = "Name of the IngressGroup for AWS Load Balancer Controller integration"
+  value       = var.ingress_group_name
+}

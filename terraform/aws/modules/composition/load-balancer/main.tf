@@ -116,7 +116,10 @@ resource "aws_lb" "this" {
     local.common_tags,
     {
       Name = local.lb_name
-    }
+    },
+    var.ingress_group_name != null ? {
+      "ingress.k8s.aws/stack" = var.ingress_group_name
+    } : {}
   )
 
   lifecycle {

@@ -39,6 +39,12 @@ variable "internal" {
   default     = false
 }
 
+variable "ingress_group_name" {
+  description = "Use this to add tags for ingress group name. This is required when a ingress resources needs to discover this load-balancer"
+  type        = string
+  default     = null
+}
+
 variable "enable_deletion_protection" {
   description = "Enable deletion protection on the load balancer"
   type        = bool
