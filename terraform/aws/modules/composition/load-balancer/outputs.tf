@@ -31,6 +31,11 @@ output "alb_arn_suffix" {
   value       = aws_lb.this.arn_suffix
 }
 
+output "alb_tags_all" {
+  description = "Map of tags assigned to the Load Balancer"
+  value       = aws_lb.this.tags_all
+}
+
 # =========================================================================
 # SECURITY GROUP OUTPUTS
 # =========================================================================

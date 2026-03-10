@@ -45,6 +45,12 @@ variable "ingress_group_name" {
   default     = null
 }
 
+variable "alb_tags" {
+  description = "Additional tags to apply to the Application Load Balancer"
+  type        = map(string)
+  default     = {}
+}
+
 variable "enable_deletion_protection" {
   description = "Enable deletion protection on the load balancer"
   type        = bool
