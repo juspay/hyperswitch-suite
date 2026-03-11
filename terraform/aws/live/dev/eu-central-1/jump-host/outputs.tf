@@ -2,24 +2,30 @@
 # Jump Host Outputs
 # ============================================================================
 
-# External Jump Host
+# Deployment Mode
+output "deployment_mode" {
+  description = "Current deployment mode - 'dual' (external + internal) or 'standalone' (internal only with SSM)"
+  value       = module.jump_host.deployment_mode
+}
+
+# External Jump Host (null in standalone mode)
 output "external_jump_instance_id" {
-  description = "The ID of the external jump host instance"
+  description = "The ID of the external jump host instance (null in standalone mode)"
   value       = module.jump_host.external_jump_instance_id
 }
 
 output "external_jump_private_ip" {
-  description = "The private IP address of the external jump host"
+  description = "The private IP address of the external jump host (null in standalone mode)"
   value       = module.jump_host.external_jump_private_ip
 }
 
 output "external_jump_public_ip" {
-  description = "The public IP address of the external jump host"
+  description = "The public IP address of the external jump host (null in standalone mode)"
   value       = module.jump_host.external_jump_public_ip
 }
 
 output "external_jump_ssm_command" {
-  description = "AWS CLI command to connect to external jump host via Session Manager"
+  description = "AWS CLI command to connect to external jump host via Session Manager (null in standalone mode)"
   value       = module.jump_host.external_jump_ssm_command
 }
 
@@ -41,7 +47,7 @@ output "internal_jump_ssm_command" {
 
 # IAM Roles
 output "external_iam_role_arn" {
-  description = "The ARN of the IAM role for external jump host"
+  description = "The ARN of the IAM role for external jump host (null in standalone mode)"
   value       = module.jump_host.external_iam_role_arn
 }
 
@@ -63,7 +69,7 @@ output "internal_jump_ssh_key_retrieval_command" {
 
 # Security Groups
 output "external_security_group_id" {
-  description = "The ID of the external jump host security group"
+  description = "The ID of the external jump host security group (null in standalone mode)"
   value       = module.jump_host.external_security_group_id
 }
 

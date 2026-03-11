@@ -1,12 +1,14 @@
 # ============================================================================
 # Jump Host Deployment - Dev Environment
 # ============================================================================
-# This configuration deploys two EC2 jump hosts:
-#   - External Jump: Public subnet with public IP (accessible via Session Manager)
-#   - Internal Jump: Private subnet (accessible only from external jump via SSH)
+# This configuration can deploy in two modes:
+#   - Dual Mode (enable_external_jump = true, default):
+#       - External Jump: Public subnet with public IP (accessible via Session Manager)
+#       - Internal Jump: Private subnet (accessible from external jump via SSH)
+#   - Standalone Mode (enable_external_jump = false):
+#       - Internal Jump only: Private subnet with SSM access forced on
 #
-# Access Method: AWS Systems Manager Session Manager (no SSH keys required)
-# Authentication: IAM-based access control
+# Access Method: AWS Systems Manager Session Manager (IAM-based auth)
 # Logging: All sessions and system logs sent to CloudWatch
 # ============================================================================
 
@@ -36,6 +38,9 @@ module "jump_host" {
 
   # Logging Configuration
   log_retention_days = var.log_retention_days
+
+  # Jump Host Mode Configuration
+  enable_external_jump = var.enable_external_jump
 
   # SSM Configuration
   enable_internal_jump_ssm = var.enable_internal_jump_ssm

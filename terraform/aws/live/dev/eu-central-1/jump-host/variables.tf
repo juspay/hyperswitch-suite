@@ -28,8 +28,9 @@ variable "vpc_id" {
 }
 
 variable "public_subnet_id" {
-  description = "Public subnet ID for external jump host"
+  description = "Public subnet ID for external jump host. Required when enable_external_jump is true."
   type        = string
+  default     = null
 }
 
 variable "private_subnet_id" {
@@ -104,4 +105,13 @@ variable "enable_internal_jump_ssm" {
   description = "Enable SSM Session Manager access for internal jump host. When true, SSM policies will be dynamically attached to the internal jump IAM role"
   type        = bool
   default     = false
+}
+
+# ============================================================================
+# Jump Host Mode Configuration
+# ============================================================================
+variable "enable_external_jump" {
+  description = "Enable external jump host in public subnet. When false, only internal jump host is created in private subnet with SSM access forced on (cost-saving mode for lower environments)"
+  type        = bool
+  default     = true
 }

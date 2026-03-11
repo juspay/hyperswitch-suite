@@ -19,16 +19,31 @@ project_name = "hyperswitch"
 vpc_id = "vpc-xxxxxxxxxxxxxxxxx"  # Replace with your VPC ID
 
 # Public subnet for external jump host (must have internet gateway)
+# Required when enable_external_jump = true, optional otherwise
 public_subnet_id = "subnet-xxxxxxxxxxxxxxxxx"  # Replace with your public(management) subnet ID
 
 # Private subnet for internal jump host
 private_subnet_id = "subnet-xxxxxxxxxxxxxxxxx"  # Replace with your private(Utils) subnet ID
 
 # ============================================================================
+# Jump Host Mode Configuration
+# ============================================================================
+# Dual Mode (enable_external_jump = true, default):
+#   - External Jump: Public subnet with public IP (accessible via Session Manager)
+#   - Internal Jump: Private subnet (accessible from external jump via SSH)
+#   - Cost: 2 instances
+#
+# Standalone Mode (enable_external_jump = false):
+#   - Internal Jump only: Private subnet with SSM access forced ON
+#   - Cost: 1 instance (cost-saving for lower environments)
+#
+enable_external_jump = true
+# ============================================================================
 # Instance Configuration
 # ============================================================================
-# Leave ami_ids as null to automatically use latest Amazon Linux 2 AMI
-# External Jump Host AMI (public subnet)
+
+# Leave ami_ids as null to automatically use latest Amazon Linux 2023 
+# External Jump Host AMI (public subnet) - only used when enable_external_jump = true
 external_jump_ami_id = "ami-xxxxxxxxxxxxxxxxx"
 
 # Internal Jump Host AMI (private subnet)
@@ -52,7 +67,10 @@ log_retention_days = 30
 # SSM Session Manager Configuration
 # ============================================================================
 # Enable SSM Session Manager access for internal jump host
-# Set to true to allow direct SSM access to internal jump host
+# - When enable_external_jump = true: This allows direct SSM access to internal jump
+#   (optional - can still SSH from external jump)
+# - When enable_external_jump = false: This is ignored (SSM is forced ON for access)
+#
 enable_internal_jump_ssm = false
 
 # Migration Mode Configuration

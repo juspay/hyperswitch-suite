@@ -1,6 +1,6 @@
 # CloudWatch Log Group for jump host logs
 resource "aws_cloudwatch_log_group" "jump_host" {
-  for_each = toset(["external", "internal"])
+  for_each = toset(var.enable_external_jump ? ["external", "internal"] : ["internal"])
 
   name              = "/aws/ec2/jump-host/${var.environment}/${each.key}"
   retention_in_days = var.log_retention_days
@@ -42,6 +42,8 @@ module "internal_jump_ssh_key_parameter" {
 module "external_jump_iam_role" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role"
   version = "~> 6.2"
+
+  count = var.enable_external_jump ? 1 : 0
 
   name                    = "${var.environment}-${var.project_name}-external-jump-role"
   create_instance_profile = true
@@ -173,7 +175,7 @@ module "internal_jump_iam_role" {
     {
       CloudWatchAgentServerPolicy = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
     },
-    var.enable_internal_jump_ssm ? {
+    local.internal_ssm_enabled ? {
       AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
     } : {}
   )
@@ -194,7 +196,7 @@ module "internal_jump_iam_role" {
         resources = ["arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/jump-host/${var.environment}/internal*"]
       }
     },
-    var.enable_internal_jump_ssm ? {
+    local.internal_ssm_enabled ? {
       KMSSessionEncryption = {
         sid    = "KMSSessionEncryption"
         effect = "Allow"
@@ -232,6 +234,8 @@ module "internal_jump_iam_role" {
 module "external_jump_sg" {
   source  = "terraform-aws-modules/security-group/aws"
   version = "~> 5.0"
+
+  count = var.enable_external_jump ? 1 : 0
 
   name            = "${local.external_name_prefix}-sg"
   use_name_prefix = false
@@ -278,7 +282,9 @@ module "internal_jump_sg" {
 # =========================================================================
 # Default egress to internal jump on SSH
 resource "aws_security_group_rule" "external_jump_default_egress_to_internal" {
-  security_group_id        = module.external_jump_sg.security_group_id
+  count = var.enable_external_jump ? 1 : 0
+
+  security_group_id        = module.external_jump_sg[0].security_group_id
   type                     = "egress"
   from_port                = 22
   to_port                  = 22
@@ -289,7 +295,9 @@ resource "aws_security_group_rule" "external_jump_default_egress_to_internal" {
 
 # Default egress for HTTPS (Session Manager, package downloads)
 resource "aws_security_group_rule" "external_jump_default_egress_https" {
-  security_group_id = module.external_jump_sg.security_group_id
+  count = var.enable_external_jump ? 1 : 0
+
+  security_group_id = module.external_jump_sg[0].security_group_id
   type              = "egress"
   from_port         = 443
   to_port           = 443
@@ -302,14 +310,16 @@ resource "aws_security_group_rule" "external_jump_default_egress_https" {
 # =========================================================================
 # Internal Jump Host - Default Ingress Rules (Automatic)
 # =========================================================================
-# Default ingress from external jump on SSH
+# Default ingress from external jump on SSH (only when external jump is enabled)
 resource "aws_security_group_rule" "internal_jump_default_ingress_from_external" {
+  count = var.enable_external_jump ? 1 : 0
+
   security_group_id        = module.internal_jump_sg.security_group_id
   type                     = "ingress"
   from_port                = 22
   to_port                  = 22
   protocol                 = "tcp"
-  source_security_group_id = module.external_jump_sg.security_group_id
+  source_security_group_id = module.external_jump_sg[0].security_group_id
   description              = "Allow SSH from external jump host only"
 }
 
@@ -376,13 +386,15 @@ module "external_jump_instance" {
   source  = "terraform-aws-modules/ec2-instance/aws"
   version = "~> 6.0"
 
+  count = var.enable_external_jump ? 1 : 0
+
   name = local.external_name_prefix
 
   ami                    = local.external_ami_id
   instance_type          = var.instance_type
   subnet_id              = var.public_subnet_id
-  vpc_security_group_ids = [module.external_jump_sg.security_group_id]
-  iam_instance_profile   = module.external_jump_iam_role.instance_profile_name
+  vpc_security_group_ids = [module.external_jump_sg[0].security_group_id]
+  iam_instance_profile   = module.external_jump_iam_role[0].instance_profile_name
 
   create_security_group = false
 

@@ -20,8 +20,9 @@ variable "vpc_id" {
 }
 
 variable "public_subnet_id" {
-  description = "Public subnet ID for external jump host"
+  description = "Public subnet ID for external jump host. Required when enable_external_jump is true."
   type        = string
+  default     = null
 }
 
 variable "private_subnet_id" {
@@ -92,4 +93,10 @@ variable "ssm_os_username" {
   description = "OS username for SSM Session Manager access. Defaults to the standard username used by SSM Agent. Can be overridden based on your environment and SSM config."
   type        = string
   default     = "ssm-user"
+}
+
+variable "enable_external_jump" {
+  description = "Enable external jump host in public subnet. When false, only internal jump host is created in private subnet with SSM access forced on (cost-saving mode for lower environments)"
+  type        = bool
+  default     = true
 }
