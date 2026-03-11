@@ -71,7 +71,7 @@ variable "route53_zones" {
           longitude = string
         }), null)
       }), null)
-      multivalue_answer_routing_policy = optional(bool, false)
+      multivalue_answer_routing_policy = optional(bool, null)
     })), {})
   }))
   default = {}
