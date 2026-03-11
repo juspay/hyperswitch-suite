@@ -1,45 +1,4 @@
 # =========================================================================
-# ACM CERTIFICATE (Optional)
-# =========================================================================
-module "acm" {
-  count = local.create_acm_certificate ? 1 : 0
-
-  source  = "terraform-aws-modules/acm/aws"
-  version = "6.3.0"
-
-  domain_name = var.acm.domain_name
-
-  subject_alternative_names = var.acm.subject_alternative_names
-
-  zone_id = var.acm.zone_id
-
-  validation_method = var.acm.validation_method
-
-  create_route53_records  = var.acm.create_route53_records
-  validate_certificate    = var.acm.validate_certificate
-  validation_record_fqdns = var.acm.validation_record_fqdns
-  zones                   = var.acm.zones
-
-  create_route53_records_only               = var.acm.create_route53_records_only
-  distinct_domain_names                     = var.acm.distinct_domain_names
-  acm_certificate_domain_validation_options = var.acm.acm_certificate_domain_validation_options
-
-  wait_for_validation                = var.acm.wait_for_validation
-  validation_timeout                 = var.acm.validation_timeout
-  validation_allow_overwrite_records = var.acm.validation_allow_overwrite_records
-
-  certificate_transparency_logging_preference = var.acm.certificate_transparency_logging_preference
-
-  tags = merge(
-    local.common_tags,
-    var.acm.tags,
-    {
-      Name = "${local.name_prefix}-cert"
-    }
-  )
-}
-
-# =========================================================================
 # SECURITY GROUP
 # =========================================================================
 resource "aws_security_group" "this" {
@@ -89,6 +48,8 @@ resource "aws_security_group_rule" "egress" {
 # APPLICATION LOAD BALANCER
 # =========================================================================
 resource "aws_lb" "this" {
+  count = var.create_alb ? 1 : 0
+
   name               = local.lb_name
   internal           = var.internal
   load_balancer_type = "application"
@@ -114,13 +75,9 @@ resource "aws_lb" "this" {
 
   tags = merge(
     local.common_tags,
-    var.alb_tags,
     {
       Name = local.lb_name
-    },
-    var.ingress_group_name != null ? {
-      "ingress.k8s.aws/stack" = var.ingress_group_name
-    } : {}
+    }
   )
 
   lifecycle {
@@ -132,13 +89,13 @@ resource "aws_lb" "this" {
 # LISTENERS
 # =========================================================================
 resource "aws_lb_listener" "this" {
-  for_each = var.listeners
+  for_each = var.create_alb ? var.listeners : {}
 
-  load_balancer_arn = aws_lb.this.arn
+  load_balancer_arn = aws_lb.this[0].arn
   port              = each.value.port
   protocol          = each.value.protocol
   ssl_policy        = each.value.protocol == "HTTPS" ? each.value.ssl_policy : null
-  certificate_arn   = each.value.protocol == "HTTPS" ? (each.value.certificate_arn != null ? each.value.certificate_arn : local.certificate_arn) : null
+  certificate_arn   = each.value.protocol == "HTTPS" ? each.value.certificate_arn : null
   alpn_policy       = each.value.alpn_policy
 
   dynamic "default_action" {
@@ -188,7 +145,7 @@ resource "aws_lb_listener" "this" {
 # LISTENER CERTIFICATES (Additional Certificates)
 # =========================================================================
 resource "aws_lb_listener_certificate" "this" {
-  for_each = var.additional_certificates
+  for_each = var.create_alb ? var.additional_certificates : {}
 
   listener_arn    = aws_lb_listener.this[each.value.listener_key].arn
   certificate_arn = each.value.certificate_arn
@@ -227,21 +184,21 @@ resource "aws_route53_zone" "this" {
 # ROUTE53 RECORDS
 # =========================================================================
 resource "aws_route53_record" "alb" {
-  for_each = var.route53_records
+  for_each = var.create_alb ? var.route53_records : {}
 
   zone_id         = var.route53_zone.create ? aws_route53_zone.this[0].zone_id : var.route53_zone.zone_id
   name            = each.value.name
   type            = each.value.type
   ttl             = each.value.create_as_alias ? null : each.value.ttl
-  records         = each.value.create_as_alias ? null : [aws_lb.this.dns_name]
+  records         = each.value.create_as_alias ? null : [aws_lb.this[0].dns_name]
   allow_overwrite = each.value.allow_overwrite
 
   # Alias block for alias records pointing to ALB
   dynamic "alias" {
     for_each = each.value.create_as_alias ? [1] : []
     content {
-      name                   = aws_lb.this.dns_name
-      zone_id                = aws_lb.this.zone_id
+      name                   = aws_lb.this[0].dns_name
+      zone_id                = aws_lb.this[0].zone_id
       evaluate_target_health = each.value.alias_evaluate_target_health
     }
   }

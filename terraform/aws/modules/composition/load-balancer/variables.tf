@@ -2,6 +2,12 @@
 # REQUIRED VARIABLES
 # =========================================================================
 
+variable "create_alb" {
+  description = "Whether to create the Application Load Balancer. When false, Route53 records and listeners are also skipped."
+  type        = bool
+  default     = true
+}
+
 variable "name" {
   description = "Name of the load balancer"
   type        = string
@@ -37,18 +43,6 @@ variable "internal" {
   description = "Whether the load balancer is internal or external"
   type        = bool
   default     = false
-}
-
-variable "ingress_group_name" {
-  description = "Use this to add tags for ingress group name. This is required when a ingress resources needs to discover this load-balancer"
-  type        = string
-  default     = null
-}
-
-variable "alb_tags" {
-  description = "Additional tags to apply to the Application Load Balancer"
-  type        = map(string)
-  default     = {}
 }
 
 variable "enable_deletion_protection" {
@@ -204,35 +198,6 @@ variable "additional_certificates" {
   default = {}
 }
 
-variable "certificate_arn" {
-  description = "ARN of an existing certificate to use for HTTPS listeners (used when ACM creation is disabled)"
-  type        = string
-  default     = null
-}
-
-variable "acm" {
-  description = "ACM certificate configuration. Set to null to disable ACM certificate creation"
-  type = object({
-    create_certificate                          = optional(bool, true)
-    domain_name                                 = string
-    subject_alternative_names                   = optional(list(string), [])
-    zone_id                                     = optional(string, null)
-    validation_method                           = optional(string, "DNS")
-    create_route53_records                      = optional(bool, true)
-    validate_certificate                        = optional(bool, true)
-    wait_for_validation                         = optional(bool, true)
-    validation_timeout                          = optional(string, null)
-    validation_allow_overwrite_records          = optional(bool, true)
-    certificate_transparency_logging_preference = optional(bool, true)
-    validation_record_fqdns                     = optional(list(string), [])
-    zones                                       = optional(map(string), {})
-    create_route53_records_only                 = optional(bool, false)
-    distinct_domain_names                       = optional(list(string), [])
-    acm_certificate_domain_validation_options   = optional(any, {})
-    tags                                        = optional(map(string), {})
-  })
-  default = null
-}
 
 variable "tags" {
   description = "Map of tags to apply to resources"
