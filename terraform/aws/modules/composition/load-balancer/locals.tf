@@ -12,10 +12,4 @@ locals {
   )
 
   lb_name = var.name != null ? var.name : local.name_prefix
-
-  # Determine if ACM certificate should be created
-  create_acm_certificate = var.acm != null && var.acm.create_certificate
-
-  # Get the certificate ARN (from created cert or provided)
-  certificate_arn = local.create_acm_certificate ? module.acm[0].acm_certificate_arn : var.certificate_arn
 }

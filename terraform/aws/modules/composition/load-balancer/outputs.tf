@@ -3,37 +3,37 @@
 # =========================================================================
 output "alb_arn" {
   description = "ARN of the Application Load Balancer"
-  value       = aws_lb.this.arn
+  value       = var.create_alb ? aws_lb.this[0].arn : null
 }
 
 output "alb_id" {
   description = "ID of the Application Load Balancer"
-  value       = aws_lb.this.id
+  value       = var.create_alb ? aws_lb.this[0].id : null
 }
 
 output "alb_name" {
   description = "Name of the Application Load Balancer"
-  value       = aws_lb.this.name
+  value       = var.create_alb ? aws_lb.this[0].name : null
 }
 
 output "alb_dns_name" {
   description = "DNS name of the Application Load Balancer"
-  value       = aws_lb.this.dns_name
+  value       = var.create_alb ? aws_lb.this[0].dns_name : null
 }
 
 output "alb_zone_id" {
   description = "Zone ID of the Application Load Balancer"
-  value       = aws_lb.this.zone_id
+  value       = var.create_alb ? aws_lb.this[0].zone_id : null
 }
 
 output "alb_arn_suffix" {
   description = "ARN suffix of the Application Load Balancer (useful for CloudWatch metrics)"
-  value       = aws_lb.this.arn_suffix
+  value       = var.create_alb ? aws_lb.this[0].arn_suffix : null
 }
 
 output "alb_tags_all" {
   description = "Map of tags assigned to the Load Balancer"
-  value       = aws_lb.this.tags_all
+  value       = var.create_alb ? aws_lb.this[0].tags_all : null
 }
 
 # =========================================================================
@@ -54,53 +54,20 @@ output "security_group_arn" {
 # =========================================================================
 output "listener_arns" {
   description = "Map of listener keys to listener ARNs"
-  value       = { for key, listener in aws_lb_listener.this : key => listener.arn }
+  value       = var.create_alb ? { for key, listener in aws_lb_listener.this : key => listener.arn } : {}
 }
 
 output "listener_ids" {
   description = "Map of listener keys to listener IDs"
-  value       = { for key, listener in aws_lb_listener.this : key => listener.id }
+  value       = var.create_alb ? { for key, listener in aws_lb_listener.this : key => listener.id } : {}
 }
 
 output "listener_details" {
   description = "Map of listener keys with port and protocol details"
-  value = { for key, listener in var.listeners : key => {
+  value = var.create_alb ? { for key, listener in var.listeners : key => {
     port     = listener.port
     protocol = listener.protocol
-  } }
-}
-
-# =========================================================================
-# ACM CERTIFICATE OUTPUTS
-# =========================================================================
-output "certificate_arn" {
-  description = "ARN of the ACM certificate (either created or provided)"
-  value       = local.certificate_arn
-}
-
-output "acm_certificate_arn" {
-  description = "ARN of the created ACM certificate (null if using existing cert)"
-  value       = local.create_acm_certificate ? module.acm[0].acm_certificate_arn : null
-}
-
-output "acm_certificate_domain_validation_options" {
-  description = "Domain validation options for the created ACM certificate"
-  value       = local.create_acm_certificate ? module.acm[0].acm_certificate_domain_validation_options : null
-}
-
-output "acm_certificate_status" {
-  description = "Status of the created ACM certificate"
-  value       = local.create_acm_certificate ? module.acm[0].acm_certificate_status : null
-}
-
-output "validation_route53_record_fqdns" {
-  description = "FQDNs of the Route53 validation records created"
-  value       = local.create_acm_certificate ? module.acm[0].validation_route53_record_fqdns : null
-}
-
-output "distinct_domain_names" {
-  description = "Distinct domain names for the certificate"
-  value       = local.create_acm_certificate ? module.acm[0].distinct_domain_names : null
+  } } : {}
 }
 
 # =========================================================================
@@ -123,7 +90,7 @@ output "route53_name_servers" {
 
 output "route53_record_fqdns" {
   description = "FQDNs of the created Route53 records"
-  value       = { for key, record in aws_route53_record.alb : key => record.fqdn }
+  value       = var.create_alb ? { for key, record in aws_route53_record.alb : key => record.fqdn } : {}
 }
 
 output "route53_zone_name" {
@@ -133,10 +100,5 @@ output "route53_zone_name" {
 
 output "route53_record_names" {
   description = "Names of the created Route53 records"
-  value       = { for key, record in aws_route53_record.alb : key => record.name }
-}
-
-output "ingress_group_name" {
-  description = "Name of the IngressGroup for AWS Load Balancer Controller integration"
-  value       = var.ingress_group_name
+  value       = var.create_alb ? { for key, record in aws_route53_record.alb : key => record.name } : {}
 }
