@@ -211,7 +211,7 @@ resource "aws_instance" "broker" {
   }
 
   iam_instance_profile = module.kafka_iam_role.instance_profile_name
-  user_data            = base64encode(local.broker_user_data)
+  user_data_base64     = base64encode(local.broker_user_data)
   monitoring           = true
 
   root_block_device {
@@ -262,7 +262,7 @@ resource "aws_instance" "controller" {
   }
 
   iam_instance_profile = module.kafka_iam_role.instance_profile_name
-  user_data            = base64encode(local.controller_user_data)
+  user_data_base64     = base64encode(local.controller_user_data)
   monitoring           = true
 
   root_block_device {
