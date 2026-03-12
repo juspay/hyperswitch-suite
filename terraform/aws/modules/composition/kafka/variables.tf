@@ -140,12 +140,6 @@ variable "controller_metadata_device_name" {
 # Kafka Configuration
 # =========================================================================
 
-variable "broker_extra_config" {
-  description = "Additional configuration for Kafka brokers (key=value format, one per line). Only used if broker_user_data_override is not set."
-  type        = string
-  default     = ""
-}
-
 variable "broker_user_data_override" {
   description = "Custom user data for broker instances. If provided, this will be used instead of the default JSON user data."
   type        = string
