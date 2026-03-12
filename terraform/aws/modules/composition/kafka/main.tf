@@ -74,7 +74,7 @@ module "broker_intra_cluster_rules" {
       from_port   = 0
       to_port     = 0
       protocol    = "-1"
-      cidr_blocks = ["0.0.0.0/0"]
+      cidr        = ["0.0.0.0/0"]
     }
   ]
 }
@@ -99,7 +99,7 @@ module "controller_intra_cluster_rules" {
       from_port   = 0
       to_port     = 0
       protocol    = "-1"
-      cidr_blocks = ["0.0.0.0/0"]
+      cidr        = ["0.0.0.0/0"]
     }
   ]
 }
