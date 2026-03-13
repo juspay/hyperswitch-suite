@@ -84,6 +84,12 @@ output "cloudwatch_log_groups" {
   value       = module.jump_host.cloudwatch_log_groups
 }
 
+# SSM Session Preferences
+output "ssm_session_preferences_document" {
+  description = "Name of the SSM Session Manager preferences document (null when not created)"
+  value       = module.jump_host.ssm_session_preferences_document
+}
+
 # Connection Guide
 output "connection_guide" {
   description = "Guide for connecting to jump hosts"

@@ -87,6 +87,10 @@ output "deployment_mode" {
   description = "Current deployment mode - 'dual' (external + internal) or 'standalone' (internal only with SSM)"
   value = var.enable_external_jump ? "dual" : "standalone"
 }
+output "ssm_session_preferences_document" {
+  description = "Name of the SSM Session Manager preferences document (null when not created)"
+  value       = var.create_ssm_session_preferences ? aws_ssm_document.session_preferences[0].name : null
+}
 
 output "connection_guide" {
   description = "Guide for connecting to jump hosts"

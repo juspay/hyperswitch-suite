@@ -37,6 +37,67 @@ module "internal_jump_ssh_key_parameter" {
     }
   )
 }
+# =========================================================================
+# SSM Session Manager Preferences
+# =========================================================================
+# This document is named SSM-SessionManagerRunShell which is the default
+# document Session Manager uses for all sessions in this account/region.
+# NOTE: This is an account-level setting. If multiple environments share
+# the same AWS account, only one such document can exist. Use
+# create_ssm_session_preferences = false to skip creation in environments
+# that share an AWS account with another environment.
+resource "aws_ssm_document" "session_preferences" {
+  count = var.create_ssm_session_preferences ? 1 : 0
+
+  name            = "SSM-SessionManagerRunShell"
+  document_type   = "Session"
+  document_format = "JSON"
+
+  content = jsonencode({
+    schemaVersion = "1.0"
+    description   = "Session preferences for ${var.project_name} ${var.environment} jump hosts"
+    sessionType   = "Standard_Stream"
+    inputs = {
+      # Session timeout settings
+      idleSessionTimeoutInMinutes = var.ssm_idle_session_timeout
+      maxSessionDurationInMinutes = var.ssm_max_session_duration != "" ? tonumber(var.ssm_max_session_duration) : null
+
+      # Run As configuration
+      # When runAsEnabled=true and runAsDefaultUser is set (e.g., "ubuntu"),
+      # SSM creates OS users based on IAM user name and runs sessions as that user
+      runAsEnabled     = var.ssm_run_as_user != ""
+      runAsDefaultUser = var.ssm_run_as_user != "" ? var.ssm_run_as_user : null
+
+      # KMS encryption
+      kmsKeyId = var.enable_ssm_session_encryption ? "alias/aws/ssm" : null
+
+      # CloudWatch logging
+      cloudWatchLogGroupName      = var.ssm_cloudwatch_logging_enabled && var.ssm_cloudwatch_log_group_name != "" ? var.ssm_cloudwatch_log_group_name : null
+      cloudWatchEncryptionEnabled = var.ssm_cloudwatch_logging_enabled
+
+      # S3 logging
+      s3BucketName        = var.ssm_s3_logging_enabled && var.ssm_s3_bucket_name != "" ? var.ssm_s3_bucket_name : null
+      s3KeyPrefix         = var.ssm_s3_logging_enabled && var.ssm_s3_key_prefix != "" ? var.ssm_s3_key_prefix : null
+      s3EncryptionEnabled = var.ssm_s3_logging_enabled
+
+      # Shell profile - commands that run when session starts
+      shellProfile = {
+        linux   = var.ssm_shell_profile_linux
+        windows = var.ssm_shell_profile_windows
+      }
+    }
+  })
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${var.environment}-${var.project_name}-ssm-session-preferences"
+    }
+  )
+}
+
+
+
 
 # IAM Role for External Jump Host
 module "external_jump_iam_role" {

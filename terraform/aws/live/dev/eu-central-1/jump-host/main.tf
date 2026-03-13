@@ -42,8 +42,24 @@ module "jump_host" {
   # Jump Host Mode Configuration
   enable_external_jump = var.enable_external_jump
 
-  # SSM Configuration
-  enable_internal_jump_ssm = var.enable_internal_jump_ssm
+  # SSM Session Manager Configuration
+  enable_internal_jump_ssm     = var.enable_internal_jump_ssm
+  enable_ssm_session_encryption = var.enable_ssm_session_encryption
+
+  # SSM Session Preferences
+  ssm_idle_session_timeout       = var.ssm_idle_session_timeout
+  ssm_max_session_duration       = var.ssm_max_session_duration
+  ssm_run_as_user                = var.ssm_run_as_user
+  ssm_cloudwatch_logging_enabled = var.ssm_cloudwatch_logging_enabled
+  ssm_cloudwatch_log_group_name  = var.ssm_cloudwatch_log_group_name
+  ssm_s3_logging_enabled         = var.ssm_s3_logging_enabled
+  ssm_s3_bucket_name             = var.ssm_s3_bucket_name
+  ssm_s3_key_prefix              = var.ssm_s3_key_prefix
+
+  # SSM Session Preferences - Toggle and Custom Profiles
+  create_ssm_session_preferences = var.create_ssm_session_preferences
+  ssm_shell_profile_linux        = var.ssm_shell_profile_linux
+  ssm_shell_profile_windows      = var.ssm_shell_profile_windows
 
   # Migration Mode Configuration
   enable_migration_mode = var.enable_migration_mode

@@ -31,12 +31,9 @@ private_subnet_id = "subnet-xxxxxxxxxxxxxxxxx"  # Replace with your private(Util
 # Dual Mode (enable_external_jump = true, default):
 #   - External Jump: Public subnet with public IP (accessible via Session Manager)
 #   - Internal Jump: Private subnet (accessible from external jump via SSH)
-#   - Cost: 2 instances
-#
 # Standalone Mode (enable_external_jump = false):
 #   - Internal Jump only: Private subnet with SSM access forced ON
-#   - Cost: 1 instance (cost-saving for lower environments)
-#
+
 enable_external_jump = true
 # ============================================================================
 # Instance Configuration
@@ -73,6 +70,64 @@ log_retention_days = 30
 #
 enable_internal_jump_ssm = false
 
+# Enable KMS encryption for SSM sessions
+# When true, sessions are encrypted using AWS KMS
+enable_ssm_session_encryption = true
+
+# ============================================================================
+# SSM Session Manager Preferences
+# ============================================================================
+# These settings configure the Session Manager preferences for this environment.
+# NOTE: This creates an SSM document named 'SSM-SessionManagerRunShell' which
+# is the default document for ALL sessions in this AWS account/region.
+# If multiple environments share the same AWS account, coordinate carefully.
+
+# Idle session timeout (minutes) - Session terminates after inactivity
+ssm_idle_session_timeout = 10
+
+# Maximum session duration (minutes) - Leave empty for unlimited
+ssm_max_session_duration = ""
+
+# Run As user - Enables IAM user → OS user mapping
+# When set (e.g., "ubuntu"), SSM creates OS users based on IAM user name
+# and runs sessions as that user. Example: IAM user "harshvardhan.b" → OS user "harshvardhan.b"
+# Leave empty to use default ssm-user
+ssm_run_as_user = "ubuntu"
+
+# CloudWatch logging for SSM sessions
+ssm_cloudwatch_logging_enabled = true
+ssm_cloudwatch_log_group_name  = ""  # Leave empty to use default
+
+# S3 logging for SSM sessions
+ssm_s3_logging_enabled = false
+ssm_s3_bucket_name     = ""  # S3 bucket name for session logs
+ssm_s3_key_prefix      = "session-manager"
+
+# ---------------------------------------------------------------------------
+# Toggle SSM Session Preferences Creation
+# ---------------------------------------------------------------------------
+# Set to false if another environment in the same AWS account already
+# manages the SSM-SessionManagerRunShell document (account-level setting).
+create_ssm_session_preferences = true
+
+# ---------------------------------------------------------------------------
+# Shell Profiles - Commands that run when session starts
+# ---------------------------------------------------------------------------
+# Configure the welcome message and session setup commands.
+# Example:
+# ssm_shell_profile_linux = <<-EOT
+#   exec /bin/bash
+#   timestamp=$(date '+%Y-%m-%dT%H:%M:%SZ')
+#   user=$(whoami)
+#   cd /home/$user
+#   echo $timestamp && echo "Welcome $user!"
+#   echo "You have logged in to a Juspay Hyperswitch Sandbox instance. Note that all session activity is being logged."
+# EOT
+#
+ssm_shell_profile_linux   = ""
+ssm_shell_profile_windows = ""
+
+# ============================================================================
 # Migration Mode Configuration
 # ============================================================================
 # Enable SSM SendCommand permissions for Packer AMI migration (SECURITY RISK)
