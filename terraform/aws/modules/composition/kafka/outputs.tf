@@ -55,12 +55,12 @@ output "controller_eni_private_ips" {
 # ============================================================================
 output "broker_security_group_id" {
   description = "Security group ID of the Kafka broker nodes"
-  value       = module.broker_sg.sg_id
+  value       = aws_security_group.broker.id
 }
 
 output "controller_security_group_id" {
   description = "Security group ID of the Kafka controller nodes"
-  value       = module.controller_sg.sg_id
+  value       = aws_security_group.controller.id
 }
 
 # ============================================================================

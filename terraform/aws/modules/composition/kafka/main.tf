@@ -30,9 +30,7 @@ resource "aws_ssm_parameter" "kafka_private_key" {
 # SECURITY - KAFKA SECURITY GROUPS
 # =========================================================================
 
-module "broker_sg" {
-  source = "../../base/security-group"
-
+resource "aws_security_group" "broker" {
   name        = "${local.name_prefix}-broker-sg"
   description = "Security group for Kafka broker nodes"
   vpc_id      = var.vpc_id
@@ -40,9 +38,7 @@ module "broker_sg" {
   tags = local.common_tags
 }
 
-module "controller_sg" {
-  source = "../../base/security-group"
-
+resource "aws_security_group" "controller" {
   name        = "${local.name_prefix}-controller-sg"
   description = "Security group for Kafka controller nodes"
   vpc_id      = var.vpc_id
@@ -51,57 +47,51 @@ module "controller_sg" {
 }
 
 # =========================================================================
-# SECURITY GROUP - INTRA-CLUSTER RULES
+# SECURITY GROUP - INTRA-CLUSTER RULES (BROKER)
 # =========================================================================
 
-module "broker_intra_cluster_rules" {
-  source = "../../base/security-group-rules"
-
-  security_group_id = module.broker_sg.sg_id
-
-  rules = [
-    {
-      type        = "ingress"
-      description = "Allow all TCP traffic from itself"
-      from_port   = 0
-      to_port     = 65535
-      protocol    = "tcp"
-      sg_id       = [module.broker_sg.sg_id]
-    },
-    {
-      type        = "egress"
-      description = "Allow all outbound traffic"
-      from_port   = 0
-      to_port     = 0
-      protocol    = "-1"
-      cidr        = ["0.0.0.0/0"]
-    }
-  ]
+resource "aws_security_group_rule" "broker_self_ingress" {
+  type              = "ingress"
+  description       = "Allow all TCP traffic from itself"
+  from_port         = 0
+  to_port           = 65535
+  protocol          = "tcp"
+  security_group_id = aws_security_group.broker.id
+  source_security_group_id = aws_security_group.broker.id
 }
 
-module "controller_intra_cluster_rules" {
-  source = "../../base/security-group-rules"
+resource "aws_security_group_rule" "broker_egress" {
+  type              = "egress"
+  description       = "Allow all outbound traffic"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  security_group_id = aws_security_group.broker.id
+  cidr_blocks       = ["0.0.0.0/0"]
+}
 
-  security_group_id = module.controller_sg.sg_id
+# =========================================================================
+# SECURITY GROUP - INTRA-CLUSTER RULES (CONTROLLER)
+# =========================================================================
 
-  rules = [
-    {
-      type        = "ingress"
-      description = "Allow all TCP traffic from itself"
-      from_port   = 0
-      to_port     = 65535
-      protocol    = "tcp"
-      sg_id       = [module.controller_sg.sg_id]
-    },
-    {
-      type        = "egress"
-      description = "Allow all outbound traffic"
-      from_port   = 0
-      to_port     = 0
-      protocol    = "-1"
-      cidr        = ["0.0.0.0/0"]
-    }
-  ]
+resource "aws_security_group_rule" "controller_self_ingress" {
+  type              = "ingress"
+  description       = "Allow all TCP traffic from itself"
+  from_port         = 0
+  to_port           = 65535
+  protocol          = "tcp"
+  security_group_id = aws_security_group.controller.id
+  source_security_group_id = aws_security_group.controller.id
+}
+
+resource "aws_security_group_rule" "controller_egress" {
+  type              = "egress"
+  description       = "Allow all outbound traffic"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  security_group_id = aws_security_group.controller.id
+  cidr_blocks       = ["0.0.0.0/0"]
 }
 
 # =========================================================================
@@ -168,14 +158,14 @@ resource "aws_network_interface" "broker" {
   count = var.broker_count
 
   subnet_id       = var.broker_subnet_id
-  security_groups = [module.broker_sg.sg_id]
+  security_groups = [aws_security_group.broker.id]
 
   tags = merge(local.common_tags, {
     Name    = "kafka-broker-${count.index + 1}"
     cluster = "kafkabroker"
   })
 
-  depends_on = [module.broker_sg]
+  depends_on = [aws_security_group.broker]
 }
 
 # =========================================================================
@@ -184,14 +174,14 @@ resource "aws_network_interface" "broker" {
 
 resource "aws_network_interface" "controller" {
   subnet_id       = var.controller_subnet_id
-  security_groups = [module.controller_sg.sg_id]
+  security_groups = [aws_security_group.controller.id]
 
   tags = merge(local.common_tags, {
     Name    = "kafka-controller"
     cluster = "kafkacontroller"
   })
 
-  depends_on = [module.controller_sg]
+  depends_on = [aws_security_group.controller]
 }
 
 # =========================================================================
@@ -243,7 +233,8 @@ resource "aws_instance" "broker" {
   depends_on = [
     aws_network_interface.broker,
     module.kafka_iam_role,
-    module.broker_intra_cluster_rules
+    aws_security_group_rule.broker_self_ingress,
+    aws_security_group_rule.broker_egress
   ]
 }
 
@@ -294,6 +285,7 @@ resource "aws_instance" "controller" {
   depends_on = [
     aws_network_interface.controller,
     module.kafka_iam_role,
-    module.controller_intra_cluster_rules
+    aws_security_group_rule.controller_self_ingress,
+    aws_security_group_rule.controller_egress
   ]
 }
