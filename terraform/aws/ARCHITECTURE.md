@@ -1,238 +1,546 @@
 # Terraform Architecture Documentation
 
-Production-ready Terraform infrastructure for Hyperswitch proxy services with modular, three-layer architecture.
+Production-ready Terraform infrastructure for Hyperswitch payment services with modular, multi-layer architecture.
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              LIVE LAYER                                      │
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐                         │
+│  │   dev   │  │  integ  │  │   prod  │  │ sandbox │                         │
+│  └────┬────┘  └────┬────┘  └────┬────┘  └────┬────┘                         │
+│       │            │            │            │                               │
+│       └────────────┴────────────┴────────────┘                               │
+│                          │                                                   │
+│                    Environment-specific                                       │
+│                    configurations & values                                    │
+└──────────────────────────┼──────────────────────────────────────────────────┘
+                           │
+┌──────────────────────────┼──────────────────────────────────────────────────┐
+│                     MODULE LAYER                                              │
+│  ┌───────────────────────┼───────────────────────┐                          │
+│  │   APPLICATION RESOURCES                       │                          │
+│  │  alb-controller, argocd, eks-iam,             │                          │
+│  │  external-secrets, hyperswitch, istio         │                          │
+│  └───────────────────────┬───────────────────────┘                          │
+│  ┌───────────────────────┼───────────────────────┐                          │
+│  │      COMPOSITION MODULES                      │                          │
+│  │  vpc-network, eks, cloudfront, database,      │                          │
+│  │  elasticache, envoy-proxy, squid-proxy, etc.  │                          │
+│  └───────────────────────┬───────────────────────┘                          │
+│  ┌───────────────────────┼───────────────────────┐                          │
+│  │         BASE MODULES                          │                          │
+│  │  vpc, subnet, security-group, asg, alb, nlb,  │                          │
+│  │  iam-role, s3-bucket, target-group, etc.      │                          │
+│  └───────────────────────┴───────────────────────┘                          │
+│                                                                               │
+│  ┌───────────────────────────────────────────────┐                          │
+│  │         CLOUDFRONT RESOURCES                  │                          │
+│  │  Shared CloudFront policies, functions, OAC   │                          │
+│  └───────────────────────────────────────────────┘                          │
+└───────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
 
 ## Module Architecture
 
+The infrastructure is built on a **four-layer module architecture** that separates concerns and enables reusability.
+
 ### Layer 1: Base Modules (`modules/base/`)
 
-Atomic AWS resource wrappers - reusable building blocks:
-- `asg/` - Auto Scaling Group with health checks and instance refresh
-- `security-group/` - Dynamic ingress/egress rules with CIDR and SG support
-- `s3-bucket/` - Encryption, versioning, lifecycle policies
-- `iam-role/` - IAM roles with managed and inline policies
-- `target-group/` - Load balancer target groups with health checks
-- `launch-template/` - EC2 launch configurations
+Atomic AWS resource wrappers - generic building blocks with no business logic. **Never run Terraform here** - these are libraries.
+
+| Module | Purpose | Key Resources |
+|--------|---------|---------------|
+| `vpc/` | VPC creation with DNS, flow logs, IGW | `aws_vpc`, `aws_internet_gateway`, `aws_flow_log` |
+| `subnet/` | Subnet creation with NAT, routing | `aws_subnet`, `aws_nat_gateway`, `aws_eip` |
+| `security-group/` | Security group with rules | `aws_security_group` |
+| `security-group-rules/` | Cross-module security group rules | `aws_security_group_rule` |
+| `route-table/` | Route table management | `aws_route_table`, `aws_route` |
+| `network-acl/` | Network ACL configuration | `aws_network_acl`, `aws_network_acl_rule` |
+| `vpc-endpoint/` | VPC endpoints (Gateway/Interface) | `aws_vpc_endpoint` |
+| `asg/` | Auto Scaling Group with launch template | `aws_autoscaling_group`, `aws_launch_template` |
+| `launch-template/` | EC2 launch configuration | `aws_launch_template` |
+| `alb/` | Application Load Balancer | `aws_lb` |
+| `alb-listener/` | ALB listeners and rules | `aws_lb_listener`, `aws_lb_listener_rule` |
+| `nlb/` | Network Load Balancer | `aws_lb` |
+| `nlb-listener/` | NLB listeners | `aws_lb_listener` |
+| `target-group/` | Load balancer target groups | `aws_lb_target_group` |
+| `iam-role/` | IAM roles with policies | `aws_iam_role`, `aws_iam_role_policy` |
+| `s3-bucket/` | S3 bucket with encryption, lifecycle | `aws_s3_bucket`, versioning, policies |
+| `dynamodb-table/` | DynamoDB tables | `aws_dynamodb_table` |
+| `lambda/` | Lambda functions | `aws_lambda_function` |
+| `api-gateway/` | API Gateway REST APIs | `aws_api_gateway_rest_api` |
 
 ### Layer 2: Composition Modules (`modules/composition/`)
 
-Service orchestration combining base modules:
+Service orchestration combining base modules into deployable units. **Never run Terraform here** - these are templates.
 
-**squid-proxy/**
-- Components: NLB + ASG + S3 (config/logs) + Security Groups + IAM
-- Features: Domain whitelisting, S3 config templating, EKS CIDR support, instance refresh
-- Purpose: Outbound HTTP/HTTPS proxy with domain filtering
+| Module | Purpose | Components |
+|--------|---------|------------|
+| `vpc-network/` | Complete VPC with multi-tier subnets | VPC + Subnets + NAT + Route Tables + VPC Endpoints + NACLs |
+| `eks/` | EKS cluster with node groups | EKS Cluster + Node Groups + IAM Roles + Addons + IRSA |
+| `eks-kubernetes-resources/` | Kubernetes resources for EKS | RBAC + Storage Classes + Cluster Autoscaler + Helm Deployments |
+| `cloudfront/` | CloudFront CDN distributions | Distributions + OAC + Functions + Policies |
+| `database/` | RDS Aurora PostgreSQL | Aurora Cluster + Instances + Parameter Groups + Backups |
+| `elasticache/` | ElastiCache Redis | Replication Group + Subnet Group + Security Group |
+| `envoy-proxy/` | Ingress proxy layer | ALB + ASG + S3 Config + Security Groups |
+| `squid-proxy/` | Outbound HTTP/HTTPS proxy | NLB + ASG + S3 Config/Logs + Security Groups |
+| `locker/` | Card vault service | EC2 + NLB + Security Groups + IAM |
+| `jump-host/` | Bastion host for SSH access | EC2 + Security Groups + IAM |
+| `cassandra/` | Apache Cassandra cluster | EC2 + ASG + Security Groups |
+| `load-balancer/` | Shared load balancer infrastructure | ALB/NLB + Target Groups + Listeners |
+| `security-rules/` | Cross-module security group rules | Security Group Rules |
+| `ecr/` | Elastic Container Registry | ECR Repositories + Lifecycle Policies |
+| `terraform-backend/` | Terraform state infrastructure | S3 Bucket + DynamoDB Table |
 
-**envoy-proxy/**
-- Components: ALB + ASG + S3 (config/logs) + Security Groups + IAM
-- Features: Envoy.yaml templating, SSL termination, advanced routing, instance refresh
-- Purpose: Ingress proxy for CloudFront traffic
+### Layer 3: Application Resources (`modules/application-resources/`)
 
-### Layer 3: Live Deployments (`live/`)
+Application-specific resources that run on top of EKS. May require Kubernetes cluster to exist.
 
-Environment-specific configurations:
-- `dev/` - Public reference with masked values, local state
-- `integ/` - Integration/UAT, remote state (S3 + DynamoDB)
-- `prod/` - Production, encrypted remote state (S3 + DynamoDB + KMS)
-- `sandbox/` - Experimentation, ephemeral resources
+| Module | Purpose |
+|--------|---------|
+| `alb-controller/` | AWS Load Balancer Controller for Kubernetes |
+| `argocd/` | ArgoCD GitOps deployment |
+| `eks-iam/` | EKS IAM roles for service accounts (IRSA) |
+| `external-secrets-operator/` | External Secrets Operator deployment |
+| `hyperswitch/` | Hyperswitch application resources (S3, KMS, IAM) |
+| `istio/` | Istio service mesh deployment |
+| `shared-policy/` | Shared IAM policies across services |
 
-## System Architecture
+### Layer 4: CloudFront Resources (`modules/cloudfront-resources/`)
 
-### Squid Proxy Flow
+Shared CloudFront infrastructure - policies, functions, and origin access controls.
+
+| Resource Type | Purpose |
+|---------------|---------|
+| `cloudfront_functions` | Edge functions for request/response manipulation |
+| `response_headers_policies` | Security headers, CORS configuration |
+| `cache_policies` | Caching behavior policies |
+| `origin_request_policies` | Origin request forwarding rules |
+
+---
+
+## Live Layer Architecture
+
+Environment-specific deployments in `live/` directory. **This is where Terraform commands run.**
+
+### Environments
+
+| Environment | State Backend | Encryption | Use Case |
+|-------------|---------------|------------|----------|
+| `dev/` | S3 or local | AES256 | Development, testing, reference |
+| `integ/` | S3 + DynamoDB | AES256 | Integration testing, UAT |
+| `prod/` | S3 + DynamoDB | KMS | Production workloads |
+| `sandbox/` | S3 + DynamoDB | AES256 | Experimentation, POC |
+
+### Dev Environment Components (`live/dev/eu-central-1/`)
+
+#### Infrastructure Components
+
+| Component | Module | Purpose | Dependencies |
+|-----------|--------|---------|--------------|
+| `vpc-network/` | `composition/vpc-network` | VPC, subnets, NAT, endpoints | None (foundation) |
+| `eks/` | `composition/eks` | Kubernetes cluster | `vpc-network` |
+| `eks-kubernetes-resources/` | `composition/eks-kubernetes-resources` | K8s resources, autoscaler | `eks` |
+| `cloudfront/` | `composition/cloudfront` | CDN distributions | `envoy-proxy` (origin) |
+| `database/` | `composition/database` | Aurora PostgreSQL | `vpc-network` |
+| `elasticache/` | `composition/elasticache` | Redis cache | `vpc-network` |
+| `ecr/` | `composition/ecr` | Container registry | None |
+
+#### Proxy Components
+
+| Component | Module | Purpose | Dependencies |
+|-----------|--------|---------|--------------|
+| `envoy-proxy/` | `composition/envoy-proxy` | Ingress proxy | `vpc-network` |
+| `squid-proxy/` | `composition/squid-proxy` | Outbound proxy | `vpc-network` |
+
+#### Security Components
+
+| Component | Module | Purpose | Dependencies |
+|-----------|--------|---------|--------------|
+| `security-rules/` | `composition/security-rules` | Cross-module SG rules | All infrastructure |
+| `jump-host/` | `composition/jump-host` | Bastion access | `vpc-network` |
+
+#### Application Components
+
+| Component | Module | Purpose | Dependencies |
+|-----------|--------|---------|--------------|
+| `locker/` | `composition/locker` | Card vault service | `vpc-network`, `database` |
+| `cassandra/` | `composition/cassandra` | NoSQL database | `vpc-network` |
+
+#### Apps (Kubernetes Workloads)
+
+| Component | Purpose | Dependencies |
+|-----------|---------|--------------|
+| `alb-controller/` | AWS LB Controller | `eks`, `eks-kubernetes-resources` |
+| `argocd/` | GitOps deployment | `eks` |
+| `istio/` | Service mesh | `eks` |
+| `external-secrets-operator/` | Secrets management | `eks` |
+| `eso-hyperswitch/` | Hyperswitch secrets | `external-secrets-operator` |
+| `hyperswitch-app/` | Main application | `eks`, `database`, `elasticache` |
+| `grafana/` | Monitoring dashboards | `eks` |
+| `loki/` | Log aggregation | `eks` |
+| `vector/` | Metrics collection | `eks` |
+| `shared-policies/` | Shared IAM policies | `eks` |
+
+---
+
+## Dependency Graph
+
+### Deployment Order
 
 ```
-EKS Pod (10.0.10.180)
-  ↓ HTTP_PROXY=http://nlb:80
-Network Load Balancer (TCP/80 → 3128)
-  ↓ Preserves source IP
-Squid ASG (port 3128)
-  ↓ Checks whitelist.txt
-Internet (whitelisted domains only)
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PHASE 1: FOUNDATION                                                         │
+│  ┌─────────────┐                                                             │
+│  │ vpc-network │  ← Deploy first (no dependencies)                           │
+│  └──────┬──────┘                                                             │
+│         │                                                                    │
+└─────────┼────────────────────────────────────────────────────────────────────┘
+          │
+          ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PHASE 2: CORE SERVICES                                                      │
+│                                                                              │
+│  ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐                  │
+│  │ database │   │elasticache│   │   ecr    │   │jump-host │                  │
+│  └────┬─────┘   └────┬─────┘   └────┬─────┘   └────┬─────┘                  │
+│       │              │              │              │                         │
+│       └──────────────┴──────────────┴──────────────┘                         │
+│                              │                                               │
+│                     All depend on vpc-network                                │
+└──────────────────────────────┼──────────────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PHASE 3: KUBERNETES CLUSTER                                                 │
+│                                                                              │
+│  ┌──────────────────────────────┐                                            │
+│  │            eks               │  ← Depends on vpc-network                  │
+│  └──────────────┬───────────────┘                                            │
+│                 │                                                            │
+│                 ▼                                                            │
+│  ┌──────────────────────────────┐                                            │
+│  │   eks-kubernetes-resources   │  ← Depends on eks                          │
+│  └──────────────┬───────────────┘                                            │
+│                 │                                                            │
+│                 ▼                                                            │
+│  ┌────────────────────────────────────────────────────────────────────┐      │
+│  │                        APPS LAYER                                   │      │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐  │      │
+│  │  │alb-ctlr  │ │  argocd  │ │  istio   │ │   eso    │ │ grafana  │  │      │
+│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘  │      │
+│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐               │      │
+│  │  │  loki    │ │  vector  │ │ hypersw- │ │shared-   │               │      │
+│  │  │          │ │          │ │   itch   │ │ policies │               │      │
+│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘               │      │
+│  └────────────────────────────────────────────────────────────────────┘      │
+└───────────────────────────────────────────────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PHASE 4: PROXY & INGRESS                                                    │
+│                                                                              │
+│  ┌──────────────┐        ┌──────────────┐                                    │
+│  │ envoy-proxy  │        │ squid-proxy  │                                    │
+│  └──────┬───────┘        └──────┬───────┘                                    │
+│         │                       │                                            │
+│         └───────────────────────┘                                            │
+│                     │                                                        │
+│            Depend on vpc-network                                             │
+│                     │                                                        │
+│                     ▼                                                        │
+│  ┌──────────────────────────────┐                                            │
+│  │         cloudfront           │  ← Depends on envoy-proxy (origin)         │
+│  └──────────────────────────────┘                                            │
+└───────────────────────────────────────────────────────────────────────────────┘
+                               │
+                               ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PHASE 5: SECURITY RULES (LAST)                                              │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                       security-rules                                 │    │
+│  │   Configures cross-module SG rules for:                             │    │
+│  │   - locker ↔ jump-host                                              │    │
+│  │   - envoy ↔ jump-host, EKS                                          │    │
+│  │   - squid ↔ EKS                                                     │    │
+│  │   - cassandra ↔ jump-host                                           │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+│  ⚠️  Must be deployed LAST after all infrastructure components             │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Key Points:**
-- NLB preserves source IP, requires CIDR-based security group rules
-- TCP listener on port 80, forwards to Squid on port 3128
-- Domain whitelist enforced from `config/whitelist.txt`
-- Multi-AZ deployment for high availability
+### Component Dependency Matrix
 
-### Envoy Proxy Flow
+| Component | vpc-network | eks | database | elasticache | envoy | cloudfront | security-rules |
+|-----------|:-----------:|:---:|:--------:|:-----------:|:-----:|:----------:|:--------------:|
+| vpc-network | - | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| eks | ✅ | - | ❌ | ❌ | ❌ | ❌ | ❌ |
+| database | ✅ | ❌ | - | ❌ | ❌ | ❌ | ❌ |
+| elasticache | ✅ | ❌ | ❌ | - | ❌ | ❌ | ❌ |
+| ecr | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| jump-host | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| locker | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| cassandra | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| envoy-proxy | ✅ | ❌ | ❌ | ❌ | - | ❌ | ❌ |
+| squid-proxy | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| cloudfront | ✅ | ✅ | ❌ | ❌ | ✅ | - | ❌ |
+| eks-k8s-resources | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| apps/* | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| security-rules | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | - |
+
+---
+
+## Network Architecture
+
+### VPC Subnet Tiers
 
 ```
-CloudFront
-  ↓
-External ALB (HTTP/HTTPS)
-  ↓ SSL termination
-Envoy ASG (ports 80, 9901)
-  ↓ Advanced routing
-Internal ALB
-  ↓
-EKS Cluster
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              VPC (10.0.0.0/16)                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ EXTERNAL-INCOMING (Public) - ALB, NAT Gateway                       │    │
+│  │ 10.0.64.0/24, 10.0.65.0/24, 10.0.66.0/24                           │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ MANAGEMENT (Public) - Bastion/Jump Host                             │    │
+│  │ 10.0.67.0/24, 10.0.68.0/24, 10.0.69.0/24                           │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ EKS-WORKERS (Private with NAT) - Kubernetes worker nodes            │    │
+│  │ 10.0.32.0/21, 10.0.40.0/21, 10.0.48.0/21 (2,048 IPs each)         │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ EKS-CONTROL-PLANE (Private Isolated) - EKS control plane            │    │
+│  │ 10.0.70.0/24, 10.0.71.0/24, 10.0.72.0/24                           │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ DATABASE (Private Isolated) - RDS, Aurora                           │    │
+│  │ 10.0.73.0/24, 10.0.74.0/24, 10.0.75.0/24                           │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ LOCKER-DATABASE (Private Isolated, PCI-DSS)                         │    │
+│  │ 10.0.76.0/24, 10.0.77.0/24, 10.0.78.0/24                           │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ LOCKER-SERVER (Private Isolated, PCI-DSS)                           │    │
+│  │ 10.0.79.0/24, 10.0.80.0/24, 10.0.81.0/24                           │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ ELASTICACHE (Private Isolated) - Redis                              │    │
+│  │ 10.0.82.0/24, 10.0.83.0/24, 10.0.84.0/24                           │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ INCOMING-ENVOY (Private with NAT) - Envoy proxy instances           │    │
+│  │ 10.0.88.0/24, 10.0.89.0/24, 10.0.90.0/24                           │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ OUTGOING-PROXY (Private with NAT) - Squid proxy instances           │    │
+│  │ 10.0.91.0/24, 10.0.92.0/24, 10.0.93.0/24                           │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ UTILS, LAMBDA, DATA-STACK (Private Isolated/NAT)                    │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Key Points:**
-- ALB handles SSL termination
-- Envoy.yaml templating for CloudFront DNS and Internal ALB DNS
-- Header-based and path-based routing
+### Traffic Flows
+
+#### Ingress Flow (CloudFront → EKS)
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  CloudFront │────▶│ External ALB│────▶│    Envoy    │────▶│  Internal   │
+│    (CDN)    │     │   (Public)  │     │   Proxy     │     │     ALB     │
+└─────────────┘     └─────────────┘     └─────────────┘     └──────┬──────┘
+                                                                   │
+                                                                   ▼
+                                                            ┌─────────────┐
+                                                            │     EKS     │
+                                                            │   Cluster   │
+                                                            └─────────────┘
+```
+
+#### Egress Flow (EKS → Internet via Squid)
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│ EKS Pods    │────▶│     NLB     │────▶│    Squid    │────▶│  Internet   │
+│             │     │  (TCP:80)   │     │   Proxy     │     │(whitelisted)│
+└─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
+```
+
+---
 
 ## Security Architecture
 
 ### Network Security
 
-**Squid ASG Security Group:**
-```
-Inbound:
-- TCP 3128 from EKS worker subnet CIDRs (10.0.8.0/22, 10.0.12.0/22)
-- TCP 3128 from NLB subnet CIDRs (10.0.30.0/24, 10.0.31.0/24) for health checks
-
-Outbound:
-- TCP 80, 443 to 0.0.0.0/0 (internet access)
-```
-
-**Why CIDR Rules?**
-NLB preserves client source IP. Traffic from pod (10.0.10.180) appears with pod IP at Squid instance. Security group references alone don't work - must explicitly allow EKS worker subnet CIDRs.
+- **No Public IPs**: All instances in private subnets (except bastion with Elastic IP)
+- **Security Groups**: Least-privilege rules, no 0.0.0.0/0 ingress
+- **NACLs**: Additional layer of subnet-level filtering
+- **VPC Endpoints**: S3, DynamoDB, ECR, SSM, Secrets Manager via endpoints (no NAT)
 
 ### IAM Security
 
 ```
-Instance Profile → IAM Role
-  ├─ Managed Policies: SSM access, CloudWatch logs/metrics
-  └─ Inline Policies:
-     - S3 Config Bucket: s3:GetObject (read-only)
-     - S3 Logs Bucket: s3:PutObject (write-only)
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           IAM Role Architecture                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  EKS Cluster Role                                                            │
+│  ├── AmazonEKSClusterPolicy                                                  │
+│  ├── AmazonEKSVPCResourceController                                          │
+│  └── Custom policies for KMS, logging                                        │
+│                                                                              │
+│  EKS Node Group Role                                                         │
+│  ├── AmazonEKSWorkerNodePolicy                                               │
+│  ├── AmazonEKS_CNI_Policy                                                    │
+│  ├── AmazonEC2ContainerRegistryReadOnly                                      │
+│  └── AmazonSSMManagedInstanceCore                                            │
+│                                                                              │
+│  IRSA (IAM Roles for Service Accounts)                                       │
+│  ├── ebs-csi-controller-sa → EBS CSI Driver                                  │
+│  ├── cluster-autoscaler → Cluster Autoscaler                                 │
+│  └── Custom service accounts → Application-specific                          │
+│                                                                              │
+│  Cross-Account Role (Management Cluster Access)                              │
+│  └── ArgoCD, Atlantis from management cluster                                │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
-
-Least privilege: scoped to specific bucket ARNs only.
 
 ### Data Encryption
 
-- S3: AES256 encryption at rest, versioning enabled, public access blocked
-- Terraform State: S3 backend with encryption, DynamoDB locking
-- Transit: Internal VPC traffic unencrypted, HTTPS to internet
+| Resource | Encryption | Key Management |
+|----------|------------|----------------|
+| S3 Buckets | AES256 / KMS | AWS-managed or Customer-managed |
+| EBS Volumes | AES256 | KMS |
+| RDS/Aurora | AES256 | KMS |
+| ElastiCache | At-rest & In-transit | KMS + Auth Token |
+| Terraform State | AES256 / KMS | S3 encryption |
+| Secrets | KMS | AWS Secrets Manager |
 
-## Configuration Management
-
-### Instance Refresh (Zero Downtime)
-
-```
-1. Update config files or terraform.tfvars
-2. terraform apply updates launch template
-3. ASG starts instance refresh
-4. Checkpoint at 50% (5 min wait for validation)
-5. Auto-continues or manual cancel
-6. All instances replaced with zero downtime
-```
-
-### Config Upload Flow
-
-```
-Local files (config/squid.conf, whitelist.txt)
-  ↓ terraform apply
-S3 Config Bucket (MD5 tracking)
-  ↓ Instance launch/refresh
-User Data Script downloads from S3
-  ↓ Apply and restart service
-Instance becomes healthy
-```
+---
 
 ## State Management
 
-### Structure
+### Backend Configuration
+
+Each environment has isolated state files stored in S3 with DynamoDB locking:
 
 ```
-S3: hyperswitch-terraform-state-{env}
-├── {env}/{region}/squid-proxy/terraform.tfstate
-└── {env}/{region}/envoy-proxy/terraform.tfstate
+S3 Bucket: hyperswitch-{env}-terraform-state
+├── dev/eu-central-1/
+│   ├── vpc-network/terraform.tfstate
+│   ├── eks/terraform.tfstate
+│   ├── database/terraform.tfstate
+│   ├── cloudfront/terraform.tfstate
+│   ├── envoy-proxy/terraform.tfstate
+│   ├── squid-proxy/terraform.tfstate
+│   ├── security-rules/terraform.tfstate
+│   └── ... (other components)
+└── bootstrap/
 
-DynamoDB: terraform-state-lock-{env}
+DynamoDB Table: hyperswitch-{env}-terraform-state-lock
 ```
 
-Benefits: Isolated state per service, parallel development, limited blast radius.
+### State Isolation Benefits
 
-### Remote Backend
+- **Blast Radius Control**: Each component has isolated state
+- **Parallel Development**: Teams can work on different components
+- **Selective Rollback**: Roll back individual components
+- **Environment Isolation**: dev/integ/prod completely separate
 
-```hcl
-terraform {
-  backend "s3" {
-    bucket         = "hyperswitch-terraform-state-prod"
-    key            = "prod/eu-central-1/squid-proxy/terraform.tfstate"
-    region         = "eu-central-1"
-    encrypt        = true
-    dynamodb_table = "terraform-state-lock-prod"
-    kms_key_id     = "arn:aws:kms:REGION:ACCOUNT:key/KEY-ID"  # Prod only
-  }
-}
+### Bootstrap Process
+
+```bash
+# 1. Bootstrap state infrastructure first
+cd bootstrap/dev
+terraform init
+terraform apply
+
+# 2. Configure backend for all components
+# Each component has backend.tf pointing to the bootstrap bucket
 ```
 
-## Environment Configuration
+---
 
-| Environment | Instance Type | Capacity | Monitoring | State Backend | Use Case |
-|-------------|---------------|----------|------------|---------------|----------|
-| dev | t3.small | 1 (min:1, max:2) | Basic | Local | Testing, reference |
-| integ | t3.medium | 1-2 (min:1, max:3) | Detailed | S3+DynamoDB | Integration, UAT |
-| prod | t3.medium+ | 2+ (min:2, max:6) | Detailed | S3+DynamoDB+KMS | Production workloads |
-| sandbox | t3.micro | 0-1 (min:0, max:2) | Basic | Local/S3 | Experimentation |
+## Monitoring & Observability
 
-## Monitoring
+### Metrics
 
-### Key Metrics
-
-**ASG:** DesiredCapacity, InServiceInstances, health status
-
-**EC2:** CPUUtilization, NetworkIn/Out, StatusCheckFailed
-
-**NLB:** HealthyHostCount, ActiveConnectionCount, TargetResponseTime
-
-**ALB:** RequestCount, HTTPCode_Target_2XX/4XX/5XX, TargetResponseTime
+| Component | Metrics Source |
+|-----------|----------------|
+| EKS Cluster | CloudWatch Container Insights |
+| ASG (Envoy/Squid) | CloudWatch EC2 metrics |
+| ALB/NLB | CloudWatch ELB metrics |
+| RDS/Aurora | CloudWatch RDS metrics |
+| ElastiCache | CloudWatch ElastiCache metrics |
 
 ### Logging
 
-- Application logs (Squid/Envoy access logs) → S3 with lifecycle policies
-- System logs → CloudWatch Logs
-- Retention: 90 days (prod), 30 days (dev/integ)
+| Component | Log Destination |
+|-----------|-----------------|
+| EKS Pods | CloudWatch Logs / Loki |
+| Envoy/Squid | S3 + CloudWatch Logs |
+| System Logs | CloudWatch Logs |
+| Audit Logs | CloudTrail |
 
-## Disaster Recovery
-
-### Recovery Scenarios
-
-| Scenario | Detection | Recovery | RTO |
-|----------|-----------|----------|-----|
-| Instance failure | CloudWatch (1-2 min) | ASG auto-replace (3-5 min) | 6 min |
-| AZ failure | Health checks (2 min) | ASG launch in healthy AZ (5-10 min) | 12 min |
-| Config rollback | Manual | S3 version revert + instance refresh | 10 min |
-| Complete ASG failure | Manual (3 min) | terraform apply (10-15 min) | 18 min |
-
-### Backup Strategy
-
-- Terraform state: S3 versioning enabled, 30-day retention
-- Config files: S3 versioning, 90-day retention
-- Logs: Lifecycle policies, Intelligent Tiering
+---
 
 ## Cost Optimization
 
-### Instance Costs (eu-central-1)
+### Development Environment
 
-| Instance | vCPU | Memory | Cost/Hour | Monthly (1 instance) |
-|----------|------|--------|-----------|---------------------|
-| t3.micro | 2 | 1 GB | $0.0104 | ~$7.50 |
-| t3.small | 2 | 2 GB | $0.0208 | ~$15 |
-| t3.medium | 2 | 4 GB | $0.0416 | ~$30 |
-| t3.large | 2 | 8 GB | $0.0832 | ~$60 |
+| Resource | Configuration | Est. Monthly Cost |
+|----------|---------------|-------------------|
+| NAT Gateway | 1x (shared) | ~$35 |
+| EKS Cluster | 1x (minimum nodes) | ~$75 |
+| RDS Aurora | db.t4g.medium | ~$50 |
+| ElastiCache | cache.t4g.micro | ~$15 |
+| **Total** | | ~$175-250/month |
 
-Additional: NLB $0.0225/hour + data transfer costs
+### Production Environment
 
-### Strategies
+| Resource | Configuration | Est. Monthly Cost |
+|----------|---------------|-------------------|
+| NAT Gateway | 3x (per AZ) | ~$105 |
+| EKS Cluster | Multi-node HA | ~$300+ |
+| RDS Aurora | db.r5.large Multi-AZ | ~$400+ |
+| ElastiCache | Multi-AZ | ~$200+ |
+| CloudFront | By usage | Variable |
+| **Total** | | ~$1,000+/month |
 
-- **Dev/Sandbox:** Scale down during off-hours, minimal monitoring
-- **Prod:** Reserved Instances (30-50% savings), S3 Intelligent Tiering
-- **All:** Right-size based on metrics, lifecycle policies for logs
+---
 
 ## Architecture Benefits
 
-- **Modularity:** Reusable components, update once apply everywhere
-- **Security:** Least privilege IAM, encryption, network isolation
-- **Reliability:** Multi-AZ, health checks, auto-recovery
-- **Scalability:** ASG-based, handles demand spikes
-- **Zero Downtime:** Instance refresh with checkpoints
-- **Cost Efficiency:** Right-sized resources, lifecycle policies
-- **Isolation:** Separate state per deployment (blast radius control)
+| Benefit | How It's Achieved |
+|---------|-------------------|
+| **Modularity** | Four-layer architecture with clear separation |
+| **Reusability** | Base modules used across all compositions |
+| **Security** | Defense in depth: VPC, SG, NACL, IAM, encryption |
+| **Scalability** | ASG-based components, EKS for workloads |
+| **Reliability** | Multi-AZ deployments, automatic failover |
+| **Cost Control** | Environment-specific sizing, spot instances |
+| **Maintainability** | Isolated state, independent deployments |
+| **GitOps Ready** | ArgoCD integration, infrastructure as code |
