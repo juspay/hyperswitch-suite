@@ -104,7 +104,8 @@ output "connection_info" {
     dashboard_endpoint = module.opensearch.domain_dashboard_endpoint
     kibana_url         = module.opensearch.domain_endpoint != null ? "https://${module.opensearch.domain_endpoint}/_dashboards/" : null
     engine_version     = var.engine_version
-    region             = data.aws_region.current.name
+    region             = coalesce(var.region, data.aws_region.current.region)
+
   }
 }
 

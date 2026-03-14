@@ -44,7 +44,7 @@ resource "aws_security_group" "this" {
 
 module "opensearch" {
   source  = "terraform-aws-modules/opensearch/aws"
-  version = "~> 1.0"
+  version = "~> 2.5"
 
   create = true
 
