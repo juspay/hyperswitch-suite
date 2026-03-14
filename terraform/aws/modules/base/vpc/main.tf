@@ -1,11 +1,11 @@
 resource "aws_vpc" "main" {
   cidr_block = var.vpc_cidr
 
-  enable_dns_hostnames             = var.enable_dns_hostnames
-  enable_dns_support               = var.enable_dns_support
+  enable_dns_hostnames                 = var.enable_dns_hostnames
+  enable_dns_support                   = var.enable_dns_support
   enable_network_address_usage_metrics = var.enable_network_address_usage_metrics
 
-  instance_tenancy                 = var.instance_tenancy
+  instance_tenancy = var.instance_tenancy
 
   # Enable IPv6 if requested
   assign_generated_ipv6_cidr_block = var.enable_ipv6
@@ -71,6 +71,13 @@ resource "aws_default_network_acl" "default" {
 
   # No rules - deny all by default
   # Subnets should use custom NACLs
+
+  # Ignore subnet associations - managed by custom NACLs
+  # AWS auto-associates new subnets with default NACL,
+  # but we move them to custom NACLs, causing perpetual drift
+  lifecycle {
+    ignore_changes = [subnet_ids]
+  }
 }
 
 # Default security group - restrict by default
@@ -116,7 +123,7 @@ resource "aws_flow_log" "main" {
   vpc_id          = aws_vpc.main.id
 
   log_destination_type = var.flow_logs_destination_type
-  log_format          = var.flow_logs_log_format
+  log_format           = var.flow_logs_log_format
 
   tags = merge(
     var.tags,
