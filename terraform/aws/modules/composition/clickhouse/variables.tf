@@ -187,6 +187,22 @@ variable "public_key" {
 }
 
 # =========================================================================
+# IAM Configuration
+# =========================================================================
+
+variable "iam_inline_policies" {
+  description = "Map of inline policy name to policy JSON. If not provided, uses default permissions."
+  type        = map(string)
+  default     = {}
+}
+
+variable "iam_managed_policy_arns" {
+  description = "List of AWS managed policy ARNs to attach to the role"
+  type        = list(string)
+  default     = []
+}
+
+# =========================================================================
 # Tags
 # =========================================================================
 

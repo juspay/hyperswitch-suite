@@ -130,35 +130,19 @@ resource "aws_iam_role" "clickhouse" {
   tags = local.common_tags
 }
 
-resource "aws_iam_role_policy" "clickhouse_ec2" {
-  name = "${local.name_prefix}-ec2-policy"
-  role = aws_iam_role.clickhouse.id
+resource "aws_iam_role_policy" "clickhouse_inline" {
+  for_each = local.inline_policies
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "ec2:DescribeInstances",
-          "ec2:DescribeNetworkInterfaces",
-          "ec2:CreateNetworkInterface",
-          "ec2:DeleteNetworkInterface",
-          "ec2:TerminateInstances"
-        ]
-        Resource = "*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
-        ]
-        Resource = "*"
-      }
-    ]
-  })
+  name   = each.key
+  role   = aws_iam_role.clickhouse.id
+  policy = each.value
+}
+
+resource "aws_iam_role_policy_attachment" "clickhouse_managed" {
+  for_each = toset(local.managed_policies)
+
+  role       = aws_iam_role.clickhouse.name
+  policy_arn = each.value
 }
 
 resource "aws_iam_instance_profile" "clickhouse" {

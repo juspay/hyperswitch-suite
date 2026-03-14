@@ -24,6 +24,46 @@ locals {
   # Build shard configuration - one shard with all servers
   shard_config = [local.server_ips]
 
+  # Default IAM inline policy (Kafka-like permissions)
+  default_inline_policies = {
+    clickhouse-ec2-policy = jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Action   = "ec2:*"
+          Effect   = "Allow"
+          Resource = "*"
+        },
+        {
+          Action   = "autoscaling:*"
+          Effect   = "Allow"
+          Resource = "*"
+        },
+        {
+          Effect   = "Allow"
+          Action   = "iam:CreateServiceLinkedRole"
+          Resource = "*"
+          Condition = {
+            StringEquals = {
+              "iam:AWSServiceName" = [
+                "autoscaling.amazonaws.com",
+                "ec2scheduled.amazonaws.com"
+              ]
+            }
+          }
+        },
+        {
+          Action   = "sts:AssumeRole"
+          Effect   = "Allow"
+          Resource = "*"
+        }
+      ]
+    })
+  }
+
+  inline_policies = length(var.iam_inline_policies) > 0 ? var.iam_inline_policies : local.default_inline_policies
+  managed_policies = var.iam_managed_policy_arns
+
   # Keeper user data - use template if provided, else use default
   default_keeper_user_data = jsonencode({
     type = "keeper"
