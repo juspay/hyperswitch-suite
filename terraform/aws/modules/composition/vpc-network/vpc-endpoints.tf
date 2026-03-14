@@ -118,9 +118,8 @@ locals {
       type         = "Interface"
     }
     execute_api = {
-      service_name        = "com.amazonaws.${var.region}.execute-api"
-      type                = "Interface"
-      private_dns_enabled = false
+      service_name = "com.amazonaws.${var.region}.execute-api"
+      type         = "Interface"
     }
   }
 
