@@ -98,54 +98,79 @@ resource "aws_security_group_rule" "controller_egress" {
 # IAM - ROLE & INSTANCE PROFILE
 # =========================================================================
 
-module "kafka_iam_role" {
-  source = "../../base/iam-role"
+resource "aws_iam_role" "kafka" {
+  name        = "${local.name_prefix}-role"
+  description = "IAM role for Kafka cluster instances"
 
-  name                    = "${local.name_prefix}-role"
-  description             = "IAM role for Kafka cluster instances"
-  service_identifiers     = ["ec2.amazonaws.com"]
-  create_instance_profile = true
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
 
-  inline_policies = {
-    ec2-data-system-policy = jsonencode({
-      Version = "2012-10-17"
-      Statement = [
-        {
-          Action   = "ec2:*"
-          Effect   = "Allow"
-          Resource = "*"
-        },
-        {
-          Action   = "autoscaling:*"
-          Effect   = "Allow"
-          Resource = "*"
-        },
-        {
-          Effect   = "Allow"
-          Action   = "iam:CreateServiceLinkedRole"
-          Resource = "*"
-          Condition = {
-            StringEquals = {
-              "iam:AWSServiceName" = [
-                "autoscaling.amazonaws.com",
-                "ec2scheduled.amazonaws.com"
-              ]
-            }
+  tags = local.common_tags
+}
+
+resource "aws_iam_role_policy" "kafka_ec2" {
+  name = "ec2-data-system-policy"
+  role = aws_iam_role.kafka.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action   = "ec2:*"
+        Effect   = "Allow"
+        Resource = "*"
+      },
+      {
+        Action   = "autoscaling:*"
+        Effect   = "Allow"
+        Resource = "*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = "iam:CreateServiceLinkedRole"
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "iam:AWSServiceName" = [
+              "autoscaling.amazonaws.com",
+              "ec2scheduled.amazonaws.com"
+            ]
           }
         }
-      ]
-    })
-    sts-assume-role = jsonencode({
-      Version = "2012-10-17"
-      Statement = [
-        {
-          Action   = "sts:AssumeRole"
-          Effect   = "Allow"
-          Resource = "*"
-        }
-      ]
-    })
-  }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "kafka_sts" {
+  name = "sts-assume-role"
+  role = aws_iam_role.kafka.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action   = "sts:AssumeRole"
+        Effect   = "Allow"
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_instance_profile" "kafka" {
+  name = "${local.name_prefix}-instance-profile"
+  role = aws_iam_role.kafka.name
 
   tags = local.common_tags
 }
@@ -200,7 +225,7 @@ resource "aws_instance" "broker" {
     device_index         = 0
   }
 
-  iam_instance_profile = module.kafka_iam_role.instance_profile_name
+  iam_instance_profile = aws_iam_instance_profile.kafka.name
   user_data_base64     = base64encode(local.broker_user_data)
   monitoring           = true
 
@@ -232,7 +257,7 @@ resource "aws_instance" "broker" {
 
   depends_on = [
     aws_network_interface.broker,
-    module.kafka_iam_role,
+    aws_iam_instance_profile.kafka,
     aws_security_group_rule.broker_self_ingress,
     aws_security_group_rule.broker_egress
   ]
@@ -252,7 +277,7 @@ resource "aws_instance" "controller" {
     device_index         = 0
   }
 
-  iam_instance_profile = module.kafka_iam_role.instance_profile_name
+  iam_instance_profile = aws_iam_instance_profile.kafka.name
   user_data_base64     = base64encode(local.controller_user_data)
   monitoring           = true
 
@@ -284,7 +309,7 @@ resource "aws_instance" "controller" {
 
   depends_on = [
     aws_network_interface.controller,
-    module.kafka_iam_role,
+    aws_iam_instance_profile.kafka,
     aws_security_group_rule.controller_self_ingress,
     aws_security_group_rule.controller_egress
   ]

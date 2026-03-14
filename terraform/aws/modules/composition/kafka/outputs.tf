@@ -81,15 +81,15 @@ output "ssh_private_key_ssm_parameter" {
 # ============================================================================
 output "iam_role_arn" {
   description = "ARN of the IAM role attached to Kafka instances"
-  value       = module.kafka_iam_role.role_arn
+  value       = aws_iam_role.kafka.arn
 }
 
 output "iam_role_name" {
   description = "Name of the IAM role attached to Kafka instances"
-  value       = module.kafka_iam_role.role_name
+  value       = aws_iam_role.kafka.name
 }
 
 output "instance_profile_name" {
   description = "Name of the IAM instance profile for Kafka instances"
-  value       = module.kafka_iam_role.instance_profile_name
+  value       = aws_iam_instance_profile.kafka.name
 }
