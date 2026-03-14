@@ -60,16 +60,6 @@ resource "aws_security_group_rule" "broker_self_ingress" {
   source_security_group_id = aws_security_group.broker.id
 }
 
-resource "aws_security_group_rule" "broker_egress" {
-  type              = "egress"
-  description       = "Allow all outbound traffic"
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  security_group_id = aws_security_group.broker.id
-  cidr_blocks       = ["0.0.0.0/0"]
-}
-
 # =========================================================================
 # SECURITY GROUP - INTRA-CLUSTER RULES (CONTROLLER)
 # =========================================================================
@@ -82,16 +72,6 @@ resource "aws_security_group_rule" "controller_self_ingress" {
   protocol          = "tcp"
   security_group_id = aws_security_group.controller.id
   source_security_group_id = aws_security_group.controller.id
-}
-
-resource "aws_security_group_rule" "controller_egress" {
-  type              = "egress"
-  description       = "Allow all outbound traffic"
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  security_group_id = aws_security_group.controller.id
-  cidr_blocks       = ["0.0.0.0/0"]
 }
 
 # =========================================================================
@@ -258,8 +238,7 @@ resource "aws_instance" "broker" {
   depends_on = [
     aws_network_interface.broker,
     aws_iam_instance_profile.kafka,
-    aws_security_group_rule.broker_self_ingress,
-    aws_security_group_rule.broker_egress
+    aws_security_group_rule.broker_self_ingress
   ]
 }
 
@@ -310,7 +289,6 @@ resource "aws_instance" "controller" {
   depends_on = [
     aws_network_interface.controller,
     aws_iam_instance_profile.kafka,
-    aws_security_group_rule.controller_self_ingress,
-    aws_security_group_rule.controller_egress
+    aws_security_group_rule.controller_self_ingress
   ]
 }
