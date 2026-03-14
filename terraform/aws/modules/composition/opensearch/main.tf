@@ -6,6 +6,12 @@ data "aws_subnet" "this" {
   id    = var.subnet_ids[0]
 }
 
+# Fetch default AWS ES KMS key when no custom key is provided
+data "aws_kms_key" "default_es" {
+  count = var.encrypt_at_rest_enabled && var.kms_key_id == null ? 1 : 0
+  key_id = "alias/aws/es"
+}
+
 ################################################################################
 # Service Linked Role
 ################################################################################
@@ -92,7 +98,7 @@ module "opensearch" {
   # Encryption at Rest
   encrypt_at_rest = {
     enabled    = var.encrypt_at_rest_enabled
-    kms_key_id = var.kms_key_id
+    kms_key_id = var.kms_key_id != null ? var.kms_key_id : (var.encrypt_at_rest_enabled ? data.aws_kms_key.default_es[0].arn : null)
   }
 
   # Node-to-Node Encryption
