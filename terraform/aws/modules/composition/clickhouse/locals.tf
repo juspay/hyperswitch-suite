@@ -79,8 +79,7 @@ locals {
 
   # Server user data - use template if provided, else use default
   default_server_user_data = jsonencode({
-    type        = "server"
-    clusterName = var.cluster_name
+    type = "server"
   })
 
   server_user_data = var.server_user_data_template != null ? replace(

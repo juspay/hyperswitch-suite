@@ -146,12 +146,6 @@ variable "server_data_device_name" {
 # User Data Configuration
 # =========================================================================
 
-variable "cluster_name" {
-  description = "Name of the Clickhouse cluster"
-  type        = string
-  default     = "hyperswitch-clickhouse-ec2"
-}
-
 variable "keeper_user_data_template" {
   description = "Path to the keeper user data template file. If provided, the template will be processed with keeper_ips and server_ips variables."
   type        = string
