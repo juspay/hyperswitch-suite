@@ -25,7 +25,7 @@ variable "role_name" {
 variable "oidc_provider_arn" {
   description = "Full OIDC provider ARN from EKS cluster. Found in EKS cluster details under OIDC provider"
   type        = string
-  default     = "arn:aws:iam::XXXXXXXXXXXX:oidc-provider/oidc.eks.REGION.amazonaws.com/id/XXXXXXXXXXXXXXXXXXXXXXXXXX"
+  default     = null
 }
 
 variable "common_tags" {
