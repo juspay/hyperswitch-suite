@@ -111,41 +111,6 @@ variable "ingress_annotations" {
 }
 
 # ============================================================================
-# Application Load Balancer (ALB) Configuration
-# ============================================================================
-variable "alb" {
-  description = "Configuration for optional Application Load Balancer using terraform-aws-modules/alb/aws"
-  type = object({
-    enabled                             = optional(bool, false)
-    name                                = optional(string, null)
-    internal                            = optional(bool, false)
-    enable_deletion_protection          = optional(bool, true)
-    enable_http2                        = optional(bool, true)
-    enable_waf_fail_open                = optional(bool, false)
-    drop_invalid_header_fields          = optional(bool, true)
-    idle_timeout                        = optional(number, 60)
-    ip_address_type                     = optional(string, null)
-    access_logs                         = optional(any, null)
-    connection_logs                     = optional(any, null)
-    health_check_logs                   = optional(any, null)
-    listeners                           = optional(any, {})
-    target_groups                       = optional(any, null)
-    additional_target_group_attachments = optional(any, null)
-    route53_records                     = optional(any, null)
-    associate_web_acl                   = optional(bool, false)
-    web_acl_arn                         = optional(string, null)
-    desync_mitigation_mode              = optional(string, null)
-    preserve_host_header                = optional(bool, null)
-    xff_header_processing_mode          = optional(string, null)
-    client_keep_alive                   = optional(number, null)
-    tags                                = optional(map(string), {})
-  })
-  default = {
-    enabled = false
-  }
-}
-
-# ============================================================================
 # Tags
 # ============================================================================
 variable "common_tags" {
