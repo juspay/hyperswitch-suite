@@ -1,0 +1,4 @@
+config:
+  default:
+    features:
+      new_analytics_filters: deployment-configurations
