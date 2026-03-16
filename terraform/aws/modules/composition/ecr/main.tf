@@ -1,3 +1,6 @@
+# Data sources
+data "aws_region" "current" {}
+
 # ECR Repositories
 resource "aws_ecr_repository" "repositories" {
   for_each = var.repositories
