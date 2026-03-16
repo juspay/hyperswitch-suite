@@ -46,6 +46,11 @@ output "external_incoming_subnet_ids" {
   value       = module.external_incoming_subnets[*].subnet_id
 }
 
+output "external_incoming_subnet_arns" {
+  description = "List of ARNs of external incoming subnets"
+  value       = module.external_incoming_subnets[*].subnet_arn
+}
+
 output "external_incoming_subnet_cidr_blocks" {
   description = "List of CIDR blocks of external incoming subnets"
   value       = module.external_incoming_subnets[*].subnet_cidr_block
@@ -68,6 +73,11 @@ output "eks_workers_subnet_ids" {
   value       = module.eks_workers_subnets[*].subnet_id
 }
 
+output "eks_workers_subnet_arns" {
+  description = "List of ARNs of EKS worker node subnets"
+  value       = module.eks_workers_subnets[*].subnet_arn
+}
+
 output "eks_workers_subnet_cidr_blocks" {
   description = "List of CIDR blocks of EKS worker node subnets"
   value       = module.eks_workers_subnets[*].subnet_cidr_block
@@ -77,6 +87,11 @@ output "eks_workers_subnet_cidr_blocks" {
 output "eks_control_plane_subnet_ids" {
   description = "List of IDs of EKS control plane subnets"
   value       = module.eks_control_plane_subnets[*].subnet_id
+}
+
+output "eks_control_plane_subnet_arns" {
+  description = "List of ARNs of EKS control plane subnets"
+  value       = module.eks_control_plane_subnets[*].subnet_arn
 }
 
 output "eks_control_plane_subnet_cidr_blocks" {
@@ -105,6 +120,11 @@ output "locker_database_subnet_ids" {
   value       = module.locker_database_subnets[*].subnet_id
 }
 
+output "locker_database_subnet_arns" {
+  description = "List of ARNs of locker database subnets"
+  value       = module.locker_database_subnets[*].subnet_arn
+}
+
 output "locker_database_subnet_cidr_blocks" {
   description = "List of CIDR blocks of locker database subnets"
   value       = module.locker_database_subnets[*].subnet_cidr_block
@@ -125,6 +145,11 @@ output "locker_server_subnet_cidr_blocks" {
 output "elasticache_subnet_ids" {
   description = "List of IDs of ElastiCache subnets"
   value       = module.elasticache_subnets[*].subnet_id
+}
+
+output "elasticache_subnet_arns" {
+  description = "List of ARNs of ElastiCache subnets"
+  value       = module.elasticache_subnets[*].subnet_arn
 }
 
 output "elasticache_subnet_cidr_blocks" {
@@ -174,6 +199,22 @@ output "utils_subnet_ids" {
 output "utils_subnet_cidr_blocks" {
   description = "List of CIDR blocks of utils subnets"
   value       = module.utils_subnets[*].subnet_cidr_block
+}
+
+# Lambda Subnets
+output "lambda_subnet_ids" {
+  description = "List of IDs of lambda subnets"
+  value       = module.lambda_subnets[*].subnet_id
+}
+
+output "lambda_subnet_arns" {
+  description = "List of ARNs of lambda subnets"
+  value       = module.lambda_subnets[*].subnet_arn
+}
+
+output "lambda_subnet_cidr_blocks" {
+  description = "List of CIDR blocks of lambda subnets"
+  value       = module.lambda_subnets[*].subnet_cidr_block
 }
 
 output "custom_subnet_ids" {
