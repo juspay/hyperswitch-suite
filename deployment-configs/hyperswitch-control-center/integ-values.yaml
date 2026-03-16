@@ -1,4 +1,4 @@
 config:
   default:
     features:
-      new_analytics_filters: deployment-configurations
+      new_analytics_filters: deployment-configurations->private/local-testing

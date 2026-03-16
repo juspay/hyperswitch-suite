@@ -1,4 +1,4 @@
 config:
   default:
     features:
-      new_analytics_filters: infra-configurations
+      new_analytics_filters: infra-configurations->private/local-testing
