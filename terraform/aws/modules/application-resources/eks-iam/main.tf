@@ -91,7 +91,7 @@ resource "aws_iam_role_policy" "inline" {
 
 module "s3_bucket" {
   source  = "terraform-aws-modules/s3-bucket/aws"
-  version = "~> 4.0"
+  version = "~> 5.0"
 
   count = var.create_s3_bucket ? 1 : 0
 
