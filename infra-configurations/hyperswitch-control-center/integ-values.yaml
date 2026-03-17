@@ -2,3 +2,9 @@ config:
   default:
     features:
       new_analytics_filters: infra-configurations->private/local-testing
+
+
+config:
+  default:
+    features:
+      new_analytics_filters: deployment-configurations->private/local-testing
