@@ -1,104 +1,116 @@
-locals {
-  name_prefix = "${var.project_name}-${var.environment}-${var.app_name}"
-  common_tags = merge(
-    {
-      Project     = var.project_name
-      Environment = var.environment
-      Application = var.app_name
-    },
-    var.common_tags
-  )
-
-  oidc_statements = var.oidc_providers != null ? flatten([
-    for provider_key, provider in var.oidc_providers : [
-      for cond_idx, condition in provider.conditions : {
-        Sid    = "oidc${replace(provider_key, "_", "")}${cond_idx}"
-        Effect = "Allow"
-        Principal = {
-          Federated = provider.provider_arn
-        }
-        Action = "sts:AssumeRoleWithWebIdentity"
-        Condition = {
-          (condition.type) = {
-            "${regex("^arn:aws:iam::[0-9]+:oidc-provider/(.+)$", provider.provider_arn)[0]}:${condition.claim}" = condition.values
-          }
-        }
-      }
-    ]
-  ]) : []
-
-  assume_role_statements = var.assume_role_principals != null ? [
-    for principal in var.assume_role_principals : {
-      Effect = "Allow"
-      Principal = {
-        (principal.type) = principal.identifiers
-      }
-      Action = "sts:AssumeRole"
-    }
-    if length(principal.identifiers) > 0
-  ] : []
-
-  trust_policy_statements = concat(
-    local.oidc_statements,
-    local.assume_role_statements
-  )
-
-  trust_policy = {
-    Version   = "2012-10-17"
-    Statement = concat(var.custom_trust_statements, local.trust_policy_statements)
-  }
-
-  s3_bucket_name = var.s3_bucket_name != null ? var.s3_bucket_name : "${local.name_prefix}-logs-storage"
-}
-
-variable "custom_trust_statements" {
-  description = "Custom trust statements for the IAM role trust policy"
-  type        = list(any)
-  default     = []
-}
-
+# =========================================================================
+# IAM - ROLE
+# =========================================================================
 resource "aws_iam_role" "this" {
   name                  = var.role_name != null ? var.role_name : "${local.name_prefix}-role"
-  description           = var.role_description != null ? var.role_description : "IAM role for ${var.app_name} EKS application"
+  description           = var.role_description != null ? var.role_description : "IAM role for ${title(var.app_name)} ${title(var.environment)} application"
   path                  = var.role_path
   max_session_duration  = var.max_session_duration
-  assume_role_policy    = jsonencode(local.trust_policy)
   force_detach_policies = var.force_detach_policies
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = concat(
+      # OIDC trust relationships for EKS IRSA
+      [
+        for cluster_name, statement in local.cluster_oidc_statements : {
+          Effect = "Allow"
+          Principal = {
+            Federated = statement.oidc_arn
+          }
+          Action = "sts:AssumeRoleWithWebIdentity"
+          Condition = {
+            StringEquals = {
+              "${statement.oidc_url}:aud" = "sts.amazonaws.com"
+              "${statement.oidc_url}:sub" = statement.subjects
+            }
+          }
+        }
+      ],
+      # Additional AWS principal trust relationships
+      local.assume_role_principals_enabled ? [
+        {
+          Effect = "Allow"
+          Principal = {
+            AWS = var.assume_role_principals
+          }
+          Action = "sts:AssumeRole"
+        }
+      ] : [],
+      # Additional custom trust statements
+      var.additional_assume_role_statements
+    )
+  })
 
   tags = local.common_tags
 }
 
+# =========================================================================
+# IAM - AWS MANAGED POLICY ATTACHMENTS
+# =========================================================================
 resource "aws_iam_role_policy_attachment" "aws_managed" {
-  for_each = toset(var.aws_managed_policy_names)
+  for_each = local.aws_managed_policies_enabled ? toset(var.aws_managed_policy_names) : toset([])
 
   role       = aws_iam_role.this.name
   policy_arn = "arn:aws:iam::aws:policy/${each.value}"
 }
 
+# =========================================================================
+# IAM - CUSTOMER MANAGED POLICY ATTACHMENTS
+# =========================================================================
 resource "aws_iam_role_policy_attachment" "customer_managed" {
-  for_each = toset(var.customer_managed_policy_arns)
+  for_each = local.customer_managed_policies_enabled ? toset(var.customer_managed_policy_arns) : toset([])
 
   role       = aws_iam_role.this.name
   policy_arn = each.value
 }
 
-resource "aws_iam_role_policy" "inline" {
-  for_each = var.inline_policies
+# =========================================================================
+# IAM - S3 POLICY
+# =========================================================================
+resource "aws_iam_policy" "s3_policy" {
+  count = local.s3_enabled ? 1 : 0
 
-  name   = each.key
-  role   = aws_iam_role.this.name
-  policy = each.value
+  name = "${local.name_prefix}-s3-policy"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowS3Access"
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:ListBucket",
+          "s3:DeleteObject",
+          "s3:GetObjectVersion"
+        ]
+        Resource = [
+          "${local.s3_bucket_arn}/*",
+          local.s3_bucket_arn
+        ]
+      }
+    ]
+  })
+
+  tags = local.common_tags
 }
 
-# ==============================================================================
-# S3 Bucket (Optional) - Using terraform-aws-modules/s3-bucket
-# ==============================================================================
+resource "aws_iam_role_policy_attachment" "s3_policy_attachment" {
+  count = local.s3_enabled ? 1 : 0
 
+  role       = aws_iam_role.this.name
+  policy_arn = aws_iam_policy.s3_policy[0].arn
+}
+
+# =========================================================================
+# S3 BUCKET (Optional)
+# =========================================================================
 module "s3_bucket" {
   source  = "terraform-aws-modules/s3-bucket/aws"
   version = "~> 5.0"
 
-  count = var.create_s3_bucket ? 1 : 0
+  count = local.s3_create ? 1 : 0
 
   bucket = local.s3_bucket_name
 
@@ -107,40 +119,22 @@ module "s3_bucket" {
   ignore_public_acls      = true
   restrict_public_buckets = true
 
-  versioning = var.s3_enable_versioning ? {
+  versioning = try(var.s3.versioning_enabled, false) ? {
     enabled = true
   } : {}
 
   server_side_encryption_configuration = {
     rule = {
-      apply_server_side_encryption_by_default = var.s3_sse_algorithm == "aws:kms" ? {
-        sse_algorithm     = "aws:kms"
-        kms_master_key_id = var.s3_kms_master_key_id
-        } : {
+      apply_server_side_encryption_by_default = {
         sse_algorithm = "AES256"
       }
-      bucket_key_enabled = var.s3_sse_algorithm == "aws:kms" ? true : false
+      bucket_key_enabled = true
     }
   }
 
-  lifecycle_rule = var.s3_lifecycle_rules
-
-  logging = var.s3_server_access_logging.enabled ? {
-    target_bucket = var.s3_server_access_logging.target_bucket
-    target_prefix = coalesce(var.s3_server_access_logging.target_prefix, "${data.aws_caller_identity.current.account_id}/${var.region}/${local.s3_bucket_name}/")
-  } : {}
+  lifecycle_rule = try(var.s3.lifecycle_rules, [])
 
   tags = local.common_tags
 
-  force_destroy = var.s3_force_destroy
-}
-
-data "aws_caller_identity" "current" {}
-
-resource "aws_iam_role_policy" "s3_permissions" {
-  count = var.create_s3_bucket && var.s3_permissions_policy != null ? 1 : 0
-
-  name   = "s3-permissions"
-  role   = aws_iam_role.this.name
-  policy = var.s3_permissions_policy
+  force_destroy = try(var.s3.force_destroy, false)
 }
