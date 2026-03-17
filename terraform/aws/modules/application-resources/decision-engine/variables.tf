@@ -1,8 +1,3 @@
-variable "region" {
-  description = "AWS region"
-  type        = string
-}
-
 variable "environment" {
   description = "Environment name (e.g., sandbox, dev, prod)"
   type        = string
@@ -19,8 +14,43 @@ variable "app_name" {
   default     = "decision-engine"
 }
 
+variable "region" {
+  description = "AWS region"
+  type        = string
+  default     = null
+}
+
+variable "tags" {
+  description = "Common tags to apply to all resources"
+  type        = map(string)
+  default     = {}
+}
+
+# =========================================================================
+# EKS OIDC Configuration
+# =========================================================================
+
+variable "cluster_service_accounts" {
+  description = "Map of EKS cluster names to their respective list of Kubernetes service accounts (namespace and service account name)"
+  type = map(list(object({
+    namespace = string
+    name      = string
+  })))
+  default = {}
+}
+
+variable "additional_assume_role_statements" {
+  description = "Additional IAM assume role policy statements to append"
+  type        = list(any)
+  default     = []
+}
+
+# =========================================================================
+# IAM Role Configuration
+# =========================================================================
+
 variable "role_name" {
-  description = "Custom IAM role name. If null, auto-generated as {project}-{env}-{app}-role"
+  description = "Custom IAM role name. If null, auto-generated as {environment}-{project}-{app}-role"
   type        = string
   default     = null
 }
@@ -49,27 +79,19 @@ variable "force_detach_policies" {
   default     = true
 }
 
-variable "oidc_providers" {
-  description = "OIDC provider trust for EKS service accounts"
-  type = map(object({
-    provider_arn = string
-    conditions = list(object({
-      type   = string
-      claim  = string
-      values = list(string)
-    }))
-  }))
-  default = null
-}
+# =========================================================================
+# Assume Role Principals
+# =========================================================================
 
 variable "assume_role_principals" {
-  description = "Cross-account assume role trust"
-  type = list(object({
-    type        = string
-    identifiers = list(string)
-  }))
-  default = null
+  description = "List of AWS principal ARNs allowed to assume this role (e.g., ['arn:aws:iam::123456789012:root'])"
+  type        = list(string)
+  default     = []
 }
+
+# =========================================================================
+# Policy Attachments
+# =========================================================================
 
 variable "aws_managed_policy_names" {
   description = "List of AWS managed policy names to attach"
@@ -81,16 +103,4 @@ variable "customer_managed_policy_arns" {
   description = "List of customer managed policy ARNs to attach"
   type        = list(string)
   default     = []
-}
-
-variable "inline_policies" {
-  description = "Map of inline policies for role-specific permissions"
-  type        = map(string)
-  default     = {}
-}
-
-variable "common_tags" {
-  description = "Common tags to apply to all resources"
-  type        = map(string)
-  default     = {}
 }
