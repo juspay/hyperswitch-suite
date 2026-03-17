@@ -123,3 +123,24 @@ variable "s3" {
   })
   default = {}
 }
+
+# =========================================================================
+# AWS Transfer Family - SFTP Configuration
+# =========================================================================
+
+variable "sftp" {
+  description = "AWS Transfer Family SFTP server configuration. Set to null to disable."
+  type = object({
+    create               = optional(bool, false)      # Set true to create SFTP server
+    endpoint_type        = optional(string, "PUBLIC") # PUBLIC or VPC
+    security_policy_name = optional(string, "TransferSecurityPolicy-2024-01")
+
+    # SFTP users (optional)
+    users = optional(list(object({
+      username       = string
+      home_directory = optional(string, null) # Defaults to S3 bucket root
+      public_key     = optional(string, null) # SSH public key for authentication
+    })), [])
+  })
+  default = null
+}

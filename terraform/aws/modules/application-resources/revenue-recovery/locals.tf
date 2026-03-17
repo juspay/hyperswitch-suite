@@ -33,6 +33,9 @@ locals {
   s3_create     = try(var.s3.create, false)
   s3_bucket_arn = local.s3_create ? (length(module.s3_bucket) > 0 ? module.s3_bucket[0].s3_bucket_arn : null) : try(var.s3.bucket_arn, null)
 
+  # SFTP (AWS Transfer Family) feature
+  sftp_enabled = var.sftp != null && try(var.sftp.create, false)
+
   # =========================================================================
   # OIDC Configuration
   # =========================================================================

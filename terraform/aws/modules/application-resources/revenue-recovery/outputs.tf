@@ -89,3 +89,31 @@ output "s3_policy_arn" {
   description = "ARN of the S3 IAM policy (if enabled)"
   value       = local.s3_enabled ? aws_iam_policy.s3_policy[0].arn : null
 }
+
+# =========================================================================
+# SFTP (AWS TRANSFER FAMILY) OUTPUTS
+# =========================================================================
+output "sftp_enabled" {
+  description = "Whether AWS Transfer Family SFTP server feature is enabled"
+  value       = local.sftp_enabled
+}
+
+output "sftp_server_id" {
+  description = "ID of the AWS Transfer Family SFTP server (null if not created)"
+  value       = local.sftp_enabled ? aws_transfer_server.sftp[0].id : null
+}
+
+output "sftp_server_arn" {
+  description = "ARN of the AWS Transfer Family SFTP server (null if not created)"
+  value       = local.sftp_enabled ? aws_transfer_server.sftp[0].arn : null
+}
+
+output "sftp_server_endpoint" {
+  description = "Endpoint of the AWS Transfer Family SFTP server (null if not created)"
+  value       = local.sftp_enabled ? aws_transfer_server.sftp[0].endpoint : null
+}
+
+output "sftp_logging_role_arn" {
+  description = "ARN of the IAM role used for SFTP server CloudWatch logging (null if not created)"
+  value       = local.sftp_enabled ? aws_iam_role.sftp_logging[0].arn : null
+}

@@ -138,3 +138,95 @@ module "s3_bucket" {
 
   force_destroy = try(var.s3.force_destroy, false)
 }
+
+# =========================================================================
+# AWS TRANSFER FAMILY - SFTP SERVER (Optional)
+# =========================================================================
+resource "aws_transfer_server" "sftp" {
+  count = local.sftp_enabled ? 1 : 0
+
+  identity_provider_type = "SERVICE_MANAGED"
+  protocols              = ["SFTP"]
+  endpoint_type          = try(var.sftp.endpoint_type, "PUBLIC")
+  security_policy_name   = try(var.sftp.security_policy_name, "TransferSecurityPolicy-2024-01")
+
+  logging_role = aws_iam_role.sftp_logging[0].arn
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-sftp"
+  })
+}
+
+# IAM role for Transfer Family server CloudWatch logging
+resource "aws_iam_role" "sftp_logging" {
+  count = local.sftp_enabled ? 1 : 0
+
+  name        = "${local.name_prefix}-sftp-logging-role"
+  description = "IAM role for AWS Transfer Family SFTP server CloudWatch logging"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "transfer.amazonaws.com"
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+
+  tags = local.common_tags
+}
+
+resource "aws_iam_role_policy" "sftp_logging" {
+  count = local.sftp_enabled ? 1 : 0
+
+  name = "sftp-cloudwatch-logging"
+  role = aws_iam_role.sftp_logging[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:DescribeLogStreams",
+          "logs:PutLogEvents"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# SFTP users
+resource "aws_transfer_user" "sftp" {
+  for_each = local.sftp_enabled ? { for u in try(var.sftp.users, []) : u.username => u } : {}
+
+  server_id      = aws_transfer_server.sftp[0].id
+  user_name      = each.value.username
+  role           = aws_iam_role.this.arn
+  home_directory = try(each.value.home_directory, "/${try(var.s3.bucket_name, local.s3_bucket_name)}")
+
+  home_directory_type = "PATH"
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-sftp-user-${each.value.username}"
+  })
+}
+
+# SSH public keys for SFTP users
+resource "aws_transfer_ssh_key" "sftp" {
+  for_each = local.sftp_enabled ? {
+    for u in try(var.sftp.users, []) : u.username => u
+    if try(u.public_key, null) != null
+  } : {}
+
+  server_id = aws_transfer_server.sftp[0].id
+  user_name = aws_transfer_user.sftp[each.key].user_name
+  body      = each.value.public_key
+}
