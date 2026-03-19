@@ -67,7 +67,7 @@ output "s3_dashboard_themes_bucket_arn" {
 
 output "s3_dashboard_themes_bucket_name" {
   description = "Name of the dashboard themes S3 bucket (only if created by this module)"
-  value       = local.s3_dashboard_themes_create && length(module.s3_dashboard_themes) > 0 ? module.s3_dashboard_themes.s3_bucket_id : null
+  value       = local.s3_dashboard_themes_create && length(module.s3_dashboard_themes) > 0 ? module.s3_dashboard_themes[0].s3_bucket_id : null
 }
 
 output "s3_dashboard_themes_policy_arn" {
@@ -90,7 +90,7 @@ output "s3_file_uploads_bucket_arn" {
 
 output "s3_file_uploads_bucket_name" {
   description = "Name of the file uploads S3 bucket (only if created by this module)"
-  value       = local.s3_file_uploads_create && length(module.s3_file_uploads) > 0 ? module.s3_file_uploads.s3_bucket_id : null
+  value       = local.s3_file_uploads_create && length(module.s3_file_uploads) > 0 ? module.s3_file_uploads[0].s3_bucket_id : null
 }
 
 output "s3_file_uploads_policy_arn" {

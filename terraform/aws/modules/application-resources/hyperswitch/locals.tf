@@ -23,12 +23,12 @@ locals {
   # S3 Dashboard Themes feature
   s3_dashboard_themes_enabled   = var.s3_dashboard_themes != {} && (try(var.s3_dashboard_themes.create, false) || try(var.s3_dashboard_themes.bucket_arn, null) != null)
   s3_dashboard_themes_create    = try(var.s3_dashboard_themes.create, false)
-  s3_dashboard_themes_bucket_arn = local.s3_dashboard_themes_create ? (length(module.s3_dashboard_themes) > 0 ? module.s3_dashboard_themes.s3_bucket_arn : null) : try(var.s3_dashboard_themes.bucket_arn, null)
+  s3_dashboard_themes_bucket_arn = local.s3_dashboard_themes_create ? (length(module.s3_dashboard_themes) > 0 ? module.s3_dashboard_themes[0].s3_bucket_arn : null) : try(var.s3_dashboard_themes.bucket_arn, null)
 
   # S3 File Uploads feature
   s3_file_uploads_enabled   = var.s3_file_uploads != {} && (try(var.s3_file_uploads.create, false) || try(var.s3_file_uploads.bucket_arn, null) != null)
   s3_file_uploads_create    = try(var.s3_file_uploads.create, false)
-  s3_file_uploads_bucket_arn = local.s3_file_uploads_create ? (length(module.s3_file_uploads) > 0 ? module.s3_file_uploads.s3_bucket_arn : null) : try(var.s3_file_uploads.bucket_arn, null)
+  s3_file_uploads_bucket_arn = local.s3_file_uploads_create ? (length(module.s3_file_uploads) > 0 ? module.s3_file_uploads[0].s3_bucket_arn : null) : try(var.s3_file_uploads.bucket_arn, null)
 
   # SES feature
   ses_enabled = var.ses != {} && try(var.ses.enabled, false)
