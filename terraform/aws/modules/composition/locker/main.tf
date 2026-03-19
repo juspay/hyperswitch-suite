@@ -82,6 +82,38 @@ resource "aws_security_group_rule" "alb_egress_to_locker" {
 }
 
 # =========================================================================
+# LOCKER SECURITY GROUP - EGRESS RULES FOR RDS
+# =========================================================================
+# Internal rule: Allow locker instance to connect to RDS database (when enabled)
+resource "aws_security_group_rule" "locker_egress_to_rds" {
+  count = var.create_locker_database ? 1 : 0
+
+  security_group_id        = local.locker_security_group_id
+  type                     = "egress"
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "tcp"
+  source_security_group_id = module.database[0].security_group_id
+  description              = "Allow locker instance to connect to RDS PostgreSQL"
+}
+
+# =========================================================================
+# RDS SECURITY GROUP - INGRESS RULES FROM LOCKER
+# =========================================================================
+# Internal rule: Allow RDS database to receive connections from locker instance (when enabled)
+resource "aws_security_group_rule" "rds_ingress_from_locker" {
+  count = var.create_locker_database ? 1 : 0
+
+  security_group_id        = module.database[0].security_group_id
+  type                     = "ingress"
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "tcp"
+  source_security_group_id = local.locker_security_group_id
+  description              = "Allow PostgreSQL access from locker instance"
+}
+
+# =========================================================================
 # MONITORING - CLOUDWATCH LOGS
 # =========================================================================
 resource "aws_cloudwatch_log_group" "locker" {
