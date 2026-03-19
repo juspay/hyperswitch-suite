@@ -28,8 +28,9 @@ variable "vpc_id" {
 }
 
 variable "public_subnet_id" {
-  description = "Public subnet ID for external jump host"
+  description = "Public subnet ID for external jump host. Required when enable_external_jump is true."
   type        = string
+  default     = null
 }
 
 variable "private_subnet_id" {
@@ -104,4 +105,88 @@ variable "enable_internal_jump_ssm" {
   description = "Enable SSM Session Manager access for internal jump host. When true, SSM policies will be dynamically attached to the internal jump IAM role"
   type        = bool
   default     = false
+}
+
+# ============================================================================
+# Jump Host Mode Configuration
+# ============================================================================
+variable "enable_external_jump" {
+  description = "Enable external jump host in public subnet. When false, only internal jump host is created in private subnet with SSM access forced on (cost-saving mode for lower environments)"
+  type        = bool
+  default     = true
+}
+
+variable "enable_ssm_session_encryption" {
+  description = "Enable KMS encryption for SSM Session Manager sessions"
+  type        = bool
+  default     = true
+}
+
+# =========================================================================
+# SSM Session Manager Preferences
+# =========================================================================
+variable "ssm_idle_session_timeout" {
+  description = "Idle session timeout in minutes. Session terminates after this period of inactivity."
+  type        = number
+  default     = 10
+}
+
+variable "ssm_max_session_duration" {
+  description = "Maximum session duration in minutes. Leave empty string for unlimited."
+  type        = string
+  default     = ""
+}
+
+variable "ssm_run_as_user" {
+  description = "Default OS user to run sessions as (e.g., 'ubuntu'). When set, SSM creates OS users based on IAM user name and runs sessions as that user. Leave empty to disable run-as functionality (uses ssm-user)."
+  type        = string
+  default     = ""
+}
+
+variable "ssm_cloudwatch_logging_enabled" {
+  description = "Enable CloudWatch logging for SSM sessions"
+  type        = bool
+  default     = true
+}
+
+variable "ssm_cloudwatch_log_group_name" {
+  description = "CloudWatch log group name for SSM session logs. Leave empty to use default."
+  type        = string
+  default     = ""
+}
+
+variable "ssm_s3_logging_enabled" {
+  description = "Enable S3 logging for SSM sessions"
+  type        = bool
+  default     = false
+}
+
+variable "ssm_s3_bucket_name" {
+  description = "S3 bucket name for SSM session logs"
+  type        = string
+  default     = ""
+}
+
+variable "ssm_s3_key_prefix" {
+  description = "S3 key prefix for SSM session logs"
+  type        = string
+  default     = "session-manager"
+}
+
+variable "create_ssm_session_preferences" {
+  description = "Whether to create the SSM Session Manager preferences document. Set to false if another environment in the same AWS account already manages this account-level setting."
+  type        = bool
+  default     = true
+}
+
+variable "ssm_shell_profile_linux" {
+  description = "Linux shell profile for SSM sessions. Runs when session starts. Leave empty for no profile."
+  type        = string
+  default     = ""
+}
+
+variable "ssm_shell_profile_windows" {
+  description = "Windows shell profile for SSM sessions. Leave empty for no Windows profile."
+  type        = string
+  default     = ""
 }

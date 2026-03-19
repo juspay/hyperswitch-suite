@@ -15,6 +15,9 @@ locals {
   external_ami_id = var.external_jump_ami_id != null ? var.external_jump_ami_id : data.aws_ami.amazon_linux_2023[0].id
   internal_ami_id = var.internal_jump_ami_id != null ? var.internal_jump_ami_id : data.aws_ami.amazon_linux_2023[0].id
 
+  # When external jump is disabled, internal SSM is forced on (required for access)
+  internal_ssm_enabled = var.enable_external_jump ? var.enable_internal_jump_ssm : true
+
   userdata_internal = templatefile("${path.module}/templates/userdata.sh", {
     jump_type         = "internal"
     environment       = var.environment
