@@ -79,6 +79,13 @@ module "database" {
   db_cluster_parameter_group_name  = var.db_cluster_parameter_group_name
   db_instance_parameter_group_name = var.db_instance_parameter_group_name
 
+  # Custom Parameter Group
+  create_custom_parameter_group      = var.create_custom_parameter_group
+  custom_parameter_group_name        = var.custom_parameter_group_name
+  custom_parameter_group_family      = var.custom_parameter_group_family
+  custom_parameter_group_description = var.custom_parameter_group_description
+  custom_parameter_group_parameters  = var.custom_parameter_group_parameters
+
   # Backup and Maintenance
   backup_retention_period      = var.backup_retention_period
   preferred_backup_window      = var.preferred_backup_window

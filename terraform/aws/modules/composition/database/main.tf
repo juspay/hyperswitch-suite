@@ -1,6 +1,34 @@
 data "aws_region" "current" {}
 
 # ============================================================================
+# RDS Cluster Parameter Group (Custom)
+# ============================================================================
+resource "aws_rds_cluster_parameter_group" "custom" {
+  count = var.create_custom_parameter_group ? 1 : 0
+
+  name        = var.custom_parameter_group_name != null ? var.custom_parameter_group_name : "${local.name_prefix}-parameter-group"
+  family      = var.custom_parameter_group_family
+  description = var.custom_parameter_group_description != null ? var.custom_parameter_group_description : "Custom parameter group for ${var.project_name} ${var.environment} RDS"
+
+  dynamic "parameter" {
+    for_each = var.custom_parameter_group_parameters
+    content {
+      name         = parameter.value.name
+      value        = parameter.value.value
+      apply_method = lookup(parameter.value, "apply_method", "immediate")
+    }
+  }
+
+  tags = merge(local.common_tags, {
+    Name = var.custom_parameter_group_name != null ? var.custom_parameter_group_name : "${local.name_prefix}-parameter-group"
+  })
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# ============================================================================
 # Aurora Global Cluster
 # ============================================================================
 # This resource creates the global cluster that spans multiple regions
@@ -93,7 +121,7 @@ resource "aws_rds_cluster" "main" {
   port                   = var.port
 
   # Parameter Groups
-  db_cluster_parameter_group_name  = var.db_cluster_parameter_group_name
+  db_cluster_parameter_group_name  = var.create_custom_parameter_group ? aws_rds_cluster_parameter_group.custom[0].name : var.db_cluster_parameter_group_name
   db_instance_parameter_group_name = var.db_instance_parameter_group_name
 
   # Backup and Maintenance

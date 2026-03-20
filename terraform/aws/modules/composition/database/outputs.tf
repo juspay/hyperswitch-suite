@@ -147,6 +147,22 @@ output "is_secondary_cluster" {
   value       = local.is_secondary_cluster
 }
 
+# Custom Parameter Group Outputs
+output "custom_parameter_group_name" {
+  description = "Name of the custom RDS cluster parameter group (if created)"
+  value       = var.create_custom_parameter_group ? aws_rds_cluster_parameter_group.custom[0].name : null
+}
+
+output "custom_parameter_group_arn" {
+  description = "ARN of the custom RDS cluster parameter group (if created)"
+  value       = var.create_custom_parameter_group ? aws_rds_cluster_parameter_group.custom[0].arn : null
+}
+
+output "custom_parameter_group_id" {
+  description = "ID of the custom RDS cluster parameter group (if created)"
+  value       = var.create_custom_parameter_group ? aws_rds_cluster_parameter_group.custom[0].id : null
+}
+
 # DB Subnet Group Outputs
 output "db_subnet_group_name" {
   description = "Name of the DB subnet group"
