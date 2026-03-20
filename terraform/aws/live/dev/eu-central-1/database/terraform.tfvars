@@ -20,7 +20,7 @@ subnet_ids = [
 # ============================================================================
 # Enable Aurora Global Database for multi-region deployment
 # Set to false to revert to single-region mode (requires cluster recreation)
-create_global_cluster      = false
+create_global_cluster = false
 # global_cluster_identifier  = "hyperswitch-global-db"
 # global_deletion_protection = true
 
@@ -58,14 +58,29 @@ iops               = null
 # ============================================================================
 # Network Settings
 # ============================================================================
-network_type             = "IPV4"
-port                     = 5432
-create_db_subnet_group   = true
+network_type           = "IPV4"
+port                   = 5432
+create_db_subnet_group = true
 # db_subnet_group_name     = null
 
 # Parameter Groups
 db_cluster_parameter_group_name  = "default.aurora-postgresql13"
 db_instance_parameter_group_name = null
+
+# ============================================================================
+# Custom Parameter Group Configuration
+# ============================================================================
+# Enable custom parameter group to control database parameters
+# Example: Disable SSL by setting rds.force_ssl = 0
+# create_custom_parameter_group = true
+# custom_parameter_group_family = "aurora-postgresql13"
+# custom_parameter_group_parameters = [
+#   {
+#     name         = "rds.force_ssl"
+#     value        = "0"
+#     apply_method = "immediate"
+#   }
+# ]
 
 # ============================================================================
 # Backup and Maintenance
@@ -80,7 +95,7 @@ copy_tags_to_snapshot        = false
 # ============================================================================
 # Security and Encryption
 # ============================================================================
-storage_encrypted        = true
+storage_encrypted = true
 # kms_key_id               = null
 deletion_protection      = false
 delete_automated_backups = true
@@ -108,7 +123,7 @@ backtrack_window = 0
 # ============================================================================
 # Security Group
 # ============================================================================
-create_security_group  = true
+create_security_group = true
 # vpc_security_group_ids = []
 
 # ============================================================================
