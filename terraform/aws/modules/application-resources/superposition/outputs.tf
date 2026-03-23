@@ -1,15 +1,31 @@
-output "role_name" {
-  description = "Name of the created IAM role"
-  value       = aws_iam_role.this.name
+# =========================================================================
+# GENERAL OUTPUTS
+# =========================================================================
+output "region" {
+  description = "AWS region where resources are created"
+  value       = data.aws_region.current.id
 }
 
+output "account_id" {
+  description = "AWS account ID"
+  value       = data.aws_caller_identity.current.account_id
+}
+
+# =========================================================================
+# IAM ROLE OUTPUTS
+# =========================================================================
 output "role_arn" {
-  description = "ARN of the created IAM role"
+  description = "ARN of the IAM role for Superposition application"
   value       = aws_iam_role.this.arn
 }
 
+output "role_name" {
+  description = "Name of the IAM role for Superposition application"
+  value       = aws_iam_role.this.name
+}
+
 output "role_id" {
-  description = "ID of the created IAM role"
+  description = "ID of the IAM role for Superposition application"
   value       = aws_iam_role.this.id
 }
 

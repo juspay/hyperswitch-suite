@@ -6,7 +6,7 @@ locals {
       "Environment" = var.environment
       "Project"     = var.project_name
       "Application" = var.app_name
-      "Service"     = "Decision Engine Application"
+      "Service"     = "Superposition Application"
       "ManagedBy"   = "terraform"
     },
     var.tags
@@ -28,6 +28,11 @@ locals {
   # Customer managed policies feature
   customer_managed_policies_enabled = length(var.customer_managed_policy_arns) > 0
 
+  # Inline policies feature
+  inline_policies_enabled = length(var.inline_policies) > 0
+
+  # Database feature
+  database_enabled = var.create_database
   # =========================================================================
   # OIDC Configuration
   # =========================================================================
@@ -40,7 +45,4 @@ locals {
       ]
     }
   }
-
-  # Inline policies feature
-  inline_policies_enabled = length(var.inline_policies) > 0
 }

@@ -6,7 +6,7 @@ locals {
       "Environment" = var.environment
       "Project"     = var.project_name
       "Application" = var.app_name
-      "Service"     = "Decision Engine Application"
+      "Service"     = "Grafana Application"
       "ManagedBy"   = "terraform"
     },
     var.tags
@@ -40,7 +40,4 @@ locals {
       ]
     }
   }
-
-  # Inline policies feature
-  inline_policies_enabled = length(var.inline_policies) > 0
 }
