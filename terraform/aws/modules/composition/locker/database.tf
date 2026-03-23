@@ -1,7 +1,7 @@
 module "database" {
   count = var.create_locker_database ? 1 : 0
 
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/database?ref=database-v0.1.3"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/database?ref=database-v0.1.4"
 
   environment  = var.environment
   project_name = var.project_name
@@ -78,6 +78,11 @@ module "database" {
   enable_global_write_forwarding        = var.database_config.enable_global_write_forwarding
   use_existing_as_global_primary        = var.database_config.use_existing_as_global_primary
   source_db_cluster_identifier          = var.database_config.source_db_cluster_identifier
+  create_custom_parameter_group         = var.database_config.create_custom_parameter_group
+  custom_parameter_group_name           = var.database_config.custom_parameter_group_name
+  custom_parameter_group_family         = var.database_config.custom_parameter_group_family
+  custom_parameter_group_description    = var.database_config.custom_parameter_group_description
+  custom_parameter_group_parameters     = var.database_config.custom_parameter_group_parameters
 
   cluster_instances = {
     for key, instance in var.database_config.cluster_instances : key => merge(
