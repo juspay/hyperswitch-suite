@@ -64,3 +64,14 @@ resource "aws_iam_role_policy_attachment" "customer_managed" {
   role       = aws_iam_role.this.name
   policy_arn = each.value
 }
+
+# =========================================================================
+# IAM - INLINE POLICIES
+# =========================================================================
+resource "aws_iam_role_policy" "inline" {
+  for_each = local.inline_policies_enabled ? var.inline_policies : {}
+
+  name   = each.key
+  role   = aws_iam_role.this.name
+  policy = each.value
+}

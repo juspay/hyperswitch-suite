@@ -40,4 +40,6 @@ locals {
       ]
     }
   }
+
+  inline_policies_enabled = length(var.inline_policies) > 0
 }

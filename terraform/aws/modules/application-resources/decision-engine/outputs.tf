@@ -51,3 +51,8 @@ output "customer_managed_policies_enabled" {
   description = "Whether customer managed policy attachments feature is enabled"
   value       = local.customer_managed_policies_enabled
 }
+
+output "inline_policies_enabled" {
+  description = "Whether inline policies feature is enabled"
+  value       = local.inline_policies_enabled
+}

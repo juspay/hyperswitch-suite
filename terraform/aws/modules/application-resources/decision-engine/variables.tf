@@ -104,3 +104,13 @@ variable "customer_managed_policy_arns" {
   type        = list(string)
   default     = []
 }
+
+# =========================================================================
+# Inline Policies
+# =========================================================================
+
+variable "inline_policies" {
+  description = "Map of inline policy names to JSON policy documents to attach to the role"
+  type        = map(string)
+  default     = {}
+}
