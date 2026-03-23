@@ -67,51 +67,51 @@ output "database_enabled" {
 # =========================================================================
 output "database_cluster_id" {
   description = "RDS Cluster Identifier (if database is created)"
-  value       = var.create_database ? module.database[0].cluster_id : null
+  value       = var.database.enabled ? module.database[0].cluster_id : null
 }
 
 output "database_cluster_arn" {
   description = "ARN of the RDS cluster (if database is created)"
-  value       = var.create_database ? module.database[0].cluster_arn : null
+  value       = var.database.enabled ? module.database[0].cluster_arn : null
 }
 
 output "database_endpoint" {
   description = "Writer endpoint for the database (if database is created)"
-  value       = var.create_database ? module.database[0].endpoint : null
+  value       = var.database.enabled ? module.database[0].endpoint : null
 }
 
 output "database_reader_endpoint" {
   description = "Reader endpoint for the database (if database is created)"
-  value       = var.create_database ? module.database[0].reader_endpoint : null
+  value       = var.database.enabled ? module.database[0].reader_endpoint : null
 }
 
 output "database_name" {
   description = "Name of the database (if database is created)"
-  value       = var.create_database ? module.database[0].database_name : null
+  value       = var.database.enabled ? module.database[0].database_name : null
 }
 
 output "database_port" {
   description = "Port for the database (if database is created)"
-  value       = var.create_database ? module.database[0].port : null
+  value       = var.database.enabled ? module.database[0].port : null
 }
 
 output "database_master_username" {
   description = "Master username for the database (if database is created)"
-  value       = var.create_database ? module.database[0].master_username : null
+  value       = var.database.enabled ? module.database[0].master_username : null
   sensitive   = true
 }
 
 output "database_security_group_id" {
   description = "ID of the security group for the database (if created)"
-  value       = var.create_database ? module.database[0].security_group_id : null
+  value       = var.database.enabled ? module.database[0].security_group_id : null
 }
 
 output "database_cluster_instance_ids" {
   description = "Map of cluster instance identifiers (if database is created)"
-  value       = var.create_database ? module.database[0].cluster_instance_ids : null
+  value       = var.database.enabled ? module.database[0].cluster_instance_ids : null
 }
 
 output "database_cluster_instance_endpoints" {
   description = "Map of cluster instance endpoints (if database is created)"
-  value       = var.create_database ? module.database[0].cluster_instance_endpoints : null
+  value       = var.database.enabled ? module.database[0].cluster_instance_endpoints : null
 }

@@ -32,7 +32,7 @@ locals {
   inline_policies_enabled = length(var.inline_policies) > 0
 
   # Database feature
-  database_enabled = var.create_database
+  database_enabled = var.database.enabled
   # =========================================================================
   # OIDC Configuration
   # =========================================================================
