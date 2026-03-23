@@ -230,6 +230,41 @@ variable "db_instance_parameter_group_name" {
   default     = null
 }
 
+# Custom Parameter Group
+variable "create_custom_parameter_group" {
+  description = "(Optional) Whether to create a custom RDS cluster parameter group. Set to true to create a custom parameter group for controlling SSL and other database parameters"
+  type        = bool
+  default     = false
+}
+
+variable "custom_parameter_group_name" {
+  description = "(Optional) Name for the custom parameter group. If not provided, will be auto-generated"
+  type        = string
+  default     = null
+}
+
+variable "custom_parameter_group_family" {
+  description = "(Required when create_custom_parameter_group is true) The family of the DB parameter group. Example: aurora-postgresql15"
+  type        = string
+  default     = null
+}
+
+variable "custom_parameter_group_description" {
+  description = "(Optional) Description for the custom parameter group"
+  type        = string
+  default     = null
+}
+
+variable "custom_parameter_group_parameters" {
+  description = "(Optional) List of parameters to set in the custom parameter group. Example: [{ name = \"rds.force_ssl\", value = \"0\", apply_method = \"immediate\" }] to disable SSL"
+  type = list(object({
+    name         = string
+    value        = string
+    apply_method = optional(string, "immediate")
+  }))
+  default = []
+}
+
 # Backup and Maintenance
 variable "backup_retention_period" {
   description = "(Optional) Days to retain backups for. Default 1"

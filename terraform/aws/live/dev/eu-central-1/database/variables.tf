@@ -191,6 +191,44 @@ variable "db_instance_parameter_group_name" {
 }
 
 # ============================================================================
+# Custom Parameter Group Configuration
+# ============================================================================
+
+variable "create_custom_parameter_group" {
+  description = "Whether to create a custom RDS cluster parameter group"
+  type        = bool
+  default     = false
+}
+
+variable "custom_parameter_group_name" {
+  description = "Name for the custom parameter group (auto-generated if not provided)"
+  type        = string
+  default     = null
+}
+
+variable "custom_parameter_group_family" {
+  description = "The family of the DB parameter group (e.g., aurora-postgresql13)"
+  type        = string
+  default     = null
+}
+
+variable "custom_parameter_group_description" {
+  description = "Description for the custom parameter group"
+  type        = string
+  default     = null
+}
+
+variable "custom_parameter_group_parameters" {
+  description = "List of parameters for the custom parameter group"
+  type = list(object({
+    name         = string
+    value        = string
+    apply_method = optional(string, "immediate")
+  }))
+  default = []
+}
+
+# ============================================================================
 # Backup and Maintenance Configuration
 # ============================================================================
 
