@@ -37,6 +37,11 @@ output "broker_eni_private_ips" {
   value       = aws_network_interface.broker[*].private_ip
 }
 
+output "broker_ips_string_list" {
+  description = "Comma-separated list of private IPs of the broker ENIs"
+  value       = join(":9092,", aws_network_interface.broker[*].private_ip)
+}
+
 # ============================================================================
 # Network Interface Information (Controllers)
 # ============================================================================
