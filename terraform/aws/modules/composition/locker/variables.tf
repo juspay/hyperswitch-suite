@@ -197,6 +197,11 @@ variable "database_config" {
     enable_global_write_forwarding        = optional(bool, false)
     use_existing_as_global_primary        = optional(bool, false)
     source_db_cluster_identifier          = optional(string, null)
+    create_custom_parameter_group         = optional(bool, false)
+    custom_parameter_group_name           = optional(string, null)
+    custom_parameter_group_family         = optional(string, null)
+    custom_parameter_group_description    = optional(string, null)
+    custom_parameter_group_parameters     = optional(list(map(string)), [])
     cluster_instances = optional(map(object({
       identifier                            = optional(string)
       identifier_prefix                     = optional(string)
@@ -222,7 +227,7 @@ variable "database_config" {
       force_destroy                         = optional(bool)
       tags                                  = optional(map(string))
     })), {})
-    tags                                  = optional(map(string), {})
+    tags = optional(map(string), {})
   })
   default = null
 }
@@ -231,11 +236,11 @@ variable "kms" {
   description = "KMS key configuration. Set to {} to disable KMS key and policy. Set create=true to create key, or create=false with key_arn to use existing key. Policy and tags are handled internally by the module."
   type = object({
     # Key source: either create new or use existing
-    create  = optional(bool, false)  # Set true to create KMS key, false to use existing
+    create   = optional(bool, false)      # Set true to create KMS key, false to use existing
     key_arns = optional(list(string), []) # Existing KMS key ARN (used when create=false)
 
     # Key creation settings (used when create=true)
-    description = optional(string, null)
+    description  = optional(string, null)
     multi_region = optional(bool, false)
 
     # Replica key settings
@@ -245,9 +250,9 @@ variable "kms" {
     primary_external_key_arn = optional(string, null)
 
     # External key settings
-    create_external       = optional(bool, false)
-    key_material_base64   = optional(string, null)
-    valid_to              = optional(string, null)
+    create_external     = optional(bool, false)
+    key_material_base64 = optional(string, null)
+    valid_to            = optional(string, null)
 
     # Key specifications
     key_usage                = optional(string, null)
@@ -266,10 +271,10 @@ variable "kms" {
     aliases_use_name_prefix = optional(bool, false)
 
     # Access control (for key policy)
-    key_administrators     = optional(list(string), [])
-    key_users              = optional(list(string), [])
-    key_service_users      = optional(list(string), [])
-    key_owners             = optional(list(string), [])
+    key_administrators = optional(list(string), [])
+    key_users          = optional(list(string), [])
+    key_service_users  = optional(list(string), [])
+    key_owners         = optional(list(string), [])
   })
   default = {}
 }
