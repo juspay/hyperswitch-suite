@@ -41,7 +41,7 @@ All notable changes to Hyperswitch will be documented here.
   - Introduce duplication check for bank debit ([#11371](https://github.com/juspay/hyperswitch/pull/11371))
 - Mandate data passage to ucs ([#11053](https://github.com/juspay/hyperswitch/pull/11053))
 
-### Bug Fixes
+#### Bug Fixes
 
 - **connector:**
   - Fix PreAuth Conditions in NMI, Nuvei and Redsys ([#11041](https://github.com/juspay/hyperswitch/pull/11041))
@@ -58,7 +58,7 @@ All notable changes to Hyperswitch will be documented here.
 - **ucs:** Handling Unspecified Payment status from UCS ([#11057](https://github.com/juspay/hyperswitch/pull/11057))
 - Payment method population in pyament_method_token ([#10843](https://github.com/juspay/hyperswitch/pull/10843))
 
-### Refactors
+#### Refactors
 
 - **connector:** [Worldpayxml] webhook body from xml to url encoded ([#10991](https://github.com/juspay/hyperswitch/pull/10991))
 - **core:** Derive card_isin in payment_token flow for routing dsl input ([#11100](https://github.com/juspay/hyperswitch/pull/11100))
