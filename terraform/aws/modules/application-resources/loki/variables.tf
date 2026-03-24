@@ -123,3 +123,63 @@ variable "s3" {
   })
   default = {}
 }
+
+# =========================================================================
+# Security Group Configuration
+# =========================================================================
+
+variable "vpc_id" {
+  description = "VPC ID where the security group will be created. Required if create_security_group is true."
+  type        = string
+  default     = null
+}
+
+variable "create_security_group" {
+  description = "Whether to create a security group for the Loki ALB ingress"
+  type        = bool
+  default     = false
+}
+
+variable "security_group_name" {
+  description = "Custom name for the security group. If null, auto-generated as {environment}-{project}-{app}-alb-sg"
+  type        = string
+  default     = null
+}
+
+variable "security_group_description" {
+  description = "Description for the security group"
+  type        = string
+  default     = "Security group for Loki ALB ingress"
+}
+
+variable "security_group_ingress_rules" {
+  description = "List of ingress rules for the security group"
+  type = list(object({
+    description = string
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    cidr_blocks = optional(list(string), [])
+  }))
+  default = []
+}
+
+variable "security_group_egress_rules" {
+  description = "List of egress rules for the security group"
+  type = list(object({
+    description = string
+    from_port   = number
+    to_port     = number
+    protocol    = string
+    cidr_blocks = optional(list(string), ["0.0.0.0/0"])
+  }))
+  default = [
+    {
+      description = "Allow all outbound traffic"
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+  ]
+}

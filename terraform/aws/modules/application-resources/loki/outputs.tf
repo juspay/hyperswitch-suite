@@ -89,3 +89,26 @@ output "s3_policy_arn" {
   description = "ARN of the S3 IAM policy (if enabled)"
   value       = local.s3_enabled ? aws_iam_policy.s3_policy[0].arn : null
 }
+
+# =========================================================================
+# SECURITY GROUP OUTPUTS
+# =========================================================================
+output "security_group_enabled" {
+  description = "Whether security group feature is enabled"
+  value       = local.security_group_enabled
+}
+
+output "security_group_id" {
+  description = "ID of the security group (null if not created)"
+  value       = var.create_security_group ? aws_security_group.this[0].id : null
+}
+
+output "security_group_arn" {
+  description = "ARN of the security group (null if not created)"
+  value       = var.create_security_group ? aws_security_group.this[0].arn : null
+}
+
+output "security_group_name" {
+  description = "Name of the security group (null if not created)"
+  value       = var.create_security_group ? aws_security_group.this[0].name : null
+}
