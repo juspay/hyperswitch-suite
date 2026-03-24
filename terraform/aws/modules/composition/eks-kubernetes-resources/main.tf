@@ -677,38 +677,69 @@ resource "kubernetes_cluster_role_v1" "cluster_autoscaler" {
 
   rule {
     api_groups = [""]
-    resources  = ["pods/eviction", "pods/status"]
-    verbs      = ["update"]
+    resources  = ["pods/eviction"]
+    verbs      = ["create"]
   }
 
   rule {
     api_groups = [""]
-    resources  = ["endpoints"]
-    verbs      = ["get", "list", "watch"]
+    resources  = ["pods/status"]
+    verbs      = ["update"]
+  }
+
+  rule {
+    api_groups     = [""]
+    resources      = ["endpoints"]
+    resource_names = ["cluster-autoscaler"]
+    verbs          = ["get", "update"]
   }
 
   rule {
     api_groups = [""]
     resources  = ["nodes"]
-    verbs      = ["get", "list", "watch", "update", "patch"]
+    verbs      = ["watch", "list", "get", "update"]
   }
 
   rule {
     api_groups = [""]
-    resources  = ["pods"]
-    verbs      = ["get", "list", "watch"]
+    resources  = ["namespaces", "pods", "services", "replicationcontrollers", "persistentvolumeclaims", "persistentvolumes"]
+    verbs      = ["watch", "list", "get"]
   }
 
   rule {
-    api_groups = ["apps", "extensions"]
-    resources  = ["daemonsets", "replicasets", "statefulsets"]
-    verbs      = ["get", "list", "watch"]
+    api_groups = ["extensions"]
+    resources  = ["replicasets", "daemonsets"]
+    verbs      = ["watch", "list", "get"]
   }
 
   rule {
-    api_groups = [""]
-    resources  = ["configmaps"]
-    verbs      = ["list", "watch"]
+    api_groups = ["policy"]
+    resources  = ["poddisruptionbudgets"]
+    verbs      = ["watch", "list"]
+  }
+
+  rule {
+    api_groups = ["apps"]
+    resources  = ["statefulsets", "replicasets", "daemonsets"]
+    verbs      = ["watch", "list", "get"]
+  }
+
+  rule {
+    api_groups = ["storage.k8s.io"]
+    resources  = ["storageclasses", "csinodes", "csidrivers", "csistoragecapacities", "volumeattachments"]
+    verbs      = ["watch", "list", "get"]
+  }
+
+  rule {
+    api_groups = ["resource.k8s.io"]
+    resources  = ["resourceslices", "deviceclasses", "resourceclaims"]
+    verbs      = ["watch", "list", "get"]
+  }
+
+  rule {
+    api_groups = ["batch", "extensions"]
+    resources  = ["jobs"]
+    verbs      = ["get", "list", "watch", "patch"]
   }
 
   rule {
@@ -720,8 +751,8 @@ resource "kubernetes_cluster_role_v1" "cluster_autoscaler" {
   rule {
     api_groups     = ["coordination.k8s.io"]
     resources      = ["leases"]
-    verbs          = ["get", "update"]
     resource_names = ["cluster-autoscaler"]
+    verbs          = ["get", "update"]
   }
 
   depends_on = [terraform_data.cluster_ready]
@@ -783,8 +814,8 @@ resource "kubernetes_role_v1" "cluster_autoscaler" {
   rule {
     api_groups     = [""]
     resources      = ["configmaps"]
-    verbs          = ["get", "update"]
-    resource_names = ["cluster-autoscaler-status"]
+    resource_names = ["cluster-autoscaler-status", "cluster-autoscaler-priority-expander"]
+    verbs          = ["delete", "get", "update", "watch"]
   }
 
   depends_on = [terraform_data.cluster_ready]
