@@ -13,6 +13,102 @@ resource "aws_cloudwatch_log_group" "jump_host" {
   )
 }
 
+# =========================================================================
+# SSM Session Manager Logging Resources
+# =========================================================================
+# These resources are optional and created when create_ssm_* variables are true.
+# They provide logging destinations for SSM Session Manager sessions.
+
+# CloudWatch Log Group for SSM Session Manager logs
+resource "aws_cloudwatch_log_group" "ssm_session_logs" {
+  count = var.create_ssm_cloudwatch_log_group && var.ssm_cloudwatch_logging_enabled ? 1 : 0
+
+  name              = local.ssm_cloudwatch_log_group_name
+  retention_in_days = var.ssm_cloudwatch_log_group_retention_days
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${var.environment}-${var.project_name}-ssm-session-logs"
+    }
+  )
+}
+
+# S3 Bucket for SSM Session Manager logs
+resource "aws_s3_bucket" "ssm_session_logs" {
+  count = var.create_ssm_s3_bucket && var.ssm_s3_logging_enabled ? 1 : 0
+
+  bucket = local.ssm_s3_bucket_name
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name        = "${var.environment}-${var.project_name}-ssm-session-logs"
+      Environment = var.environment
+      Purpose     = "SSMSessionLogs"
+    }
+  )
+}
+
+# S3 Bucket versioning for SSM session logs
+resource "aws_s3_bucket_versioning" "ssm_session_logs" {
+  count  = var.create_ssm_s3_bucket && var.ssm_s3_logging_enabled ? 1 : 0
+  bucket = aws_s3_bucket.ssm_session_logs[0].id
+
+  versioning_configuration {
+    status = var.ssm_s3_bucket_versioning ? "Enabled" : "Suspended"
+  }
+}
+
+# S3 Bucket lifecycle configuration for SSM session logs
+resource "aws_s3_bucket_lifecycle_configuration" "ssm_session_logs" {
+  count  = var.create_ssm_s3_bucket && var.ssm_s3_logging_enabled && var.ssm_s3_bucket_lifecycle_days > 0 ? 1 : 0
+
+  bucket = aws_s3_bucket.ssm_session_logs[0].id
+
+  rule {
+    id     = "transition-to-glacier"
+    status = "Enabled"
+
+    filter {}
+
+    transition {
+      days          = var.ssm_s3_bucket_lifecycle_days
+      storage_class = "GLACIER"
+    }
+
+    noncurrent_version_transition {
+      noncurrent_days = var.ssm_s3_bucket_lifecycle_days
+      storage_class   = "GLACIER"
+    }
+  }
+}
+
+# S3 Bucket server-side encryption
+resource "aws_s3_bucket_server_side_encryption_configuration" "ssm_session_logs" {
+  count  = var.create_ssm_s3_bucket && var.ssm_s3_logging_enabled ? 1 : 0
+
+  bucket = aws_s3_bucket.ssm_session_logs[0].id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+# S3 Bucket public access block
+resource "aws_s3_bucket_public_access_block" "ssm_session_logs" {
+  count  = var.create_ssm_s3_bucket && var.ssm_s3_logging_enabled ? 1 : 0
+
+  bucket = aws_s3_bucket.ssm_session_logs[0].id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
 # Generate SSH key pair for internal jump access
 resource "tls_private_key" "internal_jump" {
   algorithm = "RSA"
@@ -72,11 +168,16 @@ resource "aws_ssm_document" "session_preferences" {
       kmsKeyId = var.enable_ssm_session_encryption ? "alias/aws/ssm" : null
 
       # CloudWatch logging
-      cloudWatchLogGroupName      = var.ssm_cloudwatch_logging_enabled && var.ssm_cloudwatch_log_group_name != "" ? var.ssm_cloudwatch_log_group_name : null
+      # CloudWatch logging
+      cloudWatchLogGroupName      = var.ssm_cloudwatch_logging_enabled ? local.ssm_cloudwatch_log_group_name : null
+      cloudWatchEncryptionEnabled = var.ssm_cloudwatch_logging_enabled
       cloudWatchEncryptionEnabled = var.ssm_cloudwatch_logging_enabled
 
       # S3 logging
-      s3BucketName        = var.ssm_s3_logging_enabled && var.ssm_s3_bucket_name != "" ? var.ssm_s3_bucket_name : null
+      # S3 logging
+      s3BucketName        = var.ssm_s3_logging_enabled ? local.ssm_s3_bucket_name : null
+      s3KeyPrefix         = var.ssm_s3_logging_enabled && var.ssm_s3_key_prefix != "" ? var.ssm_s3_key_prefix : null
+      s3EncryptionEnabled = var.ssm_s3_logging_enabled
       s3KeyPrefix         = var.ssm_s3_logging_enabled && var.ssm_s3_key_prefix != "" ? var.ssm_s3_key_prefix : null
       s3EncryptionEnabled = var.ssm_s3_logging_enabled
 

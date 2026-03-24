@@ -94,14 +94,42 @@ ssm_max_session_duration = ""
 # Leave empty to use default ssm-user
 ssm_run_as_user = "ubuntu"
 
+# ---------------------------------------------------------------------------
 # CloudWatch logging for SSM sessions
-ssm_cloudwatch_logging_enabled = true
-ssm_cloudwatch_log_group_name  = ""  # Leave empty to use default
+# ---------------------------------------------------------------------------
+# Option 1: Use existing CloudWatch log group (default)
+#   - Set create_ssm_cloudwatch_log_group = false
+#   - Set ssm_cloudwatch_log_group_name to your existing log group name
+# Option 2: Create new CloudWatch log group
+#   - Set create_ssm_cloudwatch_log_group = true
+#   - Set ssm_cloudwatch_log_group_name_prefix (optional, defaults to '/aws/ssm/session-logs')
+#   - Set ssm_cloudwatch_log_group_retention_days (optional, defaults to 90)
+# ---------------------------------------------------------------------------
+ssm_cloudwatch_logging_enabled        = true
+create_ssm_cloudwatch_log_group       = false  # Set to true for initial setup
+ssm_cloudwatch_log_group_name         = ""     # Required when create_ssm_cloudwatch_log_group = false
+ssm_cloudwatch_log_group_name_prefix  = "/aws/ssm/session-logs"
+ssm_cloudwatch_log_group_retention_days = 90
 
+# ---------------------------------------------------------------------------
 # S3 logging for SSM sessions
-ssm_s3_logging_enabled = false
-ssm_s3_bucket_name     = ""  # S3 bucket name for session logs
-ssm_s3_key_prefix      = "session-manager"
+# ---------------------------------------------------------------------------
+# Option 1: Use existing S3 bucket (default)
+#   - Set create_ssm_s3_bucket = false
+#   - Set ssm_s3_bucket_name to your existing bucket name
+# Option 2: Create new S3 bucket
+#   - Set create_ssm_s3_bucket = true
+#   - Set ssm_s3_bucket_name_prefix (optional, defaults to 'ssm-session-logs')
+#   - Set ssm_s3_bucket_versioning (optional, defaults to true)
+#   - Set ssm_s3_bucket_lifecycle_days (optional, defaults to 90, set to 0 to disable)
+# ---------------------------------------------------------------------------
+ssm_s3_logging_enabled     = false
+create_ssm_s3_bucket       = false  # Set to true for initial setup
+ssm_s3_bucket_name         = ""     # Required when create_ssm_s3_bucket = false
+ssm_s3_key_prefix          = "session-manager"
+ssm_s3_bucket_name_prefix  = "ssm-session-logs"
+ssm_s3_bucket_versioning   = true
+ssm_s3_bucket_lifecycle_days = 90
 
 # ---------------------------------------------------------------------------
 # Toggle SSM Session Preferences Creation

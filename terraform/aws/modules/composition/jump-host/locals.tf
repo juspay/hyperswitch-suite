@@ -25,4 +25,9 @@ locals {
     internal_jump_ip  = ""  # Not used for internal jump
     os_username       = "ec2-user"
   })
-}
+
+  # Computed SSM session logging resource names
+  ssm_cloudwatch_log_group_name = var.create_ssm_cloudwatch_log_group ? "${var.ssm_cloudwatch_log_group_name_prefix}-${var.environment}" : var.ssm_cloudwatch_log_group_name
+
+  ssm_s3_bucket_name = var.create_ssm_s3_bucket ? "${var.ssm_s3_bucket_name_prefix}-${var.environment}-${data.aws_region.current.id}-${data.aws_caller_identity.current.account_id}" : var.ssm_s3_bucket_name
+  }

@@ -56,6 +56,15 @@ module "jump_host" {
   ssm_s3_bucket_name             = var.ssm_s3_bucket_name
   ssm_s3_key_prefix              = var.ssm_s3_key_prefix
 
+  # SSM Session Logging Resources Creation
+  create_ssm_cloudwatch_log_group         = var.create_ssm_cloudwatch_log_group
+  ssm_cloudwatch_log_group_retention_days = var.ssm_cloudwatch_log_group_retention_days
+  ssm_cloudwatch_log_group_name_prefix    = var.ssm_cloudwatch_log_group_name_prefix
+  create_ssm_s3_bucket                    = var.create_ssm_s3_bucket
+  ssm_s3_bucket_name_prefix               = var.ssm_s3_bucket_name_prefix
+  ssm_s3_bucket_versioning                = var.ssm_s3_bucket_versioning
+  ssm_s3_bucket_lifecycle_days            = var.ssm_s3_bucket_lifecycle_days
+
   # SSM Session Preferences - Toggle and Custom Profiles
   create_ssm_session_preferences = var.create_ssm_session_preferences
   ssm_shell_profile_linux        = var.ssm_shell_profile_linux
