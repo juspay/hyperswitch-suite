@@ -292,7 +292,7 @@ locals {
   cluster_autoscaler_version = coalesce(
     var.cluster_autoscaler_image_version,
     var.cluster_autoscaler_cluster_version != null ? "v${var.cluster_autoscaler_cluster_version}.0" : null,
-    "v1.30.0"  # Default fallback
+    "v1.30.0" # Default fallback
   )
 
   # Source image from public registry
@@ -336,6 +336,9 @@ locals {
 
   # AWS region for ECR operations
   ecr_region = coalesce(var.region, "eu-central-1")
+
+  # Cluster Autoscaler ServiceAccount name (used in both IRSA and ServiceAccount)
+  cluster_autoscaler_sa_name = coalesce(var.cluster_autoscaler_service_account_name, "${var.environment}-${var.project_name}-cluster-autoscaler")
 }
 
 # =============================================================================
@@ -356,7 +359,7 @@ module "cluster_autoscaler_irsa" {
   oidc_providers = {
     main = {
       provider_arn               = var.oidc_provider_arn
-      namespace_service_accounts = ["kube-system:cluster-autoscaler"]
+      namespace_service_accounts = ["kube-system:${local.cluster_autoscaler_sa_name}"]
     }
   }
 
@@ -638,7 +641,7 @@ resource "kubernetes_service_account_v1" "cluster_autoscaler" {
   count = var.enable_cluster_autoscaler ? 1 : 0
 
   metadata {
-    name      = coalesce(var.cluster_autoscaler_service_account_name, "${var.environment}-${var.project_name}-cluster-autoscaler")
+    name      = local.cluster_autoscaler_sa_name
     namespace = "kube-system"
     labels = {
       "k8s-addon" = "cluster-autoscaler.addons.k8s.io"
