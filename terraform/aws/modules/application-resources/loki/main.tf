@@ -163,13 +163,15 @@ resource "aws_security_group" "this" {
 resource "aws_security_group_rule" "ingress" {
   for_each = var.create_security_group ? { for idx, rule in var.security_group_ingress_rules : idx => rule } : {}
 
-  type              = "ingress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  cidr_blocks       = each.value.cidr_blocks
-  description       = each.value.description
-  security_group_id = aws_security_group.this[0].id
+  type                     = "ingress"
+  from_port                = each.value.from_port
+  to_port                  = each.value.to_port
+  protocol                 = each.value.protocol
+  cidr_blocks              = each.value.cidr_blocks
+  source_security_group_id = each.value.source_security_group_id
+  prefix_list_ids          = each.value.prefix_list_ids
+  description              = each.value.description
+  security_group_id        = aws_security_group.this[0].id
 }
 
 # =========================================================================
@@ -178,11 +180,13 @@ resource "aws_security_group_rule" "ingress" {
 resource "aws_security_group_rule" "egress" {
   for_each = var.create_security_group ? { for idx, rule in var.security_group_egress_rules : idx => rule } : {}
 
-  type              = "egress"
-  from_port         = each.value.from_port
-  to_port           = each.value.to_port
-  protocol          = each.value.protocol
-  cidr_blocks       = each.value.cidr_blocks
-  description       = each.value.description
-  security_group_id = aws_security_group.this[0].id
+  type                     = "egress"
+  from_port                = each.value.from_port
+  to_port                  = each.value.to_port
+  protocol                 = each.value.protocol
+  cidr_blocks              = each.value.cidr_blocks
+  source_security_group_id = each.value.source_security_group_id
+  prefix_list_ids          = each.value.prefix_list_ids
+  description              = each.value.description
+  security_group_id        = aws_security_group.this[0].id
 }
