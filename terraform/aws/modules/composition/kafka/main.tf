@@ -106,7 +106,6 @@ resource "aws_security_group_rule" "broker_vpc_endpoint_egress" {
   source_security_group_id = var.vpc_endpoint_security_group_id
 }
 
-# Ingress rules on VPC endpoint SG to allow traffic from Kafka
 resource "aws_security_group_rule" "vpc_endpoint_broker_ingress" {
   count = var.vpc_endpoint_security_group_id != null ? 1 : 0
 
