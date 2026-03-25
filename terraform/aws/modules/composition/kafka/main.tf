@@ -47,7 +47,11 @@ resource "aws_security_group" "controller" {
 }
 
 # =========================================================================
-# SECURITY GROUP - INTRA-CLUSTER RULES (BROKER)
+# SECURITY GROUP RULES - BROKER
+# - Self ingress/egress (inter broker communication)
+# - Controller ingress/egress (inter cluster communication)
+# - Egress to VPC endpoints (AWS API access)
+# - Ingress on VPC endpoint SG (from brokers)
 # =========================================================================
 
 resource "aws_security_group_rule" "broker_self_ingress" {
@@ -60,8 +64,67 @@ resource "aws_security_group_rule" "broker_self_ingress" {
   source_security_group_id = aws_security_group.broker.id
 }
 
+resource "aws_security_group_rule" "broker_self_egress" {
+  type              = "egress"
+  description       = "Allow all TCP traffic to itself"
+  from_port         = 0
+  to_port           = 65535
+  protocol          = "tcp"
+  security_group_id = aws_security_group.broker.id
+  source_security_group_id = aws_security_group.broker.id
+}
+
+resource "aws_security_group_rule" "broker_from_controller_ingress" {
+  type              = "ingress"
+  description       = "Allow all TCP traffic from controller"
+  from_port         = 0
+  to_port           = 65535
+  protocol          = "tcp"
+  security_group_id = aws_security_group.broker.id
+  source_security_group_id = aws_security_group.controller.id
+}
+
+resource "aws_security_group_rule" "broker_to_controller_egress" {
+  type              = "egress"
+  description       = "Allow all TCP traffic to controller"
+  from_port         = 0
+  to_port           = 65535
+  protocol          = "tcp"
+  security_group_id = aws_security_group.broker.id
+  source_security_group_id = aws_security_group.controller.id
+}
+
+resource "aws_security_group_rule" "broker_vpc_endpoint_egress" {
+  count = var.vpc_endpoint_security_group_id != null ? 1 : 0
+
+  type                     = "egress"
+  description              = "HTTPS access to VPC endpoints"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.broker.id
+  source_security_group_id = var.vpc_endpoint_security_group_id
+}
+
+# Ingress rules on VPC endpoint SG to allow traffic from Kafka
+resource "aws_security_group_rule" "vpc_endpoint_broker_ingress" {
+  count = var.vpc_endpoint_security_group_id != null ? 1 : 0
+
+  type                     = "ingress"
+  description              = "HTTPS access from Kafka brokers"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = var.vpc_endpoint_security_group_id
+  source_security_group_id = aws_security_group.broker.id
+}
+
 # =========================================================================
-# SECURITY GROUP - INTRA-CLUSTER RULES (CONTROLLER)
+# SECURITY GROUP RULES - CONTROLLER
+# - Self ingress/egress (inter controller communication)
+# - Broker ingress/egress (inter cluster communication)
+# - Egress to VPC endpoints (AWS API access)
+# - Ingress on VPC endpoint SG (from controller)
 # =========================================================================
 
 resource "aws_security_group_rule" "controller_self_ingress" {
@@ -71,6 +134,60 @@ resource "aws_security_group_rule" "controller_self_ingress" {
   to_port           = 65535
   protocol          = "tcp"
   security_group_id = aws_security_group.controller.id
+  source_security_group_id = aws_security_group.controller.id
+}
+
+resource "aws_security_group_rule" "controller_self_egress" {
+  type              = "egress"
+  description       = "Allow all TCP traffic to itself"
+  from_port         = 0
+  to_port           = 65535
+  protocol          = "tcp"
+  security_group_id = aws_security_group.controller.id
+  source_security_group_id = aws_security_group.controller.id
+}
+
+resource "aws_security_group_rule" "controller_from_broker_ingress" {
+  type              = "ingress"
+  description       = "Allow all TCP traffic from broker"
+  from_port         = 0
+  to_port           = 65535
+  protocol          = "tcp"
+  security_group_id = aws_security_group.controller.id
+  source_security_group_id = aws_security_group.broker.id
+}
+
+resource "aws_security_group_rule" "controller_to_broker_egress" {
+  type              = "egress"
+  description       = "Allow all TCP traffic to broker"
+  from_port         = 0
+  to_port           = 65535
+  protocol          = "tcp"
+  security_group_id = aws_security_group.controller.id
+  source_security_group_id = aws_security_group.broker.id
+}
+
+resource "aws_security_group_rule" "controller_vpc_endpoint_egress" {
+  count = var.vpc_endpoint_security_group_id != null ? 1 : 0
+
+  type                     = "egress"
+  description              = "HTTPS access to VPC endpoints"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.controller.id
+  source_security_group_id = var.vpc_endpoint_security_group_id
+}
+
+resource "aws_security_group_rule" "vpc_endpoint_controller_ingress" {
+  count = var.vpc_endpoint_security_group_id != null ? 1 : 0
+
+  type                     = "ingress"
+  description              = "HTTPS access from Kafka controller"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = var.vpc_endpoint_security_group_id
   source_security_group_id = aws_security_group.controller.id
 }
 
@@ -238,7 +355,13 @@ resource "aws_instance" "broker" {
   depends_on = [
     aws_network_interface.broker,
     aws_iam_instance_profile.kafka,
-    aws_security_group_rule.broker_self_ingress
+    aws_security_group_rule.broker_self_ingress,
+    aws_security_group_rule.broker_self_egress,
+    aws_security_group_rule.broker_to_controller_egress,
+    aws_security_group_rule.broker_from_controller_ingress,
+    aws_security_group_rule.broker_vpc_endpoint_egress,
+    aws_security_group_rule.vpc_endpoint_broker_ingress,
+    time_sleep.wait_for_controller
   ]
 }
 
@@ -289,6 +412,21 @@ resource "aws_instance" "controller" {
   depends_on = [
     aws_network_interface.controller,
     aws_iam_instance_profile.kafka,
-    aws_security_group_rule.controller_self_ingress
+    aws_security_group_rule.controller_self_ingress,
+    aws_security_group_rule.controller_self_egress,
+    aws_security_group_rule.controller_to_broker_egress,
+    aws_security_group_rule.controller_from_broker_ingress,
+    aws_security_group_rule.controller_vpc_endpoint_egress,
+    aws_security_group_rule.vpc_endpoint_controller_ingress
   ]
+}
+
+# =========================================================================
+# WAIT FOR CONTROLLER TO BE READY
+# =========================================================================
+
+resource "time_sleep" "wait_for_controller" {
+  depends_on = [aws_instance.controller]
+
+  create_duration = "180s"
 }

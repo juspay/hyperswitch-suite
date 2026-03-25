@@ -32,6 +32,12 @@ variable "controller_subnet_id" {
   type        = string
 }
 
+variable "vpc_endpoint_security_group_id" {
+  description = "Security group ID of VPC endpoints for HTTPS egress from Kafka instances"
+  type        = string
+  default     = null
+}
+
 # =========================================================================
 # Kafka Cluster Configuration
 # =========================================================================
