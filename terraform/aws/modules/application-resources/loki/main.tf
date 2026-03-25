@@ -138,3 +138,51 @@ module "s3_bucket" {
 
   force_destroy = try(var.s3.force_destroy, false)
 }
+
+# =========================================================================
+# SECURITY GROUP (Optional)
+# =========================================================================
+resource "aws_security_group" "this" {
+  count = var.create_security_group ? 1 : 0
+
+  name        = var.security_group_name != null ? var.security_group_name : "${local.name_prefix}-alb-sg"
+  description = var.security_group_description
+  vpc_id      = var.vpc_id
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = var.security_group_name != null ? var.security_group_name : "${local.name_prefix}-alb-sg"
+    }
+  )
+}
+
+# =========================================================================
+# SECURITY GROUP INGRESS RULES
+# =========================================================================
+resource "aws_security_group_rule" "ingress" {
+  for_each = var.create_security_group ? { for idx, rule in var.security_group_ingress_rules : idx => rule } : {}
+
+  type              = "ingress"
+  from_port         = each.value.from_port
+  to_port           = each.value.to_port
+  protocol          = each.value.protocol
+  cidr_blocks       = each.value.cidr_blocks
+  description       = each.value.description
+  security_group_id = aws_security_group.this[0].id
+}
+
+# =========================================================================
+# SECURITY GROUP EGRESS RULES
+# =========================================================================
+resource "aws_security_group_rule" "egress" {
+  for_each = var.create_security_group ? { for idx, rule in var.security_group_egress_rules : idx => rule } : {}
+
+  type              = "egress"
+  from_port         = each.value.from_port
+  to_port           = each.value.to_port
+  protocol          = each.value.protocol
+  cidr_blocks       = each.value.cidr_blocks
+  description       = each.value.description
+  security_group_id = aws_security_group.this[0].id
+}
