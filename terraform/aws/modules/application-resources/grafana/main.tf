@@ -79,26 +79,47 @@ module "database" {
   tags         = local.common_tags
 
   # Network Configuration
-  vpc_id     = var.database_vpc_id
-  subnet_ids = var.database_subnet_ids
+  vpc_id                 = var.database_vpc_id
+  subnet_ids             = var.database_subnet_ids
+  db_subnet_group_name   = var.database_db_subnet_group_name
+  create_db_subnet_group = var.database_create_db_subnet_group
+  network_type           = var.database_network_type
+  port                   = var.database_port
+  availability_zones     = var.database_availability_zones
 
   # Cluster Configuration
-  cluster_identifier = var.database_cluster_identifier
-  engine             = var.database_engine
-  engine_version     = var.database_engine_version
-  engine_mode        = var.database_engine_mode
+  cluster_identifier        = var.database_cluster_identifier
+  engine                    = var.database_engine
+  engine_version            = var.database_engine_version
+  engine_mode               = var.database_engine_mode
+  engine_lifecycle_support  = var.database_engine_lifecycle_support
+  db_cluster_instance_class = var.database_db_cluster_instance_class
+  allocated_storage         = var.database_allocated_storage
+  storage_type              = var.database_storage_type
+  iops                      = var.database_iops
 
   # Database Configuration
-  database_name               = var.database_name
-  master_username             = var.database_master_username
-  master_password             = var.database_master_password
-  manage_master_user_password = var.database_manage_master_user_password
+  database_name                 = var.database_name
+  master_username               = var.database_master_username
+  master_password               = var.database_master_password
+  manage_master_user_password   = var.database_manage_master_user_password
+  master_user_secret_kms_key_id = var.database_master_user_secret_kms_key_id
 
   # Instance Configuration
   cluster_instances = var.database_cluster_instances
 
-  # Serverless v2 Scaling
+  # Serverless Configuration
   serverlessv2_scaling_configuration = var.database_serverlessv2_scaling_configuration
+  scaling_configuration              = var.database_scaling_configuration
+
+  # Parameter Groups
+  db_cluster_parameter_group_name    = var.database_db_cluster_parameter_group_name
+  db_instance_parameter_group_name   = var.database_db_instance_parameter_group_name
+  create_custom_parameter_group      = var.database_create_custom_parameter_group
+  custom_parameter_group_name        = var.database_custom_parameter_group_name
+  custom_parameter_group_family      = var.database_custom_parameter_group_family
+  custom_parameter_group_description = var.database_custom_parameter_group_description
+  custom_parameter_group_parameters  = var.database_custom_parameter_group_parameters
 
   # Backup Configuration
   backup_retention_period      = var.database_backup_retention_period
@@ -106,27 +127,48 @@ module "database" {
   preferred_maintenance_window = var.database_preferred_maintenance_window
   skip_final_snapshot          = var.database_skip_final_snapshot
   final_snapshot_identifier    = var.database_final_snapshot_identifier
+  copy_tags_to_snapshot        = var.database_copy_tags_to_snapshot
+  snapshot_identifier          = var.database_snapshot_identifier
 
   # Security
-  deletion_protection = var.database_deletion_protection
-  storage_encrypted   = var.database_storage_encrypted
-  kms_key_id          = var.database_kms_key_id
+  deletion_protection       = var.database_deletion_protection
+  storage_encrypted         = var.database_storage_encrypted
+  kms_key_id                = var.database_kms_key_id
+  delete_automated_backups  = var.database_delete_automated_backups
+  ca_certificate_identifier = var.database_ca_certificate_identifier
 
   # Network Security
-  vpc_security_group_ids = var.database_vpc_security_group_ids
-  create_security_group  = var.database_create_security_group
+  vpc_security_group_ids     = var.database_vpc_security_group_ids
+  create_security_group      = var.database_create_security_group
+  security_group_name        = var.database_security_group_name
+  security_group_description = var.database_security_group_description
 
   # Monitoring
   enabled_cloudwatch_logs_exports       = var.database_enabled_cloudwatch_logs_exports
   performance_insights_enabled          = var.database_performance_insights_enabled
   performance_insights_kms_key_id       = var.database_performance_insights_kms_key_id
   performance_insights_retention_period = var.database_performance_insights_retention_period
+  monitoring_interval                   = var.database_monitoring_interval
+  monitoring_role_arn                   = var.database_monitoring_role_arn
+  database_insights_mode                = var.database_database_insights_mode
 
-  # IAM Authentication
+  # IAM
   iam_database_authentication_enabled = var.database_iam_database_authentication_enabled
+  iam_roles                           = var.database_iam_roles
 
-  # Custom Parameter Group
-  create_custom_parameter_group     = var.database_create_custom_parameter_group
-  custom_parameter_group_family     = var.database_custom_parameter_group_family
-  custom_parameter_group_parameters = var.database_custom_parameter_group_parameters
+  # Version Management
+  apply_immediately           = var.database_apply_immediately
+  allow_major_version_upgrade = var.database_allow_major_version_upgrade
+
+  # Features
+  enable_http_endpoint = var.database_enable_http_endpoint
+  backtrack_window     = var.database_backtrack_window
+
+  # Global Cluster
+  create_global_cluster          = var.database_create_global_cluster
+  global_cluster_identifier      = var.database_global_cluster_identifier
+  global_deletion_protection     = var.database_global_deletion_protection
+  enable_global_write_forwarding = var.database_enable_global_write_forwarding
+  use_existing_as_global_primary = var.database_use_existing_as_global_primary
+  source_db_cluster_identifier   = var.database_source_db_cluster_identifier
 }
