@@ -137,6 +137,18 @@ variable "database_subnet_ids" {
   default     = []
 }
 
+variable "database_db_subnet_group_name" {
+  description = "Existing DB subnet group name to reuse (if create_db_subnet_group is false)"
+  type        = string
+  default     = null
+}
+
+variable "database_create_db_subnet_group" {
+  description = "Whether to create a new DB subnet group. Set to false to reuse an existing subnet group"
+  type        = bool
+  default     = true
+}
+
 variable "database_cluster_identifier" {
   description = "Custom cluster identifier for the database. If null, auto-generated"
   type        = string
@@ -286,6 +298,18 @@ variable "database_create_security_group" {
   default     = true
 }
 
+variable "database_security_group_name" {
+  description = "Custom name for the database security group (if create_security_group is true)"
+  type        = string
+  default     = null
+}
+
+variable "database_security_group_description" {
+  description = "Custom description for the database security group"
+  type        = string
+  default     = null
+}
+
 variable "database_enabled_cloudwatch_logs_exports" {
   description = "List of log types to export to CloudWatch"
   type        = list(string)
@@ -336,4 +360,207 @@ variable "database_custom_parameter_group_parameters" {
     apply_method = optional(string, "immediate")
   }))
   default = []
+}
+
+variable "database_custom_parameter_group_name" {
+  description = "Custom name for the parameter group"
+  type        = string
+  default     = null
+}
+
+variable "database_custom_parameter_group_description" {
+  description = "Description for the custom parameter group"
+  type        = string
+  default     = null
+}
+
+variable "database_db_cluster_parameter_group_name" {
+  description = "Existing cluster parameter group to associate with the cluster"
+  type        = string
+  default     = null
+}
+
+variable "database_db_instance_parameter_group_name" {
+  description = "Instance parameter group to associate with all instances of the DB cluster"
+  type        = string
+  default     = null
+}
+
+variable "database_engine_lifecycle_support" {
+  description = "The life cycle type for this DB instance. Valid values: open-source-rds-extended-support, open-source-rds-extended-support-disabled"
+  type        = string
+  default     = null
+}
+
+variable "database_availability_zones" {
+  description = "List of EC2 Availability Zones for the DB cluster storage"
+  type        = list(string)
+  default     = null
+}
+
+variable "database_allocated_storage" {
+  description = "Amount of storage in GiB to allocate (for Multi-AZ DB cluster)"
+  type        = number
+  default     = null
+}
+
+variable "database_storage_type" {
+  description = "Storage type. Valid values for Aurora: aurora-iopt1. Valid values for Multi-AZ: io1, io2"
+  type        = string
+  default     = null
+}
+
+variable "database_iops" {
+  description = "Provisioned IOPS for each DB instance in Multi-AZ cluster"
+  type        = number
+  default     = null
+}
+
+variable "database_db_cluster_instance_class" {
+  description = "Compute and memory capacity of each DB instance in Multi-AZ cluster"
+  type        = string
+  default     = null
+}
+
+variable "database_network_type" {
+  description = "Network type of the cluster. Valid values: IPV4, DUAL"
+  type        = string
+  default     = null
+}
+
+variable "database_port" {
+  description = "Port on which the DB accepts connections"
+  type        = number
+  default     = null
+}
+
+variable "database_copy_tags_to_snapshot" {
+  description = "Copy all Cluster tags to snapshots"
+  type        = bool
+  default     = false
+}
+
+variable "database_delete_automated_backups" {
+  description = "Whether to remove automated backups immediately after cluster deletion"
+  type        = bool
+  default     = true
+}
+
+variable "database_monitoring_interval" {
+  description = "Interval in seconds between Enhanced Monitoring metrics collection. Valid: 0, 1, 5, 10, 15, 30, 60"
+  type        = number
+  default     = 0
+}
+
+variable "database_monitoring_role_arn" {
+  description = "ARN for IAM role that permits RDS to send enhanced monitoring metrics to CloudWatch"
+  type        = string
+  default     = null
+}
+
+variable "database_database_insights_mode" {
+  description = "Mode of Database Insights. Valid values: standard, advanced"
+  type        = string
+  default     = null
+}
+
+variable "database_enable_http_endpoint" {
+  description = "Enable HTTP endpoint (Data API)"
+  type        = bool
+  default     = false
+}
+
+variable "database_backtrack_window" {
+  description = "Target backtrack window in seconds (0 to disable, max 259200 for 72 hours)"
+  type        = number
+  default     = 0
+}
+
+variable "database_snapshot_identifier" {
+  description = "Specifies whether to create this cluster from a snapshot"
+  type        = string
+  default     = null
+}
+
+variable "database_apply_immediately" {
+  description = "Specifies whether cluster modifications are applied immediately or during next maintenance window"
+  type        = bool
+  default     = null
+}
+
+variable "database_allow_major_version_upgrade" {
+  description = "Enable to allow major engine version upgrades"
+  type        = bool
+  default     = null
+}
+
+variable "database_scaling_configuration" {
+  description = "Scaling configuration for Serverless v1 (only valid when engine_mode is serverless)"
+  type = object({
+    auto_pause               = optional(bool, true)
+    max_capacity             = optional(number, 16)
+    min_capacity             = optional(number, 1)
+    seconds_before_timeout   = optional(number, 300)
+    seconds_until_auto_pause = optional(number, 300)
+    timeout_action           = optional(string, "RollbackCapacityChange")
+  })
+  default = null
+}
+
+variable "database_iam_roles" {
+  description = "List of ARNs for IAM roles to associate with the RDS Cluster"
+  type        = list(string)
+  default     = []
+}
+
+variable "database_ca_certificate_identifier" {
+  description = "CA certificate identifier to use for the DB cluster's server certificate"
+  type        = string
+  default     = null
+}
+
+variable "database_master_user_secret_kms_key_id" {
+  description = "KMS key identifier for encrypting the master user password in Secrets Manager"
+  type        = string
+  default     = null
+}
+
+# =========================================================================
+# Database Global Cluster Configuration
+# =========================================================================
+
+variable "database_create_global_cluster" {
+  description = "Whether to create a global cluster for multi-region deployment"
+  type        = bool
+  default     = false
+}
+
+variable "database_global_cluster_identifier" {
+  description = "Global cluster identifier to which this cluster should belong"
+  type        = string
+  default     = null
+}
+
+variable "database_global_deletion_protection" {
+  description = "Whether deletion protection is enabled for the global cluster"
+  type        = bool
+  default     = true
+}
+
+variable "database_enable_global_write_forwarding" {
+  description = "Whether cluster should forward writes to an associated global cluster"
+  type        = bool
+  default     = false
+}
+
+variable "database_use_existing_as_global_primary" {
+  description = "Whether to use existing cluster as primary for global database"
+  type        = bool
+  default     = false
+}
+
+variable "database_source_db_cluster_identifier" {
+  description = "ARN of existing cluster to use as primary for global database"
+  type        = string
+  default     = null
 }
