@@ -134,6 +134,12 @@ variable "vpc_id" {
   default     = null
 }
 
+variable "eks_node_security_group_id" {
+  description = "EKS node security group ID. When provided, the module will create ingress rules on the EKS node security group to allow traffic from the Loki LB, and egress rules on the Loki LB to reach EKS nodes."
+  type        = string
+  default     = null
+}
+
 variable "create_security_group" {
   description = "Whether to create a security group for the Loki ALB ingress"
   type        = bool

@@ -175,7 +175,7 @@ resource "aws_security_group_rule" "ingress" {
 }
 
 # =========================================================================
-# SECURITY GROUP EGRESS RULES
+# SECURITY GROUP EGRESS RULES (LB to EKS nodes)
 # =========================================================================
 resource "aws_security_group_rule" "egress" {
   for_each = var.create_security_group ? { for idx, rule in var.security_group_egress_rules : idx => rule } : {}
@@ -189,4 +189,34 @@ resource "aws_security_group_rule" "egress" {
   prefix_list_ids          = each.value.prefix_list_ids
   description              = each.value.description
   security_group_id        = aws_security_group.this[0].id
+}
+
+# =========================================================================
+# SECURITY GROUP EGRESS RULES (LB to EKS nodes - automatic)
+# =========================================================================
+resource "aws_security_group_rule" "lb_egress_to_eks" {
+  count = var.create_security_group && var.vpc_id != null && var.eks_node_security_group_id != null ? 1 : 0
+
+  type                     = "egress"
+  from_port                = 80
+  to_port                  = 80
+  protocol                 = "tcp"
+  source_security_group_id = var.eks_node_security_group_id
+  description              = "HTTP to EKS worker nodes"
+  security_group_id        = aws_security_group.this[0].id
+}
+
+# =========================================================================
+# EKS NODE SECURITY GROUP INGRESS RULES (Allow traffic from Loki LB)
+# =========================================================================
+resource "aws_security_group_rule" "eks_ingress_from_loki" {
+  count = var.eks_node_security_group_id != null ? 1 : 0
+
+  type                     = "ingress"
+  from_port                = 80
+  to_port                  = 80
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.this[0].id
+  description              = "HTTP from Loki LB"
+  security_group_id        = var.eks_node_security_group_id
 }
