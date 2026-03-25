@@ -2,7 +2,7 @@
 resource "aws_cloudwatch_log_group" "jump_host" {
   for_each = toset(var.enable_external_jump ? ["external", "internal"] : ["internal"])
 
-  name              = "/aws/ec2/jump-host/${var.environment}/${each.key}"
+  name              = "/aws/ec2/jump-host/${var.environment}/${var.project_name}/${each.key}"
   retention_in_days = var.log_retention_days
 
   tags = merge(
@@ -62,7 +62,7 @@ resource "aws_s3_bucket_versioning" "ssm_session_logs" {
 
 # S3 Bucket lifecycle configuration for SSM session logs
 resource "aws_s3_bucket_lifecycle_configuration" "ssm_session_logs" {
-  count  = var.create_ssm_s3_bucket && var.ssm_s3_logging_enabled && var.ssm_s3_bucket_lifecycle_days > 0 ? 1 : 0
+  count = var.create_ssm_s3_bucket && var.ssm_s3_logging_enabled && var.ssm_s3_bucket_lifecycle_days > 0 ? 1 : 0
 
   bucket = aws_s3_bucket.ssm_session_logs[0].id
 
@@ -86,7 +86,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "ssm_session_logs" {
 
 # S3 Bucket server-side encryption
 resource "aws_s3_bucket_server_side_encryption_configuration" "ssm_session_logs" {
-  count  = var.create_ssm_s3_bucket && var.ssm_s3_logging_enabled ? 1 : 0
+  count = var.create_ssm_s3_bucket && var.ssm_s3_logging_enabled ? 1 : 0
 
   bucket = aws_s3_bucket.ssm_session_logs[0].id
 
@@ -99,7 +99,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "ssm_session_logs"
 
 # S3 Bucket public access block
 resource "aws_s3_bucket_public_access_block" "ssm_session_logs" {
-  count  = var.create_ssm_s3_bucket && var.ssm_s3_logging_enabled ? 1 : 0
+  count = var.create_ssm_s3_bucket && var.ssm_s3_logging_enabled ? 1 : 0
 
   bucket = aws_s3_bucket.ssm_session_logs[0].id
 
@@ -116,11 +116,12 @@ resource "tls_private_key" "internal_jump" {
 }
 
 # Store private key in SSM Parameter Store
+# Includes project_name for uniqueness when multiple deployments share the same AWS account
 module "internal_jump_ssh_key_parameter" {
   source  = "terraform-aws-modules/ssm-parameter/aws"
   version = "~> 1.0"
 
-  name        = "/jump-host/${var.environment}/internal/ssh-private-key"
+  name        = "/jump-host/${var.environment}/${var.project_name}/internal/ssh-private-key"
   description = "Private SSH key for accessing internal jump host from external jump"
   type        = "SecureString"
   value       = tls_private_key.internal_jump.private_key_pem
@@ -138,15 +139,17 @@ module "internal_jump_ssh_key_parameter" {
 # =========================================================================
 # This document is named SSM-SessionManagerRunShell which is the default
 # document Session Manager uses for all sessions in this account/region.
-# NOTE: This is an account-level setting. If multiple environments share
-# the same AWS account, only one such document can exist. Use
-# create_ssm_session_preferences = false to skip creation in environments
-# that share an AWS account with another environment.
+# IMPORTANT: This is an account-level setting. Only ONE such document can exist
+# per AWS account per region. If multiple deployments share the same AWS account:
+#   - Set create_ssm_session_preferences = false in all but ONE deployment
+#   - To take over an existing document, first import it:
+#     terragrunt import 'aws_ssm_document.session_preferences[0]' SSM-SessionManagerRunShell
+#   - After import, apply will update the document with your settings
 resource "aws_ssm_document" "session_preferences" {
   count = var.create_ssm_session_preferences ? 1 : 0
 
   name            = "SSM-SessionManagerRunShell"
-  document_type   = "Session"
+  document_type   = "Session" 
   document_format = "JSON"
 
   content = jsonencode({
@@ -154,34 +157,21 @@ resource "aws_ssm_document" "session_preferences" {
     description   = "Session preferences for ${var.project_name} ${var.environment} jump hosts"
     sessionType   = "Standard_Stream"
     inputs = {
-      # Session timeout settings
       idleSessionTimeoutInMinutes = var.ssm_idle_session_timeout
       maxSessionDurationInMinutes = var.ssm_max_session_duration != "" ? tonumber(var.ssm_max_session_duration) : null
 
-      # Run As configuration
-      # When runAsEnabled=true and runAsDefaultUser is set (e.g., "ubuntu"),
-      # SSM creates OS users based on IAM user name and runs sessions as that user
       runAsEnabled     = var.ssm_run_as_user != ""
       runAsDefaultUser = var.ssm_run_as_user != "" ? var.ssm_run_as_user : null
 
-      # KMS encryption
       kmsKeyId = var.enable_ssm_session_encryption ? "alias/aws/ssm" : null
 
-      # CloudWatch logging
-      # CloudWatch logging
       cloudWatchLogGroupName      = var.ssm_cloudwatch_logging_enabled ? local.ssm_cloudwatch_log_group_name : null
       cloudWatchEncryptionEnabled = var.ssm_cloudwatch_logging_enabled
-      cloudWatchEncryptionEnabled = var.ssm_cloudwatch_logging_enabled
 
-      # S3 logging
-      # S3 logging
       s3BucketName        = var.ssm_s3_logging_enabled ? local.ssm_s3_bucket_name : null
       s3KeyPrefix         = var.ssm_s3_logging_enabled && var.ssm_s3_key_prefix != "" ? var.ssm_s3_key_prefix : null
       s3EncryptionEnabled = var.ssm_s3_logging_enabled
-      s3KeyPrefix         = var.ssm_s3_logging_enabled && var.ssm_s3_key_prefix != "" ? var.ssm_s3_key_prefix : null
-      s3EncryptionEnabled = var.ssm_s3_logging_enabled
 
-      # Shell profile - commands that run when session starts
       shellProfile = {
         linux   = var.ssm_shell_profile_linux
         windows = var.ssm_shell_profile_windows
@@ -240,7 +230,7 @@ module "external_jump_iam_role" {
           "logs:PutLogEvents",
           "logs:DescribeLogStreams"
         ]
-        resources = ["arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/jump-host/${var.environment}/external*"]
+        resources = ["arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/jump-host/${var.environment}/${var.project_name}/external*"]
       }
       SSMParameters = {
         sid    = "SSMParameters"
@@ -249,7 +239,7 @@ module "external_jump_iam_role" {
           "ssm:GetParameter",
           "ssm:GetParameters"
         ]
-        resources = ["arn:aws:ssm:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:parameter/jump-host/${var.environment}/internal/*"]
+        resources = ["arn:aws:ssm:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:parameter/jump-host/${var.environment}/${var.project_name}/internal/*"]
       }
       S3PackerMigration = {
         sid    = "S3PackerMigration"
@@ -355,7 +345,7 @@ module "internal_jump_iam_role" {
           "logs:PutLogEvents",
           "logs:DescribeLogStreams"
         ]
-        resources = ["arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/jump-host/${var.environment}/internal*"]
+        resources = ["arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/jump-host/${var.environment}/${var.project_name}/internal*"]
       }
     },
     local.internal_ssm_enabled ? {
