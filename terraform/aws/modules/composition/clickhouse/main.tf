@@ -225,6 +225,14 @@ resource "aws_instance" "keeper" {
     delete_on_termination = false
   }
 
+  ebs_block_device {
+    device_name           = var.keeper_data2_device_name
+    volume_size           = var.keeper_data2_volume_size
+    volume_type           = var.keeper_data2_volume_type
+    encrypted             = true
+    delete_on_termination = false
+  }
+
   metadata_options {
     http_endpoint               = "enabled"
     http_tokens                 = "required"
@@ -275,6 +283,14 @@ resource "aws_instance" "server" {
     device_name           = var.server_data_device_name
     volume_size           = var.server_data_volume_size
     volume_type           = var.server_data_volume_type
+    encrypted             = true
+    delete_on_termination = false
+  }
+
+  ebs_block_device {
+    device_name           = var.server_data2_device_name
+    volume_size           = var.server_data2_volume_size
+    volume_type           = var.server_data2_volume_type
     encrypted             = true
     delete_on_termination = false
   }
