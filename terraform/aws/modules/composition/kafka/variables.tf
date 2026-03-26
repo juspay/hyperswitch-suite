@@ -158,6 +158,16 @@ variable "controller_user_data_override" {
   default     = null
 }
 
+variable "metadata_http_tokens" {
+  description = "IMDSv2 setting for EC2 instances - 'required' for IMDSv2 only, 'optional' for IMDSv1 and IMDSv2"
+  type        = string
+  default     = "required"
+  validation {
+    condition     = contains(["required", "optional"], var.metadata_http_tokens)
+    error_message = "metadata_http_tokens must be either 'required' or 'optional'"
+  }
+}
+
 # =========================================================================
 # SSH Key Configuration
 # =========================================================================
