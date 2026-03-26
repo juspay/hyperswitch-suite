@@ -109,6 +109,11 @@ variable "customer_managed_policy_arns" {
 # Inline Policies
 # =========================================================================
 
+variable "create_database" {
+  description = "Whether to create a database for Superposition"
+  type        = bool
+  default     = false
+}
 variable "inline_policies" {
   description = "Map of inline policies for role-specific permissions"
   type        = map(string)
@@ -118,6 +123,7 @@ variable "inline_policies" {
 variable "database_config" {
   description = "Configuration object for the RDS Aurora PostgreSQL database"
   type = object({
+    vpc_id                                = string
     subnet_ids                            = list(string)
     cluster_identifier                    = optional(string, null)
     cluster_identifier_prefix             = optional(string, null)

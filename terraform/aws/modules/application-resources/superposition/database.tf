@@ -7,7 +7,7 @@ module "database" {
   project_name = var.project_name
   region       = var.region
 
-  vpc_id = var.vpc_id
+  vpc_id                                = var.database_config.vpc_id
 
   subnet_ids                            = var.database_config.subnet_ids
   cluster_identifier                    = var.database_config.cluster_identifier != null ? var.database_config.cluster_identifier : "${local.name_prefix}-db"
