@@ -93,3 +93,9 @@ variable "ssm_os_username" {
   type        = string
   default     = "ssm-user"
 }
+
+variable "enable_fleet_manager" {
+  description = "Enable AWS SSM Fleet Manager user management on both jump hosts. Forces SSM to be enabled on the internal jump host as well."
+  type        = bool
+  default     = false
+}

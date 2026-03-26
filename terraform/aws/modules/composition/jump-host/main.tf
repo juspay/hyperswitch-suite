@@ -143,6 +143,19 @@ module "external_jump_iam_role" {
         ]
         resources = ["*"]
       }
+    } : {},
+    var.enable_fleet_manager ? {
+      FleetManagerUserManagement = {
+        sid    = "FleetManagerUserManagement"
+        effect = "Allow"
+        actions = [
+          "ssm:DescribeInstanceInformation",
+          "ssm:GetConnectionStatus",
+          "ssm:DescribeInstanceProperties",
+          "ec2:DescribeInstances"
+        ]
+        resources = ["*"]
+      }
     } : {}
   )
 
@@ -173,7 +186,7 @@ module "internal_jump_iam_role" {
     {
       CloudWatchAgentServerPolicy = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
     },
-    var.enable_internal_jump_ssm ? {
+    var.enable_internal_jump_ssm || var.enable_fleet_manager ? {
       AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
     } : {}
   )
@@ -220,6 +233,19 @@ module "internal_jump_iam_role" {
         sid       = "SSMSessionLoggingEncryption"
         effect    = "Allow"
         actions   = ["s3:GetEncryptionConfiguration"]
+        resources = ["*"]
+      }
+    } : {},
+    var.enable_fleet_manager ? {
+      FleetManagerUserManagement = {
+        sid    = "FleetManagerUserManagement"
+        effect = "Allow"
+        actions = [
+          "ssm:DescribeInstanceInformation",
+          "ssm:GetConnectionStatus",
+          "ssm:DescribeInstanceProperties",
+          "ec2:DescribeInstances"
+        ]
         resources = ["*"]
       }
     } : {}
