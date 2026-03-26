@@ -176,7 +176,10 @@ module "interface_vpc_endpoints" {
   vpc_endpoint_type = each.value.type
 
   subnet_ids         = module.eks_workers_subnets[*].subnet_id
-  security_group_ids = var.create_vpc_endpoint_security_group ? [module.vpc_endpoint_sg[0].sg_id] : var.vpc_endpoint_security_group_ids
+  security_group_ids = compact(concat(
+    var.create_vpc_endpoint_security_group ? [module.vpc_endpoint_sg[0].sg_id] : [],
+    var.vpc_endpoint_security_group_ids
+  ))
 
   private_dns_enabled = lookup(each.value, "private_dns_enabled", var.vpc_endpoint_private_dns_enabled)
 
