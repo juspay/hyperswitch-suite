@@ -87,6 +87,24 @@ variable "keeper_data_device_name" {
   default     = "/dev/sdb"
 }
 
+variable "keeper_data2_volume_size" {
+  description = "Size of the second additional EBS volume in GB for Clickhouse keeper"
+  type        = number
+  default     = 10
+}
+
+variable "keeper_data2_volume_type" {
+  description = "Type of the second additional EBS volume for keeper"
+  type        = string
+  default     = "gp3"
+}
+
+variable "keeper_data2_device_name" {
+  description = "Device name for the keeper second data EBS volume"
+  type        = string
+  default     = "/dev/sdc"
+}
+
 # =========================================================================
 # Server Configuration
 # =========================================================================
@@ -140,6 +158,24 @@ variable "server_data_device_name" {
   description = "Device name for the server data EBS volume"
   type        = string
   default     = "/dev/sdb"
+}
+
+variable "server_data2_volume_size" {
+  description = "Size of the second additional EBS volume in GB for Clickhouse server"
+  type        = number
+  default     = 20
+}
+
+variable "server_data2_volume_type" {
+  description = "Type of the second additional EBS volume for server"
+  type        = string
+  default     = "gp3"
+}
+
+variable "server_data2_device_name" {
+  description = "Device name for the server second data EBS volume"
+  type        = string
+  default     = "/dev/sdc"
 }
 
 # =========================================================================
