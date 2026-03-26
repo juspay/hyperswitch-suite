@@ -16,14 +16,14 @@ project_name = "hyperswitch"
 # Network Configuration
 # ============================================================================
 # TODO: Replace with your actual VPC and subnet IDs
-vpc_id = "vpc-xxxxxxxxxxxxxxxxx"  # Replace with your VPC ID
+vpc_id = "vpc-xxxxxxxxxxxxxxxxx" # Replace with your VPC ID
 
 # Public subnet for external jump host (must have internet gateway)
 # Required when enable_external_jump = true, optional otherwise
-public_subnet_id = "subnet-xxxxxxxxxxxxxxxxx"  # Replace with your public(management) subnet ID
+public_subnet_id = "subnet-xxxxxxxxxxxxxxxxx" # Replace with your public(management) subnet ID
 
 # Private subnet for internal jump host
-private_subnet_id = "subnet-xxxxxxxxxxxxxxxxx"  # Replace with your private(Utils) subnet ID
+private_subnet_id = "subnet-xxxxxxxxxxxxxxxxx" # Replace with your private(Utils) subnet ID
 
 # ============================================================================
 # Jump Host Mode Configuration
@@ -105,10 +105,10 @@ ssm_run_as_user = "ubuntu"
 #   - Set ssm_cloudwatch_log_group_name_prefix (optional, defaults to '/aws/ssm/session-logs')
 #   - Set ssm_cloudwatch_log_group_retention_days (optional, defaults to 90)
 # ---------------------------------------------------------------------------
-ssm_cloudwatch_logging_enabled        = true
-create_ssm_cloudwatch_log_group       = false  # Set to true for initial setup
-ssm_cloudwatch_log_group_name         = ""     # Required when create_ssm_cloudwatch_log_group = false
-ssm_cloudwatch_log_group_name_prefix  = "/aws/ssm/session-logs"
+ssm_cloudwatch_logging_enabled          = true
+create_ssm_cloudwatch_log_group         = false # Set to true for initial setup
+ssm_cloudwatch_log_group_name           = ""    # Required when create_ssm_cloudwatch_log_group = false
+ssm_cloudwatch_log_group_name_prefix    = "/aws/ssm/session-logs"
 ssm_cloudwatch_log_group_retention_days = 90
 
 # ---------------------------------------------------------------------------
@@ -123,12 +123,12 @@ ssm_cloudwatch_log_group_retention_days = 90
 #   - Set ssm_s3_bucket_versioning (optional, defaults to true)
 #   - Set ssm_s3_bucket_lifecycle_days (optional, defaults to 90, set to 0 to disable)
 # ---------------------------------------------------------------------------
-ssm_s3_logging_enabled     = false
-create_ssm_s3_bucket       = false  # Set to true for initial setup
-ssm_s3_bucket_name         = ""     # Required when create_ssm_s3_bucket = false
-ssm_s3_key_prefix          = "session-manager"
-ssm_s3_bucket_name_prefix  = "ssm-session-logs"
-ssm_s3_bucket_versioning   = true
+ssm_s3_logging_enabled       = false
+create_ssm_s3_bucket         = false # Set to true for initial setup
+ssm_s3_bucket_name           = ""    # Required when create_ssm_s3_bucket = false
+ssm_s3_key_prefix            = "session-manager"
+ssm_s3_bucket_name_prefix    = "ssm-session-logs"
+ssm_s3_bucket_versioning     = true
 ssm_s3_bucket_lifecycle_days = 90
 
 # ---------------------------------------------------------------------------
@@ -171,6 +171,11 @@ ssm_shell_profile_windows = ""
 # Default: false (secure)
 # Set to true only when running Packer migration, then immediately revert to false
 enable_migration_mode = false
+
+# Allow overwriting existing SSM parameters
+# Set to true if parameters were created outside Terraform or state was lost
+# Default: false (safe - prevents accidental overwrites)
+ssm_parameter_overwrite = false
 
 # ============================================================================
 # Tags

@@ -89,6 +89,12 @@ variable "enable_migration_mode" {
   default     = false
 }
 
+variable "ssm_parameter_overwrite" {
+  description = "Allow overwriting existing SSM parameters. Set to true if parameters were created outside Terraform or state was lost. Default is false for safety."
+  type        = bool
+  default     = false
+}
+
 # ============================================================================
 # Tags
 # ============================================================================

@@ -22,7 +22,7 @@ module "jump_host" {
 
   environment  = var.environment
   project_name = var.project_name
-  region = var.region
+  region       = var.region
 
   # Network Configuration
   vpc_id            = var.vpc_id
@@ -43,7 +43,7 @@ module "jump_host" {
   enable_external_jump = var.enable_external_jump
 
   # SSM Session Manager Configuration
-  enable_internal_jump_ssm     = var.enable_internal_jump_ssm
+  enable_internal_jump_ssm      = var.enable_internal_jump_ssm
   enable_ssm_session_encryption = var.enable_ssm_session_encryption
 
   # SSM Session Preferences
@@ -72,6 +72,8 @@ module "jump_host" {
 
   # Migration Mode Configuration
   enable_migration_mode = var.enable_migration_mode
+
+  ssm_parameter_overwrite = var.ssm_parameter_overwrite
 
   # Tags
   tags = var.common_tags

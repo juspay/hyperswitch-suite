@@ -1,8 +1,9 @@
 # CloudWatch Log Group for jump host logs
+# Path format: /aws/ec2/jump-host/{environment}-{project_name}/{type}
 resource "aws_cloudwatch_log_group" "jump_host" {
   for_each = toset(var.enable_external_jump ? ["external", "internal"] : ["internal"])
 
-  name              = "/aws/ec2/jump-host/${var.environment}/${var.project_name}/${each.key}"
+  name              = "/aws/ec2/jump-host/${var.environment}-${var.project_name}/${each.key}"
   retention_in_days = var.log_retention_days
 
   tags = merge(
@@ -116,16 +117,16 @@ resource "tls_private_key" "internal_jump" {
 }
 
 # Store private key in SSM Parameter Store
-# Includes project_name for uniqueness when multiple deployments share the same AWS account
 module "internal_jump_ssh_key_parameter" {
   source  = "terraform-aws-modules/ssm-parameter/aws"
   version = "~> 1.0"
 
-  name        = "/jump-host/${var.environment}/${var.project_name}/internal/ssh-private-key"
+  name        = "/jump-host/${var.environment}-${var.project_name}/internal/ssh-private-key"
   description = "Private SSH key for accessing internal jump host from external jump"
   type        = "SecureString"
   value       = tls_private_key.internal_jump.private_key_pem
   secure_type = true
+  overwrite   = var.ssm_parameter_overwrite
 
   tags = merge(
     local.common_tags,
@@ -149,7 +150,7 @@ resource "aws_ssm_document" "session_preferences" {
   count = var.create_ssm_session_preferences ? 1 : 0
 
   name            = "SSM-SessionManagerRunShell"
-  document_type   = "Session" 
+  document_type   = "Session"
   document_format = "JSON"
 
   content = jsonencode({
@@ -230,7 +231,7 @@ module "external_jump_iam_role" {
           "logs:PutLogEvents",
           "logs:DescribeLogStreams"
         ]
-        resources = ["arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/jump-host/${var.environment}/${var.project_name}/external*"]
+        resources = ["arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/jump-host/${var.environment}-${var.project_name}/external*"]
       }
       SSMParameters = {
         sid    = "SSMParameters"
@@ -239,7 +240,7 @@ module "external_jump_iam_role" {
           "ssm:GetParameter",
           "ssm:GetParameters"
         ]
-        resources = ["arn:aws:ssm:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:parameter/jump-host/${var.environment}/${var.project_name}/internal/*"]
+        resources = ["arn:aws:ssm:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:parameter/jump-host/${var.environment}-${var.project_name}/internal/*"]
       }
       S3PackerMigration = {
         sid    = "S3PackerMigration"
@@ -345,7 +346,7 @@ module "internal_jump_iam_role" {
           "logs:PutLogEvents",
           "logs:DescribeLogStreams"
         ]
-        resources = ["arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/jump-host/${var.environment}/${var.project_name}/internal*"]
+        resources = ["arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/jump-host/${var.environment}-${var.project_name}/internal*"]
       }
     },
     local.internal_ssm_enabled ? {
