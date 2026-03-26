@@ -157,27 +157,24 @@ resource "aws_ssm_document" "session_preferences" {
     schemaVersion = "1.0"
     description   = "Session preferences for ${var.project_name} ${var.environment} jump hosts"
     sessionType   = "Standard_Stream"
-    inputs = {
-      idleSessionTimeoutInMinutes = var.ssm_idle_session_timeout
-      maxSessionDurationInMinutes = var.ssm_max_session_duration != "" ? tonumber(var.ssm_max_session_duration) : null
-
-      runAsEnabled     = var.ssm_run_as_user != ""
-      runAsDefaultUser = var.ssm_run_as_user != "" ? var.ssm_run_as_user : null
-
-      kmsKeyId = var.enable_ssm_session_encryption ? "alias/aws/ssm" : null
-
-      cloudWatchLogGroupName      = var.ssm_cloudwatch_logging_enabled ? local.ssm_cloudwatch_log_group_name : null
-      cloudWatchEncryptionEnabled = var.ssm_cloudwatch_logging_enabled
-
-      s3BucketName        = var.ssm_s3_logging_enabled ? local.ssm_s3_bucket_name : null
-      s3KeyPrefix         = var.ssm_s3_logging_enabled && var.ssm_s3_key_prefix != "" ? var.ssm_s3_key_prefix : null
-      s3EncryptionEnabled = var.ssm_s3_logging_enabled
-
-      shellProfile = {
-        linux   = var.ssm_shell_profile_linux
-        windows = var.ssm_shell_profile_windows
-      }
-    }
+    inputs = merge(
+      {
+        idleSessionTimeoutInMinutes = var.ssm_idle_session_timeout
+        runAsEnabled                = var.ssm_run_as_user != ""
+        cloudWatchEncryptionEnabled = var.ssm_cloudwatch_logging_enabled
+        s3EncryptionEnabled         = var.ssm_s3_logging_enabled
+        shellProfile = {
+          linux   = var.ssm_shell_profile_linux
+          windows = var.ssm_shell_profile_windows
+        }
+      },
+      var.ssm_max_session_duration != "" ? { maxSessionDurationInMinutes = tonumber(var.ssm_max_session_duration) } : {},
+      var.ssm_run_as_user != "" ? { runAsDefaultUser = var.ssm_run_as_user } : {},
+      var.enable_ssm_session_encryption ? { kmsKeyId = "alias/aws/ssm" } : {},
+      var.ssm_cloudwatch_logging_enabled ? { cloudWatchLogGroupName = local.ssm_cloudwatch_log_group_name } : {},
+      var.ssm_s3_logging_enabled ? { s3BucketName = local.ssm_s3_bucket_name } : {},
+      var.ssm_s3_logging_enabled && var.ssm_s3_key_prefix != "" ? { s3KeyPrefix = var.ssm_s3_key_prefix } : {}
+    )
   })
 
   tags = merge(
