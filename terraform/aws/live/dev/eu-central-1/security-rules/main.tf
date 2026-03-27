@@ -88,7 +88,7 @@ locals {
       from_port   = 22
       to_port     = 22
       protocol    = "tcp"
-      sg_id       = [data.terraform_remote_state.jump_host.outputs.external_security_group_id]
+      sg_id       = [data.terraform_remote_state.jump_host.outputs.security_group_id]
     },
     # Example: Vector metrics endpoint from EKS monitoring (uncomment if needed)
     # {
@@ -145,7 +145,7 @@ locals {
       from_port   = 443
       to_port     = 443
       protocol    = "tcp"
-      sg_id       = [data.terraform_remote_state.jump_host.outputs.external_security_group_id]
+      sg_id       = [data.terraform_remote_state.jump_host.outputs.security_group_id]
     },
     # Example: HTTPS from specific CIDR (uncomment if needed)
     # {
@@ -243,7 +243,7 @@ locals {
       from_port   = 22
       to_port     = 22
       protocol    = "tcp"
-      sg_id       = [data.terraform_remote_state.jump_host.outputs.external_security_group_id]
+      sg_id       = [data.terraform_remote_state.jump_host.outputs.security_group_id]
     },
     # Example: Prometheus metrics scraping (uncomment and replace with actual monitoring SG)
     # {
@@ -380,7 +380,7 @@ locals {
   # ----------------------------------------------------------------------------
   # Allow access from VPN IPs or specific CIDR blocks
   # Example: CIDR-based ingress rule
-  # ext_jump_host_ingress_rules = [
+  # jump_host_ingress_rules = [
   #   {
   #     description = "VPN/Office IP - SSH/SSM access"
   #     from_port   = 22
@@ -390,9 +390,9 @@ locals {
   #   }
   # ]
 
-  ext_jump_host_ingress_rules = []
+  jump_host_ingress_rules = []
 
-  ext_jump_host_egress_rules = [
+  jump_host_egress_rules = [
     # SSH to locker instance
     {
       description = "SSH to locker instance"
@@ -445,10 +445,10 @@ locals {
       sg_id       = ["sg-xxxxxxxxxxxxxxxxx"] # Replace with database security group ID
     },
     {
-      description = "S3 VPC endpoint access"
-      from_port   = 443
-      to_port     = 443
-      protocol    = "tcp"
+      description     = "S3 VPC endpoint access"
+      from_port       = 443
+      to_port         = 443
+      protocol        = "tcp"
       prefix_list_ids = ["pl-xxxxxxxx"] # Replace with S3 prefix list for your region
     },
     {
@@ -472,7 +472,7 @@ locals {
       from_port   = 22
       to_port     = 22
       protocol    = "tcp"
-      sg_id       = [data.terraform_remote_state.jump_host.outputs.external_security_group_id]
+      sg_id       = [data.terraform_remote_state.jump_host.outputs.security_group_id]
     },
   ]
 
@@ -506,13 +506,9 @@ locals {
       sg_id = data.terraform_remote_state.envoy_proxy.outputs.envoy_lb_security_group_id
       rules = local.envoy_lb_ingress_rules
     }] : [],
-    length(local.ext_jump_host_ingress_rules) > 0 ? [{
-      sg_id = data.terraform_remote_state.jump_host.outputs.external_security_group_id
-      rules = local.ext_jump_host_ingress_rules
-    }] : [],
-    length(local.int_jump_host_ingress_rules) > 0 ? [{
-      sg_id = data.terraform_remote_state.jump_host.outputs.internal_security_group_id
-      rules = local.int_jump_host_ingress_rules
+    length(local.jump_host_ingress_rules) > 0 ? [{
+      sg_id = data.terraform_remote_state.jump_host.outputs.security_group_id
+      rules = local.jump_host_ingress_rules
     }] : [],
     length(local.cassandra_ingress_rules) > 0 ? [{
       sg_id = data.terraform_remote_state.cassandra.outputs.cassandra_security_group_id
@@ -545,13 +541,9 @@ locals {
       sg_id = data.terraform_remote_state.envoy_proxy.outputs.envoy_lb_security_group_id
       rules = local.envoy_lb_egress_rules
     }] : [],
-    length(local.ext_jump_host_egress_rules) > 0 ? [{
-      sg_id = data.terraform_remote_state.jump_host.outputs.external_security_group_id
-      rules = local.ext_jump_host_egress_rules
-    }] : [],
-    length(local.int_jump_host_egress_rules) > 0 ? [{
-      sg_id = data.terraform_remote_state.jump_host.outputs.internal_security_group_id
-      rules = local.int_jump_host_egress_rules
+    length(local.jump_host_egress_rules) > 0 ? [{
+      sg_id = data.terraform_remote_state.jump_host.outputs.security_group_id
+      rules = local.jump_host_egress_rules
     }] : [],
     length(local.cassandra_egress_rules) > 0 ? [{
       sg_id = data.terraform_remote_state.cassandra.outputs.cassandra_security_group_id

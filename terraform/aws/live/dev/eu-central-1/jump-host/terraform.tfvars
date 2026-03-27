@@ -16,23 +16,16 @@ project_name = "hyperswitch"
 # Network Configuration
 # ============================================================================
 # TODO: Replace with your actual VPC and subnet IDs
-vpc_id = "vpc-xxxxxxxxxxxxxxxxx"  # Replace with your VPC ID
+vpc_id = "vpc-xxxxxxxxxxxxxxxxx" # Replace with your VPC ID
 
-# Public subnet for external jump host (must have internet gateway)
-public_subnet_id = "subnet-xxxxxxxxxxxxxxxxx"  # Replace with your public(management) subnet ID
-
-# Private subnet for internal jump host
-private_subnet_id = "subnet-xxxxxxxxxxxxxxxxx"  # Replace with your private(Utils) subnet ID
+# Public subnet for jump host (must have internet gateway)
+public_subnet_id = "subnet-xxxxxxxxxxxxxxxxx" # Replace with your public(management) subnet ID
 
 # ============================================================================
 # Instance Configuration
 # ============================================================================
-# Leave ami_ids as null to automatically use latest Amazon Linux 2 AMI
-# External Jump Host AMI (public subnet)
+# Leave ami_id as null to automatically use latest Amazon Linux 2023 AMI
 external_jump_ami_id = "ami-xxxxxxxxxxxxxxxxx"
-
-# Internal Jump Host AMI (private subnet)
-internal_jump_ami_id = "ami-xxxxxxxxxxxxxxxxx"
 
 # Instance type - t3.micro is sufficient for jump hosts (2 vCPU, 1 GB RAM)
 # Upgrade to t3.small if needed (2 vCPU, 2 GB RAM)
@@ -49,12 +42,6 @@ root_volume_type = "gp3" # General Purpose SSD
 log_retention_days = 30
 
 # ============================================================================
-# SSM Session Manager Configuration
-# ============================================================================
-# Enable SSM Session Manager access for internal jump host
-# Set to true to allow direct SSM access to internal jump host
-enable_internal_jump_ssm = false
-
 # Migration Mode Configuration
 # ============================================================================
 # Enable SSM SendCommand permissions for Packer AMI migration (SECURITY RISK)
@@ -74,7 +61,6 @@ enable_migration_mode = false
 # ============================================================================
 # Tags
 # ============================================================================
-
 common_tags = {
   Environment = "development"
   Project     = "hyperswitch"
