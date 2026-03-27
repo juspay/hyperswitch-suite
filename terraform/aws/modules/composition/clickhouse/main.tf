@@ -9,14 +9,14 @@ data "aws_caller_identity" "current" {}
 # =========================================================================
 
 resource "tls_private_key" "clickhouse" {
-  count     = var.create_key_pair && var.public_key == null ? 1 : 0
+  count = var.create_key_pair && var.public_key == null ? 1 : 0
 
   algorithm = "RSA"
   rsa_bits  = 4096
 }
 
 resource "aws_key_pair" "clickhouse" {
-  count      = var.create_key_pair ? 1 : 0
+  count = var.create_key_pair ? 1 : 0
 
   key_name   = local.key_pair_name
   public_key = var.public_key != null ? var.public_key : tls_private_key.clickhouse[0].public_key_openssh
@@ -25,7 +25,7 @@ resource "aws_key_pair" "clickhouse" {
 }
 
 resource "aws_ssm_parameter" "clickhouse_private_key" {
-  count       = var.create_key_pair && var.public_key == null ? 1 : 0
+  count = var.create_key_pair && var.public_key == null ? 1 : 0
 
   name        = "/${var.environment}/${var.project_name}/clickhouse/ssh-private-key"
   description = "Auto-generated SSH private key for Clickhouse instances"
@@ -245,8 +245,125 @@ resource "aws_instance" "keeper" {
 }
 
 # =========================================================================
-# COMPUTE - EC2 INSTANCES (SERVERS)
+# LOAD BALANCER - SECURITY GROUP
 # =========================================================================
+resource "aws_security_group" "alb" {
+  name        = "${local.name_prefix}-alb-sg"
+  description = "Security group for Clickhouse Application Load Balancer"
+  vpc_id      = var.vpc_id
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-alb-sg"
+  })
+}
+
+# =========================================================================
+# LOAD BALANCER - SECURITY GROUP RULES
+# =========================================================================
+# ALB Egress to Server
+resource "aws_security_group_rule" "alb_egress_to_server" {
+  security_group_id        = aws_security_group.alb.id
+  type                     = "egress"
+  from_port                = var.clickhouse_port
+  to_port                  = var.clickhouse_port
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.server.id
+  description              = "Allow ALB to send traffic to Clickhouse server instances"
+}
+
+# Server Ingress from ALB
+resource "aws_security_group_rule" "server_ingress_from_alb" {
+  security_group_id        = aws_security_group.server.id
+  type                     = "ingress"
+  from_port                = var.clickhouse_port
+  to_port                  = var.clickhouse_port
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.alb.id
+  description              = "Allow traffic from ALB to Clickhouse server instances"
+}
+
+# =========================================================================
+# LOAD BALANCER - APPLICATION LOAD BALANCER
+# =========================================================================
+resource "aws_lb" "clickhouse_alb" {
+  name               = "${local.name_prefix}-alb"
+  internal           = true
+  load_balancer_type = "application"
+  subnets            = var.alb_subnet_ids
+  security_groups    = [aws_security_group.alb.id]
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-alb"
+  })
+}
+
+# =========================================================================
+# LOAD BALANCER - TARGET GROUPS
+# =========================================================================
+resource "aws_lb_target_group" "clickhouse" {
+  count = var.server_count
+
+  name        = "${local.name_prefix}-tg-${count.index}"
+  port        = var.clickhouse_port
+  protocol    = "HTTP"
+  vpc_id      = var.vpc_id
+  target_type = "instance"
+
+  health_check {
+    enabled             = true
+    healthy_threshold   = 2
+    interval            = 30
+    matcher             = "200"
+    path                = "/ping"
+    port                = var.clickhouse_port
+    protocol            = "HTTP"
+    timeout             = 5
+    unhealthy_threshold = 2
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.name_prefix}-tg-${count.index}"
+  })
+}
+
+# =========================================================================
+# LOAD BALANCER - TARGET GROUP ATTACHMENTS
+# =========================================================================
+resource "aws_lb_target_group_attachment" "clickhouse" {
+  count = var.server_count
+
+  target_group_arn = aws_lb_target_group.clickhouse[count.index].arn
+  target_id        = aws_instance.server[count.index].id
+  port             = var.clickhouse_port
+}
+
+# =========================================================================
+# LOAD BALANCER - LISTENERS
+# =========================================================================
+resource "aws_lb_listener" "clickhouse" {
+  for_each = var.alb_listeners
+
+  load_balancer_arn = aws_lb.clickhouse_alb.arn
+  port              = each.value.port
+  protocol          = each.value.protocol
+  ssl_policy        = each.value.protocol == "HTTPS" ? "ELBSecurityPolicy-2016-08" : null
+  certificate_arn   = each.value.certificate_arn
+
+  default_action {
+    type = "forward"
+    forward {
+      dynamic "target_group" {
+        for_each = aws_lb_target_group.clickhouse
+        content {
+          arn    = target_group.value.arn
+          weight = 1
+        }
+      }
+    }
+  }
+
+  tags = local.common_tags
+}
 
 resource "aws_instance" "server" {
   count = var.server_count
