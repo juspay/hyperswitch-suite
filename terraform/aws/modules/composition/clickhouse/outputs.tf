@@ -116,3 +116,27 @@ output "cluster_info" {
     server_ips   = aws_instance.server[*].private_ip
   }
 }
+
+# =========================================================================
+# LOAD BALANCER OUTPUTS
+# =========================================================================
+
+output "alb_dns_name" {
+  description = "DNS name of the Application Load Balancer"
+  value       = aws_lb.clickhouse_alb.dns_name
+}
+
+output "alb_security_group_id" {
+  description = "Security group ID of the Clickhouse ALB"
+  value       = aws_security_group.alb.id
+}
+
+output "alb_listener_arns" {
+  description = "ARNs of the ALB listeners"
+  value       = { for key, listener in aws_lb_listener.clickhouse : key => listener.arn }
+}
+
+output "clickhouse_port" {
+  description = "Port used for Clickhouse HTTP interface"
+  value       = var.clickhouse_port
+}
