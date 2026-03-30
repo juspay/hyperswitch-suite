@@ -303,7 +303,7 @@ resource "aws_lb" "clickhouse_alb" {
 resource "aws_lb_target_group" "clickhouse" {
   count = var.server_count
 
-  name        = "${local.name_prefix}-tg-${count.index}"
+  name        = "${local.alb_name_prefix}-tg-${count.index}"
   port        = var.clickhouse_port
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
