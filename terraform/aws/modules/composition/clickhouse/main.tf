@@ -248,12 +248,12 @@ resource "aws_instance" "keeper" {
 # LOAD BALANCER - SECURITY GROUP
 # =========================================================================
 resource "aws_security_group" "alb" {
-  name        = "${local.name_prefix}-alb-sg"
+  name        = "${local.alb_name_prefix}-alb-sg"
   description = "Security group for Clickhouse Application Load Balancer"
   vpc_id      = var.vpc_id
 
   tags = merge(local.common_tags, {
-    Name = "${local.name_prefix}-alb-sg"
+    Name = "${local.alb_name_prefix}-alb-sg"
   })
 }
 
@@ -286,14 +286,14 @@ resource "aws_security_group_rule" "server_ingress_from_alb" {
 # LOAD BALANCER - APPLICATION LOAD BALANCER
 # =========================================================================
 resource "aws_lb" "clickhouse_alb" {
-  name               = "${local.name_prefix}-alb"
+  name               = "${local.alb_name_prefix}-alb"
   internal           = true
   load_balancer_type = "application"
   subnets            = var.alb_subnet_ids
   security_groups    = [aws_security_group.alb.id]
 
   tags = merge(local.common_tags, {
-    Name = "${local.name_prefix}-alb"
+    Name = "${local.alb_name_prefix}-alb"
   })
 }
 
@@ -322,7 +322,7 @@ resource "aws_lb_target_group" "clickhouse" {
   }
 
   tags = merge(local.common_tags, {
-    Name = "${local.name_prefix}-tg-${count.index}"
+    Name = "${local.alb_name_prefix}-tg-${count.index}"
   })
 }
 
