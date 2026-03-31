@@ -32,6 +32,12 @@ variable "server_subnet_id" {
   type        = string
 }
 
+variable "vpc_endpoint_security_group_id" {
+  description = "Security group ID of VPC endpoints (for EC2 Metadata). If provided, HTTPS rules will be created."
+  type        = string
+  default     = null
+}
+
 # =========================================================================
 # Keeper Configuration
 # =========================================================================
@@ -214,6 +220,16 @@ variable "public_key" {
   description = "Public key material for creating new SSH key pair. If not provided when create_key_pair is true, a key pair will be auto-generated and stored in SSM"
   type        = string
   default     = null
+}
+
+variable "metadata_http_tokens" {
+  description = "IMDSv2 setting for EC2 instances - 'required' for IMDSv2 only, 'optional' for IMDSv1 and IMDSv2"
+  type        = string
+  default     = "required"
+  validation {
+    condition     = contains(["required", "optional"], var.metadata_http_tokens)
+    error_message = "metadata_http_tokens must be either 'required' or 'optional'"
+  }
 }
 
 # =========================================================================

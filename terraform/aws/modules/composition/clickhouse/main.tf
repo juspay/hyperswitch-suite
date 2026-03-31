@@ -40,6 +40,8 @@ resource "aws_ssm_parameter" "clickhouse_private_key" {
 # =========================================================================
 
 resource "aws_security_group" "keeper" {
+  count = var.keeper_count > 0 ? 1 : 0
+
   name        = "${local.name_prefix}-keeper-sg"
   description = "Security group for Clickhouse keeper nodes"
   vpc_id      = var.vpc_id
@@ -64,23 +66,75 @@ resource "aws_security_group" "server" {
 # =========================================================================
 
 resource "aws_security_group_rule" "keeper_self_ingress" {
+  count = var.keeper_count > 0 ? 1 : 0
+
   type                     = "ingress"
   description              = "Allow all TCP traffic from itself"
   from_port                = 0
   to_port                  = 65535
   protocol                 = "tcp"
-  security_group_id        = aws_security_group.keeper.id
-  source_security_group_id = aws_security_group.keeper.id
+  security_group_id        = local.keeper_sg_id
+  source_security_group_id = local.keeper_sg_id
 }
 
-resource "aws_security_group_rule" "keeper_egress" {
-  type              = "egress"
-  description       = "Allow all outbound traffic"
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  security_group_id = aws_security_group.keeper.id
-  cidr_blocks       = ["0.0.0.0/0"]
+resource "aws_security_group_rule" "keeper_self_egress" {
+  count = var.keeper_count > 0 ? 1 : 0
+
+  type                     = "egress"
+  description              = "Allow all TCP traffic to itself"
+  from_port                = 0
+  to_port                  = 65535
+  protocol                 = "tcp"
+  security_group_id        = local.keeper_sg_id
+  source_security_group_id = local.keeper_sg_id
+}
+
+resource "aws_security_group_rule" "keeper_from_server_ingress" {
+  count = var.keeper_count > 0 ? 1 : 0
+
+  type                     = "ingress"
+  description              = "Allow all TCP traffic from server"
+  from_port                = 0
+  to_port                  = 65535
+  protocol                 = "tcp"
+  security_group_id        = local.keeper_sg_id
+  source_security_group_id = aws_security_group.server.id
+}
+
+resource "aws_security_group_rule" "keeper_to_server_egress" {
+  count = var.keeper_count > 0 ? 1 : 0
+
+  type                     = "egress"
+  description              = "Allow all TCP traffic to server"
+  from_port                = 0
+  to_port                  = 65535
+  protocol                 = "tcp"
+  security_group_id        = local.keeper_sg_id
+  source_security_group_id = aws_security_group.server.id
+}
+
+resource "aws_security_group_rule" "keeper_vpc_endpoint_egress" {
+  count = var.keeper_count > 0 && var.vpc_endpoint_security_group_id != null ? 1 : 0
+
+  type                     = "egress"
+  description              = "HTTPS access to VPC endpoints"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = local.keeper_sg_id
+  source_security_group_id = var.vpc_endpoint_security_group_id
+}
+
+resource "aws_security_group_rule" "vpc_endpoint_keeper_ingress" {
+  count = var.keeper_count > 0 && var.vpc_endpoint_security_group_id != null ? 1 : 0
+
+  type                     = "ingress"
+  description              = "HTTPS access from Clickhouse keepers"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = var.vpc_endpoint_security_group_id
+  source_security_group_id = local.keeper_sg_id
 }
 
 # =========================================================================
@@ -97,14 +151,62 @@ resource "aws_security_group_rule" "server_self_ingress" {
   source_security_group_id = aws_security_group.server.id
 }
 
-resource "aws_security_group_rule" "server_egress" {
-  type              = "egress"
-  description       = "Allow all outbound traffic"
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  security_group_id = aws_security_group.server.id
-  cidr_blocks       = ["0.0.0.0/0"]
+resource "aws_security_group_rule" "server_self_egress" {
+  type                     = "egress"
+  description              = "Allow all TCP traffic to itself"
+  from_port                = 0
+  to_port                  = 65535
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.server.id
+  source_security_group_id = aws_security_group.server.id
+}
+
+resource "aws_security_group_rule" "server_from_keeper_ingress" {
+  count = var.keeper_count > 0 ? 1 : 0
+
+  type                     = "ingress"
+  description              = "Allow all TCP traffic from keeper"
+  from_port                = 0
+  to_port                  = 65535
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.server.id
+  source_security_group_id = local.keeper_sg_id
+}
+
+resource "aws_security_group_rule" "server_to_keeper_egress" {
+  count = var.keeper_count > 0 ? 1 : 0
+
+  type                     = "egress"
+  description              = "Allow all TCP traffic to keeper"
+  from_port                = 0
+  to_port                  = 65535
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.server.id
+  source_security_group_id = local.keeper_sg_id
+}
+
+resource "aws_security_group_rule" "server_vpc_endpoint_egress" {
+  count = var.vpc_endpoint_security_group_id != null ? 1 : 0
+
+  type                     = "egress"
+  description              = "HTTPS access to VPC endpoints"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.server.id
+  source_security_group_id = var.vpc_endpoint_security_group_id
+}
+
+resource "aws_security_group_rule" "vpc_endpoint_server_ingress" {
+  count = var.vpc_endpoint_security_group_id != null ? 1 : 0
+
+  type                     = "ingress"
+  description              = "HTTPS access from Clickhouse servers"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = var.vpc_endpoint_security_group_id
+  source_security_group_id = aws_security_group.server.id
 }
 
 # =========================================================================
@@ -162,7 +264,7 @@ resource "aws_network_interface" "keeper" {
   count = var.keeper_count
 
   subnet_id       = var.keeper_subnet_id
-  security_groups = [aws_security_group.keeper.id]
+  security_groups = [local.keeper_sg_id]
 
   tags = merge(local.common_tags, {
     Name    = "clickhouse-keeper-${count.index}"
@@ -235,7 +337,7 @@ resource "aws_instance" "keeper" {
 
   metadata_options {
     http_endpoint               = "enabled"
-    http_tokens                 = "required"
+    http_tokens                 = var.metadata_http_tokens
     http_put_response_hop_limit = 1
   }
 
@@ -248,7 +350,11 @@ resource "aws_instance" "keeper" {
     aws_network_interface.keeper,
     aws_iam_instance_profile.clickhouse,
     aws_security_group_rule.keeper_self_ingress,
-    aws_security_group_rule.keeper_egress
+    aws_security_group_rule.keeper_self_egress,
+    aws_security_group_rule.keeper_from_server_ingress,
+    aws_security_group_rule.keeper_to_server_egress,
+    aws_security_group_rule.keeper_vpc_endpoint_egress,
+    aws_security_group_rule.vpc_endpoint_keeper_ingress
   ]
 }
 
@@ -297,7 +403,7 @@ resource "aws_instance" "server" {
 
   metadata_options {
     http_endpoint               = "enabled"
-    http_tokens                 = "required"
+    http_tokens                 = var.metadata_http_tokens
     http_put_response_hop_limit = 1
   }
 
@@ -310,6 +416,21 @@ resource "aws_instance" "server" {
     aws_network_interface.server,
     aws_iam_instance_profile.clickhouse,
     aws_security_group_rule.server_self_ingress,
-    aws_security_group_rule.server_egress
+    aws_security_group_rule.server_self_egress,
+    aws_security_group_rule.server_from_keeper_ingress,
+    aws_security_group_rule.server_to_keeper_egress,
+    aws_security_group_rule.server_vpc_endpoint_egress,
+    aws_security_group_rule.vpc_endpoint_server_ingress,
+    time_sleep.wait_for_keeper
   ]
+}
+
+# =========================================================================
+# WAIT FOR KEEPER TO BE READY
+# =========================================================================
+
+resource "time_sleep" "wait_for_keeper" {
+  depends_on = [aws_instance.keeper]
+
+  create_duration = var.keeper_count > 0 ? "180s" : "0s"
 }
