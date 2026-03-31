@@ -16,6 +16,9 @@ locals {
   key_name      = var.create_key_pair ? aws_key_pair.clickhouse[0].key_name : var.key_name
   key_pair_name = var.key_name != null ? var.key_name : "${local.name_prefix}-key"
 
+  # Security group references (handle conditional creation)
+  keeper_sg_id = var.keeper_count > 0 ? aws_security_group.keeper[0].id : null
+
   # Build keeper IP list from ENI private IPs
   keeper_ips = var.keeper_count > 0 ? [for i in range(var.keeper_count) : aws_network_interface.keeper[i].private_ip] : []
 
