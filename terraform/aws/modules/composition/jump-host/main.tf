@@ -159,7 +159,7 @@ resource "aws_ssm_document" "session_preferences" {
     sessionType   = "Standard_Stream"
     inputs = merge(
       {
-        idleSessionTimeoutInMinutes = var.ssm_idle_session_timeout
+        idleSessionTimeout          = tostring(var.ssm_idle_session_timeout)
         runAsEnabled                = var.ssm_run_as_user != ""
         cloudWatchEncryptionEnabled = var.ssm_cloudwatch_logging_enabled
         s3EncryptionEnabled         = var.ssm_s3_logging_enabled
@@ -168,7 +168,7 @@ resource "aws_ssm_document" "session_preferences" {
           windows = var.ssm_shell_profile_windows
         }
       },
-      var.ssm_max_session_duration != "" ? { maxSessionDurationInMinutes = tonumber(var.ssm_max_session_duration) } : {},
+      var.ssm_max_session_duration != "" ? { maxSessionDuration = var.ssm_max_session_duration } : {},
       var.ssm_run_as_user != "" ? { runAsDefaultUser = var.ssm_run_as_user } : {},
       var.enable_ssm_session_encryption ? { kmsKeyId = "alias/aws/ssm" } : {},
       var.ssm_cloudwatch_logging_enabled ? { cloudWatchLogGroupName = local.ssm_cloudwatch_log_group_name } : {},
