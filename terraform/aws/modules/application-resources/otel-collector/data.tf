@@ -1,13 +1,7 @@
-# =========================================================================
-# DATA SOURCES
-# =========================================================================
-
 data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
 
-# EKS Cluster data for OIDC
-# =========================================================================
 data "aws_eks_cluster" "eks" {
   for_each = var.cluster_service_accounts
   name     = each.key

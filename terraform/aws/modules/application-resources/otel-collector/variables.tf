@@ -89,10 +89,6 @@ variable "assume_role_principals" {
   default     = []
 }
 
-# =========================================================================
-# Policy Attachments
-# =========================================================================
-
 variable "aws_managed_policy_names" {
   description = "List of AWS managed policy names to attach"
   type        = list(string)
@@ -105,71 +101,11 @@ variable "customer_managed_policy_arns" {
   default     = []
 }
 
-# =========================================================================
-# OpenTelemetry Collector Specific Permissions
-# =========================================================================
-
-variable "create_otel_collector_policy" {
-  description = "Whether to create the default OpenTelemetry Collector IAM policy"
-  type        = bool
-  default     = true
-}
-
-# CloudWatch Logs Configuration
-variable "enable_cloudwatch_logs" {
-  description = "Enable permissions for sending logs to CloudWatch Logs"
-  type        = bool
-  default     = true
-}
-
-variable "cloudwatch_logs_log_group_arn" {
-  description = "ARN of the CloudWatch Logs log group (for scoped permissions). If null, allows all log groups"
-  type        = string
-  default     = null
-}
-
-# CloudWatch Metrics Configuration
-variable "enable_cloudwatch_metrics" {
-  description = "Enable permissions for sending metrics to CloudWatch"
-  type        = bool
-  default     = true
-}
-
-variable "cloudwatch_metrics_namespace" {
-  description = "CloudWatch metrics namespace for the OpenTelemetry Collector"
-  type        = string
-  default     = "OpenTelemetryCollector"
-}
-
-# X-Ray Tracing Configuration
-variable "enable_xray_tracing" {
-  description = "Enable permissions for sending traces to AWS X-Ray"
-  type        = bool
-  default     = true
-}
-
-# S3 Export Configuration
-variable "enable_s3_export" {
-  description = "Enable permissions for exporting telemetry data to S3"
-  type        = bool
-  default     = false
-}
-
-variable "s3_export_bucket_arn" {
-  description = "ARN of the S3 bucket for telemetry data export (for scoped permissions). If null, allows all buckets"
-  type        = string
-  default     = null
-}
-
-# Kinesis Data Firehose Configuration
-variable "enable_kinesis_firehose" {
-  description = "Enable permissions for sending telemetry data to Kinesis Data Firehose"
-  type        = bool
-  default     = false
-}
-
-variable "kinesis_firehose_stream_arn" {
-  description = "ARN of the Kinesis Data Firehose delivery stream (for scoped permissions). If null, allows all streams"
-  type        = string
-  default     = null
+variable "inline_policies" {
+  description = "Map of inline policies to attach to the role. Key is used as policy name if name is not provided"
+  type = map(object({
+    name   = optional(string)
+    policy = any
+  }))
+  default = {}
 }
