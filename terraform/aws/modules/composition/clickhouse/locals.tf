@@ -1,5 +1,6 @@
 locals {
   name_prefix = "${var.environment}-${var.project_name}-clickhouse"
+  alb_name_prefix = "${var.environment}-ckh"
 
   common_tags = merge(
     {
