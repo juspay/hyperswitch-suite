@@ -123,7 +123,7 @@ variable "nlb_ingress_rules" {
 variable "traffic_port" {
   description = "Port on which the rate limiter application listens"
   type        = number
-  default     = 8080
+  default     = 8091
 }
 
 variable "target_group_protocol" {
