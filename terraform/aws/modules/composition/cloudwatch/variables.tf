@@ -109,12 +109,6 @@ variable "anomaly_detectors" {
     namespace   = string
     stat        = string # Average, Sum, Maximum, Minimum, SampleCount
     dimensions  = optional(map(string), {})
-    metric_query = optional(object({
-      id          = string
-      expression  = optional(string)
-      label       = optional(string)
-      return_data = optional(bool, false)
-    }))
   }))
   default = {}
 }
