@@ -30,4 +30,7 @@ locals {
 
   # User data content
   userdata_content = var.user_data
+
+  # Health check port defaults to traffic_port if not specified
+  health_check_port = var.health_check_port != null ? var.health_check_port : var.traffic_port
 }

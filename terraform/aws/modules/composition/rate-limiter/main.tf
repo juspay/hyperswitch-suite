@@ -121,12 +121,12 @@ resource "aws_security_group_rule" "asg_ingress_from_nlb" {
 
 # Health check port ingress from NLB (if different from traffic port)
 resource "aws_security_group_rule" "asg_ingress_healthcheck" {
-  count = var.create_nlb && var.health_check_port != var.traffic_port ? 1 : 0
+  count = var.create_nlb && local.health_check_port != var.traffic_port ? 1 : 0
 
   security_group_id        = module.asg_security_group.security_group_id
   type                     = "ingress"
-  from_port                = var.health_check_port
-  to_port                  = var.health_check_port
+  from_port                = local.health_check_port
+  to_port                  = local.health_check_port
   protocol                 = "tcp"
   source_security_group_id = module.nlb_security_group[0].security_group_id
   description              = "Allow health checks from NLB"
@@ -204,7 +204,7 @@ resource "aws_lb_target_group" "this" {
 
   health_check {
     enabled             = true
-    port                = tostring(var.health_check_port)
+    port                = tostring(local.health_check_port)
     protocol            = var.health_check_protocol
     path                = var.health_check_protocol == "HTTP" || var.health_check_protocol == "HTTPS" ? var.health_check_path : null
     matcher             = var.health_check_matcher
