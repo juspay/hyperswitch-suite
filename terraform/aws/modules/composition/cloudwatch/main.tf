@@ -113,8 +113,5 @@ resource "aws_cloudwatch_anomaly_detector" "anomaly_detectors" {
   metric_name = each.value.metric_name
   namespace   = each.value.namespace
   stat        = each.value.stat
-
-  dimensions = each.value.dimensions
-
-  metric_query = each.value.metric_query
+  dimensions  = each.value.dimensions
 }
