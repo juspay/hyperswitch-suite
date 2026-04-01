@@ -9,9 +9,9 @@ output "topic_names" {
   value       = { for k, v in aws_sns_topic.topics : k => v.name }
 }
 
-output "topic_endpoints" {
-  description = "Map of topic keys to endpoints"
-  value       = { for k, v in aws_sns_topic.topics : k => v.endpoint }
+output "topic_ids" {
+  description = "Map of topic keys to topic IDs"
+  value       = { for k, v in aws_sns_topic.topics : k => v.id }
 }
 
 output "subscriptions" {
