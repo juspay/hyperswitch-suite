@@ -52,12 +52,12 @@ output "native_port" {
 # ============================================================================
 output "cassandra_security_group_id" {
   description = "Security group ID of the Cassandra cluster"
-  value       = module.cassandra_sg.sg_id
+  value       = aws_security_group.cassandra.id
 }
 
 output "cassandra_security_group_arn" {
   description = "Security group ARN of the Cassandra cluster"
-  value       = module.cassandra_sg.sg_arn
+  value       = aws_security_group.cassandra.arn
 }
 
 output "subnet_id" {
@@ -83,22 +83,22 @@ output "ssh_private_key_ssm_parameter" {
 # ============================================================================
 output "iam_role_arn" {
   description = "ARN of the IAM role attached to Cassandra instances"
-  value       = module.cassandra_iam_role.role_arn
+  value       = aws_iam_role.cassandra.arn
 }
 
 output "iam_role_name" {
   description = "Name of the IAM role attached to Cassandra instances"
-  value       = module.cassandra_iam_role.role_name
+  value       = aws_iam_role.cassandra.name
 }
 
 output "instance_profile_name" {
   description = "Name of the IAM instance profile for Cassandra instances"
-  value       = module.cassandra_iam_role.instance_profile_name
+  value       = aws_iam_instance_profile.cassandra.name
 }
 
 output "instance_profile_arn" {
   description = "ARN of the IAM instance profile for Cassandra instances"
-  value       = module.cassandra_iam_role.instance_profile_arn
+  value       = aws_iam_instance_profile.cassandra.arn
 }
 
 # ============================================================================
