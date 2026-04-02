@@ -217,7 +217,7 @@ module "cloudfront" {
     for origin in local.processed_origins[each.key] :
     origin.origin_id => merge(
       {
-        domain_name = lookup(origin, "resolved_domain_name", lookup(origin, "domain_name", lookup(origin, "s3_bucket_domain_name", null)))
+        domain_name = origin.resolved_domain_name
         origin_path = lookup(origin, "origin_path", "")
       },
       origin.type == "s3" ? {

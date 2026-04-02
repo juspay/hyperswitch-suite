@@ -103,7 +103,12 @@ locals {
       for origin in dist_config.origins :
       merge(origin, {
         # Determine domain name based on origin type
-        resolved_domain_name = lookup(origin, "s3_bucket_domain_name", lookup(origin, "domain_name", null))
+        # For VPC origins, domain_name can be in vpc_origin_config or root level
+        resolved_domain_name = (
+          origin.type == "vpc_origin" && lookup(origin, "vpc_origin_config", null) != null ?
+          lookup(origin.vpc_origin_config, "domain_name", lookup(origin, "domain_name", null)) :
+          lookup(origin, "s3_bucket_domain_name", lookup(origin, "domain_name", null))
+        )
 
         # Use origin_access_identity from origin config if provided (for S3 origins)
         origin_access_identity = lookup(origin, "origin_access_identity", null)
