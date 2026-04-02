@@ -39,6 +39,34 @@ resource "aws_cloudfront_origin_access_control" "this" {
   signing_protocol                  = each.value.signing_protocol
 }
 
+# ============================================================================
+# VPC Origins for ALB
+# ============================================================================
+
+resource "aws_cloudfront_vpc_origin" "this" {
+  for_each = local.vpc_origins_map
+
+  vpc_origin_endpoint_config {
+    name                   = each.value.name
+    arn                    = each.value.alb_arn
+    http_port              = each.value.http_port
+    https_port             = each.value.https_port
+    origin_protocol_policy = each.value.origin_protocol_policy
+
+    origin_ssl_protocols {
+      items    = each.value.origin_ssl_protocols.items
+      quantity = each.value.origin_ssl_protocols.quantity
+    }
+  }
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = each.value.name
+    }
+  )
+}
+
 # CloudFront Distributions
 module "cloudfront" {
   source  = "terraform-aws-modules/cloudfront/aws"
@@ -65,7 +93,12 @@ module "cloudfront" {
         connection_attempts      = lookup(origin_config, "connection_attempts", 3)
         connection_timeout       = lookup(origin_config, "connection_timeout", 10)
       },
-      origin_config.type != "s3" ? {
+      # VPC Origin - use vpc_origin_id instead of custom_origin_config
+      origin_config.type == "vpc_origin" ? {
+        vpc_origin_id = lookup(origin_config, "vpc_origin_id", null)
+      } : {},
+      # ALB and custom origins use custom_origin_config
+      origin_config.type == "alb" || origin_config.type == "custom" ? {
         custom_origin_config = {
           http_port                    = lookup(origin_config.custom_origin_config, "http_port", 80)
           https_port                   = lookup(origin_config.custom_origin_config, "https_port", 443)

@@ -68,6 +68,19 @@ variable "distributions" {
         origin_keepalive_timeout = optional(number, 5)
         origin_read_timeout      = optional(number, 30)
       }))
+
+      # VPC Origin configuration (for ALB origins using CloudFront VPC Origins)
+      vpc_origin_config = optional(object({
+        alb_arn                = string
+        name                   = optional(string)
+        http_port              = optional(number, 80)
+        https_port             = optional(number, 443)
+        origin_protocol_policy = optional(string, "https-only")
+        origin_ssl_protocols = optional(object({
+          items    = optional(list(string), ["TLSv1.2"])
+          quantity = optional(number, 1)
+        }), { items = ["TLSv1.2"], quantity = 1 })
+      }))
     }))
 
     # Default cache behavior

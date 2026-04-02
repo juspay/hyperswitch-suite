@@ -26,6 +26,35 @@ locals {
     oac.name => aws_cloudfront_origin_access_control.this[key].id
   }
 
+  # VPC Origins map - collect all vpc_origin type origins across distributions
+  vpc_origins_map = {
+    for origin in flatten([
+      for dist_name, dist_config in var.distributions : [
+        for origin in dist_config.origins :
+        {
+          key = "${dist_name}-${origin.origin_id}"
+          value = {
+            name                   = lookup(origin.vpc_origin_config, "name", "${var.project_name}-${dist_name}-${origin.origin_id}-${var.environment}")
+            alb_arn                = origin.vpc_origin_config.alb_arn
+            http_port              = lookup(origin.vpc_origin_config, "http_port", 80)
+            https_port             = lookup(origin.vpc_origin_config, "https_port", 443)
+            origin_protocol_policy = lookup(origin.vpc_origin_config, "origin_protocol_policy", "https-only")
+            origin_ssl_protocols = lookup(origin.vpc_origin_config, "origin_ssl_protocols", { items = ["TLSv1.2"], quantity = 1 })
+            origin_id              = origin.origin_id
+            dist_name              = dist_name
+          }
+        }
+        if origin.type == "vpc_origin" && lookup(origin, "vpc_origin_config", null) != null
+      ]
+    ]) : origin.key => origin.value
+  }
+
+  # VPC Origin IDs map for resolving origin_id to vpc_origin_id
+  vpc_origin_ids_map = {
+    for key, vpc_origin in aws_cloudfront_vpc_origin.this :
+    key => vpc_origin.id
+  }
+
   # CloudFront Functions ARN map for resolving function names to ARNs
   cloudfront_function_arns_map = module.cloudfront_resources.cloudfront_function_arns
 
@@ -97,6 +126,11 @@ locals {
             origin_read_timeout      = 30
           },
           lookup(origin, "custom_origin_config", {})
+        ) : null
+
+        # Set VPC Origin ID for vpc_origin type origins
+        vpc_origin_id = origin.type == "vpc_origin" ? (
+          lookup(local.vpc_origin_ids_map, "${dist_name}-${origin.origin_id}", null)
         ) : null
       })
     ]
