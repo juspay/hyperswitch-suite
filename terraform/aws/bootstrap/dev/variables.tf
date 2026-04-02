@@ -20,6 +20,12 @@ variable "project_name" {
   default     = "hyperswitch"
 }
 
+variable "ci_test_variable" {
+  description = "Test variable to validate CI workflow"
+  type        = string
+  default     = "test-value"
+}
+
 # ============================================================================
 # S3 Bucket Configuration
 # ============================================================================
