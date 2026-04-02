@@ -1,21 +1,156 @@
 # ============================================================================
-# CloudFront Module - Main Implementation (Updated)
-# Uses cloudfront-resources module for shared resources
+# CloudFront Module - Main Implementation (Self-contained)
+# Creates distributions and all related resources (functions, policies, etc.)
 # ============================================================================
 
-# Call cloudfront-resources module to create shared resources
-module "cloudfront_resources" {
-  source = "../../cloudfront-resources"
+# CloudFront Functions
+resource "aws_cloudfront_function" "this" {
+  for_each = local.create ? var.cloudfront_functions : {}
 
-  create = var.create
-  environment  = var.environment
-  project_name = var.project_name
-  common_tags  = var.common_tags
+  name    = each.value.name
+  runtime = each.value.runtime
+  comment = lookup(each.value, "comment", "")
+  publish = lookup(each.value, "publish", true)
+  code    = each.value.code
+}
 
-  cloudfront_functions = var.cloudfront_functions
-  response_headers_policies = var.response_headers_policies
-  cache_policies = var.cache_policies
-  origin_request_policies = var.origin_request_policies
+# Response Headers Policies
+resource "aws_cloudfront_response_headers_policy" "this" {
+  for_each = local.create ? var.response_headers_policies : {}
+
+  name    = each.value.name
+  comment = lookup(each.value, "comment", "")
+
+  dynamic "cors_config" {
+    for_each = lookup(each.value, "cors_config", null) != null ? [each.value.cors_config] : []
+    content {
+      access_control_allow_credentials = cors_config.value.access_control_allow_credentials
+      origin_override                  = lookup(cors_config.value, "origin_override", false)
+
+      access_control_allow_headers {
+        items = cors_config.value.access_control_allow_headers
+      }
+
+      access_control_allow_methods {
+        items = cors_config.value.access_control_allow_methods
+      }
+
+      access_control_allow_origins {
+        items = cors_config.value.access_control_allow_origins
+      }
+
+      dynamic "access_control_expose_headers" {
+        for_each = lookup(cors_config.value, "access_control_expose_headers", null) != null ? [cors_config.value.access_control_expose_headers] : []
+        content {
+          items = access_control_expose_headers.value
+        }
+      }
+
+      access_control_max_age_sec = lookup(cors_config.value, "access_control_max_age_sec", null)
+    }
+  }
+
+  dynamic "security_headers_config" {
+    for_each = lookup(each.value, "security_headers_config", null) != null ? [each.value.security_headers_config] : []
+    content {
+      dynamic "content_security_policy" {
+        for_each = lookup(security_headers_config.value, "content_security_policy", null) != null ? [security_headers_config.value.content_security_policy] : []
+        content {
+          content_security_policy = content_security_policy.value
+          override                = lookup(security_headers_config.value, "content_security_policy_override", false)
+        }
+      }
+      content_type_options {
+        override = lookup(security_headers_config.value, "content_type_options_override", false)
+      }
+      frame_options {
+        frame_option = lookup(security_headers_config.value, "frame_option", "DENY")
+        override     = lookup(security_headers_config.value, "frame_options_override", false)
+      }
+      referrer_policy {
+        referrer_policy = lookup(security_headers_config.value, "referrer_policy", "strict-origin-when-cross-origin")
+        override        = lookup(security_headers_config.value, "referrer_policy_override", false)
+      }
+      strict_transport_security {
+        access_control_max_age_sec = lookup(security_headers_config.value, "strict_transport_security_max_age_sec", 31536000)
+        include_subdomains         = lookup(security_headers_config.value, "include_subdomains", true)
+        preload                    = lookup(security_headers_config.value, "preload", true)
+        override                   = lookup(security_headers_config.value, "strict_transport_security_override", false)
+      }
+      xss_protection {
+        mode_block = lookup(security_headers_config.value, "xss_protection_mode_block", true)
+        protection = lookup(security_headers_config.value, "xss_protection", true)
+        override   = lookup(security_headers_config.value, "xss_protection_override", false)
+        report_uri = lookup(security_headers_config.value, "xss_protection_report_uri", "")
+      }
+    }
+  }
+}
+
+# Cache Policies
+resource "aws_cloudfront_cache_policy" "this" {
+  for_each = local.create ? var.cache_policies : {}
+
+  name        = each.value.name
+  comment     = lookup(each.value, "comment", "")
+  default_ttl = lookup(each.value, "default_ttl", 86400)
+  max_ttl     = lookup(each.value, "max_ttl", 31536000)
+  min_ttl     = lookup(each.value, "min_ttl", 1)
+
+  parameters_in_cache_key_and_forwarded_to_origin {
+    enable_accept_encoding_brotli = lookup(each.value, "enable_accept_encoding_brotli", false)
+    enable_accept_encoding_gzip   = lookup(each.value, "enable_accept_encoding_gzip", true)
+
+    headers_config {
+      header_behavior = lookup(each.value, "headers_config.header_behavior", "none")
+      headers {
+        items = lookup(each.value, "headers_config.headers", [])
+      }
+    }
+
+    cookies_config {
+      cookie_behavior = lookup(each.value, "cookies_config.cookie_behavior", "none")
+      cookies {
+        items = lookup(each.value, "cookies_config.cookies", [])
+      }
+    }
+
+    query_strings_config {
+      query_string_behavior = lookup(each.value, "query_strings_config.query_string_behavior", "none")
+      query_strings {
+        items = lookup(each.value, "query_strings_config.query_strings", [])
+      }
+    }
+  }
+}
+
+# Origin Request Policies
+resource "aws_cloudfront_origin_request_policy" "this" {
+  for_each = local.create ? var.origin_request_policies : {}
+
+  name    = each.value.name
+  comment = lookup(each.value, "comment", "")
+
+  headers_config {
+    header_behavior = lookup(each.value, "headers_config.header_behavior", "none")
+    headers {
+      items = lookup(each.value, "headers_config.headers", [])
+    }
+  }
+
+  cookies_config {
+    cookie_behavior = lookup(each.value, "cookies_config.cookie_behavior", "none")
+    cookies {
+      items = lookup(each.value, "cookies_config.cookies", [])
+    }
+  }
+
+  query_strings_config {
+    query_string_behavior = lookup(each.value, "query_strings_config.query_string_behavior", "none")
+    query_strings {
+      items = lookup(each.value, "query_strings_config.query_strings", [])
+    }
+  }
 }
 
 # Create S3 bucket for CloudFront logs if enabled and requested
@@ -26,17 +161,6 @@ module "log_bucket" {
   version = "~> 5.0"
 
   bucket = local.log_bucket_config.bucket_name
-}
-
-# Origin Access Controls
-resource "aws_cloudfront_origin_access_control" "this" {
-  for_each = local.create ? var.origin_access_controls : {}
-
-  name                              = each.value.name
-  description                       = each.value.description
-  origin_access_control_origin_type = each.value.origin_access_control_origin_type
-  signing_behavior                  = each.value.signing_behavior
-  signing_protocol                  = each.value.signing_protocol
 }
 
 # ============================================================================
@@ -70,9 +194,9 @@ resource "aws_cloudfront_vpc_origin" "this" {
 # CloudFront Distributions
 module "cloudfront" {
   source  = "terraform-aws-modules/cloudfront/aws"
-  version = "~> 6.0"
+  version = "~> 4.2.0"
 
-  for_each = var.distributions
+  for_each = local.all_distributions
 
   # Basic distribution configuration
   comment             = lookup(each.value, "comment", "${var.project_name}-${each.key}-${var.environment}")
@@ -80,33 +204,33 @@ module "cloudfront" {
   default_root_object = lookup(each.value, "default_root_object", "index.html")
   price_class         = lookup(each.value, "price_class", "PriceClass_All")
   is_ipv6_enabled     = true
-  http_version        = "http2and3"
+  http_version        = "http2"
 
-  # Origins configuration
+  create_origin_access_identity = length([for o in each.value.origins : o if lookup(o, "type", "") == "s3"]) > 0
+  origin_access_identities = {
+    for o in each.value.origins :
+    o.origin_id => lookup(o, "origin_access_identity_comment", "OAI for ${o.origin_id} in ${each.key}")
+    if lookup(o, "type", "") == "s3"
+  }
+
   origin = {
-    for idx, origin_config in local.processed_origins[each.key] :
-    origin_config.origin_id => merge(
+    for origin in each.value.origins :
+    origin.origin_id => merge(
       {
-        domain_name              = origin_config.resolved_domain_name
-        origin_path              = lookup(origin_config, "origin_path", "")
-        origin_access_control_id = lookup(origin_config, "origin_access_control_id", null)
-        connection_attempts      = lookup(origin_config, "connection_attempts", 3)
-        connection_timeout       = lookup(origin_config, "connection_timeout", 10)
+        domain_name = lookup(origin, "domain_name", lookup(origin, "s3_bucket_domain_name", null))
+        origin_path = lookup(origin, "origin_path", "")
       },
-      # VPC Origin - use vpc_origin_id instead of custom_origin_config
-      origin_config.type == "vpc_origin" ? {
-        vpc_origin_id = lookup(origin_config, "vpc_origin_id", null)
-      } : {},
-      # ALB and custom origins use custom_origin_config
-      origin_config.type == "alb" || origin_config.type == "custom" ? {
-        custom_origin_config = {
-          http_port                    = lookup(origin_config.custom_origin_config, "http_port", 80)
-          https_port                   = lookup(origin_config.custom_origin_config, "https_port", 443)
-          origin_protocol_policy       = lookup(origin_config.custom_origin_config, "origin_protocol_policy", "https-only")
-          origin_ssl_protocols         = lookup(origin_config.custom_origin_config, "origin_ssl_protocols", ["TLSv1.2"])
-          origin_keepalive_timeout     = lookup(origin_config.custom_origin_config, "origin_keepalive_timeout", 5)
-          origin_read_timeout          = lookup(origin_config.custom_origin_config, "origin_read_timeout", 30)
+      origin.type == "s3" ? {
+        s3_origin_config = {
+          # Reference the OAI by origin_id (key in origin_access_identities)
+          origin_access_identity = origin.origin_id
         }
+      } : {},
+      origin.type == "vpc_origin" ? {
+        vpc_origin_id = lookup(origin, "vpc_origin_id", null)
+      } : {},
+      origin.type == "alb" || origin.type == "custom" ? {
+        custom_origin_config = origin.custom_origin_config
       } : {}
     )
   }
@@ -129,10 +253,12 @@ module "cloudfront" {
     default_ttl = local.processed_cache_behaviors[each.key].default.default_ttl
     max_ttl     = local.processed_cache_behaviors[each.key].default.max_ttl
 
-    use_forwarded_values = false
+    use_forwarded_values = local.processed_cache_behaviors[each.key].default.use_forwarded_values
+    query_string         = local.processed_cache_behaviors[each.key].default.query_string
+    headers              = local.processed_cache_behaviors[each.key].default.headers
+    cookies_forward      = local.processed_cache_behaviors[each.key].default.cookies_forward
 
-    lambda_function_association = local.processed_cache_behaviors[each.key].default.lambda_function_associations
-    function_association        = local.processed_cache_behaviors[each.key].default.function_associations
+    function_association = local.processed_cache_behaviors[each.key].default.function_associations
   }
 
   # Ordered cache behaviors
@@ -155,51 +281,44 @@ module "cloudfront" {
       default_ttl = behavior.default_ttl
       max_ttl     = behavior.max_ttl
 
-      use_forwarded_values = false
+      use_forwarded_values = behavior.use_forwarded_values
+      query_string         = behavior.query_string
+      headers              = behavior.headers
+      cookies_forward      = behavior.cookies_forward
 
-      lambda_function_association = behavior.lambda_function_associations
-      function_association        = behavior.function_associations
+      function_association = behavior.function_associations
     }
   ]
 
-  # Logging configuration
   logging_config = var.enable_logging && local.log_bucket_config != null ? {
     bucket          = local.log_bucket_config.bucket_domain_name
     prefix          = lookup(local.log_bucket_config, "prefix", "cloudfront/")
     include_cookies = false
-  } : null
+  } : {}
 
-  # Custom error responses
-  custom_error_response = lookup(each.value, "custom_error_responses", [])
+  custom_error_response = length(lookup(each.value, "custom_error_responses", [])) > 0 ? each.value.custom_error_responses : [{}]
 
-  # Geo restrictions (v6 uses restrictions block)
-  restrictions = {
-    geo_restriction = lookup(each.value, "geo_restriction", {
-      restriction_type = "none"
-      locations        = []
-    })
-  }
+  geo_restriction = lookup(each.value, "geo_restriction", {
+    restriction_type = "none"
+    locations        = []
+  })
 
-  # Web ACL
   web_acl_id = lookup(each.value, "web_acl_id", null)
 
-  # Domain aliases
   aliases = lookup(each.value, "aliases", [])
 
   # Viewer certificate configuration
   # Note: When using cloudfront_default_certificate=true, AWS forces minimum_protocol_version to TLSv1
   # To enforce TLSv1.2+, you must use a custom ACM certificate.
   viewer_certificate = lookup(each.value, "viewer_certificate", null) != null ? {
-    acm_certificate_arn      = each.value.viewer_certificate.acm_certificate_arn
-    ssl_support_method       = lookup(each.value.viewer_certificate, "ssl_support_method", "sni-only")
-    minimum_protocol_version = lookup(each.value.viewer_certificate, "minimum_protocol_version", "TLSv1.2_2021")
+    acm_certificate_arn            = each.value.viewer_certificate.acm_certificate_arn
+    ssl_support_method             = lookup(each.value.viewer_certificate, "ssl_support_method", "sni-only")
+    minimum_protocol_version       = lookup(each.value.viewer_certificate, "minimum_protocol_version", "TLSv1.2_2021")
     cloudfront_default_certificate = false
-  } : {
+    } : {
     cloudfront_default_certificate = true
-    minimum_protocol_version       = "TLSv1"  # AWS enforces TLSv1 for default certificate
+    minimum_protocol_version       = "TLSv1" # AWS enforces TLSv1 for default certificate
   }
-
-  origin_access_control = {}
 
   # Add distribution-specific name to tags
   tags = merge(
