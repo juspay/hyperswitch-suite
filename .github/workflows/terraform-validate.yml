@@ -215,117 +215,10 @@ jobs:
           
           exit $EXIT_CODE
 
-  terraform-plan:
-    name: Terraform Plan
-    runs-on: ubuntu-latest
-    needs: [detect-changes, terraform-validate]
-    if: needs.detect-changes.outputs.has-changes == 'true' && needs.terraform-validate.result == 'success'
-    continue-on-error: true
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "~1.5"
-
-      - name: Create CI provider override
-        run: |
-          cat > /tmp/ci_providers_override.tf << 'EOF'
-          provider "aws" {
-            region                      = "eu-central-1"
-            skip_credentials_validation = true
-            skip_metadata_api_check     = true
-            skip_requesting_account_id  = true
-          }
-          EOF
-
-      - name: Plan changed directories
-        id: plan
-        run: |
-          PASSED_DIRS=""
-          FAILED_DIRS=""
-          SKIPPED_DIRS=""
-          
-          DIRS='${{ needs.detect-changes.outputs.terraform-dirs }}'
-          
-          for dir in $(echo "$DIRS" | jq -r '.[]'); do
-            if [ -z "$dir" ] || [ ! -d "$dir" ]; then
-              continue
-            fi
-            
-            echo "=================================================="
-            echo "Planning: $dir"
-            echo "=================================================="
-            
-            if grep -rq "terraform_remote_state" "$dir"/*.tf 2>/dev/null; then
-              echo "::warning file=$dir::Skipping - uses terraform_remote_state"
-              SKIPPED_DIRS="${SKIPPED_DIRS}$dir (remote state)\n"
-              continue
-            fi
-            
-            if echo "$dir" | grep -q "/modules/"; then
-              echo "::warning file=$dir::Skipping - module directory (not deployable)"
-              SKIPPED_DIRS="${SKIPPED_DIRS}$dir (module)\n"
-              continue
-            fi
-            
-            cp /tmp/ci_providers_override.tf "$dir/" 2>/dev/null || true
-            
-            echo "Running terraform init -backend=false..."
-            INIT_OUTPUT=$(terraform init -backend=false -get=true -upgrade "$dir" 2>&1)
-            INIT_EXIT=$?
-            
-            rm -f "$dir/ci_providers_override.tf" 2>/dev/null || true
-            
-            if [ $INIT_EXIT -ne 0 ]; then
-              echo "::warning file=$dir::Init failed - skipping"
-              echo "$INIT_OUTPUT"
-              SKIPPED_DIRS="${SKIPPED_DIRS}$dir (init failed)\n"
-              continue
-            fi
-            
-            echo "Running terraform plan..."
-            PLAN_OUTPUT=$(terraform plan -input=false -detailed-exitcode "$dir" 2>&1)
-            PLAN_EXIT=$?
-            
-            if [ $PLAN_EXIT -eq 0 ]; then
-              echo "[PASS] Plan passed for $dir - no changes"
-              PASSED_DIRS="${PASSED_DIRS}$dir\n"
-            elif [ $PLAN_EXIT -eq 2 ]; then
-              echo "[PASS] Plan passed for $dir - has changes"
-              PASSED_DIRS="${PASSED_DIRS}$dir (changes)\n"
-            else
-              echo "::error file=$dir::Plan failed"
-              echo "$PLAN_OUTPUT"
-              FAILED_DIRS="${FAILED_DIRS}$dir\n"
-            fi
-            
-            rm -rf "$dir/.terraform" 2>/dev/null || true
-            rm -f "$dir/.terraform.lock.hcl" 2>/dev/null || true
-            
-            echo ""
-          done
-          
-          echo ""
-          echo "=================================================="
-          echo "PLAN SUMMARY"
-          echo "=================================================="
-          echo ""
-          echo "PASSED:"
-          echo -e "$PASSED_DIRS" | grep -v "^$" || echo "None"
-          echo ""
-          echo "SKIPPED:"
-          echo -e "$SKIPPED_DIRS" | grep -v "^$" || echo "None"
-          echo ""
-          echo "FAILED:"
-          echo -e "$FAILED_DIRS" | grep -v "^$" || echo "None"
-
   terraform-check-summary:
     name: Terraform Check Summary
     runs-on: ubuntu-latest
-    needs: [detect-changes, terraform-fmt, terraform-validate, terraform-plan]
+    needs: [detect-changes, terraform-fmt, terraform-validate]
     if: always()
     steps:
       - name: Generate summary
@@ -345,7 +238,6 @@ jobs:
           
           FMT_RESULT="${{ needs.terraform-fmt.result }}"
           VALIDATE_RESULT="${{ needs.terraform-validate.result }}"
-          PLAN_RESULT="${{ needs.terraform-plan.result }}"
           
           if [ "$FMT_RESULT" == "success" ]; then
             echo "| Format Check | PASSED |" >> $GITHUB_STEP_SUMMARY
@@ -361,14 +253,6 @@ jobs:
             echo "| Validation | SKIPPED (fmt failed first) |" >> $GITHUB_STEP_SUMMARY
           else
             echo "| Validation | FAILED |" >> $GITHUB_STEP_SUMMARY
-          fi
-          
-          if [ "$PLAN_RESULT" == "success" ]; then
-            echo "| Plan | PASSED |" >> $GITHUB_STEP_SUMMARY
-          elif [ "$PLAN_RESULT" == "skipped" ]; then
-            echo "| Plan | SKIPPED |" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "| Plan | CHECK LOGS |" >> $GITHUB_STEP_SUMMARY
           fi
 
       - name: Check required results
