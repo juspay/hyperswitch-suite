@@ -214,10 +214,10 @@ module "cloudfront" {
   }
 
   origin = {
-    for origin in each.value.origins :
+    for origin in local.processed_origins[each.key] :
     origin.origin_id => merge(
       {
-        domain_name = lookup(origin, "domain_name", lookup(origin, "s3_bucket_domain_name", null))
+        domain_name = lookup(origin, "resolved_domain_name", lookup(origin, "domain_name", lookup(origin, "s3_bucket_domain_name", null)))
         origin_path = lookup(origin, "origin_path", "")
       },
       origin.type == "s3" ? {
@@ -227,7 +227,7 @@ module "cloudfront" {
         }
       } : {},
       origin.type == "vpc_origin" ? {
-        vpc_origin_id = lookup(origin, "vpc_origin_id", null)
+        vpc_origin_id = origin.vpc_origin_id
       } : {},
       origin.type == "alb" || origin.type == "custom" ? {
         custom_origin_config = origin.custom_origin_config
