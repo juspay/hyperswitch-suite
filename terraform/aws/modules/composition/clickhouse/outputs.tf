@@ -23,7 +23,7 @@ output "private_key_ssm_parameter" {
 
 output "keeper_security_group_id" {
   description = "ID of the security group for Clickhouse keeper nodes"
-  value       = aws_security_group.keeper.id
+  value       = local.keeper_sg_id
 }
 
 output "server_security_group_id" {
