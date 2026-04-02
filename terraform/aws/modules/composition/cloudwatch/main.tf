@@ -153,4 +153,29 @@ resource "aws_cloudwatch_metric_alarm" "metric_anomaly_alarms" {
   })
 }
 
+# CloudWatch Classified Metric Alarms with Multi-Threshold Support
+resource "aws_cloudwatch_metric_alarm" "classified_alarms" {
+  for_each = local.classified_alarms_flat
+
+  alarm_name          = each.value.alarm_name
+  alarm_description   = each.value.alarm_description
+  comparison_operator = each.value.comparison_operator
+  evaluation_periods  = each.value.evaluation_periods
+  metric_name         = each.value.metric_name
+  namespace           = each.value.namespace
+  period              = each.value.period
+  statistic           = each.value.statistic
+  threshold           = each.value.threshold
+  dimensions          = each.value.dimensions
+  treat_missing_data  = each.value.treat_missing_data
+  datapoints_to_alarm = each.value.datapoints_to_alarm
+
+  alarm_actions = each.value.alarm_actions
+  ok_actions    = each.value.ok_actions
+
+  tags = merge(local.common_tags, each.value.additional_tags, {
+    Name = each.value.alarm_name
+  })
+}
+
 

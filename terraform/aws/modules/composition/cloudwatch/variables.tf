@@ -124,4 +124,33 @@ variable "metric_anomaly_alarms" {
   default = {}
 }
 
+# Classified Metric Alarms with Multi-Threshold Support
+variable "classified_metric_alarms" {
+  description = "Map of classified metric alarms with multi-threshold severity levels. Each alarm can define multiple thresholds (sev1, sev2, sev3) that generate separate alarms."
+  type = map(object({
+    classification = optional(string, "infrastructure-alerts") # Classification category: rds-alerts, cache-alerts, eks-alerts, etc.
+    metric_name    = string
+    namespace      = string
+    dimensions     = optional(map(string), {})
+    period         = optional(number, 60)
+    statistic      = optional(string, "Average")
+    # Multi-threshold configuration - each threshold creates a separate alarm
+    thresholds = map(object({
+      threshold           = number
+      evaluation_periods  = optional(number, 3)
+      datapoints_to_alarm = optional(number)
+      treat_missing_data  = optional(string, "notBreaching")
+    }))
+    # Severity configurations - maps threshold keys to severity settings
+    severity_config = map(object({
+      severity            = string                                   # sev1, sev2, or sev3
+      description         = string                                   # Alarm description
+      alarm_actions       = optional(list(string), [])               # SNS topic ARNs
+      ok_actions          = optional(list(string), [])               # SNS topic ARNs
+      comparison_operator = optional(string, "GreaterThanThreshold") # or "LessThanThreshold"
+    }))
+  }))
+  default = {}
+}
+
 
