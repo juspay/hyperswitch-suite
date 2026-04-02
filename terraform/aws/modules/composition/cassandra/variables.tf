@@ -178,6 +178,12 @@ variable "api_gateway_vpce_id" {
   default     = null
 }
 
+variable "vpc_endpoint_security_group_id" {
+  description = "Security group ID for VPC endpoints. Required to allow HTTPS access from Cassandra to VPC endpoints (EC2 API)."
+  type        = string
+  default     = null
+}
+
 # ============================================================================
 # Monitoring & Logging
 # ============================================================================
@@ -218,6 +224,19 @@ variable "eni_tag_value" {
   description = "Tag value used to identify Cassandra ENIs"
   type        = string
   default     = "cassandra"
+}
+
+# ============================================================================
+# IMDSv2 Configuration
+# ============================================================================
+variable "metadata_http_tokens" {
+  description = "IMDSv2 setting for EC2 instances - 'required' for IMDSv2 only, 'optional' for IMDSv1 and IMDSv2"
+  type        = string
+  default     = "required"
+  validation {
+    condition     = contains(["required", "optional"], var.metadata_http_tokens)
+    error_message = "metadata_http_tokens must be either 'required' or 'optional'"
+  }
 }
 
 # ============================================================================

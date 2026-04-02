@@ -15,6 +15,11 @@ output "cluster_name" {
   value       = module.eks.cluster_name
 }
 
+output "cluster_name_version" {
+  description = "The version identifier for the EKS cluster name"
+  value       = var.cluster_name_version
+}
+
 output "cluster_arn" {
   description = "The Amazon Resource Name (ARN) of the cluster"
   value       = module.eks.cluster_arn

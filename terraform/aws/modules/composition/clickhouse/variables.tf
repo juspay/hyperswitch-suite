@@ -32,6 +32,12 @@ variable "server_subnet_id" {
   type        = string
 }
 
+variable "vpc_endpoint_security_group_id" {
+  description = "Security group ID of VPC endpoints (for EC2 Metadata). If provided, HTTPS rules will be created."
+  type        = string
+  default     = null
+}
+
 # =========================================================================
 # Keeper Configuration
 # =========================================================================
@@ -85,6 +91,24 @@ variable "keeper_data_device_name" {
   description = "Device name for the keeper data EBS volume"
   type        = string
   default     = "/dev/sdb"
+}
+
+variable "keeper_data2_volume_size" {
+  description = "Size of the second additional EBS volume in GB for Clickhouse keeper"
+  type        = number
+  default     = 10
+}
+
+variable "keeper_data2_volume_type" {
+  description = "Type of the second additional EBS volume for keeper"
+  type        = string
+  default     = "gp3"
+}
+
+variable "keeper_data2_device_name" {
+  description = "Device name for the keeper second data EBS volume"
+  type        = string
+  default     = "/dev/sdc"
 }
 
 # =========================================================================
@@ -142,9 +166,76 @@ variable "server_data_device_name" {
   default     = "/dev/sdb"
 }
 
+variable "server_data2_volume_size" {
+  description = "Size of the second additional EBS volume in GB for Clickhouse server"
+  type        = number
+  default     = 20
+}
+
+variable "server_data2_volume_type" {
+  description = "Type of the second additional EBS volume for server"
+  type        = string
+  default     = "gp3"
+}
+
+variable "server_data2_device_name" {
+  description = "Device name for the server second data EBS volume"
+  type        = string
+  default     = "/dev/sdc"
+}
+
 # =========================================================================
-# User Data Configuration
+# Load Balancer Configuration
 # =========================================================================
+
+variable "clickhouse_port" {
+  description = "Port for Clickhouse HTTP interface"
+  type        = number
+  default     = 8123
+}
+
+variable "alb_subnet_ids" {
+  description = "List of subnet IDs for the Application Load Balancer. At least two subnets in two different Availability Zones are required."
+  type        = list(string)
+
+  validation {
+    condition     = length(var.alb_subnet_ids) >= 2
+    error_message = "At least two subnets in two different Availability Zones must be specified for the ALB."
+  }
+}
+
+variable "alb_listeners" {
+  description = "ALB listener configurations for the Application Load Balancer"
+  type = map(object({
+    port             = number
+    protocol         = string
+    target_group_arn = optional(string)
+    certificate_arn  = optional(string)
+  }))
+  default = {
+    "http" = {
+      port     = 80
+      protocol = "HTTP"
+    }
+  }
+  validation {
+    condition = alltrue([
+      for key, listener in var.alb_listeners :
+      contains(["HTTP", "HTTPS"], listener.protocol)
+    ])
+    error_message = "Listener protocol must be one of: HTTP, HTTPS"
+  }
+}
+
+# =========================================================================
+# Tags
+# =========================================================================
+
+variable "tags" {
+  description = "Common tags to apply to all resources"
+  type        = map(string)
+  default     = {}
+}
 
 variable "keeper_user_data_template" {
   description = "Path to the keeper user data template file. If provided, the template will be processed with keeper_ips and server_ips variables."
@@ -180,6 +271,16 @@ variable "public_key" {
   default     = null
 }
 
+variable "metadata_http_tokens" {
+  description = "IMDSv2 setting for EC2 instances - 'required' for IMDSv2 only, 'optional' for IMDSv1 and IMDSv2"
+  type        = string
+  default     = "required"
+  validation {
+    condition     = contains(["required", "optional"], var.metadata_http_tokens)
+    error_message = "metadata_http_tokens must be either 'required' or 'optional'"
+  }
+}
+
 # =========================================================================
 # IAM Configuration
 # =========================================================================
@@ -194,14 +295,4 @@ variable "iam_managed_policy_arns" {
   description = "List of AWS managed policy ARNs to attach to the role"
   type        = list(string)
   default     = []
-}
-
-# =========================================================================
-# Tags
-# =========================================================================
-
-variable "tags" {
-  description = "Common tags to apply to all resources"
-  type        = map(string)
-  default     = {}
 }

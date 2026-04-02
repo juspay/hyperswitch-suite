@@ -342,7 +342,7 @@ resource "aws_instance" "broker" {
 
   metadata_options {
     http_endpoint               = "enabled"
-    http_tokens                 = "required"
+    http_tokens                 = var.metadata_http_tokens
     http_put_response_hop_limit = 1
   }
 
@@ -399,7 +399,7 @@ resource "aws_instance" "controller" {
 
   metadata_options {
     http_endpoint               = "enabled"
-    http_tokens                 = "required"
+    http_tokens                 = var.metadata_http_tokens
     http_put_response_hop_limit = 1
   }
 
