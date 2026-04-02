@@ -23,9 +23,53 @@ env:
   AWS_DEFAULT_REGION: eu-central-1
 
 jobs:
+  detect-changes:
+    name: Detect Changed Files
+    runs-on: ubuntu-latest
+    outputs:
+      terraform-files: ${{ steps.changed.outputs.terraform_files }}
+      terraform-dirs: ${{ steps.changed.outputs.terraform_dirs }}
+      has-changes: ${{ steps.changed.outputs.has_changes }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Get changed terraform files
+        id: changed
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'terraform/**/*.tf' 'terraform/**/*.tfvars' | grep -v '.terraform' || true)
+          
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "terraform_files=[]" >> $GITHUB_OUTPUT
+            echo "terraform_dirs=[]" >> $GITHUB_OUTPUT
+            echo "No terraform files changed"
+            exit 0
+          fi
+          
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+          
+          TF_FILES=$(echo "$CHANGED_FILES" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "terraform_files=$TF_FILES" >> $GITHUB_OUTPUT
+          
+          TF_DIRS=$(echo "$CHANGED_FILES" | xargs -I{} dirname {} | sort -u | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "terraform_dirs=$TF_DIRS" >> $GITHUB_OUTPUT
+          
+          echo "Changed terraform files:"
+          echo "$CHANGED_FILES"
+          echo ""
+          echo "Affected directories:"
+          echo "$TF_DIRS" | jq -r '.[]'
+
   terraform-fmt:
     name: Terraform Format Check
     runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has-changes == 'true'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -35,42 +79,35 @@ jobs:
         with:
           terraform_version: "~1.5"
 
-      - name: Find Terraform directories
-        id: find-dirs
-        run: |
-          # Find all directories containing .tf files (excluding .terraform directories)
-          DIRS=$(find terraform -name "*.tf" -not -path "*/.terraform/*" -exec dirname {} \; | sort -u | tr '\n' ' ')
-          echo "dirs=$DIRS" >> $GITHUB_OUTPUT
-          echo "Found directories:"
-          echo "$DIRS" | tr ' ' '\n'
-
-      - name: Run terraform fmt check
+      - name: Check formatting on changed files
         id: fmt
         run: |
           EXIT_CODE=0
-          FMT_OUTPUT=""
+          FAILED_FILES=""
           
-          for dir in ${{ steps.find-dirs.outputs.dirs }}; do
-            echo "Checking format in: $dir"
-            if ! OUTPUT=$(terraform fmt -check -recursive "$dir" 2>&1); then
+          FILES='${{ needs.detect-changes.outputs.terraform-files }}'
+          
+          for file in $(echo "$FILES" | jq -r '.[]'); do
+            if [ ! -f "$file" ]; then
+              continue
+            fi
+            
+            echo "Checking: $file"
+            if ! terraform fmt -check "$file" 2>&1; then
               EXIT_CODE=1
-              # Get list of files that need formatting
-              UNFORMATTED=$(terraform fmt -check -recursive "$dir" 2>&1 || true)
-              for file in $UNFORMATTED; do
-                if [[ -f "$file" ]]; then
-                  echo "::error file=$file::Terraform file needs formatting. Run 'terraform fmt' to fix."
-                  FMT_OUTPUT="${FMT_OUTPUT}${file}\n"
-                fi
-              done
+              FAILED_FILES="${FAILED_FILES}${file}\n"
+              echo "::error file=$file::Terraform file needs formatting. Run 'terraform fmt $file' to fix."
             fi
           done
           
           if [ $EXIT_CODE -ne 0 ]; then
             echo ""
-            echo "::error::Terraform format check failed. The following files need formatting:"
-            echo -e "$FMT_OUTPUT"
+            echo "::error::Terraform format check failed."
             echo ""
-            echo "Run 'terraform fmt -recursive terraform/' to fix formatting issues."
+            echo "Files needing formatting:"
+            echo -e "$FAILED_FILES"
+            echo ""
+            echo "Run locally: terraform fmt -recursive terraform/"
           fi
           
           exit $EXIT_CODE
@@ -78,7 +115,8 @@ jobs:
   terraform-validate:
     name: Terraform Validate
     runs-on: ubuntu-latest
-    needs: terraform-fmt
+    needs: [detect-changes, terraform-fmt]
+    if: needs.detect-changes.outputs.has-changes == 'true' && needs.terraform-fmt.result == 'success'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -96,34 +134,20 @@ jobs:
             skip_credentials_validation = true
             skip_metadata_api_check     = true
             skip_requesting_account_id  = true
-            
-            default_tags {
-              tags = {
-                Environment = "ci"
-                ManagedBy   = "terraform-ci"
-              }
-            }
           }
           EOF
 
-      - name: Find Terraform directories
-        id: find-dirs
-        run: |
-          DIRS=$(find terraform -name "*.tf" -not -path "*/.terraform/*" -exec dirname {} \; | sort -u | jq -R -s -c 'split("\n") | map(select(length > 0))')
-          echo "dirs=$DIRS" >> $GITHUB_OUTPUT
-          echo "Found directories: $DIRS"
-
-      - name: Initialize and Validate Terraform
+      - name: Validate changed directories
         id: validate
         run: |
           EXIT_CODE=0
-          FAILED_DIRS=""
           PASSED_DIRS=""
+          FAILED_DIRS=""
           
-          DIRS='${{ steps.find-dirs.outputs.dirs }}'
+          DIRS='${{ needs.detect-changes.outputs.terraform-dirs }}'
           
           for dir in $(echo "$DIRS" | jq -r '.[]'); do
-            if [ -z "$dir" ]; then
+            if [ -z "$dir" ] || [ ! -d "$dir" ]; then
               continue
             fi
             
@@ -168,7 +192,7 @@ jobs:
               FAILED_DIRS="${FAILED_DIRS}$dir (validation failed)\n"
               EXIT_CODE=1
             else
-              echo "✓ Validation passed for $dir"
+              echo "[PASS] Validation passed for $dir"
               PASSED_DIRS="${PASSED_DIRS}$dir\n"
             fi
             
@@ -194,7 +218,8 @@ jobs:
   terraform-plan:
     name: Terraform Plan
     runs-on: ubuntu-latest
-    needs: terraform-validate
+    needs: [detect-changes, terraform-validate]
+    if: needs.detect-changes.outputs.has-changes == 'true' && needs.terraform-validate.result == 'success'
     continue-on-error: true
     steps:
       - name: Checkout repository
@@ -213,34 +238,20 @@ jobs:
             skip_credentials_validation = true
             skip_metadata_api_check     = true
             skip_requesting_account_id  = true
-            
-            default_tags {
-              tags = {
-                Environment = "ci"
-                ManagedBy   = "terraform-ci"
-              }
-            }
           }
           EOF
 
-      - name: Find Terraform directories for planning
-        id: find-dirs
-        run: |
-          DIRS=$(find terraform -name "*.tf" -not -path "*/.terraform/*" -not -path "*/modules/*" -exec dirname {} \; | sort -u | grep -E "(live|bootstrap|oneclick)" | jq -R -s -c 'split("\n") | map(select(length > 0))')
-          echo "dirs=$DIRS" >> $GITHUB_OUTPUT
-          echo "Directories to plan: $DIRS"
-
-      - name: Run Terraform Plan
+      - name: Plan changed directories
         id: plan
         run: |
-          FAILED_DIRS=""
           PASSED_DIRS=""
+          FAILED_DIRS=""
           SKIPPED_DIRS=""
           
-          DIRS='${{ steps.find-dirs.outputs.dirs }}'
+          DIRS='${{ needs.detect-changes.outputs.terraform-dirs }}'
           
           for dir in $(echo "$DIRS" | jq -r '.[]'); do
-            if [ -z "$dir" ]; then
+            if [ -z "$dir" ] || [ ! -d "$dir" ]; then
               continue
             fi
             
@@ -248,9 +259,15 @@ jobs:
             echo "Planning: $dir"
             echo "=================================================="
             
-            if grep -r "terraform_remote_state" "$dir"/*.tf 2>/dev/null; then
-              echo "::warning file=$dir::Skipping plan - module uses terraform_remote_state which requires backend access"
-              SKIPPED_DIRS="${SKIPPED_DIRS}$dir (remote state dependency)\n"
+            if grep -rq "terraform_remote_state" "$dir"/*.tf 2>/dev/null; then
+              echo "::warning file=$dir::Skipping - uses terraform_remote_state"
+              SKIPPED_DIRS="${SKIPPED_DIRS}$dir (remote state)\n"
+              continue
+            fi
+            
+            if echo "$dir" | grep -q "/modules/"; then
+              echo "::warning file=$dir::Skipping - module directory (not deployable)"
+              SKIPPED_DIRS="${SKIPPED_DIRS}$dir (module)\n"
               continue
             fi
             
@@ -263,7 +280,7 @@ jobs:
             rm -f "$dir/ci_providers_override.tf" 2>/dev/null || true
             
             if [ $INIT_EXIT -ne 0 ]; then
-              echo "::warning file=$dir::Terraform init failed - skipping plan"
+              echo "::warning file=$dir::Init failed - skipping"
               echo "$INIT_OUTPUT"
               SKIPPED_DIRS="${SKIPPED_DIRS}$dir (init failed)\n"
               continue
@@ -274,20 +291,15 @@ jobs:
             PLAN_EXIT=$?
             
             if [ $PLAN_EXIT -eq 0 ]; then
-              echo "✓ Plan successful for $dir - no changes needed"
+              echo "[PASS] Plan passed for $dir - no changes"
               PASSED_DIRS="${PASSED_DIRS}$dir\n"
             elif [ $PLAN_EXIT -eq 2 ]; then
-              echo "✓ Plan successful for $dir - changes planned"
-              PASSED_DIRS="${PASSED_DIRS}$dir (has changes)\n"
-              echo "$PLAN_OUTPUT" | grep -E "Plan:|will be|created|destroyed|updated"
+              echo "[PASS] Plan passed for $dir - has changes"
+              PASSED_DIRS="${PASSED_DIRS}$dir (changes)\n"
             else
-              echo "::error file=$dir::Terraform plan failed"
+              echo "::error file=$dir::Plan failed"
               echo "$PLAN_OUTPUT"
               FAILED_DIRS="${FAILED_DIRS}$dir\n"
-              
-              echo "$PLAN_OUTPUT" | grep -E "Error:" | head -5 | while read -r error_line; do
-                echo "::error file=$dir::$error_line"
-              done
             fi
             
             rm -rf "$dir/.terraform" 2>/dev/null || true
@@ -304,7 +316,7 @@ jobs:
           echo "PASSED:"
           echo -e "$PASSED_DIRS" | grep -v "^$" || echo "None"
           echo ""
-          echo "SKIPPED (expected for modules with remote state):"
+          echo "SKIPPED:"
           echo -e "$SKIPPED_DIRS" | grep -v "^$" || echo "None"
           echo ""
           echo "FAILED:"
@@ -313,45 +325,78 @@ jobs:
   terraform-check-summary:
     name: Terraform Check Summary
     runs-on: ubuntu-latest
-    needs: [terraform-fmt, terraform-validate, terraform-plan]
+    needs: [detect-changes, terraform-fmt, terraform-validate, terraform-plan]
     if: always()
     steps:
-      - name: Check results
+      - name: Generate summary
         run: |
           echo "## Terraform CI Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          
+          HAS_CHANGES='${{ needs.detect-changes.outputs.has-changes }}'
+          
+          if [ "$HAS_CHANGES" != "true" ]; then
+            echo "No terraform files changed in this PR." >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          
           echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
           
-          if [ "${{ needs.terraform-fmt.result }}" == "success" ]; then
-            echo "| Format Check | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          FMT_RESULT="${{ needs.terraform-fmt.result }}"
+          VALIDATE_RESULT="${{ needs.terraform-validate.result }}"
+          PLAN_RESULT="${{ needs.terraform-plan.result }}"
+          
+          if [ "$FMT_RESULT" == "success" ]; then
+            echo "| Format Check | PASSED |" >> $GITHUB_STEP_SUMMARY
+          elif [ "$FMT_RESULT" == "skipped" ]; then
+            echo "| Format Check | SKIPPED |" >> $GITHUB_STEP_SUMMARY
           else
-            echo "| Format Check | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+            echo "| Format Check | FAILED |" >> $GITHUB_STEP_SUMMARY
           fi
           
-          if [ "${{ needs.terraform-validate.result }}" == "success" ]; then
-            echo "| Validation | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          if [ "$VALIDATE_RESULT" == "success" ]; then
+            echo "| Validation | PASSED |" >> $GITHUB_STEP_SUMMARY
+          elif [ "$VALIDATE_RESULT" == "skipped" ]; then
+            echo "| Validation | SKIPPED (fmt failed first) |" >> $GITHUB_STEP_SUMMARY
           else
-            echo "| Validation | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+            echo "| Validation | FAILED |" >> $GITHUB_STEP_SUMMARY
           fi
           
-          if [ "${{ needs.terraform-plan.result }}" == "success" ]; then
-            echo "| Plan | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-          elif [ "${{ needs.terraform-plan.result }}" == "failure" ]; then
-            echo "| Plan | ⚠️ Some modules failed (check logs) |" >> $GITHUB_STEP_SUMMARY
+          if [ "$PLAN_RESULT" == "success" ]; then
+            echo "| Plan | PASSED |" >> $GITHUB_STEP_SUMMARY
+          elif [ "$PLAN_RESULT" == "skipped" ]; then
+            echo "| Plan | SKIPPED |" >> $GITHUB_STEP_SUMMARY
           else
-            echo "| Plan | ⏭️ Skipped |" >> $GITHUB_STEP_SUMMARY
+            echo "| Plan | CHECK LOGS |" >> $GITHUB_STEP_SUMMARY
           fi
-          
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Required Status Check" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "This check is **required** for merging. Both format check and validation must pass." >> $GITHUB_STEP_SUMMARY
 
-      - name: Fail if required checks failed
+      - name: Check required results
         run: |
-          if [ "${{ needs.terraform-fmt.result }}" != "success" ] || [ "${{ needs.terraform-validate.result }}" != "success" ]; then
-            echo "::error::Required terraform checks failed. Please fix the issues above."
+          HAS_CHANGES='${{ needs.detect-changes.outputs.has-changes }}'
+          
+          if [ "$HAS_CHANGES" != "true" ]; then
+            echo "No terraform changes to check"
+            exit 0
+          fi
+          
+          FMT_RESULT="${{ needs.terraform-fmt.result }}"
+          VALIDATE_RESULT="${{ needs.terraform-validate.result }}"
+          
+          FAILED="false"
+          
+          if [ "$FMT_RESULT" != "success" ]; then
+            echo "::error::Format check failed or was skipped"
+            FAILED="true"
+          fi
+          
+          if [ "$VALIDATE_RESULT" != "success" ]; then
+            echo "::error::Validation failed or was skipped"
+            FAILED="true"
+          fi
+          
+          if [ "$FAILED" == "true" ]; then
             exit 1
           fi
+          
           echo "All required terraform checks passed!"
