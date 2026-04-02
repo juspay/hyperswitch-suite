@@ -45,6 +45,17 @@ output "dashboard_urls" {
   }
 }
 
+# CloudWatch Metric Anomaly Alarm Outputs
+output "metric_anomaly_alarm_arns" {
+  description = "Map of metric anomaly alarm keys to ARNs"
+  value       = { for k, v in aws_cloudwatch_metric_alarm.metric_anomaly_alarms : k => v.arn }
+}
+
+output "metric_anomaly_alarm_names" {
+  description = "Map of metric anomaly alarm keys to names"
+  value       = { for k, v in aws_cloudwatch_metric_alarm.metric_anomaly_alarms : k => v.alarm_name }
+}
+
 output "region" {
   description = "AWS region"
   value       = data.aws_region.current.region

@@ -106,4 +106,51 @@ resource "aws_cloudwatch_dashboard" "dashboards" {
   dashboard_body = each.value.dashboard_body
 }
 
+# CloudWatch Metric Anomaly Detection Alarms
+resource "aws_cloudwatch_metric_alarm" "metric_anomaly_alarms" {
+  for_each = var.metric_anomaly_alarms
+
+  alarm_name          = coalesce(each.value.alarm_name, "${local.name_prefix}-${each.key}-anomaly")
+  alarm_description   = coalesce(each.value.alarm_description, "Anomaly detection alarm for ${each.value.metric_name} in ${each.value.namespace}")
+  comparison_operator = each.value.comparison_operator
+  evaluation_periods  = each.value.evaluation_periods
+  treat_missing_data  = each.value.treat_missing_data
+  threshold_metric_id = "e1"
+
+  dynamic "metric_query" {
+    for_each = [1]
+    content {
+      id          = "e1"
+      expression  = each.value.standard_deviations != null ? "ANOMALY_DETECTION_BAND(m1, ${each.value.standard_deviations})" : "ANOMALY_DETECTION_BAND(m1)"
+      label       = "${each.value.metric_name} (Expected)"
+      return_data = true
+    }
+  }
+
+  dynamic "metric_query" {
+    for_each = [1]
+    content {
+      id = "m1"
+
+      metric {
+        metric_name = each.value.metric_name
+        namespace   = each.value.namespace
+        period      = each.value.period
+        stat        = each.value.statistic
+        dimensions  = each.value.dimensions
+      }
+
+      return_data = true
+    }
+  }
+
+  alarm_actions             = each.value.alarm_actions
+  ok_actions                = each.value.ok_actions
+  insufficient_data_actions = each.value.insufficient_data_actions
+
+  tags = merge(local.common_tags, {
+    Name = coalesce(each.value.alarm_name, "${local.name_prefix}-${each.key}-anomaly")
+  })
+}
+
 

@@ -101,4 +101,27 @@ variable "dashboards" {
   default = {}
 }
 
+# CloudWatch Metric Anomaly Detection Alarms
+variable "metric_anomaly_alarms" {
+  description = "Map of CloudWatch metric anomaly detection alarms using ANOMALY_DETECTION_BAND"
+  type = map(object({
+    alarm_name         = optional(string) # Derived from key if not provided
+    alarm_description  = optional(string)
+    metric_name        = string
+    namespace          = string
+    period             = optional(number, 300) # in seconds
+    statistic          = optional(string, "Average")
+    dimensions         = optional(map(string), {})
+    evaluation_periods = optional(number, 2)
+    # Anomaly band detection: triggers when metric goes outside the expected band
+    comparison_operator       = optional(string, "GreaterThanUpperThreshold") # GreaterThanUpperThreshold, LessThanLowerThreshold
+    standard_deviations       = optional(number, 2)                           # Number of standard deviations for the band (1, 2, or 3)
+    alarm_actions             = optional(list(string), [])
+    ok_actions                = optional(list(string), [])
+    insufficient_data_actions = optional(list(string), [])
+    treat_missing_data        = optional(string, "missing")
+  }))
+  default = {}
+}
+
 
