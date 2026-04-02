@@ -28,12 +28,7 @@ variable "vpc_id" {
 }
 
 variable "public_subnet_id" {
-  description = "Public subnet ID for external jump host"
-  type        = string
-}
-
-variable "private_subnet_id" {
-  description = "Private subnet ID for internal jump host"
+  description = "Public subnet ID for jump host"
   type        = string
 }
 
@@ -41,13 +36,7 @@ variable "private_subnet_id" {
 # Instance Configuration
 # ============================================================================
 variable "external_jump_ami_id" {
-  description = "AMI ID for external jump host (defaults to latest Amazon Linux 2 if not provided)"
-  type        = string
-  default     = null
-}
-
-variable "internal_jump_ami_id" {
-  description = "AMI ID for internal jump host (defaults to latest Amazon Linux 2 if not provided)"
+  description = "AMI ID for jump host (defaults to latest Amazon Linux 2023 if not provided)"
   type        = string
   default     = null
 }
@@ -97,11 +86,4 @@ variable "common_tags" {
   default     = {}
 }
 
-# ============================================================================
-# SSM Session Manager Configuration
-# ============================================================================
-variable "enable_internal_jump_ssm" {
-  description = "Enable SSM Session Manager access for internal jump host. When true, SSM policies will be dynamically attached to the internal jump IAM role"
-  type        = bool
-  default     = false
-}
+

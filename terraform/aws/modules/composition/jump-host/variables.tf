@@ -20,23 +20,12 @@ variable "vpc_id" {
 }
 
 variable "public_subnet_id" {
-  description = "Public subnet ID for external jump host"
-  type        = string
-}
-
-variable "private_subnet_id" {
-  description = "Private subnet ID for internal jump host"
+  description = "Public subnet ID for jump host"
   type        = string
 }
 
 variable "external_jump_ami_id" {
-  description = "AMI ID for external jump host (defaults to latest Amazon Linux 2)"
-  type        = string
-  default     = null
-}
-
-variable "internal_jump_ami_id" {
-  description = "AMI ID for internal jump host (defaults to latest Amazon Linux 2)"
+  description = "AMI ID for jump host (defaults to latest Amazon Linux 2023)"
   type        = string
   default     = null
 }
@@ -82,14 +71,14 @@ variable "enable_migration_mode" {
   default     = false
 }
 
-variable "enable_internal_jump_ssm" {
-  description = "Enable SSM Session Manager access for internal jump host. When true, adds SSM policies to internal jump IAM role"
-  type        = bool
-  default     = false
-}
-
 variable "ssm_os_username" {
   description = "OS username for SSM Session Manager access. Defaults to the standard username used by SSM Agent. Can be overridden based on your environment and SSM config."
   type        = string
   default     = "ssm-user"
+}
+
+variable "enable_fleet_manager" {
+  description = "Enable AWS SSM Fleet Manager user management on the jump host"
+  type        = bool
+  default     = false
 }
