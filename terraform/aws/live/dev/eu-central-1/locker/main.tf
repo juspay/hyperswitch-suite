@@ -33,7 +33,7 @@ module "locker" {
   key_name      = var.key_name
 
   # NLB Listeners Configuration
-  nlb_listeners           = var.nlb_listeners
+  nlb_listeners = var.nlb_listeners
 
   # Logging Configuration
   log_retention_days = var.log_retention_days

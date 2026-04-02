@@ -16,13 +16,13 @@ project_name = "hyperswitch"
 # Network Configuration
 # ============================================================================
 # TODO: Replace with your actual VPC and subnet IDs
-vpc_id = "vpc-xxxxxxxxxxxxxxxxx"  # Replace with your VPC ID
+vpc_id = "vpc-xxxxxxxxxxxxxxxxx" # Replace with your VPC ID
 
 # Public subnet for external jump host (must have internet gateway)
-public_subnet_id = "subnet-xxxxxxxxxxxxxxxxx"  # Replace with your public(management) subnet ID
+public_subnet_id = "subnet-xxxxxxxxxxxxxxxxx" # Replace with your public(management) subnet ID
 
 # Private subnet for internal jump host
-private_subnet_id = "subnet-xxxxxxxxxxxxxxxxx"  # Replace with your private(Utils) subnet ID
+private_subnet_id = "subnet-xxxxxxxxxxxxxxxxx" # Replace with your private(Utils) subnet ID
 
 # ============================================================================
 # Instance Configuration

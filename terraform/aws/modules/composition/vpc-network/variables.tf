@@ -388,14 +388,14 @@ variable "lambda_subnet_tags" {
 variable "custom_subnet_groups" {
   description = "Map of custom subnet groups with their configurations"
   type = map(object({
-    cidr_block        = string
-    availability_zone = string
-    tier              = string
-    type              = string
+    cidr_block         = string
+    availability_zone  = string
+    tier               = string
+    type               = string
     create_route_table = optional(bool, true)
-    create_igw_route  = optional(bool, false)
-    create_nat_route  = optional(bool, false)
-    tags              = optional(map(string), {})
+    create_igw_route   = optional(bool, false)
+    create_nat_route   = optional(bool, false)
+    tags               = optional(map(string), {})
   }))
   default = {}
 }

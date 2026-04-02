@@ -31,8 +31,8 @@ module "argocd_management_role" {
   aws_account_id = var.aws_account_id
 
   # OIDC and Service Account Configuration
-  cluster_service_accounts     = var.cluster_service_accounts
-  oidc_provider_arns           = var.oidc_provider_arns
+  cluster_service_accounts          = var.cluster_service_accounts
+  oidc_provider_arns                = var.oidc_provider_arns
   additional_assume_role_statements = var.additional_assume_role_statements
 
   # Cross-Account Role Assumption

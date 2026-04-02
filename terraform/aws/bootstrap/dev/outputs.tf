@@ -46,7 +46,7 @@ output "backend_config" {
 
 output "next_steps" {
   description = "Instructions for what to do next"
-  value = <<-EOT
+  value       = <<-EOT
 
   ========================================
   Terraform State Backend Created!

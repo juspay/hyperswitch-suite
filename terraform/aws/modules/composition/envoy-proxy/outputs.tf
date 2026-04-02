@@ -129,7 +129,7 @@ output "ssh_key_pair_id" {
 
 output "ssh_key_retrieval_command" {
   description = "Command to retrieve the private SSH key from Parameter Store (only if auto-generated)"
-  value = var.generate_ssh_key ? "aws ssm get-parameter --name \"${aws_ssm_parameter.envoy_private_key[0].name}\" --with-decryption --query 'Parameter.Value' --output text > ${module.key_pair[0].key_pair_name}.pem && chmod 400 ${module.key_pair[0].key_pair_name}.pem" : null
+  value       = var.generate_ssh_key ? "aws ssm get-parameter --name \"${aws_ssm_parameter.envoy_private_key[0].name}\" --with-decryption --query 'Parameter.Value' --output text > ${module.key_pair[0].key_pair_name}.pem && chmod 400 ${module.key_pair[0].key_pair_name}.pem" : null
 }
 
 output "config_version" {

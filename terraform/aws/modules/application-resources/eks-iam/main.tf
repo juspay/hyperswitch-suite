@@ -114,7 +114,7 @@ module "s3_bucket" {
       apply_server_side_encryption_by_default = var.s3_sse_algorithm == "aws:kms" ? {
         sse_algorithm     = "aws:kms"
         kms_master_key_id = var.s3_kms_master_key_id
-      } : {
+        } : {
         sse_algorithm = "AES256"
       }
       bucket_key_enabled = var.s3_sse_algorithm == "aws:kms" ? true : false

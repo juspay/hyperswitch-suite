@@ -23,8 +23,8 @@ variable "vpc_id" {
 
 variable "lb_subnet_ids" {
   description = "Subnet IDs to use for Istio Gateway Load Balancer"
-  type = list(string)
-  default = []
+  type        = list(string)
+  default     = []
 }
 
 variable "eks_cluster_name" {
@@ -34,8 +34,8 @@ variable "eks_cluster_name" {
 
 variable "create_lb_security_group" {
   description = "This creates a security group to attach to load-balancer through annotations"
-  type = bool
-  default = true
+  type        = bool
+  default     = true
 }
 
 variable "lb_security_groups" {
@@ -59,12 +59,12 @@ variable "create_helm_releases" {
 variable "istio_base" {
   description = "Configurations for Istio Base Chart"
   type = object({
-    enabled = bool
-    release_name = optional(string)
-    chart_repo = optional(string)
+    enabled       = bool
+    release_name  = optional(string)
+    chart_repo    = optional(string)
     chart_version = optional(string)
-    values = optional(list(string), [])
-    values_file = optional(string, "")
+    values        = optional(list(string), [])
+    values_file   = optional(string, "")
   })
 
   default = {
@@ -75,12 +75,12 @@ variable "istio_base" {
 variable "istiod" {
   description = "Configurations for Istiod Chart"
   type = object({
-    enabled = bool
-    release_name = optional(string)
-    chart_repo = optional(string)
+    enabled       = bool
+    release_name  = optional(string)
+    chart_repo    = optional(string)
     chart_version = optional(string)
-    values = optional(list(string), [])
-    values_file = optional(string, "")
+    values        = optional(list(string), [])
+    values_file   = optional(string, "")
   })
 
   default = {
@@ -91,12 +91,12 @@ variable "istiod" {
 variable "istio_gateway" {
   description = "Configurations for Istio Gateway Chart"
   type = object({
-    enabled = bool
-    release_name = optional(string)
-    chart_repo = optional(string)
+    enabled       = bool
+    release_name  = optional(string)
+    chart_repo    = optional(string)
     chart_version = optional(string)
-    values = optional(list(string), [])
-    values_file = optional(string, "")
+    values        = optional(list(string), [])
+    values_file   = optional(string, "")
   })
 
   default = {
@@ -106,8 +106,8 @@ variable "istio_gateway" {
 
 variable "ingress_annotations" {
   description = "Additional annotations to be added to ingress resources"
-  type = map(string)
-  default = {}
+  type        = map(string)
+  default     = {}
 }
 
 # ============================================================================

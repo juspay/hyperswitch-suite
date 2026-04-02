@@ -55,7 +55,7 @@ variable "kms" {
     key_arn = optional(string, null) # Existing KMS key ARN (used when create=false)
 
     # Key creation settings (used when create=true)
-    description = optional(string, null)
+    description  = optional(string, null)
     multi_region = optional(bool, false)
 
     # Replica key settings
@@ -65,9 +65,9 @@ variable "kms" {
     primary_external_key_arn = optional(string, null)
 
     # External key settings
-    create_external       = optional(bool, false)
-    key_material_base64   = optional(string, null)
-    valid_to              = optional(string, null)
+    create_external     = optional(bool, false)
+    key_material_base64 = optional(string, null)
+    valid_to            = optional(string, null)
 
     # Key specifications
     key_usage                = optional(string, null)
@@ -86,10 +86,10 @@ variable "kms" {
     aliases_use_name_prefix = optional(bool, false)
 
     # Access control (for key policy)
-    key_administrators     = optional(list(string), [])
-    key_users              = optional(list(string), [])
-    key_service_users      = optional(list(string), [])
-    key_owners             = optional(list(string), [])
+    key_administrators = optional(list(string), [])
+    key_users          = optional(list(string), [])
+    key_service_users  = optional(list(string), [])
+    key_owners         = optional(list(string), [])
   })
   default = {}
 }
@@ -142,7 +142,7 @@ variable "s3_file_uploads" {
 variable "ses" {
   description = "SES configuration. Set to {} to disable SES policy. Only accepts existing SES role ARN (does NOT create SES resources)."
   type = object({
-    enabled = optional(bool, false)  # Set true to enable SES policy
+    enabled  = optional(bool, false)  # Set true to enable SES policy
     role_arn = optional(string, null) # Existing SES role ARN to assume
   })
   default = {}
@@ -155,7 +155,7 @@ variable "ses" {
 variable "secrets_manager" {
   description = "Secrets Manager configuration. Set to {} to disable Secrets Manager policy."
   type = object({
-    enabled    = optional(bool, false)
+    enabled     = optional(bool, false)
     secret_arns = optional(list(string), [])
   })
   default = {}
@@ -170,7 +170,7 @@ variable "secrets_manager" {
 variable "lambda" {
   description = "Lambda function configuration. Set to {} to disable Lambda policy. Set enabled=true to allow Lambda operations on specific functions."
   type = object({
-    enabled      = optional(bool, false)
+    enabled       = optional(bool, false)
     function_arns = optional(list(string), []) # List of Lambda function ARNs to allow invoke/all operations on
     # If empty list, only list/get/create permissions will be granted (no specific function access)
   })

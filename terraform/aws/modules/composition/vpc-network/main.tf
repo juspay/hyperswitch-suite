@@ -21,16 +21,16 @@ module "vpc" {
   enable_nat_gateway      = var.enable_nat_gateway
   nat_gateway_count       = var.single_nat_gateway ? 1 : length(var.availability_zones)
 
-  manage_default_network_acl      = var.manage_default_network_acl
-  manage_default_security_group   = var.manage_default_security_group
-  manage_default_route_table      = var.manage_default_route_table
+  manage_default_network_acl    = var.manage_default_network_acl
+  manage_default_security_group = var.manage_default_security_group
+  manage_default_route_table    = var.manage_default_route_table
 
-  enable_flow_logs            = var.enable_flow_logs
-  flow_logs_iam_role_arn      = var.flow_logs_iam_role_arn
-  flow_logs_destination_arn   = var.flow_logs_destination_arn
-  flow_logs_destination_type  = var.flow_logs_destination_type
-  flow_logs_traffic_type      = var.flow_logs_traffic_type
-  flow_logs_log_format        = var.flow_logs_log_format
+  enable_flow_logs           = var.enable_flow_logs
+  flow_logs_iam_role_arn     = var.flow_logs_iam_role_arn
+  flow_logs_destination_arn  = var.flow_logs_destination_arn
+  flow_logs_destination_type = var.flow_logs_destination_type
+  flow_logs_traffic_type     = var.flow_logs_traffic_type
+  flow_logs_log_format       = var.flow_logs_log_format
 
   create_dhcp_options              = var.create_dhcp_options
   dhcp_options_domain_name         = var.dhcp_options_domain_name
@@ -55,7 +55,7 @@ module "external_incoming_subnets" {
   subnet_tier = "external-incoming"
   subnet_type = "public"
 
-  map_public_ip_on_launch = var.map_public_ip_on_launch  # Should be false per security model
+  map_public_ip_on_launch = var.map_public_ip_on_launch # Should be false per security model
 
   # Route table is managed by shared route tables (route-tables.tf)
   create_route_table = false
@@ -89,7 +89,7 @@ module "management_subnets" {
   subnet_tier = "management"
   subnet_type = "public"
 
-  map_public_ip_on_launch = var.map_public_ip_on_launch  # Should be false - use Elastic IP for bastion
+  map_public_ip_on_launch = var.map_public_ip_on_launch # Should be false - use Elastic IP for bastion
 
   # Route table is managed by shared route tables (route-tables.tf)
   create_route_table = false
@@ -423,7 +423,7 @@ module "custom_subnets" {
   internet_gateway_id           = lookup(each.value, "create_igw_route", false) ? module.vpc.internet_gateway_id : ""
 
   create_nat_gateway_route = lookup(each.value, "create_nat_route", false)
-  nat_gateway_id          = lookup(each.value, "create_nat_route", false) ? (var.single_nat_gateway ? module.external_incoming_subnets[0].nat_gateway_id : module.external_incoming_subnets[index(var.availability_zones, each.value.availability_zone)].nat_gateway_id) : ""
+  nat_gateway_id           = lookup(each.value, "create_nat_route", false) ? (var.single_nat_gateway ? module.external_incoming_subnets[0].nat_gateway_id : module.external_incoming_subnets[index(var.availability_zones, each.value.availability_zone)].nat_gateway_id) : ""
 
   tags = merge(
     var.tags,

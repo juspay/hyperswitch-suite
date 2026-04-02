@@ -4,7 +4,7 @@
 
 locals {
   name_prefix = "${var.project_name}-${var.environment}-external-secrets"
-  
+
   common_tags = merge(
     {
       Project     = var.project_name
@@ -14,7 +14,7 @@ locals {
     },
     var.common_tags
   )
-  
+
   # Group service accounts by cluster and transform to full subject format
   cluster_oidc_statements = {
     for cluster_name, service_accounts in var.cluster_service_accounts : cluster_name => {

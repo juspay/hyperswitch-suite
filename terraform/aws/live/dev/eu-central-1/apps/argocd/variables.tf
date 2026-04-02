@@ -65,7 +65,7 @@ variable "cluster_service_accounts" {
     name      = string
   })))
   default = {}
-  
+
   # Example:
   # {
   #   "dev-eks-cluster" = [

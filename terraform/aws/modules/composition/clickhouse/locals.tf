@@ -61,7 +61,7 @@ locals {
     })
   }
 
-  inline_policies = length(var.iam_inline_policies) > 0 ? var.iam_inline_policies : local.default_inline_policies
+  inline_policies  = length(var.iam_inline_policies) > 0 ? var.iam_inline_policies : local.default_inline_policies
   managed_policies = var.iam_managed_policy_arns
 
   # Keeper user data - use template if provided, else use default

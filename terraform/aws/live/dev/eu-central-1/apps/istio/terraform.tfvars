@@ -46,14 +46,14 @@ create_helm_releases = true
 # Security Group Configuration
 create_lb_security_group = true
 # Existing security groups to attach to the load balancer
-lb_security_groups       = []
+lb_security_groups = []
 
 # Istio Base Configuration
 istio_base = {
   enabled       = true
-  release_name  = null  # Uses default: "istio-base"
-  chart_repo    = null  # Uses default
-  chart_version = null  # Uses default: "1.28.0"
+  release_name  = null # Uses default: "istio-base"
+  chart_repo    = null # Uses default
+  chart_version = null # Uses default: "1.28.0"
   values        = []
   values_file   = ""
 }
@@ -61,9 +61,9 @@ istio_base = {
 # Istiod Configuration
 istiod = {
   enabled       = true
-  release_name  = null  # Uses default: "istiod"
-  chart_repo    = null  # Uses default
-  chart_version = null  # Uses default: "1.28.0"
+  release_name  = null # Uses default: "istiod"
+  chart_repo    = null # Uses default
+  chart_version = null # Uses default: "1.28.0"
   values        = []
   values_file   = ""
 }
@@ -71,9 +71,9 @@ istiod = {
 # Istio Gateway Configuration
 istio_gateway = {
   enabled       = true
-  release_name  = null  # Uses default: "istio-gateway"
-  chart_repo    = null  # Uses default
-  chart_version = null  # Uses default: "1.28.0"
+  release_name  = null # Uses default: "istio-gateway"
+  chart_repo    = null # Uses default
+  chart_version = null # Uses default: "1.28.0"
   values        = []
   values_file   = ""
 }

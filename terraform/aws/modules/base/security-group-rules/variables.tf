@@ -11,8 +11,8 @@ variable "rules" {
     from_port   = number
     to_port     = number
     protocol    = string
-    cidr      = optional (list(string))    # Can be list(string) for CIDRs OR string for SG ID
-    sg_id     = optional (list(string))
+    cidr        = optional(list(string)) # Can be list(string) for CIDRs OR string for SG ID
+    sg_id       = optional(list(string))
   }))
   default = []
 

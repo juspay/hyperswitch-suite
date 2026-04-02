@@ -20,30 +20,30 @@ module "envoy_proxy" {
   instance_type = var.instance_type
 
   # Launch Template Configuration
-  use_existing_launch_template      = var.use_existing_launch_template
-  existing_launch_template_id       = var.existing_launch_template_id
-  existing_launch_template_version  = var.existing_launch_template_version
+  use_existing_launch_template     = var.use_existing_launch_template
+  existing_launch_template_id      = var.existing_launch_template_id
+  existing_launch_template_version = var.existing_launch_template_version
 
   # Launch Template Advanced Configuration
-  ebs_optimized                     = var.ebs_optimized
-  ebs_encrypted                     = var.ebs_encrypted
-  enable_ebs_block_device           = var.enable_ebs_block_device
-  root_volume_size                  = var.root_volume_size
-  root_volume_type                  = var.root_volume_type
-  imds_http_tokens                  = var.imds_http_tokens
-  imds_http_endpoint                = var.imds_http_endpoint
-  imds_http_put_response_hop_limit  = var.imds_http_put_response_hop_limit
-  imds_instance_metadata_tags       = var.imds_instance_metadata_tags
+  ebs_optimized                    = var.ebs_optimized
+  ebs_encrypted                    = var.ebs_encrypted
+  enable_ebs_block_device          = var.enable_ebs_block_device
+  root_volume_size                 = var.root_volume_size
+  root_volume_type                 = var.root_volume_type
+  imds_http_tokens                 = var.imds_http_tokens
+  imds_http_endpoint               = var.imds_http_endpoint
+  imds_http_put_response_hop_limit = var.imds_http_put_response_hop_limit
+  imds_instance_metadata_tags      = var.imds_instance_metadata_tags
 
   # Port Configuration (Environment-specific)
   alb_http_listener_port  = var.alb_http_listener_port
   alb_https_listener_port = var.alb_https_listener_port
-  envoy_traffic_port      = var.envoy_traffic_port   # ALB forwards traffic to this port on Envoy instances
+  envoy_traffic_port      = var.envoy_traffic_port # ALB forwards traffic to this port on Envoy instances
   envoy_upstream_port     = var.envoy_upstream_port
 
   # SSH Key Configuration
   generate_ssh_key = var.generate_ssh_key
-  key_name         = var.key_name  # Only used if generate_ssh_key=false
+  key_name         = var.key_name # Only used if generate_ssh_key=false
 
   # Userdata with templating ({{bucket-name}} and {{config_bucket}} will be replaced)
   custom_userdata = file("${path.module}/templates/userdata.sh")
@@ -61,9 +61,9 @@ module "envoy_proxy" {
   logs_bucket_arn    = var.logs_bucket_arn
 
   # S3 Config Bucket - create or use existing
-  create_config_bucket     = var.create_config_bucket
-  config_bucket_name       = var.config_bucket_name
-  config_bucket_arn        = var.config_bucket_arn
+  create_config_bucket = var.create_config_bucket
+  config_bucket_name   = var.config_bucket_name
+  config_bucket_arn    = var.config_bucket_arn
 
   # S3 Config Upload (optional)
   upload_config_to_s3      = var.upload_config_to_s3

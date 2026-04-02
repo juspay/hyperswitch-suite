@@ -24,10 +24,10 @@ variable "ingress_rules" {
       from_port       = number
       to_port         = number
       protocol        = string
-      cidr            = optional(list(string))    # IPv4 CIDR blocks
-      ipv6_cidr       = optional(list(string))    # IPv6 CIDR blocks
-      sg_id           = optional(list(string))    # Security Group IDs
-      prefix_list_ids = optional(list(string))    # VPC Endpoint Prefix Lists
+      cidr            = optional(list(string)) # IPv4 CIDR blocks
+      ipv6_cidr       = optional(list(string)) # IPv6 CIDR blocks
+      sg_id           = optional(list(string)) # Security Group IDs
+      prefix_list_ids = optional(list(string)) # VPC Endpoint Prefix Lists
     }))
   }))
   default = {}
@@ -53,10 +53,10 @@ variable "egress_rules" {
       from_port       = number
       to_port         = number
       protocol        = string
-      cidr            = optional(list(string))    # IPv4 CIDR blocks
-      ipv6_cidr       = optional(list(string))    # IPv6 CIDR blocks
-      sg_id           = optional(list(string))    # Security Group IDs
-      prefix_list_ids = optional(list(string))    # VPC Endpoint Prefix Lists
+      cidr            = optional(list(string)) # IPv4 CIDR blocks
+      ipv6_cidr       = optional(list(string)) # IPv6 CIDR blocks
+      sg_id           = optional(list(string)) # Security Group IDs
+      prefix_list_ids = optional(list(string)) # VPC Endpoint Prefix Lists
     }))
   }))
   default = {}

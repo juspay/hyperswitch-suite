@@ -22,9 +22,9 @@ module "kms" {
   primary_external_key_arn = try(var.kms.primary_external_key_arn, null)
 
   # External CMK Configuration
-  create_external       = try(var.kms.create_external, false)
-  key_material_base64   = try(var.kms.key_material_base64, null)
-  valid_to              = try(var.kms.valid_to, null)
+  create_external     = try(var.kms.create_external, false)
+  key_material_base64 = try(var.kms.key_material_base64, null)
+  valid_to            = try(var.kms.valid_to, null)
 
   # Key Specifications
   key_usage                = try(var.kms.key_usage, null)
@@ -33,10 +33,10 @@ module "kms" {
   deletion_window_in_days  = try(var.kms.deletion_window_in_days, null)
 
   # Key State
-  is_enabled                          = try(var.kms.is_enabled, null)
-  enable_key_rotation                 = try(var.kms.enable_key_rotation, true)
-  rotation_period_in_days             = try(var.kms.rotation_period_in_days, null)
-  bypass_policy_lockout_safety_check  = try(var.kms.bypass_policy_lockout_safety_check, null)
+  is_enabled                         = try(var.kms.is_enabled, null)
+  enable_key_rotation                = try(var.kms.enable_key_rotation, true)
+  rotation_period_in_days            = try(var.kms.rotation_period_in_days, null)
+  bypass_policy_lockout_safety_check = try(var.kms.bypass_policy_lockout_safety_check, null)
 
   # Aliases
   aliases                 = try(var.kms.aliases, [])

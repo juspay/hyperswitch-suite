@@ -1,0 +1,52 @@
+aws_region = "us-east-1"
+
+project_name = "hyperswitch"
+environment  = "dev"
+
+vpc_cidr = "10.0.0.0/16"
+
+availability_zones = [
+  "us-east-1a",
+  "us-east-1b"
+]
+
+cluster_version = "1.35"
+
+cluster_endpoint_public_access_cidrs = [
+  "0.0.0.0/0"
+]
+
+cluster_enabled_log_types = [
+  "api",
+  "audit",
+  "authenticator",
+  "controllerManager",
+  "scheduler"
+]
+
+cluster_log_retention_days = 30
+
+addon_versions = {
+  vpc_cni            = "v1.19.0-eksbuild.1"
+  coredns            = "v1.13.2-eksbuild.1"
+  kube_proxy         = "v1.35.0-eksbuild.2"
+  ebs_csi            = "v1.55.0-eksbuild.1"
+  pod_identity_agent = "v1.3.2-eksbuild.1"
+}
+
+node_group = {
+  capacity_type              = "ON_DEMAND"
+  instance_types             = ["t3.medium"]
+  desired_size               = 4
+  min_size                   = 2
+  max_size                   = 10
+  max_unavailable_percentage = 33
+  labels                     = {}
+}
+
+hyperswitch_namespace    = "hyperswitch"
+hyperswitch_release_name = "hyperswitch"
+
+tags = {
+  Team = "platform"
+}

@@ -16,10 +16,10 @@ project_name = "hyperswitch"
 # Network Configuration
 # ============================================================================
 # TODO: Replace with your actual VPC and subnet IDs
-vpc_id = "vpc-xxxxxxxxxxxxxxxxx"  # Replace with your VPC ID
+vpc_id = "vpc-xxxxxxxxxxxxxxxxx" # Replace with your VPC ID
 
 # OPTION 1: Use existing private subnet for locker instance
-locker_subnet_id = "subnet-xxxxxxxxxxxxxxxxx"  # Replace with your private subnet ID
+locker_subnet_id = "subnet-xxxxxxxxxxxxxxxxx" # Replace with your private subnet ID
 
 # OPTION 2: Create a new subnet (comment out locker_subnet_id above and uncomment below)
 # create_subnet            = true
@@ -30,7 +30,7 @@ locker_subnet_id = "subnet-xxxxxxxxxxxxxxxxx"  # Replace with your private subne
 # Instance Configuration
 # ============================================================================
 # Locker AMI - should be custom AMI with locker application pre-installed
-ami_id = "ami-xxxxxxxxxxxxxxxxx"  # Replace with your locker AMI ID
+ami_id = "ami-xxxxxxxxxxxxxxxxx" # Replace with your locker AMI ID
 
 # Instance type - t3.medium recommended for locker workloads
 # Upgrade to t3.large or c5.large for production workloads
@@ -45,7 +45,7 @@ instance_type = "t3.medium"
 # locker_port = 8080  # Uncomment and modify to use a different port
 
 # OPTION 1: Use existing SSH key pair (default)
-key_name = "your-key-pair-name"  # Replace with your SSH key pair name
+key_name = "your-key-pair-name" # Replace with your SSH key pair name
 
 # OPTION 2: Create a new SSH key pair (comment out key_name above and uncomment below)
 # create_key_pair = true

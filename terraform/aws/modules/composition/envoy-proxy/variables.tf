@@ -208,8 +208,8 @@ variable "instance_type" {
 
 variable "set_lt_default_version" {
   description = "Value of launch template version to be set as default. Conflicts with update_default_version"
-  type = string
-  default = null
+  type        = string
+  default     = null
 }
 
 variable "update_default_version" {

@@ -445,10 +445,10 @@ locals {
       sg_id       = ["sg-xxxxxxxxxxxxxxxxx"] # Replace with database security group ID
     },
     {
-      description = "S3 VPC endpoint access"
-      from_port   = 443
-      to_port     = 443
-      protocol    = "tcp"
+      description     = "S3 VPC endpoint access"
+      from_port       = 443
+      to_port         = 443
+      protocol        = "tcp"
       prefix_list_ids = ["pl-xxxxxxxx"] # Replace with S3 prefix list for your region
     },
     {

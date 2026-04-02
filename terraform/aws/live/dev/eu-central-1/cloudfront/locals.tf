@@ -75,76 +75,76 @@ locals {
   behavior_templates = {
     # Static assets template
     static_assets = {
-      allowed_methods        = ["GET", "HEAD", "OPTIONS"]
-      cached_methods         = ["GET", "HEAD"]
-      viewer_protocol_policy = "redirect-to-https"
-      compress               = true
-      cache_policy_id        = "CachingOptimized"  # AWS managed policy (short name)
-      response_headers_policy_id = "SecurityHeadersPolicy"  # AWS managed policy (short name)
+      allowed_methods            = ["GET", "HEAD", "OPTIONS"]
+      cached_methods             = ["GET", "HEAD"]
+      viewer_protocol_policy     = "redirect-to-https"
+      compress                   = true
+      cache_policy_id            = "CachingOptimized"      # AWS managed policy (short name)
+      response_headers_policy_id = "SecurityHeadersPolicy" # AWS managed policy (short name)
       ttl = {
-        min_ttl    = 86400
+        min_ttl     = 86400
         default_ttl = 31536000
-        max_ttl    = 31536000
+        max_ttl     = 31536000
       }
     }
 
     # API template
     api = {
-      allowed_methods        = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
-      cached_methods         = ["GET", "HEAD", "OPTIONS"]
-      viewer_protocol_policy = "redirect-to-https"
-      compress               = true
-      cache_policy_id        = "CachingDisabled"  # AWS managed policy (short name)
-      response_headers_policy_id = "CORS-with-preflight-and-SecurityHeadersPolicy"  # AWS managed policy (short name)
+      allowed_methods            = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+      cached_methods             = ["GET", "HEAD", "OPTIONS"]
+      viewer_protocol_policy     = "redirect-to-https"
+      compress                   = true
+      cache_policy_id            = "CachingDisabled"                               # AWS managed policy (short name)
+      response_headers_policy_id = "CORS-with-preflight-and-SecurityHeadersPolicy" # AWS managed policy (short name)
       ttl = {
-        min_ttl    = 0
+        min_ttl     = 0
         default_ttl = 300
-        max_ttl    = 3600
+        max_ttl     = 3600
       }
     }
 
     # Admin template
     admin = {
-      allowed_methods        = ["GET", "HEAD", "OPTIONS"]
-      cached_methods         = ["GET", "HEAD"]
-      viewer_protocol_policy = "redirect-to-https"
-      compress               = false
-      cache_policy_id        = "CachingDisabled"  # AWS managed policy (short name)
-      response_headers_policy_id = "SecurityHeadersPolicy"  # AWS managed policy (short name)
+      allowed_methods            = ["GET", "HEAD", "OPTIONS"]
+      cached_methods             = ["GET", "HEAD"]
+      viewer_protocol_policy     = "redirect-to-https"
+      compress                   = false
+      cache_policy_id            = "CachingDisabled"       # AWS managed policy (short name)
+      response_headers_policy_id = "SecurityHeadersPolicy" # AWS managed policy (short name)
       ttl = {
-        min_ttl    = 0
+        min_ttl     = 0
         default_ttl = 0
-        max_ttl    = 0
+        max_ttl     = 0
       }
     }
 
     # Media template
     media = {
-      allowed_methods        = ["GET", "HEAD", "OPTIONS"]
-      cached_methods         = ["GET", "HEAD"]
-      viewer_protocol_policy = "redirect-to-https"
-      compress               = false
-      cache_policy_id        = "CachingOptimized"  # AWS managed policy (short name)
-      response_headers_policy_id = "SecurityHeadersPolicy"  # AWS managed policy (short name)
+      allowed_methods            = ["GET", "HEAD", "OPTIONS"]
+      cached_methods             = ["GET", "HEAD"]
+      viewer_protocol_policy     = "redirect-to-https"
+      compress                   = false
+      cache_policy_id            = "CachingOptimized"      # AWS managed policy (short name)
+      response_headers_policy_id = "SecurityHeadersPolicy" # AWS managed policy (short name)
       ttl = {
-        min_ttl    = 86400
+        min_ttl     = 86400
         default_ttl = 86400
-        max_ttl    = 31536000
+        max_ttl     = 31536000
       }
     }
 
     # API v2 template (for newer APIs with different caching)
     api_v2 = {
-      allowed_methods        = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
-      cached_methods         = ["GET", "HEAD", "OPTIONS"]
-      viewer_protocol_policy = "redirect-to-https"
-      compress               = true
-      cache_policy_id        = "CachingDisabled"  # AWS managed policy (short name)
-      response_headers_policy_id = "CORS-with-preflight-and-SecurityHeadersPolicy"  # AWS managed policy (short name)
+      allowed_methods            = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+      cached_methods             = ["GET", "HEAD", "OPTIONS"]
+      viewer_protocol_policy     = "redirect-to-https"
+      compress                   = true
+      cache_policy_id            = "CachingDisabled"                               # AWS managed policy (short name)
+      response_headers_policy_id = "CORS-with-preflight-and-SecurityHeadersPolicy" # AWS managed policy (short name)
       ttl = {
-        min_ttl    = 0
+        min_ttl     = 0
         default_ttl = 180
-        max_ttl    = 1800
+        max_ttl     = 1800
       }
     }
   }
@@ -157,9 +157,9 @@ locals {
       enabled             = lookup(dist_config, "enabled", true)
       default_root_object = lookup(dist_config, "default_root_object", "index.html")
       price_class         = lookup(dist_config, "price_class", "PriceClass_All")
-      aliases            = lookup(dist_config, "aliases", [])
-      viewer_certificate = lookup(dist_config, "viewer_certificate", null)
-      web_acl_id         = lookup(dist_config, "web_acl_id", null)
+      aliases             = lookup(dist_config, "aliases", [])
+      viewer_certificate  = lookup(dist_config, "viewer_certificate", null)
+      web_acl_id          = lookup(dist_config, "web_acl_id", null)
 
       # Process origins
       origins = dist_config.origins
@@ -175,39 +175,39 @@ locals {
           local.behavior_templates[behavior.template],
           # Override with specific behavior settings
           {
-            path_pattern                = behavior.path_pattern
-            target_origin_id            = behavior.target_origin_id
-            allowed_methods             = lookup(behavior, "allowed_methods", local.behavior_templates[behavior.template].allowed_methods)
-            cached_methods              = lookup(behavior, "cached_methods", local.behavior_templates[behavior.template].cached_methods)
-            viewer_protocol_policy      = lookup(behavior, "viewer_protocol_policy", local.behavior_templates[behavior.template].viewer_protocol_policy)
-            compress                    = lookup(behavior, "compress", local.behavior_templates[behavior.template].compress)
-            cache_policy_id             = lookup(behavior, "cache_policy_id", local.behavior_templates[behavior.template].cache_policy_id)
-            origin_request_policy_id    = lookup(behavior, "origin_request_policy_id", null)
-            response_headers_policy_id  = lookup(behavior, "response_headers_policy_id", local.behavior_templates[behavior.template].response_headers_policy_id)
-            ttl                         = lookup(behavior, "ttl", local.behavior_templates[behavior.template].ttl)
+            path_pattern               = behavior.path_pattern
+            target_origin_id           = behavior.target_origin_id
+            allowed_methods            = lookup(behavior, "allowed_methods", local.behavior_templates[behavior.template].allowed_methods)
+            cached_methods             = lookup(behavior, "cached_methods", local.behavior_templates[behavior.template].cached_methods)
+            viewer_protocol_policy     = lookup(behavior, "viewer_protocol_policy", local.behavior_templates[behavior.template].viewer_protocol_policy)
+            compress                   = lookup(behavior, "compress", local.behavior_templates[behavior.template].compress)
+            cache_policy_id            = lookup(behavior, "cache_policy_id", local.behavior_templates[behavior.template].cache_policy_id)
+            origin_request_policy_id   = lookup(behavior, "origin_request_policy_id", null)
+            response_headers_policy_id = lookup(behavior, "response_headers_policy_id", local.behavior_templates[behavior.template].response_headers_policy_id)
+            ttl                        = lookup(behavior, "ttl", local.behavior_templates[behavior.template].ttl)
             lambda_function_associations = lookup(behavior, "lambda_function_associations", null) != null ? [
               for assoc in lookup(behavior, "lambda_function_associations", []) : assoc
             ] : []
-            function_associations       = lookup(behavior, "function_associations", null) != null ? [
+            function_associations = lookup(behavior, "function_associations", null) != null ? [
               for assoc in lookup(behavior, "function_associations", []) : assoc
             ] : []
           }
-        ) : {
+          ) : {
           # No template - use behavior settings directly
-          path_pattern                = behavior.path_pattern
-          target_origin_id            = behavior.target_origin_id
-          allowed_methods             = lookup(behavior, "allowed_methods", ["GET", "HEAD", "OPTIONS"])
-          cached_methods              = lookup(behavior, "cached_methods", ["GET", "HEAD"])
-          viewer_protocol_policy      = lookup(behavior, "viewer_protocol_policy", "redirect-to-https")
-          compress                    = lookup(behavior, "compress", true)
-          cache_policy_id             = lookup(behavior, "cache_policy_id", null)
-          origin_request_policy_id    = lookup(behavior, "origin_request_policy_id", null)
-          response_headers_policy_id  = lookup(behavior, "response_headers_policy_id", null)
-          ttl                         = lookup(behavior, "ttl", null)
+          path_pattern               = behavior.path_pattern
+          target_origin_id           = behavior.target_origin_id
+          allowed_methods            = lookup(behavior, "allowed_methods", ["GET", "HEAD", "OPTIONS"])
+          cached_methods             = lookup(behavior, "cached_methods", ["GET", "HEAD"])
+          viewer_protocol_policy     = lookup(behavior, "viewer_protocol_policy", "redirect-to-https")
+          compress                   = lookup(behavior, "compress", true)
+          cache_policy_id            = lookup(behavior, "cache_policy_id", null)
+          origin_request_policy_id   = lookup(behavior, "origin_request_policy_id", null)
+          response_headers_policy_id = lookup(behavior, "response_headers_policy_id", null)
+          ttl                        = lookup(behavior, "ttl", null)
           lambda_function_associations = lookup(behavior, "lambda_function_associations", null) != null ? [
             for assoc in lookup(behavior, "lambda_function_associations", []) : assoc
           ] : []
-          function_associations       = lookup(behavior, "function_associations", null) != null ? [
+          function_associations = lookup(behavior, "function_associations", null) != null ? [
             for assoc in lookup(behavior, "function_associations", []) : assoc
           ] : []
         }
@@ -215,8 +215,8 @@ locals {
 
       # Custom error responses
       custom_error_responses = lookup(dist_config, "custom_error_responses", [])
-      geo_restriction = lookup(dist_config, "geo_restriction", {})
-      invalidation = lookup(dist_config, "invalidation", null)
+      geo_restriction        = lookup(dist_config, "geo_restriction", {})
+      invalidation           = lookup(dist_config, "invalidation", null)
     }
   }
 
@@ -252,6 +252,6 @@ locals {
   }
 
   # Pass through cache_policies and origin_request_policies as maps 
-  transformed_cache_policies = local.cache_policies
+  transformed_cache_policies          = local.cache_policies
   transformed_origin_request_policies = local.origin_request_policies
 }

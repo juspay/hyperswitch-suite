@@ -43,28 +43,28 @@ variable "distributions" {
   type = map(object({
     # Origins configuration
     origins = list(object({
-      origin_id                  = string
-      type                       = string # s3, alb, custom, vpc_origin
-      domain_name                = optional(string)
-      s3_bucket_domain_name      = optional(string)
-      s3_bucket_id              = optional(string)
-      s3_bucket_arn             = optional(string)
-      origin_path               = optional(string)
+      origin_id             = string
+      type                  = string # s3, alb, custom, vpc_origin
+      domain_name           = optional(string)
+      s3_bucket_domain_name = optional(string)
+      s3_bucket_id          = optional(string)
+      s3_bucket_arn         = optional(string)
+      origin_path           = optional(string)
 
       # Origin Access Control
-      origin_access_control_id  = optional(string)
-      apply_bucket_policy       = optional(bool, true)
+      origin_access_control_id = optional(string)
+      apply_bucket_policy      = optional(bool, true)
 
       # Origin-level connection settings (not inside custom_origin_config)
-      connection_attempts       = optional(number, 3)
-      connection_timeout        = optional(number, 10)
+      connection_attempts = optional(number, 3)
+      connection_timeout  = optional(number, 10)
 
       # Custom origin configuration
       custom_origin_config = optional(object({
-        http_port              = number
-        https_port             = number
-        origin_protocol_policy = string
-        origin_ssl_protocols   = optional(list(string), ["TLSv1.2"])
+        http_port                = number
+        https_port               = number
+        origin_protocol_policy   = string
+        origin_ssl_protocols     = optional(list(string), ["TLSv1.2"])
         origin_keepalive_timeout = optional(number, 5)
         origin_read_timeout      = optional(number, 30)
       }))
@@ -80,15 +80,15 @@ variable "distributions" {
 
       # Cache TTL configuration
       ttl = object({
-        min_ttl    = number
+        min_ttl     = number
         default_ttl = number
-        max_ttl    = number
+        max_ttl     = number
       })
 
       # Optional configuration
-      compress = optional(bool, false)
-      cache_policy_id = optional(string)
-      origin_request_policy_id = optional(string)
+      compress                   = optional(bool, false)
+      cache_policy_id            = optional(string)
+      origin_request_policy_id   = optional(string)
       response_headers_policy_id = optional(string)
 
       # Lambda@Edge associations
@@ -107,24 +107,24 @@ variable "distributions" {
 
     # Ordered cache behaviors (optional)
     ordered_cache_behaviors = optional(list(object({
-      path_pattern = string
+      path_pattern     = string
       target_origin_id = string
 
-      allowed_methods = list(string)
-      cached_methods  = list(string)
+      allowed_methods        = list(string)
+      cached_methods         = list(string)
       viewer_protocol_policy = string
 
       # Cache TTL configuration
       ttl = object({
-        min_ttl    = number
+        min_ttl     = number
         default_ttl = number
-        max_ttl    = number
+        max_ttl     = number
       })
 
       # Optional configuration
-      compress = optional(bool, false)
-      cache_policy_id = optional(string)
-      origin_request_policy_id = optional(string)
+      compress                   = optional(bool, false)
+      cache_policy_id            = optional(string)
+      origin_request_policy_id   = optional(string)
       response_headers_policy_id = optional(string)
 
       # Lambda@Edge associations
@@ -151,9 +151,9 @@ variable "distributions" {
 
     # Additional configuration
     default_root_object = optional(string, "index.html")
-    price_class        = optional(string, "PriceClass_All")
-    enabled            = optional(bool, true)
-    comment            = optional(string)
+    price_class         = optional(string, "PriceClass_All")
+    enabled             = optional(bool, true)
+    comment             = optional(string)
 
     # Web Acl Id for WAF
     web_acl_id = optional(string, null)
@@ -308,7 +308,7 @@ variable "cache_policies" {
     min_ttl     = optional(number)
     parameters_in_cache_key_and_forwarded_to_origin = optional(object({
       enable_accept_encoding_brotli = optional(bool, false)
-      enable_accept_encoding_gzip  = optional(bool, true)
+      enable_accept_encoding_gzip   = optional(bool, true)
       headers_config = optional(object({
         header_behavior = string
         headers         = optional(list(string), [])

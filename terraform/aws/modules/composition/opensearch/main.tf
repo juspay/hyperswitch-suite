@@ -8,7 +8,7 @@ data "aws_subnet" "this" {
 
 # Fetch default AWS ES KMS key when no custom key is provided
 data "aws_kms_key" "default_es" {
-  count = var.encrypt_at_rest_enabled && var.kms_key_id == null ? 1 : 0
+  count  = var.encrypt_at_rest_enabled && var.kms_key_id == null ? 1 : 0
   key_id = "alias/aws/es"
 }
 

@@ -11,13 +11,13 @@ output "certificates" {
   description = "Map of certificate names to their full output details"
   value = {
     for name, cert in module.certificate : name => {
-      arn                                 = cert.acm_certificate_arn
-      domain_validation_options           = cert.acm_certificate_domain_validation_options
-      status                              = cert.acm_certificate_status
-      validation_route53_record_fqdns     = cert.validation_route53_record_fqdns
-      distinct_domain_names               = cert.distinct_domain_names
-      validation_domains                  = cert.validation_domains
-      validation_emails                   = cert.acm_certificate_validation_emails
+      arn                             = cert.acm_certificate_arn
+      domain_validation_options       = cert.acm_certificate_domain_validation_options
+      status                          = cert.acm_certificate_status
+      validation_route53_record_fqdns = cert.validation_route53_record_fqdns
+      distinct_domain_names           = cert.distinct_domain_names
+      validation_domains              = cert.validation_domains
+      validation_emails               = cert.acm_certificate_validation_emails
     }
   }
 }

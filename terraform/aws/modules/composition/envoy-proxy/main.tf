@@ -587,7 +587,7 @@ resource "aws_launch_template" "envoy" {
   ebs_optimized          = var.ebs_optimized
   user_data              = base64encode(local.userdata_content)
   update_default_version = var.update_default_version
-  default_version = var.set_lt_default_version
+  default_version        = var.set_lt_default_version
 
   iam_instance_profile {
     name = local.instance_profile_name

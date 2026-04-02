@@ -64,7 +64,7 @@ variable "cache_policies" {
     min_ttl     = optional(number)
     parameters_in_cache_key_and_forwarded_to_origin = optional(object({
       enable_accept_encoding_brotli = optional(bool, false)
-      enable_accept_encoding_gzip  = optional(bool, true)
+      enable_accept_encoding_gzip   = optional(bool, true)
       headers_config = optional(object({
         header_behavior = string
         headers         = optional(list(string), [])

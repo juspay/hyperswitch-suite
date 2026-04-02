@@ -55,42 +55,42 @@ resource "aws_security_group" "controller" {
 # =========================================================================
 
 resource "aws_security_group_rule" "broker_self_ingress" {
-  type              = "ingress"
-  description       = "Allow all TCP traffic from itself"
-  from_port         = 0
-  to_port           = 65535
-  protocol          = "tcp"
-  security_group_id = aws_security_group.broker.id
+  type                     = "ingress"
+  description              = "Allow all TCP traffic from itself"
+  from_port                = 0
+  to_port                  = 65535
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.broker.id
   source_security_group_id = aws_security_group.broker.id
 }
 
 resource "aws_security_group_rule" "broker_self_egress" {
-  type              = "egress"
-  description       = "Allow all TCP traffic to itself"
-  from_port         = 0
-  to_port           = 65535
-  protocol          = "tcp"
-  security_group_id = aws_security_group.broker.id
+  type                     = "egress"
+  description              = "Allow all TCP traffic to itself"
+  from_port                = 0
+  to_port                  = 65535
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.broker.id
   source_security_group_id = aws_security_group.broker.id
 }
 
 resource "aws_security_group_rule" "broker_from_controller_ingress" {
-  type              = "ingress"
-  description       = "Allow all TCP traffic from controller"
-  from_port         = 0
-  to_port           = 65535
-  protocol          = "tcp"
-  security_group_id = aws_security_group.broker.id
+  type                     = "ingress"
+  description              = "Allow all TCP traffic from controller"
+  from_port                = 0
+  to_port                  = 65535
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.broker.id
   source_security_group_id = aws_security_group.controller.id
 }
 
 resource "aws_security_group_rule" "broker_to_controller_egress" {
-  type              = "egress"
-  description       = "Allow all TCP traffic to controller"
-  from_port         = 0
-  to_port           = 65535
-  protocol          = "tcp"
-  security_group_id = aws_security_group.broker.id
+  type                     = "egress"
+  description              = "Allow all TCP traffic to controller"
+  from_port                = 0
+  to_port                  = 65535
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.broker.id
   source_security_group_id = aws_security_group.controller.id
 }
 
@@ -127,42 +127,42 @@ resource "aws_security_group_rule" "vpc_endpoint_broker_ingress" {
 # =========================================================================
 
 resource "aws_security_group_rule" "controller_self_ingress" {
-  type              = "ingress"
-  description       = "Allow all TCP traffic from itself"
-  from_port         = 0
-  to_port           = 65535
-  protocol          = "tcp"
-  security_group_id = aws_security_group.controller.id
+  type                     = "ingress"
+  description              = "Allow all TCP traffic from itself"
+  from_port                = 0
+  to_port                  = 65535
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.controller.id
   source_security_group_id = aws_security_group.controller.id
 }
 
 resource "aws_security_group_rule" "controller_self_egress" {
-  type              = "egress"
-  description       = "Allow all TCP traffic to itself"
-  from_port         = 0
-  to_port           = 65535
-  protocol          = "tcp"
-  security_group_id = aws_security_group.controller.id
+  type                     = "egress"
+  description              = "Allow all TCP traffic to itself"
+  from_port                = 0
+  to_port                  = 65535
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.controller.id
   source_security_group_id = aws_security_group.controller.id
 }
 
 resource "aws_security_group_rule" "controller_from_broker_ingress" {
-  type              = "ingress"
-  description       = "Allow all TCP traffic from broker"
-  from_port         = 0
-  to_port           = 65535
-  protocol          = "tcp"
-  security_group_id = aws_security_group.controller.id
+  type                     = "ingress"
+  description              = "Allow all TCP traffic from broker"
+  from_port                = 0
+  to_port                  = 65535
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.controller.id
   source_security_group_id = aws_security_group.broker.id
 }
 
 resource "aws_security_group_rule" "controller_to_broker_egress" {
-  type              = "egress"
-  description       = "Allow all TCP traffic to broker"
-  from_port         = 0
-  to_port           = 65535
-  protocol          = "tcp"
-  security_group_id = aws_security_group.controller.id
+  type                     = "egress"
+  description              = "Allow all TCP traffic to broker"
+  from_port                = 0
+  to_port                  = 65535
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.controller.id
   source_security_group_id = aws_security_group.broker.id
 }
 

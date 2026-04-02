@@ -21,17 +21,17 @@ locals {
   kms_key_arn = local.kms_create ? (length(module.kms) > 0 ? module.kms[0].key_arn : null) : try(var.kms.key_arn, null)
 
   # S3 Dashboard Themes feature
-  s3_dashboard_themes_enabled   = var.s3_dashboard_themes != {} && (try(var.s3_dashboard_themes.create, false) || try(var.s3_dashboard_themes.bucket_arn, null) != null)
-  s3_dashboard_themes_create    = try(var.s3_dashboard_themes.create, false)
+  s3_dashboard_themes_enabled    = var.s3_dashboard_themes != {} && (try(var.s3_dashboard_themes.create, false) || try(var.s3_dashboard_themes.bucket_arn, null) != null)
+  s3_dashboard_themes_create     = try(var.s3_dashboard_themes.create, false)
   s3_dashboard_themes_bucket_arn = local.s3_dashboard_themes_create ? (length(module.s3_dashboard_themes) > 0 ? module.s3_dashboard_themes[0].s3_bucket_arn : null) : try(var.s3_dashboard_themes.bucket_arn, null)
 
   # S3 File Uploads feature
-  s3_file_uploads_enabled   = var.s3_file_uploads != {} && (try(var.s3_file_uploads.create, false) || try(var.s3_file_uploads.bucket_arn, null) != null)
-  s3_file_uploads_create    = try(var.s3_file_uploads.create, false)
+  s3_file_uploads_enabled    = var.s3_file_uploads != {} && (try(var.s3_file_uploads.create, false) || try(var.s3_file_uploads.bucket_arn, null) != null)
+  s3_file_uploads_create     = try(var.s3_file_uploads.create, false)
   s3_file_uploads_bucket_arn = local.s3_file_uploads_create ? (length(module.s3_file_uploads) > 0 ? module.s3_file_uploads[0].s3_bucket_arn : null) : try(var.s3_file_uploads.bucket_arn, null)
 
   # SES feature
-  ses_enabled = var.ses != {} && try(var.ses.enabled, false)
+  ses_enabled  = var.ses != {} && try(var.ses.enabled, false)
   ses_role_arn = local.ses_enabled ? try(var.ses.role_arn, null) : null
 
   # Secrets Manager feature
@@ -44,7 +44,7 @@ locals {
   assume_role_account_id = local.assume_role_enabled ? try(var.assume_role.account_id, null) : null
 
   # Lambda feature
-  lambda_enabled      = var.lambda != {} && try(var.lambda.enabled, false)
+  lambda_enabled       = var.lambda != {} && try(var.lambda.enabled, false)
   lambda_function_arns = local.lambda_enabled ? try(var.lambda.function_arns, []) : []
 
   # =========================================================================

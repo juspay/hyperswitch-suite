@@ -26,7 +26,7 @@ resource "aws_cloudfront_response_headers_policy" "this" {
     for_each = each.value.cors_config != null ? [each.value.cors_config] : []
 
     content {
-      origin_override = true
+      origin_override                  = true
       access_control_allow_credentials = cors_config.value.access_control_allow_credentials
       access_control_allow_headers {
         items = cors_config.value.access_control_allow_headers
@@ -72,7 +72,7 @@ resource "aws_cloudfront_cache_policy" "this" {
     for_each = lookup(each.value, "parameters_in_cache_key_and_forwarded_to_origin", null) != null ? [each.value.parameters_in_cache_key_and_forwarded_to_origin] : []
     content {
       enable_accept_encoding_brotli = lookup(parameters_in_cache_key_and_forwarded_to_origin.value, "enable_accept_encoding_brotli", false)
-      enable_accept_encoding_gzip = lookup(parameters_in_cache_key_and_forwarded_to_origin.value, "enable_accept_encoding_gzip", true)
+      enable_accept_encoding_gzip   = lookup(parameters_in_cache_key_and_forwarded_to_origin.value, "enable_accept_encoding_gzip", true)
 
       dynamic "headers_config" {
         for_each = lookup(parameters_in_cache_key_and_forwarded_to_origin.value, "headers_config", null) != null ? [parameters_in_cache_key_and_forwarded_to_origin.value.headers_config] : []

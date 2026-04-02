@@ -16,16 +16,16 @@ project_name = "hyperswitch"
 # Network Configuration
 # ============================================================================
 # TODO: Replace with your actual VPC and subnet IDs
-vpc_id    = "vpc-xxxxxxxxxxxxxxxxx"  # Replace with your VPC ID
-subnet_id = "subnet-xxxxxxxxxxxxxxxxx"  # Replace with your private subnet ID
+vpc_id    = "vpc-xxxxxxxxxxxxxxxxx"    # Replace with your VPC ID
+subnet_id = "subnet-xxxxxxxxxxxxxxxxx" # Replace with your private subnet ID
 
 # ============================================================================
 # Cassandra Cluster Configuration
 # ============================================================================
-cluster_name       = "cassandra-hyperswitch"
-node_count         = 3
-replication_factor = 3
-idle_timeout       = "3600000ms"
+cluster_name        = "cassandra-hyperswitch"
+node_count          = 3
+replication_factor  = 3
+idle_timeout        = "3600000ms"
 default_config_path = "ReadWriteHeavy"
 
 # ============================================================================
@@ -34,12 +34,12 @@ default_config_path = "ReadWriteHeavy"
 # Source code for the seed discovery Lambda function
 # This should point to the index.mjs file containing the Lambda handler
 # TODO: Replace with the actual path to your Lambda source code
-seed_discovery_lambda_source = "file://./index.mjs"  # Replace with actual file path or URL
+seed_discovery_lambda_source = "file://./index.mjs" # Replace with actual file path or URL
 
 # VPC Endpoint ID for the API Gateway (execute-api)
 # Required for PRIVATE API Gateway endpoint type
 # TODO: Replace with your VPC Endpoint ID for API Gateway
-api_gateway_vpce_id = "vpce-xxxxxxxxxxxxxxxxx"  # Replace with your execute-api VPCe ID
+api_gateway_vpce_id = "vpce-xxxxxxxxxxxxxxxxx" # Replace with your execute-api VPCe ID
 
 # ============================================================================
 # Instance Configuration
@@ -47,14 +47,14 @@ api_gateway_vpce_id = "vpce-xxxxxxxxxxxxxxxxx"  # Replace with your execute-api 
 # Cassandra AMI - should be ARM-based AMI with Cassandra pre-installed
 # The reference setup uses ami-0ec802976c02674c6 (ARM/Graviton)
 # TODO: Replace with your Cassandra AMI ID
-ami_id = "ami-xxxxxxxxxxxxxxxxx"  # Replace with your Cassandra AMI ID
+ami_id = "ami-xxxxxxxxxxxxxxxxx" # Replace with your Cassandra AMI ID
 
 # Instance type - m7g.large (ARM/Graviton) recommended for Cassandra workloads
 # Provides 2 vCPUs, 8 GB RAM with excellent price/performance for Cassandra
 instance_type = "m7g.large"
 
 # Additional EBS volume for Cassandra data directory
-ebs_volume_size = 100   # GB
+ebs_volume_size = 100 # GB
 ebs_volume_type = "gp3"
 
 # SSH key pair configuration

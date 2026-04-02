@@ -30,13 +30,13 @@ provider "aws" {
 
 # Reference your existing load balancer by name
 data "aws_lb" "existing" {
-  count = var.create_nlb ? 0 : 1  # Only fetch if using existing NLB
+  count = var.create_nlb ? 0 : 1 # Only fetch if using existing NLB
   name  = var.existing_lb_name
 }
 
 # Reference existing listener on the load balancer
 data "aws_lb_listener" "existing" {
-  count             = var.create_nlb ? 0 : 1  # Only fetch if using existing NLB
+  count             = var.create_nlb ? 0 : 1 # Only fetch if using existing NLB
   load_balancer_arn = data.aws_lb.existing[0].arn
   port              = var.squid_port
 }
@@ -45,9 +45,9 @@ data "aws_lb_listener" "existing" {
 module "squid_proxy" {
   source = "../../../../modules/composition/squid-proxy"
 
-  environment  = var.environment
-  region       = var.region
-  project_name = var.project_name
+  environment   = var.environment
+  region        = var.region
+  project_name  = var.project_name
   name_override = var.name_override
 
   # Network configuration
@@ -56,13 +56,13 @@ module "squid_proxy" {
   lb_subnet_ids    = var.lb_subnet_ids
 
   # Squid configuration
-  squid_port      = var.squid_port
-  ami_id          = var.ami_id
-  instance_type   = var.instance_type
+  squid_port    = var.squid_port
+  ami_id        = var.ami_id
+  instance_type = var.instance_type
 
   # SSH Key Configuration
   generate_ssh_key = var.generate_ssh_key
-  key_name         = var.key_name  # Only used if generate_ssh_key=false
+  key_name         = var.key_name # Only used if generate_ssh_key=false
 
   # Userdata with templating ({{config_bucket}} and {{logs_bucket}} will be replaced)
   custom_userdata = file("${path.module}/templates/userdata.sh")
@@ -73,9 +73,9 @@ module "squid_proxy" {
   logs_bucket_arn    = var.logs_bucket_arn
 
   # S3 Config Bucket - create or use existing
-  create_config_bucket = var.create_config_bucket
-  config_bucket_name   = var.config_bucket_name
-  config_bucket_arn    = var.config_bucket_arn
+  create_config_bucket  = var.create_config_bucket
+  config_bucket_name    = var.config_bucket_name
+  config_bucket_arn     = var.config_bucket_arn
   s3_config_path_prefix = var.s3_config_path_prefix
 
   # S3 Config Upload (optional)
@@ -104,7 +104,7 @@ module "squid_proxy" {
   #   existing_lb_arn, existing_lb_listener_arn required
   # ========================================
 
-  create_nlb = var.create_nlb  # Set in terraform.tfvars
+  create_nlb = var.create_nlb # Set in terraform.tfvars
 
   # Only used when create_nlb = false (Mode 2)
   existing_lb_arn          = var.create_nlb ? null : data.aws_lb.existing[0].arn
@@ -115,13 +115,13 @@ module "squid_proxy" {
   # action to forward to the newly created target group ARN (see outputs)
 
   # NLB Listener Configuration (TCP and TLS)
-  enable_tcp_listener  = var.enable_tcp_listener
-  tcp_listener_port    = var.tcp_listener_port
-  enable_tls_listener  = var.enable_tls_listener
-  tls_listener_port    = var.tls_listener_port
-  tls_certificate_arn  = var.tls_certificate_arn
-  tls_ssl_policy       = var.tls_ssl_policy
-  tls_alpn_policy      = var.tls_alpn_policy
+  enable_tcp_listener = var.enable_tcp_listener
+  tcp_listener_port   = var.tcp_listener_port
+  enable_tls_listener = var.enable_tls_listener
+  tls_listener_port   = var.tls_listener_port
+  tls_certificate_arn = var.tls_certificate_arn
+  tls_ssl_policy      = var.tls_ssl_policy
+  tls_alpn_policy     = var.tls_alpn_policy
 
   # Instance Refresh Configuration
   enable_instance_refresh      = var.enable_instance_refresh
@@ -133,11 +133,11 @@ module "squid_proxy" {
   scaling_policies   = var.scaling_policies
 
   # Spot Instance Configuration
-  enable_spot_instances       = var.enable_spot_instances
-  spot_instance_percentage    = var.spot_instance_percentage
-  on_demand_base_capacity     = var.on_demand_base_capacity
-  spot_allocation_strategy    = var.spot_allocation_strategy
-  enable_capacity_rebalance   = var.enable_capacity_rebalance
+  enable_spot_instances     = var.enable_spot_instances
+  spot_instance_percentage  = var.spot_instance_percentage
+  on_demand_base_capacity   = var.on_demand_base_capacity
+  spot_allocation_strategy  = var.spot_allocation_strategy
+  enable_capacity_rebalance = var.enable_capacity_rebalance
 
   tags = var.common_tags
 }

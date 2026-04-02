@@ -6,16 +6,16 @@ project_name = "hyperswitch"
 
 # Network Configuration
 # TODO: Replace with your actual VPC and subnet IDs
-vpc_id = "vpc-xxxxxxxxxxxxxxxxx"  # Replace with your VPC ID
+vpc_id = "vpc-xxxxxxxxxxxxxxxxx" # Replace with your VPC ID
 proxy_subnet_ids = [
-  "subnet-xxxxxxxxxxxxxxxxx",  # Private subnet AZ1
-  "subnet-yyyyyyyyyyyyyyyyy",  # Private subnet AZ2
-  "subnet-zzzzzzzzzzzzzzzzz"   # Private subnet AZ3
+  "subnet-xxxxxxxxxxxxxxxxx", # Private subnet AZ1
+  "subnet-yyyyyyyyyyyyyyyyy", # Private subnet AZ2
+  "subnet-zzzzzzzzzzzzzzzzz"  # Private subnet AZ3
 ]
 lb_subnet_ids = [
-  "subnet-aaaaaaaaaaaaaaa",  # Public subnet AZ1
-  "subnet-bbbbbbbbbbbbbbb",  # Public subnet AZ2
-  "subnet-ccccccccccccccc"   # Public subnet AZ3
+  "subnet-aaaaaaaaaaaaaaa", # Public subnet AZ1
+  "subnet-bbbbbbbbbbbbbbb", # Public subnet AZ2
+  "subnet-ccccccccccccccc"  # Public subnet AZ3
 ]
 
 # NOTE: EKS Security Group ID is NOT needed for Envoy proxy
@@ -65,7 +65,7 @@ lb_subnet_ids = [
 
 # Traffic flow: CloudFront → External ALB:80 → Envoy:80 → Internal ALB:80 → EKS
 
-envoy_traffic_port = 80  # Target group port - ALB forwards traffic to this port on Envoy instances
+envoy_traffic_port = 80 # Target group port - ALB forwards traffic to this port on Envoy instances
 # Health check port is now configured in the health_check object below 
 
 #=======================================================================
@@ -118,7 +118,7 @@ envoy_traffic_port = 80  # Target group port - ALB forwards traffic to this port
 #   - "1", "2"   = Pin to specific version number
 #=======================================================================
 
-use_existing_launch_template = false  # Set to true to use existing launch template
+use_existing_launch_template = false # Set to true to use existing launch template
 
 # Only used when use_existing_launch_template = true
 # existing_launch_template_id = "lt-0123456789abcdef0"  # Replace with your launch template ID
@@ -151,26 +151,26 @@ use_existing_launch_template = false  # Set to true to use existing launch templ
 #=======================================================================
 
 # EBS Configuration
-ebs_optimized = false  # Set to false for testing (true for production)
-ebs_encrypted = false  # Set to false for testing (true for production)
+ebs_optimized = false # Set to false for testing (true for production)
+ebs_encrypted = false # Set to false for testing (true for production)
 
 # EBS Block Device Mapping
 # Set to false if your AMI already has storage configured (e.g., 100GB in the AMI itself)
-enable_ebs_block_device = true   # true = configure EBS, false = use AMI's existing storage
-root_volume_size        = 20     # Only used if enable_ebs_block_device = true
-root_volume_type        = "gp3"  # Only used if enable_ebs_block_device = true
+enable_ebs_block_device = true  # true = configure EBS, false = use AMI's existing storage
+root_volume_size        = 20    # Only used if enable_ebs_block_device = true
+root_volume_type        = "gp3" # Only used if enable_ebs_block_device = true
 
 # IMDS Configuration - Use IMDSv1 for testing
-imds_http_tokens                 = "optional"  # "optional" = IMDSv1 (less restrictive), "required" = IMDSv2
-imds_http_endpoint               = "enabled"   # "enabled" or "disabled"
-imds_http_put_response_hop_limit = 1           # 1-64, increase for containers/proxies
-imds_instance_metadata_tags      = "enabled"   # "enabled" or "disabled"
+imds_http_tokens                 = "optional" # "optional" = IMDSv1 (less restrictive), "required" = IMDSv2
+imds_http_endpoint               = "enabled"  # "enabled" or "disabled"
+imds_http_put_response_hop_limit = 1          # 1-64, increase for containers/proxies
+imds_instance_metadata_tags      = "enabled"  # "enabled" or "disabled"
 
 #=======================================================================
 # EC2 Configuration (ignored if use_existing_launch_template = true)
 #=======================================================================
 # TODO: Replace with your actual AMI ID
-ami_id        = "ami-xxxxxxxxxxxxxxxxx"  # Replace with your Envoy AMI ID
+ami_id        = "ami-xxxxxxxxxxxxxxxxx" # Replace with your Envoy AMI ID
 instance_type = "t3.small"
 
 # Auto Scaling Configuration
@@ -200,27 +200,27 @@ desired_capacity = 1
 # - Monitor behavior, then add memory-based if needed
 # ============================================================================
 
-enable_autoscaling = true  # Set to true to enable auto-scaling
+enable_autoscaling = true # Set to true to enable auto-scaling
 
 scaling_policies = {
   # CPU Target Tracking - Recommended for most workloads
   cpu_target_tracking = {
-    enabled      = true  # Set to true to enable
-    target_value = 70.0   # Scale when average CPU > 70%
+    enabled      = true # Set to true to enable
+    target_value = 70.0 # Scale when average CPU > 70%
   }
 
   # Memory Target Tracking - Optional (requires CloudWatch agent)
   # Note: CloudWatch agent must be installed and configured on instances
   # to publish memory metrics to CloudWatch under "CWAgent" namespace
   memory_target_tracking = {
-    enabled      = false  # Set to true after installing CloudWatch agent
-    target_value = 70.0   # Scale when average memory > 70%
+    enabled      = false # Set to true after installing CloudWatch agent
+    target_value = 70.0  # Scale when average memory > 70%
   }
 }
 
 # S3 Logs Bucket Configuration
 # Create a new S3 bucket for logs (dev environment)
-create_logs_bucket = true  # Automatically creates bucket: dev-hyperswitch-envoy-logs-<account-id>-eu-central-1
+create_logs_bucket = true # Automatically creates bucket: dev-hyperswitch-envoy-logs-<account-id>-eu-central-1
 
 # NOTE: If using existing logs bucket, set create_logs_bucket = false and provide:
 # logs_bucket_name = "app-proxy-logs-<account-id>-eu-central-1"
@@ -228,14 +228,14 @@ create_logs_bucket = true  # Automatically creates bucket: dev-hyperswitch-envoy
 
 # S3 Config Bucket Configuration
 # Create a new S3 bucket for configuration files (dev environment)
-create_config_bucket = true  # Automatically creates bucket: dev-hyperswitch-envoy-config-<account-id>-eu-central-1
+create_config_bucket = true # Automatically creates bucket: dev-hyperswitch-envoy-config-<account-id>-eu-central-1
 
 # NOTE: If using existing config bucket, set create_config_bucket = false and provide:
 # config_bucket_name = "app-proxy-config-<account-id>-eu-central-1"
 # config_bucket_arn  = "arn:aws:s3:::app-proxy-config-<account-id>-eu-central-1"
 
 # Monitoring (ignored if use_existing_launch_template = true)
-enable_detailed_monitoring = true  # Set to true for detailed CloudWatch metrics
+enable_detailed_monitoring = true # Set to true for detailed CloudWatch metrics
 
 #=======================================================================
 # SSH KEY CONFIGURATION
@@ -256,7 +256,7 @@ enable_detailed_monitoring = true  # Set to true for detailed CloudWatch metrics
 #   - You must manage the .pem file yourself
 #=======================================================================
 
-generate_ssh_key = true  # Set to false to use existing key
+generate_ssh_key = true # Set to false to use existing key
 
 # Only used when generate_ssh_key = false
 # key_name = "hyperswitch-envoy-proxy-keypair-eu-central-1"
@@ -290,7 +290,7 @@ generate_ssh_key = true  # Set to false to use existing key
 #=======================================================================
 # Upload config files from ./config directory to S3
 # Git is the source of truth - any changes to files will trigger re-upload
-upload_config_to_s3 = true  # Automatically uploads configs from ./config directory
+upload_config_to_s3 = true # Automatically uploads configs from ./config directory
 
 # Specify the main Envoy config filename (receives template substitution)
 # Different environments can use different filenames:
@@ -315,8 +315,8 @@ envoy_config_filename = "envoy.yaml"
 # These values replace {{placeholders}} in config/envoy.yaml
 # TODO: Replace with your actual values
 
-hyperswitch_cloudfront_dns = "dXXXXXXXXXXXXX.cloudfront.net"  # Replace with your CloudFront distribution DNS
-internal_loadbalancer_dns  = "your-internal-alb-XXXXXXXXXX.eu-central-1.elb.amazonaws.com"  # Replace with your internal ALB DNS
+hyperswitch_cloudfront_dns = "dXXXXXXXXXXXXX.cloudfront.net"                               # Replace with your CloudFront distribution DNS
+internal_loadbalancer_dns  = "your-internal-alb-XXXXXXXXXX.eu-central-1.elb.amazonaws.com" # Replace with your internal ALB DNS
 
 # Template placeholders in envoy.yaml:
 # {{hyperswitch_cloudfront_dns}} - Replaced with above value
@@ -349,8 +349,8 @@ internal_loadbalancer_dns  = "your-internal-alb-XXXXXXXXXX.eu-central-1.elb.amaz
 # Note: For production, consider adding HTTPS listener (port 443) with SSL cert
 #=======================================================================
 
-create_lb           = true  # Set to true to create new ALB
-create_target_group = true  # Set to true to create new target group
+create_lb           = true # Set to true to create new ALB
+create_target_group = true # Set to true to create new target group
 
 # Required when using existing ALB (create_lb = false)
 # TODO: Replace with your actual external ALB ARN and security group ID
@@ -379,7 +379,7 @@ create_target_group = true  # Set to true to create new target group
 #   - Required permissions: S3 (config/logs buckets), SSM, CloudWatch
 #=======================================================================
 
-create_iam_role = true  # Set to false to use existing IAM role
+create_iam_role = true # Set to false to use existing IAM role
 
 # Only used when create_iam_role = false
 # existing_iam_role_name = "my-envoy-iam-role"
@@ -389,7 +389,7 @@ create_iam_role = true  # Set to false to use existing IAM role
 # SSL/TLS CONFIGURATION
 #=======================================================================
 # Enable HTTPS listener with SSL certificate
-enable_https_listener = false  # Set to true to enable HTTPS on port 443
+enable_https_listener = false # Set to true to enable HTTPS on port 443
 
 # Required if enable_https_listener = true
 # ssl_certificate_arn = "arn:aws:acm:eu-central-1:xxxxx:certificate/xxxxx"
@@ -452,14 +452,14 @@ target_group_deregistration_delay = 30
 
 health_check = {
   enabled             = true
-  port                = 80        # Health check port (matches envoy_traffic_port)
-  path                = "/healthz"  # Dev: /healthz, Staging: /health, Production: /ready
-  protocol            = "HTTP"      # HTTP or HTTPS
-  matcher             = "200"       # "200" (exact), "200-299" (range), "200,202" (multiple)
-  interval            = 30          # Interval between checks (5-300 seconds)
-  timeout             = 5           # Timeout per check (2-120 seconds, must be < interval)
-  healthy_threshold   = 2           # Consecutive successes to mark healthy (2-10)
-  unhealthy_threshold = 2           # Consecutive failures to mark unhealthy (2-10)
+  port                = 80         # Health check port (matches envoy_traffic_port)
+  path                = "/healthz" # Dev: /healthz, Staging: /health, Production: /ready
+  protocol            = "HTTP"     # HTTP or HTTPS
+  matcher             = "200"      # "200" (exact), "200-299" (range), "200,202" (multiple)
+  interval            = 30         # Interval between checks (5-300 seconds)
+  timeout             = 5          # Timeout per check (2-120 seconds, must be < interval)
+  healthy_threshold   = 2          # Consecutive successes to mark healthy (2-10)
+  unhealthy_threshold = 2          # Consecutive failures to mark unhealthy (2-10)
 }
 
 #=======================================================================
@@ -476,9 +476,9 @@ health_check = {
 enable_spot_instances = false
 
 # Spot instance configuration (only used if enable_spot_instances = true)
-spot_instance_percentage = 50  # 50% spot, 50% on-demand
-on_demand_base_capacity  = 1   # Always keep 1 on-demand instance
-spot_allocation_strategy = "capacity-optimized"
+spot_instance_percentage  = 50 # 50% spot, 50% on-demand
+on_demand_base_capacity   = 1  # Always keep 1 on-demand instance
+spot_allocation_strategy  = "capacity-optimized"
 enable_capacity_rebalance = false
 
 #=======================================================================

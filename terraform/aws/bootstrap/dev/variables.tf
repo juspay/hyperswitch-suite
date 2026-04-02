@@ -36,7 +36,7 @@ variable "state_bucket_name" {
 variable "allow_destroy" {
   description = "Allow destruction of the bucket (should be false for prod)"
   type        = bool
-  default     = true  # Dev can be destroyed easily
+  default     = true # Dev can be destroyed easily
 }
 
 variable "sse_algorithm" {
@@ -58,7 +58,7 @@ variable "lifecycle_rules" {
       storage_class = string
     })), [])
   }))
-  default = []  # No lifecycle rules by default - keep all state history
+  default = [] # No lifecycle rules by default - keep all state history
 }
 
 # ============================================================================
@@ -76,13 +76,13 @@ variable "dynamodb_table_name" {
 variable "dynamodb_billing_mode" {
   description = "Billing mode for DynamoDB (PROVISIONED or PAY_PER_REQUEST)"
   type        = string
-  default     = "PAY_PER_REQUEST"  # Cost-effective for state locking
+  default     = "PAY_PER_REQUEST" # Cost-effective for state locking
 }
 
 variable "enable_dynamodb_pitr" {
   description = "Enable point-in-time recovery for DynamoDB table"
   type        = bool
-  default     = false  # Can be enabled for additional safety in prod
+  default     = false # Can be enabled for additional safety in prod
 }
 
 # ============================================================================

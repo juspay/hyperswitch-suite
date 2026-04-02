@@ -52,10 +52,10 @@ resource "aws_elasticache_replication_group" "main" {
   description          = "${title(var.project_name)} ${title(var.environment)} Elasticache replication group"
 
   # Engine Configuration
-  engine               = local.is_secondary_cluster ? null : (var.snapshot_arn != null || var.snapshot_name != null ? null : var.engine)
-  engine_version       = local.is_secondary_cluster ? null : (var.snapshot_arn != null || var.snapshot_name != null ? null : var.engine_version)
-  parameter_group_name = local.is_secondary_cluster ? null : var.parameter_group_name
-  port                 = local.is_secondary_cluster ? null : var.port
+  engine                      = local.is_secondary_cluster ? null : (var.snapshot_arn != null || var.snapshot_name != null ? null : var.engine)
+  engine_version              = local.is_secondary_cluster ? null : (var.snapshot_arn != null || var.snapshot_name != null ? null : var.engine_version)
+  parameter_group_name        = local.is_secondary_cluster ? null : var.parameter_group_name
+  port                        = local.is_secondary_cluster ? null : var.port
   node_type                   = local.is_secondary_cluster ? null : var.node_type
   num_cache_clusters          = local.is_secondary_cluster ? null : (var.num_node_groups == null ? var.num_cache_clusters : null)
   num_node_groups             = local.is_secondary_cluster ? null : var.num_node_groups
@@ -73,8 +73,8 @@ resource "aws_elasticache_replication_group" "main" {
   network_type       = local.is_secondary_cluster ? null : var.network_type
 
   # High Availability
-  automatic_failover_enabled = local.is_secondary_cluster ? null : var.automatic_failover_enabled
-  multi_az_enabled           = local.is_secondary_cluster ? null : var.multi_az_enabled
+  automatic_failover_enabled  = local.is_secondary_cluster ? null : var.automatic_failover_enabled
+  multi_az_enabled            = local.is_secondary_cluster ? null : var.multi_az_enabled
   global_replication_group_id = local.is_secondary_cluster ? var.global_replication_group_id : null
   # Security
   at_rest_encryption_enabled = local.is_secondary_cluster ? null : var.at_rest_encryption_enabled

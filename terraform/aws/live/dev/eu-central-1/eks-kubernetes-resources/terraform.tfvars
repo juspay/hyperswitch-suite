@@ -124,7 +124,7 @@ cluster_autoscaler_architectures = ["amd64", "arm64"]
 cluster_autoscaler_use_ecr = true
 
 # Custom ECR repository name (auto-generated if null)
-cluster_autoscaler_ecr_repo_name  = "dev-hyperswitch-cluster-autoscaler"
+cluster_autoscaler_ecr_repo_name = "dev-hyperswitch-cluster-autoscaler"
 
 # Max images to keep in ECR (lifecycle policy)
 cluster_autoscaler_ecr_max_images = 5

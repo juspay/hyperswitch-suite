@@ -29,7 +29,7 @@ variable "attributes" {
   description = "List of attribute definitions"
   type = list(object({
     name = string
-    type = string  # S (string), N (number), or B (binary)
+    type = string # S (string), N (number), or B (binary)
   }))
 
   validation {
@@ -88,7 +88,7 @@ variable "global_secondary_indexes" {
     name            = string
     hash_key        = string
     range_key       = optional(string, null)
-    projection_type = string  # ALL, KEYS_ONLY, or INCLUDE
+    projection_type = string # ALL, KEYS_ONLY, or INCLUDE
     read_capacity   = optional(number, 5)
     write_capacity  = optional(number, 5)
   }))
@@ -100,7 +100,7 @@ variable "local_secondary_indexes" {
   type = list(object({
     name            = string
     range_key       = string
-    projection_type = string  # ALL, KEYS_ONLY, or INCLUDE
+    projection_type = string # ALL, KEYS_ONLY, or INCLUDE
   }))
   default = []
 }

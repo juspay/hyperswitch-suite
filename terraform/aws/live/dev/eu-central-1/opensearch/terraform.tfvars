@@ -77,8 +77,8 @@ security_group_description = "Security group for Hyperswitch Dev OpenSearch doma
 
 # Existing security groups to attach (from the AWS console)
 existing_security_group_ids = [
-  "sg-xxxxxxxxxxxxxxxxx", 
-  "sg-xxxxxxxxxxxxxxxxx"  
+  "sg-xxxxxxxxxxxxxxxxx",
+  "sg-xxxxxxxxxxxxxxxxx"
 ]
 
 

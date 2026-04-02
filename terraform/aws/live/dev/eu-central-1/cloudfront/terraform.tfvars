@@ -5,8 +5,8 @@
 # Note: CloudFront distributions, origins, OACs, response headers policies,
 # and CloudFront functions are now managed via config.yaml
 
-region      = "eu-central-1"
-environment = "dev"
+region       = "eu-central-1"
+environment  = "dev"
 project_name = "hyperswitch"
 
 # Common tags
@@ -33,10 +33,10 @@ common_tags = {
 # log_prefix = "cloudfront/"
 
 # Option 3: Disable logging (CURRENT - for testing)
-enable_logging = false
+enable_logging    = false
 create_log_bucket = false
-log_bucket_arn = null
-log_prefix = "cloudfront/"
+log_bucket_arn    = null
+log_prefix        = "cloudfront/"
 
 # Note: The following are now configured in config.yaml:
 # - distributions: All CloudFront distributions with origins and cache behaviors

@@ -7,8 +7,8 @@ data "aws_iam_policy_document" "cross_account_assume" {
   count = var.create_assume_role_policy && length(var.cross_account_roles) > 0 ? 1 : 0
 
   statement {
-    effect  = "Allow"
-    actions = ["sts:AssumeRole"]
+    effect    = "Allow"
+    actions   = ["sts:AssumeRole"]
     resources = var.cross_account_roles
   }
 }
@@ -22,7 +22,7 @@ resource "aws_iam_role" "argocd_management" {
   description          = var.role_description
   path                 = var.role_path
   max_session_duration = var.max_session_duration
-  assume_role_policy   = jsonencode({
+  assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = concat(
       [

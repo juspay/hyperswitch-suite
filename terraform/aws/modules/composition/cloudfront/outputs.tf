@@ -8,11 +8,11 @@ output "distributions" {
   value = local.create ? {
     for name, dist_module in module.cloudfront :
     name => {
-      id                   = dist_module.cloudfront_distribution_id
-      arn                  = dist_module.cloudfront_distribution_arn
-      domain_name          = dist_module.cloudfront_distribution_domain_name
-      hosted_zone_id       = dist_module.cloudfront_distribution_hosted_zone_id
-      status               = dist_module.cloudfront_distribution_status
+      id             = dist_module.cloudfront_distribution_id
+      arn            = dist_module.cloudfront_distribution_arn
+      domain_name    = dist_module.cloudfront_distribution_domain_name
+      hosted_zone_id = dist_module.cloudfront_distribution_hosted_zone_id
+      status         = dist_module.cloudfront_distribution_status
     }
   } : {}
 }
@@ -132,25 +132,25 @@ output "response_headers_policy_arns" {
 # Log Bucket
 output "log_bucket" {
   description = "S3 bucket for CloudFront access logs"
-  value = var.enable_logging && local.log_bucket_config != null ? local.log_bucket_config : null
+  value       = var.enable_logging && local.log_bucket_config != null ? local.log_bucket_config : null
 }
 
 # Log Bucket Name
 output "log_bucket_name" {
   description = "Name of S3 bucket for CloudFront access logs"
-  value = var.enable_logging && local.log_bucket_config != null ? local.log_bucket_config.bucket_name : null
+  value       = var.enable_logging && local.log_bucket_config != null ? local.log_bucket_config.bucket_name : null
 }
 
 # Log Bucket ARN
 output "log_bucket_arn" {
   description = "ARN of S3 bucket for CloudFront access logs"
-  value = var.enable_logging && local.log_bucket_config != null ? local.log_bucket_config.bucket_arn : null
+  value       = var.enable_logging && local.log_bucket_config != null ? local.log_bucket_config.bucket_arn : null
 }
 
 # Log Bucket Domain Name
 output "log_bucket_domain_name" {
   description = "Domain name of S3 bucket for CloudFront access logs"
-  value = var.enable_logging && local.log_bucket_config != null ? local.log_bucket_config.bucket_domain_name : null
+  value       = var.enable_logging && local.log_bucket_config != null ? local.log_bucket_config.bucket_domain_name : null
 }
 
 # Invalidation Commands
@@ -166,15 +166,15 @@ output "invalidation_commands" {
 output "configuration_summary" {
   description = "Summary of CloudFront configuration"
   value = local.create ? {
-    distributions_count      = length(var.distributions)
-    total_origins           = sum([for dist in var.distributions : length(dist.origins)])
-    total_cache_behaviors   = sum([for dist in var.distributions : length(dist.ordered_cache_behaviors)])
-    cloudfront_functions    = length(var.cloudfront_functions)
-    origin_access_controls  = length(var.origin_access_controls)
+    distributions_count       = length(var.distributions)
+    total_origins             = sum([for dist in var.distributions : length(dist.origins)])
+    total_cache_behaviors     = sum([for dist in var.distributions : length(dist.ordered_cache_behaviors)])
+    cloudfront_functions      = length(var.cloudfront_functions)
+    origin_access_controls    = length(var.origin_access_controls)
     response_headers_policies = length(var.response_headers_policies)
-    invalidations_enabled  = length([for name, dist in var.distributions : name if try(dist.invalidation.enabled, false)])
-    logging_enabled        = var.enable_logging
-    environment            = var.environment
-    project_name           = var.project_name
+    invalidations_enabled     = length([for name, dist in var.distributions : name if try(dist.invalidation.enabled, false)])
+    logging_enabled           = var.enable_logging
+    environment               = var.environment
+    project_name              = var.project_name
   } : {}
 }

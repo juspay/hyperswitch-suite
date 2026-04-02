@@ -8,10 +8,10 @@
 # }
 
 terraform {
-     backend "s3" {
-       bucket  = "hyperswitch-dev-terraform-state"
-       key     = "dev/eu-central-1/vpc-network/terraform.tfstate"
-       region  = "eu-central-1"
-       encrypt = true
-     }
-   }
+  backend "s3" {
+    bucket  = "hyperswitch-dev-terraform-state"
+    key     = "dev/eu-central-1/vpc-network/terraform.tfstate"
+    region  = "eu-central-1"
+    encrypt = true
+  }
+}

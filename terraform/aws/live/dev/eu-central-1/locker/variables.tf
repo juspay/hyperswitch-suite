@@ -101,10 +101,10 @@ variable "public_key" {
 variable "nlb_listeners" {
   description = "NLB listener configurations"
   type = map(object({
-    port              = number
-    protocol          = string
-    target_group_arn  = optional(string)
-    certificate_arn   = optional(string)
+    port             = number
+    protocol         = string
+    target_group_arn = optional(string)
+    certificate_arn  = optional(string)
   }))
   default = {
     "http" = {

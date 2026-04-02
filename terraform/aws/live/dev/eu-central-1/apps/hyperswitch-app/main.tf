@@ -72,8 +72,8 @@ locals {
           values = ["sts.amazonaws.com"]
         },
         {
-          type   = "StringLike"
-          claim  = "sub"
+          type  = "StringLike"
+          claim = "sub"
           values = [
             "system:serviceaccount:hyperswitch-sandbox:hyperswitch-router-role",
             "system:serviceaccount:uas-sandbox:uas-sandbox-role"

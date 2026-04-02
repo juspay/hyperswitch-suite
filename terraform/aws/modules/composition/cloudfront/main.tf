@@ -7,15 +7,15 @@
 module "cloudfront_resources" {
   source = "../../cloudfront-resources"
 
-  create = var.create
+  create       = var.create
   environment  = var.environment
   project_name = var.project_name
   common_tags  = var.common_tags
 
-  cloudfront_functions = var.cloudfront_functions
+  cloudfront_functions      = var.cloudfront_functions
   response_headers_policies = var.response_headers_policies
-  cache_policies = var.cache_policies
-  origin_request_policies = var.origin_request_policies
+  cache_policies            = var.cache_policies
+  origin_request_policies   = var.origin_request_policies
 }
 
 # Create S3 bucket for CloudFront logs if enabled and requested
@@ -67,12 +67,12 @@ module "cloudfront" {
       },
       origin_config.type != "s3" ? {
         custom_origin_config = {
-          http_port                    = lookup(origin_config.custom_origin_config, "http_port", 80)
-          https_port                   = lookup(origin_config.custom_origin_config, "https_port", 443)
-          origin_protocol_policy       = lookup(origin_config.custom_origin_config, "origin_protocol_policy", "https-only")
-          origin_ssl_protocols         = lookup(origin_config.custom_origin_config, "origin_ssl_protocols", ["TLSv1.2"])
-          origin_keepalive_timeout     = lookup(origin_config.custom_origin_config, "origin_keepalive_timeout", 5)
-          origin_read_timeout          = lookup(origin_config.custom_origin_config, "origin_read_timeout", 30)
+          http_port                = lookup(origin_config.custom_origin_config, "http_port", 80)
+          https_port               = lookup(origin_config.custom_origin_config, "https_port", 443)
+          origin_protocol_policy   = lookup(origin_config.custom_origin_config, "origin_protocol_policy", "https-only")
+          origin_ssl_protocols     = lookup(origin_config.custom_origin_config, "origin_ssl_protocols", ["TLSv1.2"])
+          origin_keepalive_timeout = lookup(origin_config.custom_origin_config, "origin_keepalive_timeout", 5)
+          origin_read_timeout      = lookup(origin_config.custom_origin_config, "origin_read_timeout", 30)
         }
       } : {}
     )
@@ -157,13 +157,13 @@ module "cloudfront" {
   # Note: When using cloudfront_default_certificate=true, AWS forces minimum_protocol_version to TLSv1
   # To enforce TLSv1.2+, you must use a custom ACM certificate.
   viewer_certificate = lookup(each.value, "viewer_certificate", null) != null ? {
-    acm_certificate_arn      = each.value.viewer_certificate.acm_certificate_arn
-    ssl_support_method       = lookup(each.value.viewer_certificate, "ssl_support_method", "sni-only")
-    minimum_protocol_version = lookup(each.value.viewer_certificate, "minimum_protocol_version", "TLSv1.2_2021")
+    acm_certificate_arn            = each.value.viewer_certificate.acm_certificate_arn
+    ssl_support_method             = lookup(each.value.viewer_certificate, "ssl_support_method", "sni-only")
+    minimum_protocol_version       = lookup(each.value.viewer_certificate, "minimum_protocol_version", "TLSv1.2_2021")
     cloudfront_default_certificate = false
-  } : {
+    } : {
     cloudfront_default_certificate = true
-    minimum_protocol_version       = "TLSv1"  # AWS enforces TLSv1 for default certificate
+    minimum_protocol_version       = "TLSv1" # AWS enforces TLSv1 for default certificate
   }
 
   origin_access_control = {}

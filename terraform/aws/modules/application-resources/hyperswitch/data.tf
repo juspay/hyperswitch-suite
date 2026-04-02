@@ -21,7 +21,7 @@ data "aws_iam_openid_connect_provider" "oidc" {
 # KMS Key data (for existing keys)
 # =========================================================================
 data "aws_kms_key" "existing" {
-  count = local.kms_enabled && !local.kms_create ? 1 : 0
+  count  = local.kms_enabled && !local.kms_create ? 1 : 0
   key_id = local.kms_key_arn
 }
 

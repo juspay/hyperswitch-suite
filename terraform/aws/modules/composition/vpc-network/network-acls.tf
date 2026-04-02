@@ -7,8 +7,8 @@ module "main_nacl" {
   source = "../../base/network-acl"
   count  = var.create_nacl ? 1 : 0
 
-  vpc_id     = module.vpc.vpc_id
-  nacl_name  = "${var.vpc_name}-nacl"
+  vpc_id    = module.vpc.vpc_id
+  nacl_name = "${var.vpc_name}-nacl"
   subnet_ids = concat(
     module.external_incoming_subnets[*].subnet_id,
     module.management_subnets[*].subnet_id,

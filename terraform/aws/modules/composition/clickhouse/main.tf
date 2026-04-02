@@ -9,14 +9,14 @@ data "aws_caller_identity" "current" {}
 # =========================================================================
 
 resource "tls_private_key" "clickhouse" {
-  count     = var.create_key_pair && var.public_key == null ? 1 : 0
+  count = var.create_key_pair && var.public_key == null ? 1 : 0
 
   algorithm = "RSA"
   rsa_bits  = 4096
 }
 
 resource "aws_key_pair" "clickhouse" {
-  count      = var.create_key_pair ? 1 : 0
+  count = var.create_key_pair ? 1 : 0
 
   key_name   = local.key_pair_name
   public_key = var.public_key != null ? var.public_key : tls_private_key.clickhouse[0].public_key_openssh
@@ -25,7 +25,7 @@ resource "aws_key_pair" "clickhouse" {
 }
 
 resource "aws_ssm_parameter" "clickhouse_private_key" {
-  count       = var.create_key_pair && var.public_key == null ? 1 : 0
+  count = var.create_key_pair && var.public_key == null ? 1 : 0
 
   name        = "/${var.environment}/${var.project_name}/clickhouse/ssh-private-key"
   description = "Auto-generated SSH private key for Clickhouse instances"

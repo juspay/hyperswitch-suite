@@ -78,12 +78,12 @@ output "cloudwatch_log_groups" {
 
 output "migration_mode_status" {
   description = "Current migration mode status for SSM SendCommand permissions"
-  value = var.enable_migration_mode ? "ENABLED" : "DISABLED"
+  value       = var.enable_migration_mode ? "ENABLED" : "DISABLED"
 }
 
 output "connection_guide" {
   description = "Guide for connecting to jump hosts"
-  value = <<-EOT
+  value       = <<-EOT
     ================================================================================
     JUMP HOST CONNECTION GUIDE
     ================================================================================

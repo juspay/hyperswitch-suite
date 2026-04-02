@@ -55,10 +55,10 @@ output "alb_listener_arns" {
 
 output "alb_listener_details" {
   description = "Details of the ALB listeners (port and protocol)"
-  value       = { for key, listener in var.alb_listeners : key => {
+  value = { for key, listener in var.alb_listeners : key => {
     port     = listener.port
     protocol = listener.protocol
-  }}
+  } }
 }
 
 # =========================================================================

@@ -1,7 +1,7 @@
 terraform {
   backend "local" {
     path = "terraform.tfstate"
-    
+
   }
   # backend "s3" {
   #   bucket  = "hyperswitch-dev-terraform-state"

@@ -29,8 +29,8 @@ locals {
   customer_managed_policies_enabled = length(var.customer_managed_policy_arns) > 0
 
   # S3 bucket feature
-  s3_enabled = var.s3 != {} && (try(var.s3.create, false) || try(var.s3.bucket_arn, null) != null)
-  s3_create  = try(var.s3.create, false)
+  s3_enabled    = var.s3 != {} && (try(var.s3.create, false) || try(var.s3.bucket_arn, null) != null)
+  s3_create     = try(var.s3.create, false)
   s3_bucket_arn = local.s3_create ? (length(module.s3_bucket) > 0 ? module.s3_bucket[0].s3_bucket_arn : null) : try(var.s3.bucket_arn, null)
 
   # =========================================================================

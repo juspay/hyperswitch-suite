@@ -52,7 +52,7 @@ output "backend_config" {
 
 output "backend_config_formatted" {
   description = "Formatted backend configuration for copy-paste into backend.tf files"
-  value = <<-EOT
+  value       = <<-EOT
     terraform {
       backend "s3" {
         bucket         = "${module.state_bucket.bucket_id}"

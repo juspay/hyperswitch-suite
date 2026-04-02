@@ -6,8 +6,8 @@
 module "common_internet_rt" {
   source = "../../base/route-table"
 
-  vpc_id             = module.vpc.vpc_id
-  route_table_name   = "${var.vpc_name}-CommonInternet"
+  vpc_id           = module.vpc.vpc_id
+  route_table_name = "${var.vpc_name}-CommonInternet"
 
   create_internet_gateway_route = true
   internet_gateway_id           = module.vpc.internet_gateway_id
@@ -25,8 +25,8 @@ module "common_internet_rt" {
 module "common_internet_s3_rt" {
   source = "../../base/route-table"
 
-  vpc_id             = module.vpc.vpc_id
-  route_table_name   = "${var.vpc_name}-CommonInternetS3"
+  vpc_id           = module.vpc.vpc_id
+  route_table_name = "${var.vpc_name}-CommonInternetS3"
 
   create_internet_gateway_route = true
   internet_gateway_id           = module.vpc.internet_gateway_id
@@ -44,8 +44,8 @@ module "common_internet_s3_rt" {
 module "common_local_route_rt" {
   source = "../../base/route-table"
 
-  vpc_id             = module.vpc.vpc_id
-  route_table_name   = "${var.vpc_name}-CommonLocalRoute"
+  vpc_id           = module.vpc.vpc_id
+  route_table_name = "${var.vpc_name}-CommonLocalRoute"
 
   tags = merge(
     var.tags,
@@ -60,8 +60,8 @@ module "common_local_route_rt" {
 module "common_local_s3_rt" {
   source = "../../base/route-table"
 
-  vpc_id             = module.vpc.vpc_id
-  route_table_name   = "${var.vpc_name}-CommonLocalS3"
+  vpc_id           = module.vpc.vpc_id
+  route_table_name = "${var.vpc_name}-CommonLocalS3"
 
   tags = merge(
     var.tags,
@@ -76,8 +76,8 @@ module "common_local_s3_rt" {
 module "db_route_table" {
   source = "../../base/route-table"
 
-  vpc_id             = module.vpc.vpc_id
-  route_table_name   = "${var.vpc_name}-DB-Table"
+  vpc_id           = module.vpc.vpc_id
+  route_table_name = "${var.vpc_name}-DB-Table"
 
   tags = merge(
     var.tags,
@@ -92,8 +92,8 @@ module "db_route_table" {
 module "redis_route_table" {
   source = "../../base/route-table"
 
-  vpc_id             = module.vpc.vpc_id
-  route_table_name   = "${var.vpc_name}-RedisRouteTable"
+  vpc_id           = module.vpc.vpc_id
+  route_table_name = "${var.vpc_name}-RedisRouteTable"
 
   tags = merge(
     var.tags,
@@ -108,8 +108,8 @@ module "redis_route_table" {
 module "database_route_table" {
   source = "../../base/route-table"
 
-  vpc_id             = module.vpc.vpc_id
-  route_table_name   = "${var.vpc_name}-Locker-DB-RT"
+  vpc_id           = module.vpc.vpc_id
+  route_table_name = "${var.vpc_name}-Locker-DB-RT"
 
   tags = merge(
     var.tags,
@@ -125,8 +125,8 @@ module "database_route_table" {
 module "locker_server_s3_rt" {
   source = "../../base/route-table"
 
-  vpc_id             = module.vpc.vpc_id
-  route_table_name   = "${var.vpc_name}-LockerServerS3"
+  vpc_id           = module.vpc.vpc_id
+  route_table_name = "${var.vpc_name}-LockerServerS3"
 
   tags = merge(
     var.tags,
@@ -143,8 +143,8 @@ module "proxy_peering_nat_a_rt" {
   source = "../../base/route-table"
   count  = var.enable_nat_gateway && length(var.availability_zones) > 0 ? 1 : 0
 
-  vpc_id             = module.vpc.vpc_id
-  route_table_name   = "${var.vpc_name}-ProxyPeeringNAT-A"
+  vpc_id           = module.vpc.vpc_id
+  route_table_name = "${var.vpc_name}-ProxyPeeringNAT-A"
 
   create_nat_gateway_route = true
   nat_gateway_id           = var.single_nat_gateway ? module.external_incoming_subnets[0].nat_gateway_id : module.external_incoming_subnets[0].nat_gateway_id
@@ -164,8 +164,8 @@ module "proxy_peering_nat_b_rt" {
   source = "../../base/route-table"
   count  = var.enable_nat_gateway && length(var.availability_zones) > 1 ? 1 : 0
 
-  vpc_id             = module.vpc.vpc_id
-  route_table_name   = "${var.vpc_name}-ProxyPeeringNAT-B"
+  vpc_id           = module.vpc.vpc_id
+  route_table_name = "${var.vpc_name}-ProxyPeeringNAT-B"
 
   create_nat_gateway_route = true
   nat_gateway_id           = var.single_nat_gateway ? module.external_incoming_subnets[0].nat_gateway_id : module.external_incoming_subnets[1].nat_gateway_id
@@ -185,8 +185,8 @@ module "proxy_peering_nat_c_rt" {
   source = "../../base/route-table"
   count  = var.enable_nat_gateway && length(var.availability_zones) > 2 ? 1 : 0
 
-  vpc_id             = module.vpc.vpc_id
-  route_table_name   = "${var.vpc_name}-ProxyPeeringNAT-C"
+  vpc_id           = module.vpc.vpc_id
+  route_table_name = "${var.vpc_name}-ProxyPeeringNAT-C"
 
   create_nat_gateway_route = true
   nat_gateway_id           = var.single_nat_gateway ? module.external_incoming_subnets[0].nat_gateway_id : module.external_incoming_subnets[2].nat_gateway_id
@@ -206,8 +206,8 @@ module "proxy_peering_nat_c_rt" {
 module "eks_worker_rt" {
   source = "../../base/route-table"
 
-  vpc_id             = module.vpc.vpc_id
-  route_table_name   = "${var.vpc_name}-EKSWorker"
+  vpc_id           = module.vpc.vpc_id
+  route_table_name = "${var.vpc_name}-EKSWorker"
 
   create_nat_gateway_route = false
 
@@ -225,8 +225,8 @@ module "common_local_nat_s3_rt" {
   source = "../../base/route-table"
   count  = var.enable_nat_gateway ? 1 : 0
 
-  vpc_id             = module.vpc.vpc_id
-  route_table_name   = "${var.vpc_name}-CommonLocalNATS3"
+  vpc_id           = module.vpc.vpc_id
+  route_table_name = "${var.vpc_name}-CommonLocalNATS3"
 
   create_nat_gateway_route = true
   nat_gateway_id           = module.external_incoming_subnets[0].nat_gateway_id

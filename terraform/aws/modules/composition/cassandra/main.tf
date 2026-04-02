@@ -157,8 +157,8 @@ module "seed_discovery_api" {
   name        = "${local.name_prefix}-seed-api"
   description = "API Gateway for Cassandra seed discovery"
 
-  endpoint_type      = "PRIVATE"
-  vpc_endpoint_ids   = var.api_gateway_vpce_id != null ? [var.api_gateway_vpce_id] : []
+  endpoint_type    = "PRIVATE"
+  vpc_endpoint_ids = var.api_gateway_vpce_id != null ? [var.api_gateway_vpce_id] : []
 
   resources = [
     {

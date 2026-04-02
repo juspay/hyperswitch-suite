@@ -80,8 +80,8 @@ locals {
           lookup(origin, "origin_access_control_id", null) != null ? (
             # Check if it's a name reference (exists in our map)
             contains(keys(local.origin_access_controls_map), origin.origin_access_control_id) ?
-              local.origin_access_controls_map[origin.origin_access_control_id] :
-              origin.origin_access_control_id
+            local.origin_access_controls_map[origin.origin_access_control_id] :
+            origin.origin_access_control_id
           ) : try(aws_cloudfront_origin_access_control.this["${dist_name}-${origin.origin_id}"].id, null)
         ) : null
 
@@ -113,51 +113,51 @@ locals {
         cached_methods         = dist_config.default_cache_behavior.cached_methods
         viewer_protocol_policy = dist_config.default_cache_behavior.viewer_protocol_policy
         # When cache_policy_id is set, TTL must be 0 (controlled by the policy)
-        min_ttl               = lookup(dist_config.default_cache_behavior, "cache_policy_id", null) != null ? 0 : dist_config.default_cache_behavior.ttl.min_ttl
-        default_ttl           = lookup(dist_config.default_cache_behavior, "cache_policy_id", null) != null ? 0 : dist_config.default_cache_behavior.ttl.default_ttl
-        max_ttl               = lookup(dist_config.default_cache_behavior, "cache_policy_id", null) != null ? 0 : dist_config.default_cache_behavior.ttl.max_ttl
-        compress              = lookup(dist_config.default_cache_behavior, "compress", false)
-        cache_policy_id       = lookup(dist_config.default_cache_behavior, "cache_policy_id", null)
-        origin_request_policy_id = lookup(dist_config.default_cache_behavior, "origin_request_policy_id", null)
+        min_ttl                    = lookup(dist_config.default_cache_behavior, "cache_policy_id", null) != null ? 0 : dist_config.default_cache_behavior.ttl.min_ttl
+        default_ttl                = lookup(dist_config.default_cache_behavior, "cache_policy_id", null) != null ? 0 : dist_config.default_cache_behavior.ttl.default_ttl
+        max_ttl                    = lookup(dist_config.default_cache_behavior, "cache_policy_id", null) != null ? 0 : dist_config.default_cache_behavior.ttl.max_ttl
+        compress                   = lookup(dist_config.default_cache_behavior, "compress", false)
+        cache_policy_id            = lookup(dist_config.default_cache_behavior, "cache_policy_id", null)
+        origin_request_policy_id   = lookup(dist_config.default_cache_behavior, "origin_request_policy_id", null)
         response_headers_policy_id = lookup(dist_config.default_cache_behavior, "response_headers_policy_id", null)
 
         # Resolved policy IDs - dynamically resolve custom, AWS managed, ARN, and UUID references
         resolved_cache_policy_id = (
           lookup(dist_config.default_cache_behavior, "cache_policy_id", null) == null ? null :
           contains(keys(module.cloudfront_resources.cache_policy_ids), dist_config.default_cache_behavior.cache_policy_id) ?
-            module.cloudfront_resources.cache_policy_ids[dist_config.default_cache_behavior.cache_policy_id] :
+          module.cloudfront_resources.cache_policy_ids[dist_config.default_cache_behavior.cache_policy_id] :
           startswith(dist_config.default_cache_behavior.cache_policy_id, "arn:") ?
-            dist_config.default_cache_behavior.cache_policy_id :
+          dist_config.default_cache_behavior.cache_policy_id :
           can(regex("^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$", dist_config.default_cache_behavior.cache_policy_id)) ?
-            dist_config.default_cache_behavior.cache_policy_id :
+          dist_config.default_cache_behavior.cache_policy_id :
           contains(keys(local.aws_managed_cache_policy_ids), dist_config.default_cache_behavior.cache_policy_id) ?
-            local.aws_managed_cache_policy_ids[dist_config.default_cache_behavior.cache_policy_id] :
+          local.aws_managed_cache_policy_ids[dist_config.default_cache_behavior.cache_policy_id] :
           dist_config.default_cache_behavior.cache_policy_id
         )
 
         resolved_origin_request_policy_id = (
           lookup(dist_config.default_cache_behavior, "origin_request_policy_id", null) == null ? null :
           contains(keys(module.cloudfront_resources.origin_request_policy_ids), dist_config.default_cache_behavior.origin_request_policy_id) ?
-            module.cloudfront_resources.origin_request_policy_ids[dist_config.default_cache_behavior.origin_request_policy_id] :
+          module.cloudfront_resources.origin_request_policy_ids[dist_config.default_cache_behavior.origin_request_policy_id] :
           startswith(dist_config.default_cache_behavior.origin_request_policy_id, "arn:") ?
-            dist_config.default_cache_behavior.origin_request_policy_id :
+          dist_config.default_cache_behavior.origin_request_policy_id :
           can(regex("^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$", dist_config.default_cache_behavior.origin_request_policy_id)) ?
-            dist_config.default_cache_behavior.origin_request_policy_id :
+          dist_config.default_cache_behavior.origin_request_policy_id :
           contains(keys(local.aws_managed_origin_request_policy_ids), dist_config.default_cache_behavior.origin_request_policy_id) ?
-            local.aws_managed_origin_request_policy_ids[dist_config.default_cache_behavior.origin_request_policy_id] :
+          local.aws_managed_origin_request_policy_ids[dist_config.default_cache_behavior.origin_request_policy_id] :
           dist_config.default_cache_behavior.origin_request_policy_id
         )
 
         resolved_response_headers_policy_id = (
           lookup(dist_config.default_cache_behavior, "response_headers_policy_id", null) == null ? null :
           contains(keys(module.cloudfront_resources.response_headers_policy_ids), dist_config.default_cache_behavior.response_headers_policy_id) ?
-            module.cloudfront_resources.response_headers_policy_ids[dist_config.default_cache_behavior.response_headers_policy_id] :
+          module.cloudfront_resources.response_headers_policy_ids[dist_config.default_cache_behavior.response_headers_policy_id] :
           startswith(dist_config.default_cache_behavior.response_headers_policy_id, "arn:") ?
-            dist_config.default_cache_behavior.response_headers_policy_id :
+          dist_config.default_cache_behavior.response_headers_policy_id :
           can(regex("^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$", dist_config.default_cache_behavior.response_headers_policy_id)) ?
-            dist_config.default_cache_behavior.response_headers_policy_id :
+          dist_config.default_cache_behavior.response_headers_policy_id :
           contains(keys(local.aws_managed_response_headers_policy_ids), dist_config.default_cache_behavior.response_headers_policy_id) ?
-            local.aws_managed_response_headers_policy_ids[dist_config.default_cache_behavior.response_headers_policy_id] :
+          local.aws_managed_response_headers_policy_ids[dist_config.default_cache_behavior.response_headers_policy_id] :
           dist_config.default_cache_behavior.response_headers_policy_id
         )
 
@@ -192,51 +192,51 @@ locals {
         merge(behavior, {
           # When cache_policy_id is set, TTL must be 0 (controlled by the policy)
           # Otherwise, use TTL from behavior.ttl or default to 0 if ttl block is missing
-          min_ttl               = lookup(behavior, "cache_policy_id", null) != null ? 0 : try(behavior.ttl.min_ttl, 0)
-          default_ttl           = lookup(behavior, "cache_policy_id", null) != null ? 0 : try(behavior.ttl.default_ttl, 0)
-          max_ttl               = lookup(behavior, "cache_policy_id", null) != null ? 0 : try(behavior.ttl.max_ttl, 0)
-          compress              = lookup(behavior, "compress", false)
-          cache_policy_id       = lookup(behavior, "cache_policy_id", null)
-          origin_request_policy_id = lookup(behavior, "origin_request_policy_id", null)
+          min_ttl                    = lookup(behavior, "cache_policy_id", null) != null ? 0 : try(behavior.ttl.min_ttl, 0)
+          default_ttl                = lookup(behavior, "cache_policy_id", null) != null ? 0 : try(behavior.ttl.default_ttl, 0)
+          max_ttl                    = lookup(behavior, "cache_policy_id", null) != null ? 0 : try(behavior.ttl.max_ttl, 0)
+          compress                   = lookup(behavior, "compress", false)
+          cache_policy_id            = lookup(behavior, "cache_policy_id", null)
+          origin_request_policy_id   = lookup(behavior, "origin_request_policy_id", null)
           response_headers_policy_id = lookup(behavior, "response_headers_policy_id", null)
 
           # Resolved policy IDs - dynamically resolve custom, AWS managed, ARN, and UUID references
           resolved_cache_policy_id = (
             lookup(behavior, "cache_policy_id", null) == null ? null :
             contains(keys(module.cloudfront_resources.cache_policy_ids), behavior.cache_policy_id) ?
-              module.cloudfront_resources.cache_policy_ids[behavior.cache_policy_id] :
+            module.cloudfront_resources.cache_policy_ids[behavior.cache_policy_id] :
             startswith(behavior.cache_policy_id, "arn:") ?
-              behavior.cache_policy_id :
+            behavior.cache_policy_id :
             can(regex("^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$", behavior.cache_policy_id)) ?
-              behavior.cache_policy_id :
+            behavior.cache_policy_id :
             contains(keys(local.aws_managed_cache_policy_ids), behavior.cache_policy_id) ?
-              local.aws_managed_cache_policy_ids[behavior.cache_policy_id] :
+            local.aws_managed_cache_policy_ids[behavior.cache_policy_id] :
             behavior.cache_policy_id
           )
 
           resolved_origin_request_policy_id = (
             lookup(behavior, "origin_request_policy_id", null) == null ? null :
             contains(keys(module.cloudfront_resources.origin_request_policy_ids), behavior.origin_request_policy_id) ?
-              module.cloudfront_resources.origin_request_policy_ids[behavior.origin_request_policy_id] :
+            module.cloudfront_resources.origin_request_policy_ids[behavior.origin_request_policy_id] :
             startswith(behavior.origin_request_policy_id, "arn:") ?
-              behavior.origin_request_policy_id :
+            behavior.origin_request_policy_id :
             can(regex("^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$", behavior.origin_request_policy_id)) ?
-              behavior.origin_request_policy_id :
+            behavior.origin_request_policy_id :
             contains(keys(local.aws_managed_origin_request_policy_ids), behavior.origin_request_policy_id) ?
-              local.aws_managed_origin_request_policy_ids[behavior.origin_request_policy_id] :
+            local.aws_managed_origin_request_policy_ids[behavior.origin_request_policy_id] :
             behavior.origin_request_policy_id
           )
 
           resolved_response_headers_policy_id = (
             lookup(behavior, "response_headers_policy_id", null) == null ? null :
             contains(keys(module.cloudfront_resources.response_headers_policy_ids), behavior.response_headers_policy_id) ?
-              module.cloudfront_resources.response_headers_policy_ids[behavior.response_headers_policy_id] :
+            module.cloudfront_resources.response_headers_policy_ids[behavior.response_headers_policy_id] :
             startswith(behavior.response_headers_policy_id, "arn:") ?
-              behavior.response_headers_policy_id :
+            behavior.response_headers_policy_id :
             can(regex("^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$", behavior.response_headers_policy_id)) ?
-              behavior.response_headers_policy_id :
+            behavior.response_headers_policy_id :
             contains(keys(local.aws_managed_response_headers_policy_ids), behavior.response_headers_policy_id) ?
-              local.aws_managed_response_headers_policy_ids[behavior.response_headers_policy_id] :
+            local.aws_managed_response_headers_policy_ids[behavior.response_headers_policy_id] :
             behavior.response_headers_policy_id
           )
 
@@ -277,7 +277,7 @@ locals {
       bucket_arn         = var.log_bucket_arn
       bucket_domain_name = "${replace(var.log_bucket_arn, "arn:aws:s3:::", "")}.s3.amazonaws.com"
       prefix             = var.log_prefix
-    } : (
+      } : (
       var.create_log_bucket ? {
         bucket_name        = "${local.name_prefix}-logs-${data.aws_caller_identity.current[0].account_id}-${data.aws_region.current[0].id}"
         bucket_arn         = "arn:aws:s3:::${local.name_prefix}-logs-${data.aws_caller_identity.current[0].account_id}-${data.aws_region.current[0].id}"

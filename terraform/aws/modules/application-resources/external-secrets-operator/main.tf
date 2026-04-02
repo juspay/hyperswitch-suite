@@ -7,7 +7,7 @@ resource "aws_iam_role" "external_secrets" {
   description          = var.role_description
   path                 = var.role_path
   max_session_duration = var.max_session_duration
-  assume_role_policy   = jsonencode({
+  assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = concat(
       [

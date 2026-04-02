@@ -12,10 +12,10 @@ module "cassandra" {
   vpc_id    = var.vpc_id
   subnet_id = var.subnet_id
 
-  cluster_name       = var.cluster_name
-  node_count         = var.node_count
-  replication_factor = var.replication_factor
-  idle_timeout       = var.idle_timeout
+  cluster_name        = var.cluster_name
+  node_count          = var.node_count
+  replication_factor  = var.replication_factor
+  idle_timeout        = var.idle_timeout
   default_config_path = var.default_config_path
 
   seed_discovery_lambda_source = var.seed_discovery_lambda_source

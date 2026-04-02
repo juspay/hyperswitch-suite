@@ -59,7 +59,7 @@ variable "lifecycle_rules" {
       storage_class = string
     })), [])
   }))
-  default = []  # No lifecycle rules by default - keep all state history
+  default = [] # No lifecycle rules by default - keep all state history
 }
 
 # ============================================================================
@@ -74,7 +74,7 @@ variable "dynamodb_table_name" {
 variable "dynamodb_billing_mode" {
   description = "Billing mode for DynamoDB (PROVISIONED or PAY_PER_REQUEST)"
   type        = string
-  default     = "PAY_PER_REQUEST"  # Cost-effective for state locking workloads
+  default     = "PAY_PER_REQUEST" # Cost-effective for state locking workloads
 
   validation {
     condition     = contains(["PROVISIONED", "PAY_PER_REQUEST"], var.dynamodb_billing_mode)
@@ -97,7 +97,7 @@ variable "dynamodb_write_capacity" {
 variable "enable_dynamodb_pitr" {
   description = "Enable point-in-time recovery for DynamoDB table"
   type        = bool
-  default     = false  # Can be enabled for prod environments
+  default     = false # Can be enabled for prod environments
 }
 
 variable "dynamodb_kms_key_arn" {

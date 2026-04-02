@@ -16,26 +16,26 @@ project_name = "hyperswitch"
 # Network Configuration
 # ============================================================================
 # TODO: Replace with your actual VPC and subnet IDs
-vpc_id = "vpc-XXXXXXXXXXXXXXXXX"  # Replace with your VPC ID
+vpc_id = "vpc-XXXXXXXXXXXXXXXXX" # Replace with your VPC ID
 
 # Subnets where Squid proxy instances will run (private subnets with NAT/IGW)
 proxy_subnet_ids = [
-  "subnet-XXXXXXXXXXXXXXXXX",  # Private subnet AZ1
-  "subnet-XXXXXXXXXXXXXXXXX",  # Private subnet AZ2
-  "subnet-XXXXXXXXXXXXXXXXX"   # Private subnet AZ3
+  "subnet-XXXXXXXXXXXXXXXXX", # Private subnet AZ1
+  "subnet-XXXXXXXXXXXXXXXXX", # Private subnet AZ2
+  "subnet-XXXXXXXXXXXXXXXXX"  # Private subnet AZ3
 ]
 
 # Subnets where NLB will be placed (service/public subnets)
 lb_subnet_ids = [
-  "subnet-XXXXXXXXXXXXXXXXX",  # Private subnet AZ1
-  "subnet-XXXXXXXXXXXXXXXXX",  # Private subnet AZ2
-  "subnet-XXXXXXXXXXXXXXXXX"   # Private subnet AZ3
+  "subnet-XXXXXXXXXXXXXXXXX", # Private subnet AZ1
+  "subnet-XXXXXXXXXXXXXXXXX", # Private subnet AZ2
+  "subnet-XXXXXXXXXXXXXXXXX"  # Private subnet AZ3
 ]
 
 # ============================================================================
 # Squid Proxy Configuration
 # ============================================================================
-squid_port = 3128  # Standard Squid proxy port (don't change unless you know what you're doing)
+squid_port = 3128 # Standard Squid proxy port (don't change unless you know what you're doing)
 
 #=======================================================================
 # LAUNCH TEMPLATE CONFIGURATION
@@ -65,7 +65,7 @@ squid_port = 3128  # Standard Squid proxy port (don't change unless you know wha
 #   - "1", "2", etc. = Pin to specific version number
 #=======================================================================
 
-use_existing_launch_template = false  # Set to true to use existing launch template
+use_existing_launch_template = false # Set to true to use existing launch template
 
 # Only used when use_existing_launch_template = true
 # existing_launch_template_id = "lt-0123456789abcdef0"  # Replace with your launch template ID
@@ -75,8 +75,8 @@ use_existing_launch_template = false  # Set to true to use existing launch templ
 # EC2 Configuration (ignored if use_existing_launch_template = true)
 #=======================================================================
 # TODO: Replace with your actual AMI ID (Amazon Linux 2 or Ubuntu)
-ami_id        = "ami-XXXXXXXXXXXXXXXXX"  # Replace with your Squid AMI ID
-instance_type = "t3.small"                # Smaller instance for dev
+ami_id        = "ami-XXXXXXXXXXXXXXXXX" # Replace with your Squid AMI ID
+instance_type = "t3.small"              # Smaller instance for dev
 
 #=======================================================================
 
@@ -109,27 +109,27 @@ desired_capacity = 1
 # - Monitor behavior, then add memory-based if needed
 # ============================================================================
 
-enable_autoscaling = true  # Set to false to disable auto-scaling
+enable_autoscaling = true # Set to false to disable auto-scaling
 
 scaling_policies = {
   # CPU Target Tracking - Recommended for most workloads
   cpu_target_tracking = {
     enabled      = true
-    target_value = 70.0  # Scale when average CPU > 70%
+    target_value = 70.0 # Scale when average CPU > 70%
   }
 
   # Memory Target Tracking - Optional (requires CloudWatch agent)
   # Note: CloudWatch agent must be installed and configured on instances
   # to publish memory metrics to CloudWatch under "CWAgent" namespace
   memory_target_tracking = {
-    enabled      = false  # Set to true after installing CloudWatch agent
-    target_value = 70.0   # Scale when average memory > 70%
+    enabled      = false # Set to true after installing CloudWatch agent
+    target_value = 70.0  # Scale when average memory > 70%
   }
 }
 
 # S3 Logs Bucket Configuration
 # Create a new S3 bucket for logs (dev environment)
-create_logs_bucket = true  # Automatically creates bucket: dev-hyperswitch-squid-logs-<account-id>-eu-central-1
+create_logs_bucket = true # Automatically creates bucket: dev-hyperswitch-squid-logs-<account-id>-eu-central-1
 
 # NOTE: If using existing logs bucket, set create_logs_bucket = false and provide:
 # logs_bucket_name = "app-proxy-logs-<account-id>-eu-central-1"
@@ -137,7 +137,7 @@ create_logs_bucket = true  # Automatically creates bucket: dev-hyperswitch-squid
 
 # S3 Config Bucket Configuration
 # Create a new S3 bucket for configuration files (dev environment)
-create_config_bucket = true  # Automatically creates bucket: dev-hyperswitch-squid-config-<account-id>-eu-central-1
+create_config_bucket = true # Automatically creates bucket: dev-hyperswitch-squid-config-<account-id>-eu-central-1
 
 # NOTE: If using existing config bucket, set create_config_bucket = false and provide:
 # config_bucket_name = "app-proxy-config-<account-id>-eu-central-1"
@@ -173,8 +173,8 @@ enable_detailed_monitoring = false
 # ============================================================================
 
 configure_root_volume = true  # Recommended: Keep this enabled!
-root_volume_size = 20         # GB - Enough for OS + Squid + logs
-root_volume_type = "gp3"      # Latest generation (cheaper + faster than gp2)
+root_volume_size      = 20    # GB - Enough for OS + Squid + logs
+root_volume_type      = "gp3" # Latest generation (cheaper + faster than gp2)
 
 #=======================================================================
 # LOAD BALANCER CONFIGURATION
@@ -194,7 +194,7 @@ root_volume_type = "gp3"      # Latest generation (cheaper + faster than gp2)
 #   - After apply, manually update existing NLB listener to forward to new target group
 #=======================================================================
 
-create_nlb       = true  # Set to true to create new NLB instead
+create_nlb = true # Set to true to create new NLB instead
 
 # Only needed when create_nlb = false (Mode 2)
 # existing_lb_name = "squid-nlb"  # Comment out if create_nlb = true
@@ -221,7 +221,7 @@ create_nlb       = true  # Set to true to create new NLB instead
 #   - You must manage the .pem file yourself
 #=======================================================================
 
-generate_ssh_key = true  # Set to false to use existing key
+generate_ssh_key = true # Set to false to use existing key
 
 # Only used when generate_ssh_key = false
 # key_name = "hyperswitch-squid-proxy-keypair-eu-central-1"
@@ -255,7 +255,7 @@ generate_ssh_key = true  # Set to false to use existing key
 #=======================================================================
 # Upload config files from ./config directory to S3
 # Git is the source of truth - any changes to files will trigger re-upload
-upload_config_to_s3 = true  # Automatically uploads configs from ./config directory
+upload_config_to_s3 = true # Automatically uploads configs from ./config directory
 
 # How it works:
 # 1. Config files in ./config/ directory (squid.conf, whitelist.txt, etc.)
@@ -299,13 +299,13 @@ upload_config_to_s3 = true  # Automatically uploads configs from ./config direct
 #   - ⚠️ Warning: Instance profile can only be used by ONE launch template
 #=======================================================================
 
-create_iam_role = true  # Set to false to use existing IAM role
+create_iam_role = true # Set to false to use existing IAM role
 
 # Only used when create_iam_role = false
 # existing_iam_role_name = "dev-hyperswitch-squid-role"
 
 # Only used when create_iam_role = false
-create_instance_profile = true  # Set to false to use existing instance profile
+create_instance_profile = true # Set to false to use existing instance profile
 
 # Only used when create_iam_role = false AND create_instance_profile = false
 # existing_iam_instance_profile_name = "dev-hyperswitch-squid-instance-profile"
@@ -337,14 +337,14 @@ create_instance_profile = true  # Set to false to use existing instance profile
 #   aws autoscaling cancel-instance-refresh --auto-scaling-group-name dev-hyperswitch-squid-asg
 #=======================================================================
 
-enable_instance_refresh = true  # Enable automatic instance refresh on launch template changes
+enable_instance_refresh = true # Enable automatic instance refresh on launch template changes
 
 instance_refresh_preferences = {
-  min_healthy_percentage       = 50      # Keep 50% instances healthy during refresh
-  instance_warmup              = 300     # Wait 5 min for new instances to stabilize
-  max_healthy_percentage       = 100     # Don't exceed desired capacity during refresh
-  checkpoint_percentages       = [50]    # Pause at 50% complete for validation
-  checkpoint_delay             = 300     # Wait 5 min at checkpoint before auto-continuing
+  min_healthy_percentage       = 50   # Keep 50% instances healthy during refresh
+  instance_warmup              = 300  # Wait 5 min for new instances to stabilize
+  max_healthy_percentage       = 100  # Don't exceed desired capacity during refresh
+  checkpoint_percentages       = [50] # Pause at 50% complete for validation
+  checkpoint_delay             = 300  # Wait 5 min at checkpoint before auto-continuing
   scale_in_protected_instances = "Ignore"
   standby_instances            = "Ignore"
 }

@@ -32,10 +32,10 @@ module "cloudfront" {
 
       # Additional configuration
       default_root_object = dist.default_root_object
-      price_class        = dist.price_class
-      enabled            = dist.enabled
-      comment            = dist.comment
-      web_acl_id         = dist.web_acl_id
+      price_class         = dist.price_class
+      enabled             = dist.enabled
+      comment             = dist.comment
+      web_acl_id          = dist.web_acl_id
 
       # Domain aliases and viewer certificate
       aliases            = dist.aliases

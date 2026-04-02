@@ -22,7 +22,7 @@ locals {
   )
 
   default_eks_cluster_name = "${var.environment}-${var.project_name}-cluster"
-  eks_cluster_name = var.eks_cluster_name != "" ? var.eks_cluster_name : local.default_eks_cluster_name
+  eks_cluster_name         = var.eks_cluster_name != "" ? var.eks_cluster_name : local.default_eks_cluster_name
 
   # Envoy configuration templating - replace placeholders with actual values
   # Supports: {{hyperswitch_cloudfront_dns}}, {{internal_loadbalancer_dns}}, {{eks_cluster_name}}

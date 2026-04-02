@@ -190,7 +190,7 @@ resource "aws_api_gateway_stage" "this" {
     for_each = var.access_log_destination_arn != null ? [1] : []
     content {
       destination_arn = var.access_log_destination_arn
-      format          = var.access_log_format != null ? var.access_log_format : jsonencode({
+      format = var.access_log_format != null ? var.access_log_format : jsonencode({
         requestId      = "$context.requestId"
         ip             = "$context.identity.sourceIp"
         requestTime    = "$context.requestTime"

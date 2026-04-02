@@ -263,7 +263,7 @@ variable "instance_refresh_preferences" {
 variable "instance_refresh_triggers" {
   description = "List of triggers that will start an instance refresh. Note: launch_template changes always trigger refresh automatically."
   type        = list(string)
-  default     = []  # Empty - launch_template triggers are automatic
+  default     = [] # Empty - launch_template triggers are automatic
 }
 
 # =========================================================================

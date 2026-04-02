@@ -11,9 +11,9 @@ resource "aws_subnet" "main" {
   map_public_ip_on_launch = var.map_public_ip_on_launch
 
   # Outpost Configuration
-  customer_owned_ipv4_pool           = var.customer_owned_ipv4_pool
-  map_customer_owned_ip_on_launch    = var.map_customer_owned_ip_on_launch
-  outpost_arn                        = var.outpost_arn
+  customer_owned_ipv4_pool        = var.customer_owned_ipv4_pool
+  map_customer_owned_ip_on_launch = var.map_customer_owned_ip_on_launch
+  outpost_arn                     = var.outpost_arn
 
   # DNS Configuration
   enable_dns64                                   = var.enable_dns64

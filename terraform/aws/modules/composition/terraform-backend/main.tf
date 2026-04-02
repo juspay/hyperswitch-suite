@@ -27,7 +27,7 @@ module "state_bucket" {
   versioning_status = "Enabled"
 
   # Encryption (required for state files)
-  sse_algorithm = var.sse_algorithm
+  sse_algorithm     = var.sse_algorithm
   kms_master_key_id = var.kms_master_key_id
 
   # Block all public access (critical for state files!)
@@ -89,7 +89,7 @@ module "lock_table" {
   attributes = [
     {
       name = "LockID"
-      type = "S"  # String type
+      type = "S" # String type
     }
   ]
 
@@ -102,7 +102,7 @@ module "lock_table" {
 
   # Server-side encryption (enabled by default)
   enable_encryption = true
-  kms_key_arn      = var.dynamodb_kms_key_arn
+  kms_key_arn       = var.dynamodb_kms_key_arn
 
   tags = merge(
     var.tags,

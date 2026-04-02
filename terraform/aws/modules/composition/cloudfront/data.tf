@@ -96,18 +96,18 @@ locals {
 # Dynamic data sources for cache policies
 data "aws_cloudfront_cache_policy" "aws_managed" {
   count = local.create ? length(compact(local.aws_managed_cache_policy_names)) : 0
-  name   = compact(local.aws_managed_cache_policy_names)[count.index]
+  name  = compact(local.aws_managed_cache_policy_names)[count.index]
 }
 
 # Dynamic data sources for origin request policies
 data "aws_cloudfront_origin_request_policy" "aws_managed" {
   count = local.create ? length(compact(local.aws_managed_origin_request_policy_names)) : 0
-  name   = compact(local.aws_managed_origin_request_policy_names)[count.index]
+  name  = compact(local.aws_managed_origin_request_policy_names)[count.index]
 }
 
 # Dynamic data sources for response headers policies
 data "aws_cloudfront_response_headers_policy" "aws_managed" {
   count = local.create ? length(compact(local.aws_managed_response_headers_policy_names)) : 0
-  name   = compact(local.aws_managed_response_headers_policy_names)[count.index]
+  name  = compact(local.aws_managed_response_headers_policy_names)[count.index]
 }
 
