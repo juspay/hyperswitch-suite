@@ -112,6 +112,79 @@ jobs:
           
           exit $EXIT_CODE
 
+  tflint:
+    name: TFLint
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has-changes == 'true'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+
+      - name: Init TFLint
+        run: tflint --init
+
+      - name: Run TFLint on changed directories
+        id: lint
+        run: |
+          EXIT_CODE=0
+          PASSED_DIRS=""
+          FAILED_DIRS=""
+          
+          DIRS='${{ needs.detect-changes.outputs.terraform-dirs }}'
+          
+          for dir in $(echo "$DIRS" | jq -r '.[]'); do
+            if [ -z "$dir" ] || [ ! -d "$dir" ]; then
+              continue
+            fi
+            
+            echo "=================================================="
+            echo "Linting: $dir"
+            echo "=================================================="
+            
+            LINT_OUTPUT=$(tflint --chdir="$dir" --format=compact 2>&1)
+            LINT_EXIT=$?
+            
+            if [ $LINT_EXIT -ne 0 ]; then
+              echo "::error file=$dir::TFLint found issues"
+              echo "$LINT_OUTPUT"
+              FAILED_DIRS="${FAILED_DIRS}$dir\n"
+              EXIT_CODE=1
+              
+              echo "$LINT_OUTPUT" | while read -r line; do
+                if echo "$line" | grep -qE "^[^:]+:[0-9]+:[0-9]+:"; then
+                  FILE=$(echo "$line" | cut -d: -f1)
+                  LINE=$(echo "$line" | cut -d: -f2)
+                  MSG=$(echo "$line" | cut -d: -f4-)
+                  echo "::error file=$dir/$FILE,line=$LINE::$MSG"
+                fi
+              done
+            else
+              echo "[PASS] No lint issues in $dir"
+              PASSED_DIRS="${PASSED_DIRS}$dir\n"
+            fi
+            
+            echo ""
+          done
+          
+          echo ""
+          echo "=================================================="
+          echo "TFLINT SUMMARY"
+          echo "=================================================="
+          echo ""
+          echo "PASSED:"
+          echo -e "$PASSED_DIRS" | grep -v "^$" || echo "None"
+          echo ""
+          echo "FAILED:"
+          echo -e "$FAILED_DIRS" | grep -v "^$" || echo "None"
+          
+          exit $EXIT_CODE
+
   terraform-validate:
     name: Terraform Validate
     runs-on: ubuntu-latest
@@ -218,7 +291,7 @@ jobs:
   terraform-check-summary:
     name: Terraform Check Summary
     runs-on: ubuntu-latest
-    needs: [detect-changes, terraform-fmt, terraform-validate]
+    needs: [detect-changes, terraform-fmt, tflint, terraform-validate]
     if: always()
     steps:
       - name: Generate summary
@@ -237,6 +310,7 @@ jobs:
           echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
           
           FMT_RESULT="${{ needs.terraform-fmt.result }}"
+          TFLINT_RESULT="${{ needs.tflint.result }}"
           VALIDATE_RESULT="${{ needs.terraform-validate.result }}"
           
           if [ "$FMT_RESULT" == "success" ]; then
@@ -245,6 +319,14 @@ jobs:
             echo "| Format Check | SKIPPED |" >> $GITHUB_STEP_SUMMARY
           else
             echo "| Format Check | FAILED |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "$TFLINT_RESULT" == "success" ]; then
+            echo "| TFLint | PASSED |" >> $GITHUB_STEP_SUMMARY
+          elif [ "$TFLINT_RESULT" == "skipped" ]; then
+            echo "| TFLint | SKIPPED |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| TFLint | FAILED |" >> $GITHUB_STEP_SUMMARY
           fi
           
           if [ "$VALIDATE_RESULT" == "success" ]; then
@@ -265,12 +347,18 @@ jobs:
           fi
           
           FMT_RESULT="${{ needs.terraform-fmt.result }}"
+          TFLINT_RESULT="${{ needs.tflint.result }}"
           VALIDATE_RESULT="${{ needs.terraform-validate.result }}"
           
           FAILED="false"
           
           if [ "$FMT_RESULT" != "success" ]; then
             echo "::error::Format check failed or was skipped"
+            FAILED="true"
+          fi
+          
+          if [ "$TFLINT_RESULT" != "success" ]; then
+            echo "::error::TFLint check failed or was skipped"
             FAILED="true"
           fi
           
