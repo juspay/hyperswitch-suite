@@ -101,14 +101,4 @@ variable "dashboards" {
   default = {}
 }
 
-# CloudWatch Anomaly Detectors Configuration
-variable "anomaly_detectors" {
-  description = "Map of CloudWatch anomaly detectors"
-  type = map(object({
-    metric_name = string
-    namespace   = string
-    stat        = string # Average, Sum, Maximum, Minimum, SampleCount
-    dimensions  = optional(map(string), {})
-  }))
-  default = {}
-}
+

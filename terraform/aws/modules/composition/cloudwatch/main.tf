@@ -106,12 +106,4 @@ resource "aws_cloudwatch_dashboard" "dashboards" {
   dashboard_body = each.value.dashboard_body
 }
 
-# CloudWatch Anomaly Detector
-resource "aws_cloudwatch_anomaly_detector" "anomaly_detectors" {
-  for_each = var.anomaly_detectors
 
-  metric_name = each.value.metric_name
-  namespace   = each.value.namespace
-  stat        = each.value.stat
-  dimensions  = each.value.dimensions
-}

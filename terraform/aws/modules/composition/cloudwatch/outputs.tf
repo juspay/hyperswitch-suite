@@ -41,17 +41,11 @@ output "dashboard_urls" {
   description = "Map of dashboard keys to dashboard URLs"
   value = {
     for k, v in aws_cloudwatch_dashboard.dashboards :
-    k => "https://console.aws.amazon.com/cloudwatch/home?region=${data.aws_region.current.name}#dashboards:name=${v.dashboard_name}"
+    k => "https://console.aws.amazon.com/cloudwatch/home?region=${data.aws_region.current.region}#dashboards:name=${v.dashboard_name}"
   }
-}
-
-# CloudWatch Anomaly Detector Outputs
-output "anomaly_detector_arns" {
-  description = "Map of anomaly detector keys to ARNs"
-  value       = { for k, v in aws_cloudwatch_anomaly_detector.anomaly_detectors : k => v.arn }
 }
 
 output "region" {
   description = "AWS region"
-  value       = data.aws_region.current.name
+  value       = data.aws_region.current.region
 }
