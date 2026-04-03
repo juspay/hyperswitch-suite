@@ -24,22 +24,6 @@ resource "aws_key_pair" "cassandra" {
   tags = local.common_tags
 }
 
-# Store auto-generated private key in SSM Parameter Store
-resource "aws_ssm_parameter" "cassandra_private_key" {
-  count       = var.create_key_pair && var.public_key == null ? 1 : 0
-  name        = "/${var.environment}/${var.project_name}/cassandra/ssh-private-key"
-  description = "Auto-generated SSH private key for Cassandra instances"
-  type        = "SecureString"
-  value       = tls_private_key.cassandra[0].private_key_pem
-
-  tags = merge(
-    local.common_tags,
-    {
-      Name = "${local.name_prefix}-private-key"
-    }
-  )
-}
-
 # =========================================================================
 # SECURITY - CASSANDRA SECURITY GROUP
 # =========================================================================

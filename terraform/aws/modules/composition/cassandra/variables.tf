@@ -126,7 +126,7 @@ variable "create_key_pair" {
 }
 
 variable "public_key" {
-  description = "Public key material for creating new SSH key pair. If not provided when create_key_pair is true, a key pair will be auto-generated and stored in SSM"
+  description = "Public key material for creating new SSH key pair. If not provided when create_key_pair is true, a key pair will be auto-generated"
   type        = string
   default     = null
 }

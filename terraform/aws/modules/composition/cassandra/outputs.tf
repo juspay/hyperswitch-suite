@@ -73,11 +73,6 @@ output "key_name" {
   value       = local.key_name
 }
 
-output "ssh_private_key_ssm_parameter" {
-  description = "SSM Parameter Store path for the auto-generated SSH private key (null if not auto-generated)"
-  value       = var.create_key_pair && var.public_key == null ? aws_ssm_parameter.cassandra_private_key[0].name : null
-}
-
 # ============================================================================
 # IAM Information
 # ============================================================================
