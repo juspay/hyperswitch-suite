@@ -1,0 +1,46 @@
+================================================================================
+JUMP HOST CONNECTION GUIDE (DUAL MODE)
+================================================================================
+
+1. Connect to External Jump Host (via Session Manager):
+   aws ssm start-session --target ${external_instance_id}
+
+%{ if internal_ssm_enabled }
+2. Connect to Internal Jump Host (via Session Manager):
+   aws ssm start-session --target ${internal_instance_id}
+
+a. From External Jump, SSH to Internal Jump (alternative method):
+   ssh internal-jump
+   (SSH key is automatically configured in ${ssm_os_username}'s home directory)
+
+b. Manual SSH to Internal Jump (if needed):
+   ssh -i /home/${ssm_os_username}/.ssh/internal_jump_key ec2-user@${internal_private_ip}
+%{ else }
+2. From External Jump, SSH to Internal Jump:
+   ssh internal-jump
+   (SSH key is automatically configured in ${ssm_os_username}'s home directory)
+
+a. Manual SSH to Internal Jump (if needed):
+   ssh -i /home/${ssm_os_username}/.ssh/internal_jump_key ec2-user@${internal_private_ip}
+%{ endif }
+
+3. Retrieve Internal Jump SSH Key (from your local machine):
+   ${ssh_key_path}
+   aws ssm get-parameter --name ${ssh_key_path} --with-decryption --query 'Parameter.Value' --output text > internal_jump_key.pem
+   chmod 400 internal_jump_key.pem
+
+4. View Logs:
+   External: aws logs tail ${external_log_group} --follow
+   Internal: aws logs tail ${internal_log_group} --follow
+
+IMPORTANT NOTES:
+- External Jump: Accessible via Session Manager (IAM-based auth)
+- Default user: ${ssm_os_username} (Amazon Linux 2023 via SSM)
+- Internal Jump: %{ if internal_ssm_enabled }Accessible via Session Manager AND SSH from external jump%{ else }NO Session Manager access (must SSH from external jump)%{ endif }
+- Default user: ec2-user (Amazon Linux 2023)
+- SSH key stored in SSM Parameter Store: ${ssh_key_path}
+
+Prerequisites:
+- AWS Session Manager plugin: https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html
+- IAM permissions for ssm:StartSession on %{ if internal_ssm_enabled }external AND internal%{ else }external%{ endif } jump instance(s)
+================================================================================
