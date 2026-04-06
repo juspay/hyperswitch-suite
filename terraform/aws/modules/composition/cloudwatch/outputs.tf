@@ -72,6 +72,22 @@ output "alarms_by_classification" {
   value       = local.alarms_by_classification
 }
 
+# CloudWatch Classified Anomaly Alarm Outputs
+output "classified_anomaly_alarm_arns" {
+  description = "Map of classified anomaly alarm keys to ARNs"
+  value       = { for k, v in aws_cloudwatch_metric_alarm.classified_anomaly_alarms : k => v.arn }
+}
+
+output "classified_anomaly_alarm_names" {
+  description = "Map of classified anomaly alarm keys to names"
+  value       = { for k, v in aws_cloudwatch_metric_alarm.classified_anomaly_alarms : k => v.alarm_name }
+}
+
+output "anomaly_alarms_by_classification" {
+  description = "Map of classifications to anomaly alarm keys for organization"
+  value       = local.anomaly_alarms_by_classification
+}
+
 output "region" {
   description = "AWS region"
   value       = data.aws_region.current.region

@@ -117,31 +117,25 @@ resource "aws_cloudwatch_metric_alarm" "metric_anomaly_alarms" {
   treat_missing_data  = each.value.treat_missing_data
   threshold_metric_id = "e1"
 
-  dynamic "metric_query" {
-    for_each = [1]
-    content {
-      id          = "e1"
-      expression  = each.value.standard_deviations != null ? "ANOMALY_DETECTION_BAND(m1, ${each.value.standard_deviations})" : "ANOMALY_DETECTION_BAND(m1)"
-      label       = "${each.value.metric_name} (Expected)"
-      return_data = true
-    }
+  metric_query {
+    id          = "e1"
+    expression  = each.value.standard_deviations != null ? "ANOMALY_DETECTION_BAND(m1, ${each.value.standard_deviations})" : "ANOMALY_DETECTION_BAND(m1)"
+    label       = "${each.value.metric_name} (Expected)"
+    return_data = true
   }
 
-  dynamic "metric_query" {
-    for_each = [1]
-    content {
-      id = "m1"
+  metric_query {
+    id = "m1"
 
-      metric {
-        metric_name = each.value.metric_name
-        namespace   = each.value.namespace
-        period      = each.value.period
-        stat        = each.value.statistic
-        dimensions  = each.value.dimensions
-      }
-
-      return_data = true
+    metric {
+      metric_name = each.value.metric_name
+      namespace   = each.value.namespace
+      period      = each.value.period
+      stat        = each.value.statistic
+      dimensions  = each.value.dimensions
     }
+
+    return_data = true
   }
 
   alarm_actions             = each.value.alarm_actions
@@ -170,8 +164,48 @@ resource "aws_cloudwatch_metric_alarm" "classified_alarms" {
   treat_missing_data  = each.value.treat_missing_data
   datapoints_to_alarm = each.value.datapoints_to_alarm
 
-  alarm_actions = each.value.alarm_actions
-  ok_actions    = each.value.ok_actions
+  alarm_actions = var.sns_topic_arns != {} ? [lookup(var.sns_topic_arns, each.value.additional_tags.Severity, "")] : []
+  ok_actions    = each.value.skip_ok_action ? [] : (var.sns_topic_arns != {} ? [lookup(var.sns_topic_arns, each.value.additional_tags.Severity, "")] : [])
+
+  tags = merge(local.common_tags, each.value.additional_tags, {
+    Name = each.value.alarm_name
+  })
+}
+
+# CloudWatch Classified Anomaly Detection Alarms
+resource "aws_cloudwatch_metric_alarm" "classified_anomaly_alarms" {
+  for_each = local.classified_anomaly_alarms_flat
+
+  alarm_name          = each.value.alarm_name
+  alarm_description   = each.value.alarm_description
+  comparison_operator = each.value.comparison_operator
+  evaluation_periods  = each.value.evaluation_periods
+  treat_missing_data  = each.value.treat_missing_data
+  threshold_metric_id = "e1"
+
+  metric_query {
+    id          = "e1"
+    expression  = each.value.standard_deviations != null ? "ANOMALY_DETECTION_BAND(m1, ${each.value.standard_deviations})" : "ANOMALY_DETECTION_BAND(m1)"
+    label       = "${each.value.metric_name} (Expected)"
+    return_data = true
+  }
+
+  metric_query {
+    id = "m1"
+
+    metric {
+      metric_name = each.value.metric_name
+      namespace   = each.value.namespace
+      period      = each.value.period
+      stat        = each.value.statistic
+      dimensions  = each.value.dimensions
+    }
+
+    return_data = true
+  }
+
+  alarm_actions = var.sns_topic_arns != {} ? [lookup(var.sns_topic_arns, each.value.additional_tags.Severity, "")] : []
+  ok_actions    = each.value.skip_ok_action ? [] : (var.sns_topic_arns != {} ? [lookup(var.sns_topic_arns, each.value.additional_tags.Severity, "")] : [])
 
   tags = merge(local.common_tags, each.value.additional_tags, {
     Name = each.value.alarm_name

@@ -22,6 +22,12 @@ variable "tags" {
   default     = {}
 }
 
+variable "sns_topic_arns" {
+  description = "Map of severity to SNS topic ARNs for alarm notifications"
+  type        = map(string)
+  default     = {}
+}
+
 # CloudWatch Metric Alarms Configuration
 variable "metric_alarms" {
   description = "Map of CloudWatch metric alarms"
@@ -126,31 +132,57 @@ variable "metric_anomaly_alarms" {
 
 # Classified Metric Alarms with Multi-Threshold Support
 variable "classified_metric_alarms" {
-  description = "Map of classified metric alarms with multi-threshold severity levels. Each alarm can define multiple thresholds (sev1, sev2, sev3) that generate separate alarms."
+  description = "Map of classified metric alarms. Each alarm MUST define at least sev1."
   type = map(object({
-    classification = optional(string, "infrastructure-alerts") # Classification category: rds-alerts, cache-alerts, eks-alerts, etc.
+    classification = string
     metric_name    = string
     namespace      = string
     dimensions     = optional(map(string), {})
     period         = optional(number, 60)
     statistic      = optional(string, "Average")
-    # Multi-threshold configuration - each threshold creates a separate alarm
-    thresholds = map(object({
+    severities = map(object({
       threshold           = number
-      evaluation_periods  = optional(number, 3)
+      comparison_operator = optional(string, "GreaterThanThreshold")
+      description         = string
+      evaluation_periods  = optional(number, 5)
       datapoints_to_alarm = optional(number)
       treat_missing_data  = optional(string, "notBreaching")
-    }))
-    # Severity configurations - maps threshold keys to severity settings
-    severity_config = map(object({
-      severity            = string                                   # sev1, sev2, or sev3
-      description         = string                                   # Alarm description
-      alarm_actions       = optional(list(string), [])               # SNS topic ARNs
-      ok_actions          = optional(list(string), [])               # SNS topic ARNs
-      comparison_operator = optional(string, "GreaterThanThreshold") # or "LessThanThreshold"
+      # By default, skip OK action notifications. Set to false to enable recovery notifications.
+      skip_ok_action = optional(bool, true)
     }))
   }))
   default = {}
+  validation {
+    condition     = alltrue([for k, v in var.classified_metric_alarms : contains(keys(v.severities), "sev1")])
+    error_message = "Every classified_metric_alarm must define at least sev1 (critical severity)."
+  }
+}
+
+# Classified Anomaly Detection Alarms
+variable "classified_anomaly_alarms" {
+  description = "Map of classified anomaly detection alarms using ANOMALY_DETECTION_BAND. Each alarm MUST define at least sev1."
+  type = map(object({
+    classification = string
+    metric_name    = string
+    namespace      = string
+    dimensions     = optional(map(string), {})
+    period         = optional(number, 300)
+    statistic      = optional(string, "Average")
+    severities = map(object({
+      comparison_operator = optional(string, "GreaterThanUpperThreshold")
+      standard_deviations = optional(number, 2)
+      description         = string
+      evaluation_periods  = optional(number, 2)
+      treat_missing_data  = optional(string, "notBreaching")
+      # By default, skip OK action notifications. Set to false to enable recovery notifications.
+      skip_ok_action = optional(bool, true)
+    }))
+  }))
+  default = {}
+  validation {
+    condition     = alltrue([for k, v in var.classified_anomaly_alarms : contains(keys(v.severities), "sev1")])
+    error_message = "Every classified_anomaly_alarm must define at least sev1 (critical severity)."
+  }
 }
 
 
