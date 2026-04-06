@@ -11,6 +11,20 @@ locals {
     var.tags
   )
 
+  resolve_dims = {
+    for alarm_key, alarm_config in var.classified_metric_alarms :
+    alarm_key => length(alarm_config.dimensions) > 0 ? alarm_config.dimensions : (
+      alarm_config.dimension_key != "" ? lookup(var.dimension_map, alarm_config.dimension_key, {}) : {}
+    )
+  }
+
+  resolve_anomaly_dims = {
+    for alarm_key, alarm_config in var.classified_anomaly_alarms :
+    alarm_key => length(alarm_config.dimensions) > 0 ? alarm_config.dimensions : (
+      alarm_config.dimension_key != "" ? lookup(var.dimension_map, alarm_config.dimension_key, {}) : {}
+    )
+  }
+
   classified_alarms_flat = merge([
     for alarm_key, alarm_config in var.classified_metric_alarms : {
       for sev_key, sev_config in alarm_config.severities : "${alarm_key}-${sev_key}" => {
@@ -23,7 +37,7 @@ locals {
         period              = alarm_config.period
         statistic           = alarm_config.statistic
         threshold           = sev_config.threshold
-        dimensions          = alarm_config.dimensions
+        dimensions          = local.resolve_dims[alarm_key]
         treat_missing_data  = sev_config.treat_missing_data
         datapoints_to_alarm = sev_config.datapoints_to_alarm
         skip_ok_action      = sev_config.skip_ok_action
@@ -46,7 +60,7 @@ locals {
         namespace           = alarm_config.namespace
         period              = alarm_config.period
         statistic           = alarm_config.statistic
-        dimensions          = alarm_config.dimensions
+        dimensions          = local.resolve_anomaly_dims[alarm_key]
         treat_missing_data  = sev_config.treat_missing_data
         standard_deviations = sev_config.standard_deviations
         skip_ok_action      = sev_config.skip_ok_action
