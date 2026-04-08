@@ -116,12 +116,25 @@ variable "s3" {
     bucket_arn = optional(string, null) # Existing S3 bucket ARN (used when create=false)
 
     # Bucket creation settings (used when create=true)
-    bucket_name        = optional(string, null) # Auto-generated if not provided
-    force_destroy      = optional(bool, false)
-    versioning_enabled = optional(bool, false)
-    lifecycle_rules    = optional(any, [])
+    bucket_name                            = optional(string, null) # Auto-generated if not provided
+    force_destroy                          = optional(bool, false)
+    versioning_enabled                     = optional(bool, false)
+    lifecycle_rules                        = optional(any, [])
+    lifecycle_rule                         = optional(any, null)    # Backward-compatible alias
+    transition_default_minimum_object_size = optional(string, null) # all_storage_classes_128K | varies_by_storage_class
   })
   default = {}
+
+  validation {
+    condition = (
+      try(var.s3.transition_default_minimum_object_size, null) == null ||
+      contains([
+        "all_storage_classes_128K",
+        "varies_by_storage_class"
+      ], var.s3.transition_default_minimum_object_size)
+    )
+    error_message = "s3.transition_default_minimum_object_size must be null, 'all_storage_classes_128K', or 'varies_by_storage_class'."
+  }
 }
 
 # =========================================================================

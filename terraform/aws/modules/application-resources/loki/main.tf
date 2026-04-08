@@ -132,7 +132,9 @@ module "s3_bucket" {
     }
   }
 
-  lifecycle_rule = try(var.s3.lifecycle_rules, [])
+  transition_default_minimum_object_size = try(var.s3.transition_default_minimum_object_size, null)
+
+  lifecycle_rule = try(var.s3.lifecycle_rules, null) != null ? var.s3.lifecycle_rules : try(var.s3.lifecycle_rule, [])
 
   tags = local.common_tags
 
