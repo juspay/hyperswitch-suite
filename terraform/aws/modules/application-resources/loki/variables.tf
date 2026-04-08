@@ -135,6 +135,7 @@ variable "s3" {
     )
     error_message = "s3.transition_default_minimum_object_size must be null, 'all_storage_classes_128K', or 'varies_by_storage_class'."
   }
+
 }
 
 # =========================================================================
