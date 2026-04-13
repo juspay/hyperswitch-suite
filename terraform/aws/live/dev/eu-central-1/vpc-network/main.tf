@@ -106,6 +106,11 @@ module "vpc_network" {
   manage_default_security_group = true
   manage_default_route_table    = true
 
+  # VPC Peering (cross-account, cross-region)
+  vpc_peering_connections          = var.vpc_peering_connections
+  vpc_peering_accepter_connections = var.vpc_peering_accepter_connections
+  enable_vpc_peering_routes        = var.enable_vpc_peering_routes
+
   tags = merge(
     var.tags,
     {

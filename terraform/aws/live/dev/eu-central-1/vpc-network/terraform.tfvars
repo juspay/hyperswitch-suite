@@ -175,6 +175,40 @@ tags = {
 }
 
 ###################
+# VPC Peering (Cross-Account, Cross-Region)
+###################
+# Example: Requester side - create peering connection to peer VPC
+# vpc_peering_connections = {
+#   peer-to-prod = {
+#     peer_vpc_id   = "vpc-abc12345"
+#     peer_vpc_cidr = "10.1.0.0/16"
+#     peer_region   = "us-east-1"
+#     peer_owner_id = "123456789012"
+#     route_tables  = ["private-nat", "eks-workers"]
+#     auto_accept   = false
+#     tags = {
+#       PeerName = "prod-vpc"
+#     }
+#   }
+# }
+vpc_peering_connections = {}
+
+# Example: Accepter side - accept incoming peering request (run in accepter account)
+# vpc_peering_accepter_connections = {
+#   accept-from-dev = {
+#     peering_connection_id = "pcx-abc12345"
+#     peer_vpc_cidr         = "10.0.0.0/16"
+#     route_tables          = ["all"]
+#     tags = {
+#       PeerName = "dev-vpc"
+#     }
+#   }
+# }
+vpc_peering_accepter_connections = {}
+
+enable_vpc_peering_routes = true
+
+###################
 # IP Allocation Summary
 ###################
 # Total Allocated:  13,824 IPs (21.1% of VPC)

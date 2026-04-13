@@ -320,3 +320,18 @@ output "vpc_endpoint_security_group_id" {
   description = "Security group ID for VPC endpoints"
   value       = try(module.vpc_endpoint_sg[0].sg_id, "")
 }
+
+output "vpc_peering_connection_ids" {
+  description = "Map of VPC peering connection IDs (requester side)"
+  value       = { for k, v in aws_vpc_peering_connection.requester : k => v.id }
+}
+
+output "vpc_peering_connection_accept_status" {
+  description = "Map of VPC peering connection accept statuses"
+  value       = { for k, v in aws_vpc_peering_connection.requester : k => v.accept_status }
+}
+
+output "vpc_peering_accepter_ids" {
+  description = "Map of accepted VPC peering connection IDs (accepter side)"
+  value       = { for k, v in aws_vpc_peering_connection_accepter.accepter : k => v.id }
+}
