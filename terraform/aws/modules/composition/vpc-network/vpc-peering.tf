@@ -55,12 +55,14 @@ locals {
           contains(peer_config.route_tables, "eks-workers") ? local.eks_workers_route_table_ids : [],
           [for rt in peer_config.route_tables : rt if !contains(["all", "public", "private-nat", "private-isolated", "database", "eks-workers"], rt)]
         )
-        ) : {
-        key            = "${peer_name}-${rt_id}"
-        peer_cidr      = peer_config.peer_vpc_cidr
-        peering_id     = aws_vpc_peering_connection.requester[peer_name].id
-        route_table_id = rt_id
-      }
+        ) : [
+        for cidr in peer_config.peer_vpc_cidr : {
+          key            = "${peer_name}-${rt_id}-${replace(cidr, "/", "-")}"
+          peer_cidr      = cidr
+          peering_id     = aws_vpc_peering_connection.requester[peer_name].id
+          route_table_id = rt_id
+        }
+      ]
     ]
   ]) : []
 
@@ -76,12 +78,14 @@ locals {
           contains(peer_config.route_tables, "eks-workers") ? local.eks_workers_route_table_ids : [],
           [for rt in peer_config.route_tables : rt if !contains(["all", "public", "private-nat", "private-isolated", "database", "eks-workers"], rt)]
         )
-        ) : {
-        key            = "${peer_name}-${rt_id}"
-        peer_cidr      = peer_config.peer_vpc_cidr
-        peering_id     = peer_config.peering_connection_id
-        route_table_id = rt_id
-      }
+        ) : [
+        for cidr in peer_config.peer_vpc_cidr : {
+          key            = "${peer_name}-${rt_id}-${replace(cidr, "/", "-")}"
+          peer_cidr      = cidr
+          peering_id     = peer_config.peering_connection_id
+          route_table_id = rt_id
+        }
+      ]
     ]
   ]) : []
 }

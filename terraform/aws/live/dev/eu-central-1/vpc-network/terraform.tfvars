@@ -177,17 +177,17 @@ tags = {
 ###################
 # VPC Peering (Cross-Account, Cross-Region)
 ###################
-# Example: Requester side - create peering connection to peer VPC
+# Example: Requester side - create peering connection to peer VPC with multiple CIDRs
 # vpc_peering_connections = {
-#   peer-to-prod = {
+#   corporate-network = {
 #     peer_vpc_id   = "vpc-abc12345"
-#     peer_vpc_cidr = "10.1.0.0/16"
+#     peer_vpc_cidr = ["10.1.0.0/16", "10.2.0.0/16", "172.16.0.0/16", "192.168.0.0/16"]
 #     peer_region   = "us-east-1"
 #     peer_owner_id = "123456789012"
 #     route_tables  = ["private-nat", "eks-workers"]
 #     auto_accept   = false
 #     tags = {
-#       PeerName = "prod-vpc"
+#       PeerName = "corporate-vpc"
 #     }
 #   }
 # }
@@ -195,12 +195,12 @@ vpc_peering_connections = {}
 
 # Example: Accepter side - accept incoming peering request (run in accepter account)
 # vpc_peering_accepter_connections = {
-#   accept-from-dev = {
+#   accept-from-hyperswitch = {
 #     peering_connection_id = "pcx-abc12345"
-#     peer_vpc_cidr         = "10.0.0.0/16"
+#     peer_vpc_cidr         = ["10.0.0.0/16", "10.100.0.0/16"]
 #     route_tables          = ["all"]
 #     tags = {
-#       PeerName = "dev-vpc"
+#       PeerName = "hyperswitch-dev"
 #     }
 #   }
 # }

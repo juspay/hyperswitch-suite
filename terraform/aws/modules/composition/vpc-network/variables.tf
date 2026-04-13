@@ -457,7 +457,7 @@ variable "vpc_peering_connections" {
   description = "Map of VPC peering connection configurations (supports cross-account and cross-region)"
   type = map(object({
     peer_vpc_id   = string
-    peer_vpc_cidr = string
+    peer_vpc_cidr = list(string)
     peer_region   = optional(string)
     peer_owner_id = optional(string)
     route_tables  = optional(list(string), ["all"])
@@ -472,7 +472,7 @@ variable "vpc_peering_accepter_connections" {
   type = map(object({
     peering_connection_id = string
     route_tables          = optional(list(string), ["all"])
-    peer_vpc_cidr         = string
+    peer_vpc_cidr         = list(string)
     tags                  = optional(map(string), {})
   }))
   default = {}
