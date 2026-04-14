@@ -93,3 +93,21 @@ variable "ssm_os_username" {
   type        = string
   default     = "ssm-user"
 }
+
+variable "vpc_endpoint_security_group_id" {
+  description = "Security group ID of the VPC endpoint. When set, adds egress rules from internal jump host to the VPC endpoint SG on ports 1514 and 1515."
+  type        = string
+  default     = null
+}
+
+variable "external_userdata_override" {
+  description = "Custom userdata script for external jump host. If set, replaces the default template entirely."
+  type        = string
+  default     = null
+}
+
+variable "internal_userdata_override" {
+  description = "Custom userdata script for internal jump host. If set, replaces the default template entirely."
+  type        = string
+  default     = null
+}
