@@ -93,3 +93,15 @@ variable "ssm_os_username" {
   type        = string
   default     = "ssm-user"
 }
+
+variable "external_userdata_override" {
+  description = "Custom userdata script for external jump host. If set, replaces the default template entirely."
+  type        = string
+  default     = null
+}
+
+variable "internal_userdata_override" {
+  description = "Custom userdata script for internal jump host. If set, replaces the default template entirely."
+  type        = string
+  default     = null
+}
