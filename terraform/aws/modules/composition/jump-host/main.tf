@@ -313,63 +313,6 @@ resource "aws_security_group_rule" "internal_jump_default_ingress_from_external"
   description              = "Allow SSH from external jump host only"
 }
 
-
-# =========================================================================
-# External Jump Host - Optional Egress to VPC Endpoint (Ports 1514/1515)
-# =========================================================================
-resource "aws_security_group_rule" "external_jump_egress_to_vpc_endpoint_1514" {
-  count = var.vpc_endpoint_security_group_id != null ? 1 : 0
-
-  security_group_id        = module.external_jump_sg.security_group_id
-  type                     = "egress"
-  from_port                = 1514
-  to_port                  = 1514
-  protocol                 = "tcp"
-  source_security_group_id = var.vpc_endpoint_security_group_id
-  description              = "Egress to Wazuh Global"
-}
-
-resource "aws_security_group_rule" "external_jump_egress_to_vpc_endpoint_1515" {
-  count = var.vpc_endpoint_security_group_id != null ? 1 : 0
-
-  security_group_id        = module.external_jump_sg.security_group_id
-  type                     = "egress"
-  from_port                = 1515
-  to_port                  = 1515
-  protocol                 = "tcp"
-  source_security_group_id = var.vpc_endpoint_security_group_id
-  description              = "Egress to Wazuh Global"
-}
-
-
-# =========================================================================
-# Internal Jump Host - Optional Egress to VPC Endpoint (Ports 1514/1515)
-# =========================================================================
-resource "aws_security_group_rule" "internal_jump_egress_to_vpc_endpoint_1514" {
-  count = var.vpc_endpoint_security_group_id != null ? 1 : 0
-
-  security_group_id        = module.internal_jump_sg.security_group_id
-  type                     = "egress"
-  from_port                = 1514
-  to_port                  = 1514
-  protocol                 = "tcp"
-  source_security_group_id = var.vpc_endpoint_security_group_id
-  description              = "Egress to Wazuh Global"
-}
-
-resource "aws_security_group_rule" "internal_jump_egress_to_vpc_endpoint_1515" {
-  count = var.vpc_endpoint_security_group_id != null ? 1 : 0
-
-  security_group_id        = module.internal_jump_sg.security_group_id
-  type                     = "egress"
-  from_port                = 1515
-  to_port                  = 1515
-  protocol                 = "tcp"
-  source_security_group_id = var.vpc_endpoint_security_group_id
-  description              = "Egress to Wazuh Global"
-}
-
-
 # Create AWS key pair for internal jump (public key only)
 resource "aws_key_pair" "internal_jump" {
   key_name   = "${local.internal_name_prefix}-keypair"
