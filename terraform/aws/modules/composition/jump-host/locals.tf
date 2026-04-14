@@ -19,7 +19,7 @@ locals {
     jump_type         = "internal"
     environment       = var.environment
     cloudwatch_region = data.aws_region.current.id
-    internal_jump_ip  = ""  # Not used for internal jump
+    internal_jump_ip  = "" # Not used for internal jump
     os_username       = "ec2-user"
   })
 }
