@@ -388,14 +388,14 @@ variable "lambda_subnet_tags" {
 variable "custom_subnet_groups" {
   description = "Map of custom subnet groups with their configurations"
   type = map(object({
-    cidr_block        = string
-    availability_zone = string
-    tier              = string
-    type              = string
+    cidr_block         = string
+    availability_zone  = string
+    tier               = string
+    type               = string
     create_route_table = optional(bool, true)
-    create_igw_route  = optional(bool, false)
-    create_nat_route  = optional(bool, false)
-    tags              = optional(map(string), {})
+    create_igw_route   = optional(bool, false)
+    create_nat_route   = optional(bool, false)
+    tags               = optional(map(string), {})
   }))
   default = {}
 }
@@ -444,6 +444,42 @@ variable "vpc_endpoint_security_group_ids" {
 
 variable "vpc_endpoint_private_dns_enabled" {
   description = "Whether to enable private DNS for VPC endpoints"
+  type        = bool
+  default     = true
+}
+
+###################
+# VPC Peering Configuration
+# Supports: cross-account, cross-region peering
+# For cross-account: accepter must run separate terraform to accept peering request
+###################
+variable "vpc_peering_connections" {
+  description = "Map of VPC peering connection configurations (supports cross-account and cross-region)"
+  type = map(object({
+    peer_vpc_id   = string
+    peer_vpc_cidr = list(string)
+    peer_region   = optional(string)
+    peer_owner_id = optional(string)
+    route_tables  = optional(list(string), ["all"])
+    auto_accept   = optional(bool, false)
+    tags          = optional(map(string), {})
+  }))
+  default = {}
+}
+
+variable "vpc_peering_accepter_connections" {
+  description = "Map of VPC peering connection IDs to accept (for cross-account peering - run in accepter account)"
+  type = map(object({
+    peering_connection_id = string
+    route_tables          = optional(list(string), ["all"])
+    peer_vpc_cidr         = list(string)
+    tags                  = optional(map(string), {})
+  }))
+  default = {}
+}
+
+variable "enable_vpc_peering_routes" {
+  description = "Whether to create routes for VPC peering connections"
   type        = bool
   default     = true
 }
