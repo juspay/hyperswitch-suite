@@ -95,7 +95,7 @@ variable "ssm_os_username" {
 }
 
 variable "vpc_endpoint_security_group_id" {
-  description = "Security group ID of the VPC endpoint. When set, adds egress rules from internal jump host to the VPC endpoint SG on ports 1514 and 1515."
+  description = "Security group ID of the VPC endpoint. When set, adds egress rules from both jump hosts to the VPC endpoint SG on ports 1514 and 1515."
   type        = string
   default     = null
 }
