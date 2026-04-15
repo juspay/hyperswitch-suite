@@ -303,9 +303,8 @@ resource "aws_instance" "keeper" {
   instance_type = var.keeper_instance_type
   key_name      = local.key_name
 
-  network_interface {
+  primary_network_interface {
     network_interface_id = aws_network_interface.keeper[count.index].id
-    device_index         = 0
   }
 
   iam_instance_profile = aws_iam_instance_profile.clickhouse.name
@@ -317,22 +316,6 @@ resource "aws_instance" "keeper" {
     volume_type           = var.keeper_root_volume_type
     encrypted             = true
     delete_on_termination = true
-  }
-
-  ebs_block_device {
-    device_name           = var.keeper_data_device_name
-    volume_size           = var.keeper_data_volume_size
-    volume_type           = var.keeper_data_volume_type
-    encrypted             = true
-    delete_on_termination = false
-  }
-
-  ebs_block_device {
-    device_name           = var.keeper_data2_device_name
-    volume_size           = var.keeper_data2_volume_size
-    volume_type           = var.keeper_data2_volume_type
-    encrypted             = true
-    delete_on_termination = false
   }
 
   metadata_options {
@@ -356,6 +339,66 @@ resource "aws_instance" "keeper" {
     aws_security_group_rule.keeper_vpc_endpoint_egress,
     aws_security_group_rule.vpc_endpoint_keeper_ingress
   ]
+}
+
+# =========================================================================
+# STORAGE - EBS VOLUMES (KEEPERS)
+# =========================================================================
+
+resource "aws_ebs_volume" "keeper_data" {
+  count = var.keeper_count
+
+  availability_zone = aws_instance.keeper[count.index].availability_zone
+  size              = var.keeper_data_volume_size
+  type              = var.keeper_data_volume_type
+  encrypted         = true
+
+  tags = merge(local.common_tags, {
+    Name       = "Clickhouse-Keeper-${count.index}-data"
+    cluster    = "clickhouse-keeper"
+    Persistent = "true"
+  })
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "aws_ebs_volume" "keeper_data2" {
+  count = var.keeper_count
+
+  availability_zone = aws_instance.keeper[count.index].availability_zone
+  size              = var.keeper_data2_volume_size
+  type              = var.keeper_data2_volume_type
+  encrypted         = true
+
+  tags = merge(local.common_tags, {
+    Name       = "Clickhouse-Keeper-${count.index}-data2"
+    cluster    = "clickhouse-keeper"
+    Persistent = "true"
+  })
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "aws_volume_attachment" "keeper_data" {
+  count = var.keeper_count
+
+  device_name  = var.keeper_data_device_name
+  volume_id    = aws_ebs_volume.keeper_data[count.index].id
+  instance_id  = aws_instance.keeper[count.index].id
+  force_detach = true
+}
+
+resource "aws_volume_attachment" "keeper_data2" {
+  count = var.keeper_count
+
+  device_name  = var.keeper_data2_device_name
+  volume_id    = aws_ebs_volume.keeper_data2[count.index].id
+  instance_id  = aws_instance.keeper[count.index].id
+  force_detach = true
 }
 
 # =========================================================================
@@ -486,9 +529,8 @@ resource "aws_instance" "server" {
   instance_type = var.server_instance_type
   key_name      = local.key_name
 
-  network_interface {
+  primary_network_interface {
     network_interface_id = aws_network_interface.server[count.index].id
-    device_index         = 0
   }
 
   iam_instance_profile = aws_iam_instance_profile.clickhouse.name
@@ -500,22 +542,6 @@ resource "aws_instance" "server" {
     volume_type           = var.server_root_volume_type
     encrypted             = true
     delete_on_termination = true
-  }
-
-  ebs_block_device {
-    device_name           = var.server_data_device_name
-    volume_size           = var.server_data_volume_size
-    volume_type           = var.server_data_volume_type
-    encrypted             = true
-    delete_on_termination = false
-  }
-
-  ebs_block_device {
-    device_name           = var.server_data2_device_name
-    volume_size           = var.server_data2_volume_size
-    volume_type           = var.server_data2_volume_type
-    encrypted             = true
-    delete_on_termination = false
   }
 
   metadata_options {
@@ -540,6 +566,66 @@ resource "aws_instance" "server" {
     aws_security_group_rule.vpc_endpoint_server_ingress,
     time_sleep.wait_for_keeper
   ]
+}
+
+# =========================================================================
+# STORAGE - EBS VOLUMES (SERVERS)
+# =========================================================================
+
+resource "aws_ebs_volume" "server_data" {
+  count = var.server_count
+
+  availability_zone = aws_instance.server[count.index].availability_zone
+  size              = var.server_data_volume_size
+  type              = var.server_data_volume_type
+  encrypted         = true
+
+  tags = merge(local.common_tags, {
+    Name       = "Clickhouse-Server-${count.index}-data"
+    cluster    = "clickhouse-server"
+    Persistent = "true"
+  })
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "aws_ebs_volume" "server_data2" {
+  count = var.server_count
+
+  availability_zone = aws_instance.server[count.index].availability_zone
+  size              = var.server_data2_volume_size
+  type              = var.server_data2_volume_type
+  encrypted         = true
+
+  tags = merge(local.common_tags, {
+    Name       = "Clickhouse-Server-${count.index}-data2"
+    cluster    = "clickhouse-server"
+    Persistent = "true"
+  })
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "aws_volume_attachment" "server_data" {
+  count = var.server_count
+
+  device_name  = var.server_data_device_name
+  volume_id    = aws_ebs_volume.server_data[count.index].id
+  instance_id  = aws_instance.server[count.index].id
+  force_detach = true
+}
+
+resource "aws_volume_attachment" "server_data2" {
+  count = var.server_count
+
+  device_name  = var.server_data2_device_name
+  volume_id    = aws_ebs_volume.server_data2[count.index].id
+  instance_id  = aws_instance.server[count.index].id
+  force_detach = true
 }
 
 # =========================================================================
