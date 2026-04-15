@@ -303,9 +303,8 @@ resource "aws_instance" "keeper" {
   instance_type = var.keeper_instance_type
   key_name      = local.key_name
 
-  network_interface {
+  primary_network_interface {
     network_interface_id = aws_network_interface.keeper[count.index].id
-    device_index         = 0
   }
 
   iam_instance_profile = aws_iam_instance_profile.clickhouse.name
@@ -530,9 +529,8 @@ resource "aws_instance" "server" {
   instance_type = var.server_instance_type
   key_name      = local.key_name
 
-  network_interface {
+  primary_network_interface {
     network_interface_id = aws_network_interface.server[count.index].id
-    device_index         = 0
   }
 
   iam_instance_profile = aws_iam_instance_profile.clickhouse.name
