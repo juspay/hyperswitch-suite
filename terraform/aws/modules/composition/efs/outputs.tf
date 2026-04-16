@@ -102,5 +102,5 @@ output "replication_creation_times" {
 # Convenience Outputs
 output "region" {
   description = "AWS region where EFS resources are created"
-  value       = data.aws_region.current.name
+  value       = data.aws_region.current.id
 }

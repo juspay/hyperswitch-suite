@@ -119,7 +119,7 @@ variable "file_systems" {
   validation {
     condition = alltrue([
       for k, v in var.file_systems :
-      v.replication_overwrite_protection == null || contains(["ENABLED", "DISABLED", "REPLICATING"], v.replication_overwrite_protection)
+      (v.replication_overwrite_protection == null) || (v.replication_overwrite_protection != null && contains(["ENABLED", "DISABLED", "REPLICATING"], v.replication_overwrite_protection))
     ])
     error_message = "Replication overwrite protection must be 'ENABLED', 'DISABLED', or 'REPLICATING'."
   }
