@@ -55,7 +55,7 @@ module "efs" {
   security_group_vpc_id      = length(each.value.security_group_ids) == 0 && each.value.vpc_id != null ? each.value.vpc_id : null
 
   # Configure security group rules only when creating a new SG
-  # Always return a map structure to avoid type inconsistency
+  # Both branches must return the same object structure for type consistency
   security_group_rules = length(each.value.security_group_ids) == 0 ? merge(
     # Ingress rules from allowed security groups (e.g., EKS nodes)
     {
@@ -92,8 +92,16 @@ module "efs" {
       }
     }
     ) : {
-    # When using existing security groups, return empty map (not null)
-    # This maintains type consistency
+    # When using existing security groups, must match the structure above
+    # Include egress_all to maintain type consistency (won't be used)
+    egress_all = {
+      type        = "egress"
+      from_port   = 0
+      to_port     = 0
+      protocol    = "-1"
+      cidr_blocks = ["0.0.0.0/0"]
+      description = "Placeholder - not used when existing SGs provided"
+    }
   }
 
   # Access Points
