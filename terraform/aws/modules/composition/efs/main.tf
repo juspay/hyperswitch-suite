@@ -33,54 +33,23 @@ module "efs" {
   create_backup_policy = each.value.enable_backup_policy
   enable_backup_policy = each.value.enable_backup_policy && each.value.backup_policy_status == "ENABLED"
 
-  # Mount Targets with Security Groups
+  # Mount Targets with Security Groups (generic)
   mount_targets = {
     for subnet_id in each.value.subnet_ids :
     subnet_id => merge(
       {
         subnet_id = subnet_id
       },
-      # Only include security_groups if user provides existing SGs
       length(each.value.security_group_ids) > 0 ? {
         security_groups = each.value.security_group_ids
       } : {}
     )
   }
 
-  # Security Group Configuration
-  # Create a dedicated EFS security group if user doesn't provide existing ones
-  create_security_group      = length(each.value.security_group_ids) == 0
-  security_group_name        = length(each.value.security_group_ids) == 0 ? "${each.value.name}-sg" : null
-  security_group_description = length(each.value.security_group_ids) == 0 ? "Security group for ${each.value.name} EFS" : null
-  security_group_vpc_id      = length(each.value.security_group_ids) == 0 && each.value.vpc_id != null ? each.value.vpc_id : null
-
-  # Configure security group rules only when creating a new SG
-  # Dynamic ingress rules based on user configuration (defaults to NFS: 2049/tcp)
-  security_group_rules = length(each.value.security_group_ids) == 0 ? merge(
-    # Ingress rules from allowed security groups (e.g., EKS nodes)
-    {
-      for idx, sg_id in each.value.allowed_security_group_ids :
-      "ingress_from_sg_${idx}" => {
-        type                     = "ingress"
-        from_port                = each.value.ingress_from_port
-        to_port                  = each.value.ingress_to_port
-        protocol                 = each.value.ingress_protocol
-        source_security_group_id = sg_id
-        description              = "${each.value.ingress_description} from security group ${sg_id}"
-      }
-    },
-    # Ingress rules from allowed CIDR blocks (if any)
-    length(each.value.allowed_cidr_blocks) > 0 ? {
-      ingress_from_cidr = {
-        type        = "ingress"
-        from_port   = each.value.ingress_from_port
-        to_port     = each.value.ingress_to_port
-        protocol    = each.value.ingress_protocol
-        cidr_blocks = each.value.allowed_cidr_blocks
-        description = "${each.value.ingress_description} from allowed CIDR blocks"
-      }
-    } : {}
-  ) : {}
+  # Security Group Configuration (generic, minimal)
+  create_security_group = length(each.value.security_group_ids) == 0
+  security_group_vpc_id = length(each.value.security_group_ids) == 0 && each.value.vpc_id != null ? each.value.vpc_id : null
+  security_group_rules  = length(each.value.security_group_ids) == 0 ? each.value.security_group_rules : null
 
   # Access Points
   access_points = {

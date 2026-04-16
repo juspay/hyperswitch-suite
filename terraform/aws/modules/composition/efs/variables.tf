@@ -60,16 +60,12 @@ variable "file_systems" {
     security_group_ids        = optional(list(string), [])
     mount_target_ip_addresses = optional(map(string), {}) # Map of subnet_id to IP address
 
-    # VPC Configuration (for module-created security group)
-    vpc_id                     = optional(string)
-    allowed_security_group_ids = optional(list(string), [])
-    allowed_cidr_blocks        = optional(list(string), [])
 
-    # Security Group Rule Configuration (dynamic)
-    ingress_from_port   = optional(number, 2049)
-    ingress_to_port     = optional(number, 2049)
-    ingress_protocol    = optional(string, "tcp")
-    ingress_description = optional(string, "NFS access")
+    # VPC Configuration (for module-created security group)
+    vpc_id = optional(string)
+
+    # Security Group Rules (user-defined, generic)
+    security_group_rules = optional(any, null)
 
     # Access Points
     access_points = optional(map(object({
