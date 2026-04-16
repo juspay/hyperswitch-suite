@@ -65,7 +65,7 @@ variable "file_systems" {
     vpc_id = optional(string)
 
     # Security Group Rules (user-defined, generic)
-    security_group_rules = optional(any, null)
+    security_group_rules = optional(map(any), {})
 
     # Access Points
     access_points = optional(map(object({
