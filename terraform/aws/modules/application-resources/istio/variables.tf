@@ -110,6 +110,12 @@ variable "ingress_annotations" {
   default     = {}
 }
 
+variable "host_domains" {
+  description = "Optional list of host domains for the Istio Gateway. Used only for exposing values in module outputs."
+  type        = list(string)
+  default     = []
+}
+
 # ============================================================================
 # Tags
 # ============================================================================

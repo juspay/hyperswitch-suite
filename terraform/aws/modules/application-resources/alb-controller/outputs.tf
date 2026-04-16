@@ -11,3 +11,8 @@ output "alb_controller_service_account" {
   description = "Service Account Name of AWS Load Balancer Controller"
   value       = kubernetes_service_account_v1.alb_controller[*].metadata[0].name
 }
+
+output "region" {
+  description = "AWS region where resources are created"
+  value       = data.aws_region.current.region
+}
