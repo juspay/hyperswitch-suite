@@ -55,29 +55,29 @@ module "efs" {
   security_group_vpc_id      = length(each.value.security_group_ids) == 0 && each.value.vpc_id != null ? each.value.vpc_id : null
 
   # Configure security group rules only when creating a new SG
-  # EFS only needs ingress rules for NFS (port 2049), no egress needed
+  # Dynamic ingress rules based on user configuration (defaults to NFS: 2049/tcp)
   security_group_rules = length(each.value.security_group_ids) == 0 ? merge(
     # Ingress rules from allowed security groups (e.g., EKS nodes)
     {
       for idx, sg_id in each.value.allowed_security_group_ids :
-      "ingress_nfs_from_sg_${idx}" => {
+      "ingress_from_sg_${idx}" => {
         type                     = "ingress"
-        from_port                = 2049
-        to_port                  = 2049
-        protocol                 = "tcp"
+        from_port                = each.value.ingress_from_port
+        to_port                  = each.value.ingress_to_port
+        protocol                 = each.value.ingress_protocol
         source_security_group_id = sg_id
-        description              = "NFS from security group ${sg_id}"
+        description              = "${each.value.ingress_description} from security group ${sg_id}"
       }
     },
     # Ingress rules from allowed CIDR blocks (if any)
     length(each.value.allowed_cidr_blocks) > 0 ? {
-      ingress_nfs_from_cidr = {
+      ingress_from_cidr = {
         type        = "ingress"
-        from_port   = 2049
-        to_port     = 2049
-        protocol    = "tcp"
+        from_port   = each.value.ingress_from_port
+        to_port     = each.value.ingress_to_port
+        protocol    = each.value.ingress_protocol
         cidr_blocks = each.value.allowed_cidr_blocks
-        description = "NFS from allowed CIDR blocks"
+        description = "${each.value.ingress_description} from allowed CIDR blocks"
       }
     } : {}
   ) : {}

@@ -65,6 +65,12 @@ variable "file_systems" {
     allowed_security_group_ids = optional(list(string), [])
     allowed_cidr_blocks        = optional(list(string), [])
 
+    # Security Group Rule Configuration (dynamic)
+    ingress_from_port   = optional(number, 2049)
+    ingress_to_port     = optional(number, 2049)
+    ingress_protocol    = optional(string, "tcp")
+    ingress_description = optional(string, "NFS access")
+
     # Access Points
     access_points = optional(map(object({
       name = string
