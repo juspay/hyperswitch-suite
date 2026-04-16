@@ -55,6 +55,7 @@ module "efs" {
   security_group_vpc_id      = length(each.value.security_group_ids) == 0 && each.value.vpc_id != null ? each.value.vpc_id : null
 
   # Configure security group rules only when creating a new SG
+  # Always return a map structure to avoid type inconsistency
   security_group_rules = length(each.value.security_group_ids) == 0 ? merge(
     # Ingress rules from allowed security groups (e.g., EKS nodes)
     {
@@ -68,7 +69,7 @@ module "efs" {
         description              = "NFS from security group ${sg_id}"
       }
     },
-    # Ingress rules from allowed CIDR blocks
+    # Ingress rules from allowed CIDR blocks (if any)
     length(each.value.allowed_cidr_blocks) > 0 ? {
       ingress_nfs_from_cidr = {
         type        = "ingress"
@@ -90,7 +91,10 @@ module "efs" {
         description = "Allow all outbound traffic"
       }
     }
-  ) : {}
+    ) : {
+    # When using existing security groups, return empty map (not null)
+    # This maintains type consistency
+  }
 
   # Access Points
   access_points = {
