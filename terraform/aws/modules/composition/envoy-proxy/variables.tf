@@ -1,10 +1,10 @@
 variable "environment" {
-  description = "Environment name (dev, integ, prod, sandbox)"
+  description = "Environment name (dev, integ, prd, prod, sbx)"
   type        = string
 
   validation {
-    condition     = contains(["dev", "integ", "prod", "sbx"], var.environment)
-    error_message = "Environment must be one of: dev, integ, prod, sbx"
+    condition     = contains(["dev", "integ", "prd", "prod", "sbx"], var.environment)
+    error_message = "Environment must be one of: dev, integ, prd, prod, sbx"
   }
 }
 
@@ -208,8 +208,8 @@ variable "instance_type" {
 
 variable "set_lt_default_version" {
   description = "Value of launch template version to be set as default. Conflicts with update_default_version"
-  type = string
-  default = null
+  type        = string
+  default     = null
 }
 
 variable "update_default_version" {
