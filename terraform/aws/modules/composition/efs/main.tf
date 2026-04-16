@@ -36,26 +36,61 @@ module "efs" {
   # Mount Targets with Security Groups
   mount_targets = {
     for subnet_id in each.value.subnet_ids :
-    subnet_id => {
-      subnet_id = subnet_id
-    }
+    subnet_id => merge(
+      {
+        subnet_id = subnet_id
+      },
+      # Only include security_groups if user provides existing SGs
+      length(each.value.security_group_ids) > 0 ? {
+        security_groups = each.value.security_group_ids
+      } : {}
+    )
   }
 
   # Security Group Configuration
-  create_security_group = length(each.value.security_group_ids) == 0
-  security_group_vpc_id = length(each.value.security_group_ids) == 0 ? null : null
+  # Create a dedicated EFS security group if user doesn't provide existing ones
+  create_security_group      = length(each.value.security_group_ids) == 0
+  security_group_name        = length(each.value.security_group_ids) == 0 ? "${each.value.name}-sg" : null
+  security_group_description = length(each.value.security_group_ids) == 0 ? "Security group for ${each.value.name} EFS" : null
+  security_group_vpc_id      = length(each.value.security_group_ids) == 0 && each.value.vpc_id != null ? each.value.vpc_id : null
 
-  # If user provides security group IDs, we need to attach them differently
-  # The module creates its own security group by default, so we'll use security_group_rules
-  security_group_rules = length(each.value.security_group_ids) > 0 ? {
-    ingress = {
-      type        = "ingress"
-      from_port   = 2049
-      to_port     = 2049
-      protocol    = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
+  # Configure security group rules only when creating a new SG
+  security_group_rules = length(each.value.security_group_ids) == 0 ? merge(
+    # Ingress rules from allowed security groups (e.g., EKS nodes)
+    {
+      for idx, sg_id in each.value.allowed_security_group_ids :
+      "ingress_nfs_from_sg_${idx}" => {
+        type                     = "ingress"
+        from_port                = 2049
+        to_port                  = 2049
+        protocol                 = "tcp"
+        source_security_group_id = sg_id
+        description              = "NFS from security group ${sg_id}"
+      }
+    },
+    # Ingress rules from allowed CIDR blocks
+    length(each.value.allowed_cidr_blocks) > 0 ? {
+      ingress_nfs_from_cidr = {
+        type        = "ingress"
+        from_port   = 2049
+        to_port     = 2049
+        protocol    = "tcp"
+        cidr_blocks = each.value.allowed_cidr_blocks
+        description = "NFS from allowed CIDR blocks"
+      }
+    } : {},
+    # Egress rule (allow all outbound)
+    {
+      egress_all = {
+        type        = "egress"
+        from_port   = 0
+        to_port     = 0
+        protocol    = "-1"
+        cidr_blocks = ["0.0.0.0/0"]
+        description = "Allow all outbound traffic"
+      }
     }
-  } : {}
+  ) : {}
 
   # Access Points
   access_points = {

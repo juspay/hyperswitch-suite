@@ -57,8 +57,13 @@ variable "file_systems" {
 
     # Mount Targets
     subnet_ids                = list(string)
-    security_group_ids        = list(string)
+    security_group_ids        = optional(list(string), [])
     mount_target_ip_addresses = optional(map(string), {}) # Map of subnet_id to IP address
+
+    # VPC Configuration (for module-created security group)
+    vpc_id                     = optional(string)
+    allowed_security_group_ids = optional(list(string), [])
+    allowed_cidr_blocks        = optional(list(string), [])
 
     # Access Points
     access_points = optional(map(object({
