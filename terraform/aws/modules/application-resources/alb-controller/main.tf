@@ -2,6 +2,9 @@
 # Data Sources
 # ============================================================================
 
+# Get current AWS region
+data "aws_region" "current" {}
+
 # Get EKS cluster details
 data "aws_eks_cluster" "eks" {
   name = var.eks_cluster_name
