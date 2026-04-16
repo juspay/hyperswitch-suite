@@ -55,7 +55,7 @@ module "efs" {
   security_group_vpc_id      = length(each.value.security_group_ids) == 0 && each.value.vpc_id != null ? each.value.vpc_id : null
 
   # Configure security group rules only when creating a new SG
-  # Both branches must return the same object structure for type consistency
+  # EFS only needs ingress rules for NFS (port 2049), no egress needed
   security_group_rules = length(each.value.security_group_ids) == 0 ? merge(
     # Ingress rules from allowed security groups (e.g., EKS nodes)
     {
@@ -79,30 +79,8 @@ module "efs" {
         cidr_blocks = each.value.allowed_cidr_blocks
         description = "NFS from allowed CIDR blocks"
       }
-    } : {},
-    # Egress rule (allow all outbound)
-    {
-      egress_all = {
-        type        = "egress"
-        from_port   = 0
-        to_port     = 0
-        protocol    = "-1"
-        cidr_blocks = ["0.0.0.0/0"]
-        description = "Allow all outbound traffic"
-      }
-    }
-    ) : {
-    # When using existing security groups, must match the structure above
-    # Include egress_all to maintain type consistency (won't be used)
-    egress_all = {
-      type        = "egress"
-      from_port   = 0
-      to_port     = 0
-      protocol    = "-1"
-      cidr_blocks = ["0.0.0.0/0"]
-      description = "Placeholder - not used when existing SGs provided"
-    }
-  }
+    } : {}
+  ) : {}
 
   # Access Points
   access_points = {
