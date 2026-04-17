@@ -4,7 +4,7 @@ data "aws_region" "current" {}
 # EFS File Systems using official Terraform AWS module
 module "efs" {
   source  = "terraform-aws-modules/efs/aws"
-  version = "~> 2.0"
+  version = "2.2.0"
 
   for_each = var.file_systems
 
