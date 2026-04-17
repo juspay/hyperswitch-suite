@@ -4,9 +4,12 @@ data "aws_region" "current" {}
 # EFS File Systems using official Terraform AWS module
 module "efs" {
   source  = "terraform-aws-modules/efs/aws"
-  version = "~> 1.6"
+  version = "~> 2.0"
 
   for_each = var.file_systems
+
+  # Region
+  region = var.region
 
   # Basic Configuration
   name           = each.value.name
@@ -21,8 +24,8 @@ module "efs" {
   encrypted   = each.value.encrypted
   kms_key_arn = each.value.kms_key_id
 
-  # Lifecycle Policies
-  lifecycle_policy = each.value.lifecycle_policies
+  # Lifecycle Policy (single object in v2.x)
+  lifecycle_policy = each.value.lifecycle_policy != null ? each.value.lifecycle_policy : {}
 
   # Protection
   protection = each.value.replication_overwrite_protection != null ? {
@@ -42,14 +45,18 @@ module "efs" {
       },
       length(each.value.security_group_ids) > 0 ? {
         security_groups = each.value.security_group_ids
+      } : {},
+      lookup(each.value.mount_target_ip_addresses, subnet_id, null) != null ? {
+        ip_address = lookup(each.value.mount_target_ip_addresses, subnet_id, null)
       } : {}
     )
   }
 
   # Security Group Configuration (generic, minimal)
-  create_security_group = length(each.value.security_group_ids) == 0
-  security_group_vpc_id = length(each.value.security_group_ids) == 0 && each.value.vpc_id != null ? each.value.vpc_id : null
-  security_group_rules  = length(each.value.security_group_ids) == 0 ? each.value.security_group_rules : null
+  create_security_group        = length(each.value.security_group_ids) == 0
+  security_group_vpc_id        = length(each.value.security_group_ids) == 0 && each.value.vpc_id != null ? each.value.vpc_id : null
+  security_group_ingress_rules = length(each.value.security_group_ids) == 0 ? each.value.security_group_ingress_rules : {}
+  security_group_egress_rules  = length(each.value.security_group_ids) == 0 ? each.value.security_group_egress_rules : {}
 
   # Access Points
   access_points = {

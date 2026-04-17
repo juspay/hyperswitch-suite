@@ -39,12 +39,12 @@ variable "file_systems" {
     encrypted  = optional(bool, true)
     kms_key_id = optional(string)
 
-    # Lifecycle Policies
-    lifecycle_policies = optional(list(object({
-      transition_to_ia                    = optional(string) # AFTER_7_DAYS, AFTER_14_DAYS, AFTER_30_DAYS, AFTER_60_DAYS, AFTER_90_DAYS, AFTER_1_DAY, AFTER_180_DAYS, AFTER_270_DAYS, AFTER_365_DAYS
+    # Lifecycle Policy (single object in v2.x)
+    lifecycle_policy = optional(object({
+      transition_to_ia                    = optional(string) # AFTER_1_DAY, AFTER_7_DAYS, AFTER_14_DAYS, AFTER_30_DAYS, AFTER_60_DAYS, AFTER_90_DAYS, AFTER_180_DAYS, AFTER_270_DAYS, AFTER_365_DAYS
       transition_to_primary_storage_class = optional(string) # AFTER_1_ACCESS
       transition_to_archive               = optional(string) # AFTER_1_DAY, AFTER_7_DAYS, AFTER_14_DAYS, AFTER_30_DAYS, AFTER_60_DAYS, AFTER_90_DAYS, AFTER_180_DAYS, AFTER_270_DAYS, AFTER_365_DAYS
-    })), [])
+    }))
 
     # Protection
     replication_overwrite_protection = optional(string) # ENABLED, DISABLED, REPLICATING
@@ -64,8 +64,31 @@ variable "file_systems" {
     # VPC Configuration (for module-created security group)
     vpc_id = optional(string)
 
-    # Security Group Rules (user-defined, generic)
-    security_group_rules = optional(map(any), {})
+    # Security Group Rules (v2.x: separate ingress and egress)
+    security_group_ingress_rules = optional(map(object({
+      name                         = optional(string)
+      cidr_ipv4                    = optional(string)
+      cidr_ipv6                    = optional(string)
+      description                  = optional(string)
+      from_port                    = optional(number, 2049)
+      ip_protocol                  = optional(string, "tcp")
+      prefix_list_id               = optional(string)
+      referenced_security_group_id = optional(string)
+      tags                         = optional(map(string), {})
+      to_port                      = optional(number, 2049)
+    })), {})
+    security_group_egress_rules = optional(map(object({
+      name                         = optional(string)
+      cidr_ipv4                    = optional(string)
+      cidr_ipv6                    = optional(string)
+      description                  = optional(string)
+      from_port                    = optional(number, 2049)
+      ip_protocol                  = optional(string, "tcp")
+      prefix_list_id               = optional(string)
+      referenced_security_group_id = optional(string)
+      tags                         = optional(map(string), {})
+      to_port                      = optional(number, 2049)
+    })), {})
 
     # Access Points
     access_points = optional(map(object({
