@@ -402,44 +402,6 @@ resource "aws_volume_attachment" "keeper_data2" {
 }
 
 # =========================================================================
-# LOAD BALANCER - SECURITY GROUP
-# =========================================================================
-resource "aws_security_group" "alb" {
-  name        = "${local.alb_name_prefix}-alb-sg"
-  description = "Security group for Clickhouse Application Load Balancer"
-  vpc_id      = var.vpc_id
-
-  tags = merge(local.common_tags, {
-    Name = "${local.alb_name_prefix}-alb-sg"
-  })
-}
-
-# =========================================================================
-# LOAD BALANCER - SECURITY GROUP RULES
-# =========================================================================
-# ALB Egress to Server
-resource "aws_security_group_rule" "alb_egress_to_server" {
-  security_group_id        = aws_security_group.alb.id
-  type                     = "egress"
-  from_port                = var.clickhouse_port
-  to_port                  = var.clickhouse_port
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.server.id
-  description              = "Allow ALB to send traffic to Clickhouse server instances"
-}
-
-# Server Ingress from ALB
-resource "aws_security_group_rule" "server_ingress_from_alb" {
-  security_group_id        = aws_security_group.server.id
-  type                     = "ingress"
-  from_port                = var.clickhouse_port
-  to_port                  = var.clickhouse_port
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.alb.id
-  description              = "Allow traffic from ALB to Clickhouse server instances"
-}
-
-# =========================================================================
 # LOAD BALANCER - APPLICATION LOAD BALANCER
 # =========================================================================
 resource "aws_lb" "clickhouse_alb" {
@@ -447,7 +409,7 @@ resource "aws_lb" "clickhouse_alb" {
   internal           = true
   load_balancer_type = "application"
   subnets            = var.alb_subnet_ids
-  security_groups    = [aws_security_group.alb.id]
+  security_groups    = [aws_security_group.server.id]
 
   tags = merge(local.common_tags, {
     Name = "${local.alb_name_prefix}-alb"
