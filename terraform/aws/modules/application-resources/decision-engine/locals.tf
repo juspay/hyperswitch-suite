@@ -43,4 +43,7 @@ locals {
 
   # Inline policies feature
   inline_policies_enabled = length(var.inline_policies) > 0
+
+  # S3 bucket feature
+  s3_bucket_create = try(var.s3_bucket.enabled, false)
 }
