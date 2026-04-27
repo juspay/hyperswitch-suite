@@ -90,7 +90,9 @@ module "vpc_network" {
     "ssmmessages",
     "sts",
     "ec2messages",
-    "kms"
+    "kms",
+    "eks",
+    "eks_auth"
   ] : []
 
   create_vpc_endpoint_security_group = true
