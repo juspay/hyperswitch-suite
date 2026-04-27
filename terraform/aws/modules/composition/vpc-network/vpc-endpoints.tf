@@ -113,6 +113,14 @@ locals {
       service_name = "com.amazonaws.${var.region}.sts"
       type         = "Interface"
     }
+    eks = {
+      service_name = "com.amazonaws.${var.region}.eks"
+      type         = "Interface"
+    }
+    eks_auth = {
+      service_name = "com.amazonaws.${var.region}.eks-auth"
+      type         = "Interface"
+    }
     autoscaling = {
       service_name = "com.amazonaws.${var.region}.autoscaling"
       type         = "Interface"
@@ -175,7 +183,7 @@ module "interface_vpc_endpoints" {
   service_name      = each.value.service_name
   vpc_endpoint_type = each.value.type
 
-  subnet_ids         = module.eks_workers_subnets[*].subnet_id
+  subnet_ids = module.eks_workers_subnets[*].subnet_id
   security_group_ids = compact(concat(
     var.create_vpc_endpoint_security_group ? [module.vpc_endpoint_sg[0].sg_id] : [],
     var.vpc_endpoint_security_group_ids
