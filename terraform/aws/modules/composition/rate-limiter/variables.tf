@@ -291,9 +291,39 @@ variable "key_name" {
 }
 
 variable "user_data" {
-  description = "User data script (defaults to template)"
+  description = "User data script (defaults to template). If provided, this overrides the templated userdata."
   type        = string
   default     = null
+}
+
+# =========================================================================
+# OPTIONAL VARIABLES - Userdata Configuration
+# =========================================================================
+
+variable "userdata_config" {
+  description = "Configuration for the userdata script. All values are optional and have sensible defaults."
+  type = object({
+    # Wazuh settings
+    update_wazuh       = optional(string, "Disable")
+    wazuh_manager_addr = optional(string, "NA")
+    wazuh_worker_addr  = optional(string, "NA")
+    wazuh_group        = optional(string, "NA")
+    wazuh_tag          = optional(string, "NA")
+
+    # Stack and logging settings
+    stack_svc       = optional(string, "ratelimiter")
+    syslog_rotation = optional(string, "enable")
+
+    # User and access settings
+    sudo_user_list   = optional(string, "")
+    normal_user_list = optional(string, "NA")
+    ssh_service      = optional(string, "SSM")
+
+    # Network settings
+    additional_inbound_ports  = optional(string, "")
+    additional_outbound_ports = optional(string, "")
+  })
+  default = {}
 }
 
 variable "enable_detailed_monitoring" {
@@ -387,7 +417,7 @@ variable "spot_allocation_strategy" {
 
 variable "spot_instance_types" {
   description = "List of override instance types for Spot"
-  type        = list(object({
+  type = list(object({
     instance_type = string
   }))
   default = []
@@ -483,16 +513,16 @@ variable "scaling_policies" {
   description = "Scaling policy configuration"
   type = object({
     cpu_target_tracking = optional(object({
-      enabled     = optional(bool, false)
+      enabled      = optional(bool, false)
       target_value = optional(number, 70)
-    }), {
+      }), {
       enabled      = false
       target_value = 70
     })
     request_count_target_tracking = optional(object({
       enabled      = optional(bool, false)
       target_value = optional(number, 1000)
-    }), {
+      }), {
       enabled      = false
       target_value = 1000
     })
@@ -507,6 +537,52 @@ variable "scaling_policies" {
       target_value = 1000
     }
   }
+}
+
+# =========================================================================
+# OPTIONAL VARIABLES - S3 Config Bucket
+# =========================================================================
+
+variable "create_config_bucket" {
+  description = "Whether to create a new S3 bucket for rate limiter configuration files"
+  type        = bool
+  default     = true
+}
+
+variable "config_bucket_name" {
+  description = "Name of existing S3 bucket containing rate limiter configuration files (required if create_config_bucket=false)"
+  type        = string
+  default     = ""
+}
+
+variable "config_bucket_arn" {
+  description = "ARN of existing S3 bucket containing rate limiter configuration files (required if create_config_bucket=false)"
+  type        = string
+  default     = ""
+}
+
+variable "upload_config_to_s3" {
+  description = "Whether to upload config files from local directory to S3"
+  type        = bool
+  default     = true
+}
+
+variable "config_files_source_path" {
+  description = "Local path to rate limiter config files to upload to S3 (only used if upload_config_to_s3=true)"
+  type        = string
+  default     = "./config"
+}
+
+variable "ratelimit_env_config_filename" {
+  description = "Name of the rate limiter environment config file (relative to config_files_source_path)"
+  type        = string
+  default     = "ratelimit-env.conf"
+}
+
+variable "ratelimit_descriptor_filename" {
+  description = "Name of the rate limiter descriptor file (relative to config_files_source_path)"
+  type        = string
+  default     = "ratelimits.yaml"
 }
 
 # =========================================================================
@@ -528,4 +604,39 @@ variable "log_retention_days" {
     condition     = contains([1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653], var.log_retention_days)
     error_message = "Log retention days must be a valid CloudWatch retention period"
   }
+}
+
+# =========================================================================
+# OPTIONAL VARIABLES - ElastiCache
+# =========================================================================
+
+variable "elasticache_config" {
+  description = "ElastiCache configuration for rate limiter."
+  type = object({
+    enabled                     = optional(bool, true)
+    subnet_ids                  = optional(list(string), [])
+    engine                      = optional(string, "redis")
+    engine_version              = optional(string, "7.0")
+    parameter_group_name        = optional(string, "default.redis7")
+    port                        = optional(number, 6379)
+    node_type                   = optional(string, "cache.t3.small")
+    num_cache_clusters          = optional(number, 2)
+    num_node_groups             = optional(number, null)
+    replicas_per_node_group     = optional(number, null)
+    cluster_mode                = optional(string, "disabled")
+    automatic_failover_enabled  = optional(bool, true)
+    multi_az_enabled            = optional(bool, true)
+    at_rest_encryption_enabled  = optional(bool, true)
+    transit_encryption_enabled  = optional(bool, false)
+    auth_token                  = optional(string, null)
+    create_subnet_group         = optional(bool, true)
+    subnet_group_name           = optional(string, null)
+    create_security_group       = optional(bool, true)
+    existing_security_group_ids = optional(list(string), [])
+    maintenance_window          = optional(string, "sun:05:00-sun:06:00")
+    snapshot_window             = optional(string, "03:00-05:00")
+    snapshot_retention_limit    = optional(number, 1)
+    apply_immediately           = optional(bool, false)
+  })
+  default = {}
 }

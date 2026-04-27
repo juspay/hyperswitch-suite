@@ -171,3 +171,54 @@ output "log_group_arn" {
   description = "ARN of the CloudWatch log group"
   value       = var.create_log_group ? aws_cloudwatch_log_group.this[0].arn : null
 }
+
+# =========================================================================
+# S3 CONFIG BUCKET OUTPUTS
+# =========================================================================
+output "config_bucket_name" {
+  description = "Name of the S3 config bucket"
+  value       = local.config_bucket_name
+}
+
+output "config_bucket_arn" {
+  description = "ARN of the S3 config bucket"
+  value       = local.config_bucket_arn
+}
+
+output "config_bucket_id" {
+  description = "ID of the S3 config bucket"
+  value       = local.config_bucket_name
+}
+
+# =========================================================================
+# ELASTICACHE OUTPUTS
+# =========================================================================
+output "elasticache_replication_group_id" {
+  description = "ID of the ElastiCache Replication Group"
+  value       = var.elasticache_config.enabled ? module.elasticache[0].replication_group_id : null
+}
+
+output "elasticache_replication_group_arn" {
+  description = "ARN of the ElastiCache Replication Group"
+  value       = var.elasticache_config.enabled ? module.elasticache[0].replication_group_arn : null
+}
+
+output "elasticache_primary_endpoint_address" {
+  description = "Address of the primary endpoint for the replication group"
+  value       = var.elasticache_config.enabled ? module.elasticache[0].replication_group_primary_endpoint_address : null
+}
+
+output "elasticache_reader_endpoint_address" {
+  description = "Address of the reader endpoint for the replication group"
+  value       = var.elasticache_config.enabled ? module.elasticache[0].replication_group_reader_endpoint_address : null
+}
+
+output "elasticache_port" {
+  description = "Port number for the replication group"
+  value       = var.elasticache_config.enabled ? module.elasticache[0].replication_group_port : null
+}
+
+output "elasticache_connection_info" {
+  description = "Connection information for the ElastiCache cluster"
+  value       = var.elasticache_config.enabled ? module.elasticache[0].connection_info : null
+}

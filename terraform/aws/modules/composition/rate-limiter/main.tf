@@ -17,7 +17,23 @@ module "iam_role" {
 
   custom_role_policy_arns = var.iam_managed_policy_arns
 
-  inline_policy_statements = var.iam_inline_policy_statements
+  inline_policy_statements = concat(
+    var.iam_inline_policy_statements,
+    [
+      {
+        sid    = "ConfigBucketRead"
+        effect = "Allow"
+        actions = [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ]
+        resources = [
+          local.config_bucket_arn,
+          "${local.config_bucket_arn}/*"
+        ]
+      }
+    ]
+  )
 
   tags = local.common_tags
 }
@@ -35,6 +51,54 @@ resource "aws_iam_instance_profile" "this" {
       Name = "${local.name_prefix}-instance-profile"
     }
   )
+}
+
+# =========================================================================
+# S3 Bucket for Rate Limiter Configuration
+# =========================================================================
+module "config_bucket" {
+  count   = var.create_config_bucket ? 1 : 0
+  source  = "terraform-aws-modules/s3-bucket/aws"
+  version = "5.12.0"
+
+  bucket        = "${local.name_prefix}-config-${data.aws_caller_identity.current.account_id}-${data.aws_region.current.region}"
+  force_destroy = var.environment != "prod" ? true : false
+
+  # Versioning - Enable to track config changes
+  versioning = {
+    enabled = true
+  }
+
+  # Security best practices - Block all public access
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+
+  # Server-side encryption
+  server_side_encryption_configuration = {
+    rule = {
+      apply_server_side_encryption_by_default = {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
+
+  tags = local.common_tags
+}
+
+# =========================================================================
+# S3 Configuration Upload (Optional)
+# =========================================================================
+resource "aws_s3_object" "rate_limiter_config_files" {
+  for_each = var.upload_config_to_s3 ? fileset(var.config_files_source_path, "**") : []
+
+  bucket = local.config_bucket_name
+  key    = each.value
+  source = "${var.config_files_source_path}/${each.value}"
+  etag   = filemd5("${var.config_files_source_path}/${each.value}")
+
+  tags = local.common_tags
 }
 
 # =========================================================================
@@ -156,6 +220,43 @@ resource "aws_security_group_rule" "asg_egress" {
   protocol          = each.value.protocol
   cidr_blocks       = each.value.cidr_blocks
   description       = each.value.description
+}
+
+# Egress to S3 (HTTPS) via VPC Endpoint prefix list
+resource "aws_security_group_rule" "asg_egress_to_s3" {
+  security_group_id = module.asg_security_group.security_group_id
+  type              = "egress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  prefix_list_ids   = [data.aws_prefix_list.s3.id]
+  description       = "Allow HTTPS outbound to S3 via VPC endpoint"
+}
+
+# Egress to ElastiCache
+resource "aws_security_group_rule" "asg_egress_to_elasticache" {
+  count = var.elasticache_config.enabled ? 1 : 0
+
+  security_group_id        = module.asg_security_group.security_group_id
+  type                     = "egress"
+  from_port                = var.elasticache_config.port
+  to_port                  = var.elasticache_config.port
+  protocol                 = "tcp"
+  source_security_group_id = module.elasticache[0].security_group_id
+  description              = "Allow outbound traffic to ElastiCache"
+}
+
+# Ingress from rate limiter instances to ElastiCache
+resource "aws_security_group_rule" "elasticache_ingress_from_asg" {
+  count = var.elasticache_config.enabled && var.elasticache_config.create_security_group ? 1 : 0
+
+  security_group_id        = module.elasticache[0].security_group_id
+  type                     = "ingress"
+  from_port                = var.elasticache_config.port
+  to_port                  = var.elasticache_config.port
+  protocol                 = "tcp"
+  source_security_group_id = module.asg_security_group.security_group_id
+  description              = "Allow inbound traffic from rate limiter instances"
 }
 
 # =========================================================================
@@ -438,4 +539,54 @@ resource "aws_cloudwatch_log_group" "this" {
       Name = "${local.name_prefix}-logs"
     }
   )
+}
+
+# =========================================================================
+# ElastiCache for Rate Limiter
+# =========================================================================
+module "elasticache" {
+  source = "../elasticache"
+  count  = var.elasticache_config.enabled ? 1 : 0
+
+  environment  = var.environment
+  project_name = "${var.project_name}-ratelimiter"
+  vpc_id       = var.vpc_id
+  subnet_ids   = var.elasticache_config.subnet_ids
+  tags         = local.common_tags
+
+  # Engine Configuration
+  engine               = var.elasticache_config.engine
+  engine_version       = var.elasticache_config.engine_version
+  parameter_group_name = var.elasticache_config.parameter_group_name
+  port                 = var.elasticache_config.port
+
+  # Node Configuration
+  node_type               = var.elasticache_config.node_type
+  num_cache_clusters      = var.elasticache_config.num_cache_clusters
+  num_node_groups         = var.elasticache_config.num_node_groups
+  replicas_per_node_group = var.elasticache_config.replicas_per_node_group
+
+  # Cluster Mode
+  cluster_mode = var.elasticache_config.cluster_mode
+
+  # High Availability
+  automatic_failover_enabled = var.elasticache_config.automatic_failover_enabled
+  multi_az_enabled           = var.elasticache_config.multi_az_enabled
+
+  # Security
+  at_rest_encryption_enabled = var.elasticache_config.at_rest_encryption_enabled
+  transit_encryption_enabled = var.elasticache_config.transit_encryption_enabled
+  auth_token                 = var.elasticache_config.auth_token
+
+  # Subnet and Security Group
+  create_elasticache_subnet_group = var.elasticache_config.create_subnet_group
+  elasticache_subnet_group_name   = var.elasticache_config.subnet_group_name
+  create_security_group           = var.elasticache_config.create_security_group
+  existing_security_group_ids     = var.elasticache_config.create_security_group ? [] : var.elasticache_config.existing_security_group_ids
+
+  # Maintenance & Backup
+  maintenance_window       = var.elasticache_config.maintenance_window
+  snapshot_window          = var.elasticache_config.snapshot_window
+  snapshot_retention_limit = var.elasticache_config.snapshot_retention_limit
+  apply_immediately        = var.elasticache_config.apply_immediately
 }
