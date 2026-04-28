@@ -12,6 +12,7 @@ resource "aws_elasticache_global_replication_group" "main" {
   parameter_group_name                 = var.parameter_group_name
 
   lifecycle {
+    create_before_destroy = true,
     ignore_changes = [
       primary_replication_group_id,
     ]
