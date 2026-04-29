@@ -136,3 +136,18 @@ output "config_version" {
   description = "Current configuration version hash"
   value       = substr(md5(local.envoy_config_content), 0, 8)
 }
+
+output "alb_access_logs_enabled" {
+  description = "Whether ALB access logs are enabled (true only if create_lb = true and enable_alb_access_logs = true)"
+  value       = local.alb_access_logs_enabled
+}
+
+output "alb_access_logs_bucket" {
+  description = "S3 bucket name where ALB access logs are delivered (null if access logs disabled)"
+  value       = local.alb_access_logs_enabled ? local.logs_bucket_name : null
+}
+
+output "alb_access_logs_prefix" {
+  description = "S3 key prefix for ALB access logs (null if access logs disabled)"
+  value       = local.alb_access_logs_enabled ? local.alb_access_logs_prefix : null
+}

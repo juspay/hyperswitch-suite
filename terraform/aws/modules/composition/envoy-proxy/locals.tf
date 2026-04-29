@@ -1,4 +1,8 @@
 locals {
+  # ALB access logs configuration
+  alb_access_logs_enabled = var.create_lb && var.enable_alb_access_logs
+  alb_access_logs_prefix  = var.alb_access_logs_prefix != null ? var.alb_access_logs_prefix : "AWSLogs/${data.aws_caller_identity.current.account_id}"
+
   # Naming convention
   name_prefix = "${var.environment}-${var.project_name}-envoy"
 
