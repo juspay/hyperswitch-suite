@@ -1,4 +1,39 @@
 # =========================================================================
+# SECURITY - SSH KEY PAIR
+# =========================================================================
+# Auto-generate SSH key pair if public_key not provided
+resource "tls_private_key" "rate_limiter" {
+  count     = var.create_key_pair && var.public_key == null ? 1 : 0
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+# Create AWS key pair (from provided or generated public key)
+resource "aws_key_pair" "rate_limiter" {
+  count      = var.create_key_pair ? 1 : 0
+  key_name   = local.key_pair_name
+  public_key = var.public_key != null ? var.public_key : tls_private_key.rate_limiter[0].public_key_openssh
+
+  tags = local.common_tags
+}
+
+# Store auto-generated private key in SSM Parameter Store
+resource "aws_ssm_parameter" "rate_limiter_private_key" {
+  count       = var.create_key_pair && var.public_key == null ? 1 : 0
+  name        = "/${var.environment}/${var.project_name}/ratelimiter/ssh-private-key"
+  description = "Auto-generated SSH private key for rate limiter instances"
+  type        = "SecureString"
+  value       = tls_private_key.rate_limiter[0].private_key_pem
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-private-key"
+    }
+  )
+}
+
+# =========================================================================
 # IAM Role for Rate Limiter Instances
 # =========================================================================
 module "iam_role" {
@@ -363,7 +398,7 @@ resource "aws_launch_template" "this" {
   description   = "Launch template for rate limiter instances"
   image_id      = local.ami_id
   instance_type = var.instance_type
-  key_name      = var.key_name
+  key_name      = local.key_name
 
   vpc_security_group_ids = [module.asg_security_group.security_group_id]
   user_data              = base64encode(local.userdata_content)

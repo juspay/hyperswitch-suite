@@ -33,11 +33,8 @@ export ADDITIONAL_OUTBOUND_PORTS="${additional_outbound_ports}"
 export RATELIMIT_ENV_CONFIG_FILE_PATH="${ratelimit_env_config_file_path}"
 export RATELIMIT_DESCRIPTOR_FILE_PATH="${ratelimit_descriptor_file_path}"
 
-# ElastiCache connection info
-export ELASTICACHE_ENABLED="${elasticache_enabled}"
-export ELASTICACHE_PRIMARY_ENDPOINT="${elasticache_primary_endpoint}"
-export ELASTICACHE_READER_ENDPOINT="${elasticache_reader_endpoint}"
-export ELASTICACHE_PORT="${elasticache_port}"
+# Redis URL for ratelimit service
+export REDIS_URL="${redis_url}"
 MAPPING_EOF
 
 chmod +x /home/ubuntu/mapping.sh

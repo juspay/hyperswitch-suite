@@ -22,6 +22,10 @@ locals {
   config_bucket_name = var.create_config_bucket ? module.config_bucket[0].s3_bucket_id : var.config_bucket_name
   config_bucket_arn  = var.create_config_bucket ? module.config_bucket[0].s3_bucket_arn : var.config_bucket_arn
 
+  # SSH Key Pair configuration
+  key_name      = var.create_key_pair ? aws_key_pair.rate_limiter[0].key_name : var.key_name
+  key_pair_name = var.key_name != null ? var.key_name : "${local.name_prefix}-key"
+
   # Rate limiter config file paths in S3 - constructed internally from bucket and filenames
   ratelimit_env_config_file_path = "s3://${local.config_bucket_name}/${var.ratelimit_env_config_filename}"
   ratelimit_descriptor_file_path = "s3://${local.config_bucket_name}/${var.ratelimit_descriptor_filename}"
@@ -68,6 +72,9 @@ locals {
     elasticache_primary_endpoint = var.elasticache_config.enabled ? module.elasticache[0].replication_group_primary_endpoint_address : ""
     elasticache_reader_endpoint  = var.elasticache_config.enabled ? module.elasticache[0].replication_group_reader_endpoint_address : ""
     elasticache_port             = var.elasticache_config.enabled ? module.elasticache[0].replication_group_port : var.elasticache_config.port
+
+    # Redis URL for ratelimit service
+    redis_url = var.elasticache_config.enabled ? "${module.elasticache[0].replication_group_primary_endpoint_address}:${module.elasticache[0].replication_group_port}" : ""
   })
 
   # Health check port defaults to traffic_port if not specified

@@ -285,7 +285,23 @@ variable "instance_type" {
 }
 
 variable "key_name" {
-  description = "Key pair name for SSH access"
+  description = "SSH key pair name. Required if create_key_pair is false. If create_key_pair is true and this is provided, it will be used as the name for the new key pair; otherwise an auto-generated name will be used"
+  type        = string
+  default     = null
+  validation {
+    condition     = var.create_key_pair || var.key_name != null
+    error_message = "key_name must be provided when create_key_pair is false"
+  }
+}
+
+variable "create_key_pair" {
+  description = "Whether to create a new SSH key pair. If true and public_key is not provided, a new key pair will be auto-generated and the private key will be stored in SSM Parameter Store"
+  type        = bool
+  default     = false
+}
+
+variable "public_key" {
+  description = "Public key material for creating new SSH key pair. Optional - if not provided when create_key_pair is true, a new key pair will be auto-generated and the private key will be stored in SSM Parameter Store"
   type        = string
   default     = null
 }
