@@ -219,16 +219,6 @@ module "vpc_endpoint_sg" {
     }
   ]
 
-  egress_rules = [
-    {
-      description = "Allow all outbound"
-      from_port   = -1
-      to_port     = -1
-      protocol    = "-1"
-      cidr_blocks = ["0.0.0.0/0"]
-    }
-  ]
-
   tags = merge(
     var.tags,
     {
