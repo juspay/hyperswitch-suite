@@ -452,6 +452,18 @@ resource "aws_lb_listener" "envoy_https" {
 }
 
 # =========================================================================
+# Additional SSL Certificates for SNI Support
+# =========================================================================
+# Attach additional certificates to the HTTPS listener using Server Name Indication (SNI).
+# This allows the ALB to serve different certificates for different domains on the same port.
+resource "aws_lb_listener_certificate" "additional" {
+  for_each = var.create_lb && var.enable_https_listener ? toset(var.additional_certificate_arns) : []
+
+  listener_arn    = aws_lb_listener.envoy_https[0].arn
+  certificate_arn = each.value
+}
+
+# =========================================================================
 # Advanced Listener Rules (Header-based routing, path-based routing, etc.)
 # =========================================================================
 # Apply custom rules to HTTPS listener if enabled, otherwise to HTTP listener
