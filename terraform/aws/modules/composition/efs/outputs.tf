@@ -86,6 +86,12 @@ output "access_point_file_system_arns" {
   }
 }
 
+# Security Group Outputs
+output "security_group_ids" {
+  description = "Map of file system keys to their created security group IDs"
+  value       = { for k, v in module.efs : k => v.security_group_id }
+}
+
 # Convenience Outputs
 output "region" {
   description = "AWS region where EFS resources are created"

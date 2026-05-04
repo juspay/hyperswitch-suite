@@ -13,6 +13,7 @@ locals {
   # Map service account role short names to module outputs
   service_account_role_map = {
     "ebs_csi" = module.ebs_csi_irsa.iam_role_arn
+    "efs_csi" = module.efs_csi_irsa.iam_role_arn
   }
 }
 
