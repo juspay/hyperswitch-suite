@@ -147,13 +147,13 @@ variable "health_check_port" {
 variable "health_check_protocol" {
   description = "Protocol for health checks (TCP, HTTP, HTTPS)"
   type        = string
-  default     = "TCP"
+  default     = "HTTP"
 }
 
 variable "health_check_path" {
   description = "Path for HTTP/HTTPS health checks"
   type        = string
-  default     = "/health"
+  default     = "/healthcheck"
 }
 
 variable "health_check_matcher" {
