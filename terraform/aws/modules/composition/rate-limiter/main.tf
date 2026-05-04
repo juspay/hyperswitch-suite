@@ -590,10 +590,11 @@ module "elasticache" {
   tags         = local.common_tags
 
   # Engine Configuration
-  engine               = var.elasticache_config.engine
-  engine_version       = var.elasticache_config.engine_version
-  parameter_group_name = var.elasticache_config.parameter_group_name
-  port                 = var.elasticache_config.port
+  elasticache_replication_group_id = var.elasticache_config.elasticache_replication_group_id
+  engine                           = var.elasticache_config.engine
+  engine_version                   = var.elasticache_config.engine_version
+  parameter_group_name             = var.elasticache_config.parameter_group_name
+  port                             = var.elasticache_config.port
 
   # Node Configuration
   node_type               = var.elasticache_config.node_type
