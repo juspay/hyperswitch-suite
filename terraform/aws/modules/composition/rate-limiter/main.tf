@@ -130,17 +130,15 @@ resource "aws_s3_object" "rate_limiter_config_files" {
 
   bucket  = local.config_bucket_name
   key     = each.value
-  content = templatefile(
-    "${var.config_files_source_path}/${each.value}",
-    {
-      redis_url = local.redis_url_actual
-    }
+  content = replace(
+    file("${var.config_files_source_path}/${each.value}"),
+    "{{redis_url}}",
+    local.redis_url_actual
   )
-  etag = md5(templatefile(
-    "${var.config_files_source_path}/${each.value}",
-    {
-      redis_url = local.redis_url_actual
-    }
+  etag = md5(replace(
+    file("${var.config_files_source_path}/${each.value}"),
+    "{{redis_url}}",
+    local.redis_url_actual
   ))
 
   tags = local.common_tags
