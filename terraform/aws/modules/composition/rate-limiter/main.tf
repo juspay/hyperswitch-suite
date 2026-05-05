@@ -209,6 +209,19 @@ resource "aws_security_group_rule" "nlb_egress_to_asg" {
   description              = "Allow traffic from NLB to ASG instances"
 }
 
+# Egress from NLB to ASG for health checks
+resource "aws_security_group_rule" "nlb_egress_healthcheck" {
+  count = var.create_nlb && local.health_check_port != var.traffic_port ? 1 : 0
+
+  security_group_id        = aws_security_group.nlb[0].id
+  type                     = "egress"
+  from_port                = local.health_check_port
+  to_port                  = local.health_check_port
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.asg.id
+  description              = "Allow health checks from NLB to ASG instances"
+}
+
 # =========================================================================
 # ASG Security Group Rules
 # =========================================================================
