@@ -355,7 +355,7 @@ resource "aws_lb" "this" {
 resource "aws_lb_target_group" "this" {
   count = var.create_nlb ? 1 : 0
 
-  name                 = "${local.name_prefix}-tg"
+  name_prefix          = "${substr(local.name_prefix, 0, 6)}-"  # Must be 6 chars max for name_prefix
   port                 = var.traffic_port
   protocol             = var.target_group_protocol
   vpc_id               = var.vpc_id
@@ -380,6 +380,10 @@ resource "aws_lb_target_group" "this" {
       Name = "${local.name_prefix}-tg"
     }
   )
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # =========================================================================
