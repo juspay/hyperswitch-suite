@@ -657,3 +657,9 @@ variable "elasticache_config" {
   })
   default = {}
 }
+
+variable "custom_redis_url" {
+  description = "Custom Redis URL to use when ElastiCache is disabled (elasticache_config.enabled = false). If provided, this will be used instead of the auto-generated ElastiCache endpoint. Format: host:port"
+  type        = string
+  default     = "localhost:6379"
+}
