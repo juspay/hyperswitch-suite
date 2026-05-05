@@ -128,10 +128,10 @@ module "config_bucket" {
 resource "aws_s3_object" "rate_limiter_config_files" {
   for_each = var.upload_config_to_s3 ? fileset(var.config_files_source_path, "**") : []
 
-  bucket = local.config_bucket_name
-  key    = each.value
-  source = "${var.config_files_source_path}/${each.value}"
-  etag   = filemd5("${var.config_files_source_path}/${each.value}")
+  bucket  = local.config_bucket_name
+  key     = each.value
+  content = file("${var.config_files_source_path}/${each.value}")
+  etag    = filemd5("${var.config_files_source_path}/${each.value}")
 
   tags = local.common_tags
 }
