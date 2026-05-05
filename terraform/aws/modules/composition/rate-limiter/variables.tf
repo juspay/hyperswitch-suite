@@ -634,7 +634,7 @@ variable "elasticache_config" {
     subnet_ids                       = optional(list(string), [])
     engine                           = optional(string, "valkey")
     engine_version                   = optional(string, "8.2")
-    parameter_group_name             = optional(string, "default.valkey8.cluster.on")
+    parameter_group_name             = optional(string, "default.valkey8")
     port                             = optional(number, 6379)
     node_type                        = optional(string, "cache.t3.small")
     num_cache_clusters               = optional(number, 2)
