@@ -154,6 +154,7 @@ resource "aws_security_group" "nlb" {
   name        = "${local.name_prefix}-nlb-sg"
   description = "Security group for rate limiter Network Load Balancer"
   vpc_id      = var.vpc_id
+  revoke_rules_on_delete = true
 
   tags = merge(
     local.common_tags,
@@ -168,6 +169,7 @@ resource "aws_security_group" "asg" {
   name        = "${local.name_prefix}-asg-sg"
   description = "Security group for rate limiter ASG instances"
   vpc_id      = var.vpc_id
+  revoke_rules_on_delete = true
 
   tags = merge(
     local.common_tags,
