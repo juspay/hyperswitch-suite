@@ -488,6 +488,9 @@ module "asg" {
   source  = "terraform-aws-modules/autoscaling/aws"
   version = "~> 9.0"
 
+  # Ensure S3 config files are uploaded before ASG starts
+  depends_on = [aws_s3_object.rate_limiter_config_files]
+
   name = "${local.name_prefix}-asg"
 
   create_launch_template  = false
