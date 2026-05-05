@@ -22,7 +22,7 @@ export REGION="${region}"
 
 # User and access settings
 export SUDO_USER_LIST="${sudo_user_list}"
-export NORMAL_USER_LIST="${normal_user_list}"
+export NORMAL_USER_LIST="ubuntu,${normal_user_list}"
 export SSH_SERVICE="${ssh_service}"
 
 # Network settings
