@@ -141,7 +141,7 @@ variable "deregistration_delay" {
 variable "health_check_port" {
   description = "Port for health checks (defaults to traffic_port if not set)"
   type        = number
-  default     = null
+  default     = 8090
 }
 
 variable "health_check_protocol" {
