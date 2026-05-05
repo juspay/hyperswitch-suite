@@ -332,7 +332,7 @@ variable "userdata_config" {
 
     # User and access settings
     sudo_user_list   = optional(string, "")
-    normal_user_list = optional(string, "NA")
+    normal_user_list = optional(string, "ubuntu")
     ssh_service      = optional(string, "SSM")
 
     # Network settings
