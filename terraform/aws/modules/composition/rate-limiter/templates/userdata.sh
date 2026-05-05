@@ -32,9 +32,6 @@ export ADDITIONAL_OUTBOUND_PORTS="${additional_outbound_ports}"
 # Application configuration paths
 export RATELIMIT_ENV_CONFIG_FILE_PATH="${ratelimit_env_config_file_path}"
 export RATELIMIT_DESCRIPTOR_FILE_PATH="${ratelimit_descriptor_file_path}"
-
-# Redis URL for ratelimit service
-export REDIS_URL="${redis_url}"
 MAPPING_EOF
 
 chmod +x /home/ubuntu/mapping.sh
