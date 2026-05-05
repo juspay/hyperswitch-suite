@@ -36,9 +36,9 @@ locals {
   # Determine instance profile name
   instance_profile_name = var.create_iam_role ? module.iam_role[0].iam_instance_profile_name : var.iam_instance_profile_name
 
-  # Determine launch template ID and version
+  # Determine launch template ID and version - always use latest version
   launch_template_id      = var.use_existing_launch_template ? var.existing_launch_template_id : aws_launch_template.this[0].id
-  launch_template_version = var.use_existing_launch_template ? var.existing_launch_template_version : aws_launch_template.this[0].default_version
+  launch_template_version = var.use_existing_launch_template ? var.existing_launch_template_version : aws_launch_template.this[0].latest_version
 
   # User data content - render template with configurable values
   userdata_content = var.user_data != null ? var.user_data : templatefile("${path.module}/templates/userdata.sh", {

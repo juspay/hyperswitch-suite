@@ -28,7 +28,7 @@ descriptors:
       unit: minute
       requests_per_unit: 100
 
-  # Path based limits  
+  # Path based limits
   - key: path
     value: /api/v1/health
     rate_limit:
