@@ -17,8 +17,8 @@ output "lb_security_group_id" {
   value       = aws_security_group.lb_security_group[*].id
 }
 
-output "host_domains" {
-  description = "List of host domains for Istio Gateway"
+output "host_domains_map" {
+  description = "Map of environment names to list of host domains for Istio Gateway"
   value       = var.host_domains
 }
 

@@ -111,9 +111,9 @@ variable "ingress_annotations" {
 }
 
 variable "host_domains" {
-  description = "Optional list of host domains for the Istio Gateway. Used only for exposing values in module outputs."
-  type        = list(string)
-  default     = []
+  description = "Map of environment names to list of host domains for the Istio Gateway. Example: { integ = ['integ.example.com'], sandbox = ['sandbox.example.com'] }"
+  type        = map(list(string))
+  default     = {}
 }
 
 # ============================================================================
