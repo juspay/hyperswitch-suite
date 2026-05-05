@@ -159,3 +159,11 @@ output "lambda_function_arns" {
   description = "List of Lambda function ARNs configured for access"
   value       = local.lambda_function_arns
 }
+
+# =========================================================================
+# ADDITIONAL IAM POLICIES OUTPUTS
+# =========================================================================
+output "additional_iam_policies_arns" {
+  description = "Map of additional IAM policy ARNs (key = policy name suffix, value = ARN)"
+  value       = { for k, v in aws_iam_policy.additional : k => v.arn }
+}

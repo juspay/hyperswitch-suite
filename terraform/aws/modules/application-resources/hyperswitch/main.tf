@@ -329,3 +329,22 @@ resource "aws_iam_role_policy_attachment" "lambda_policy_attachment" {
   role       = aws_iam_role.iam_role.name
   policy_arn = aws_iam_policy.lambda_policy[0].arn
 }
+
+# =========================================================================
+# IAM - ADDITIONAL POLICIES
+# =========================================================================
+resource "aws_iam_policy" "additional" {
+  for_each = var.additional_iam_policies
+
+  name   = "${local.name_prefix}-${each.key}"
+  policy = each.value.policy
+
+  tags = local.common_tags
+}
+
+resource "aws_iam_role_policy_attachment" "additional" {
+  for_each = var.additional_iam_policies
+
+  role       = aws_iam_role.iam_role.name
+  policy_arn = aws_iam_policy.additional[each.key].arn
+}
