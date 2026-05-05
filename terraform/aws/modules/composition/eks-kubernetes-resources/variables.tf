@@ -88,9 +88,18 @@ variable "default_storage_class_name" {
   default     = "ebs-gp3"
 }
 
-# -----------------------------------------------------------------------------
-# Cluster Autoscaler Configuration
-# -----------------------------------------------------------------------------
+variable "custom_storage_classes" {
+  description = "Map of additional custom storage classes to create"
+  type = map(object({
+    storage_provisioner    = string
+    volume_binding_mode    = optional(string, "Immediate")
+    reclaim_policy         = optional(string, "Retain")
+    allow_volume_expansion = optional(bool, false)
+    parameters             = optional(map(string), {})
+    annotations            = optional(map(string), {})
+  }))
+  default = {}
+}
 variable "enable_cluster_autoscaler" {
   description = "Whether to deploy Cluster Autoscaler Kubernetes resources"
   type        = bool
