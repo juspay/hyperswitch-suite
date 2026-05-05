@@ -380,10 +380,6 @@ resource "aws_lb_target_group" "this" {
       Name = "${local.name_prefix}-tg"
     }
   )
-
-  lifecycle {
-    create_before_destroy = true
-  }
 }
 
 # =========================================================================
