@@ -355,7 +355,7 @@ resource "aws_lb" "this" {
 resource "aws_lb_target_group" "this" {
   count = var.create_nlb ? 1 : 0
 
-  name                 = "${substr(local.name_prefix, 0, 19)}-tg-${substr(md5("${var.target_group_protocol}-${var.traffic_port}"), 0, 6)}"
+  name                 = "${local.name_prefix}-tg"
   port                 = var.traffic_port
   protocol             = var.target_group_protocol
   vpc_id               = var.vpc_id
@@ -380,10 +380,6 @@ resource "aws_lb_target_group" "this" {
       Name = "${local.name_prefix}-tg"
     }
   )
-
-  lifecycle {
-    create_before_destroy = true
-  }
 }
 
 # =========================================================================
