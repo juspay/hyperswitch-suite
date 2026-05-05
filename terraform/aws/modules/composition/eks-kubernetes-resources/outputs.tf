@@ -23,6 +23,11 @@ output "default_storage_class_name" {
   value       = var.create_default_storage_class ? var.default_storage_class_name : null
 }
 
+output "custom_storage_class_names" {
+  description = "Names of the custom storage classes created"
+  value       = keys(var.custom_storage_classes)
+}
+
 # -----------------------------------------------------------------------------
 # Cluster Autoscaler Outputs
 # -----------------------------------------------------------------------------
