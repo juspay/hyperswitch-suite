@@ -149,34 +149,32 @@ resource "aws_s3_object" "rate_limiter_config_files" {
 # =========================================================================
 
 # Security Group for NLB
-module "nlb_security_group" {
-  count   = var.create_nlb ? 1 : 0
-  source  = "terraform-aws-modules/security-group/aws"
-  version = "~> 5.0"
-
+resource "aws_security_group" "nlb" {
+  count       = var.create_nlb ? 1 : 0
   name        = "${local.name_prefix}-nlb-sg"
   description = "Security group for rate limiter Network Load Balancer"
   vpc_id      = var.vpc_id
 
-  egress_rules  = []
-  ingress_rules = []
-
-  tags = local.common_tags
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-nlb-sg"
+    }
+  )
 }
 
 # Security Group for ASG Instances
-module "asg_security_group" {
-  source  = "terraform-aws-modules/security-group/aws"
-  version = "~> 5.0"
-
+resource "aws_security_group" "asg" {
   name        = "${local.name_prefix}-asg-sg"
   description = "Security group for rate limiter ASG instances"
   vpc_id      = var.vpc_id
 
-  egress_rules  = []
-  ingress_rules = []
-
-  tags = local.common_tags
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-asg-sg"
+    }
+  )
 }
 
 # =========================================================================
@@ -187,7 +185,7 @@ module "asg_security_group" {
 resource "aws_security_group_rule" "nlb_ingress" {
   for_each = var.create_nlb ? var.nlb_ingress_rules : {}
 
-  security_group_id = module.nlb_security_group[0].security_group_id
+  security_group_id = aws_security_group.nlb[0].id
   type              = "ingress"
   from_port         = each.value.from_port
   to_port           = each.value.to_port
@@ -200,12 +198,12 @@ resource "aws_security_group_rule" "nlb_ingress" {
 resource "aws_security_group_rule" "nlb_egress_to_asg" {
   count = var.create_nlb ? 1 : 0
 
-  security_group_id        = module.nlb_security_group[0].security_group_id
+  security_group_id        = aws_security_group.nlb[0].id
   type                     = "egress"
   from_port                = var.traffic_port
   to_port                  = var.traffic_port
   protocol                 = "tcp"
-  source_security_group_id = module.asg_security_group.security_group_id
+  source_security_group_id = aws_security_group.asg.id
   description              = "Allow traffic from NLB to ASG instances"
 }
 
@@ -217,12 +215,12 @@ resource "aws_security_group_rule" "nlb_egress_to_asg" {
 resource "aws_security_group_rule" "asg_ingress_from_nlb" {
   count = var.create_nlb ? 1 : 0
 
-  security_group_id        = module.asg_security_group.security_group_id
+  security_group_id        = aws_security_group.asg.id
   type                     = "ingress"
   from_port                = var.traffic_port
   to_port                  = var.traffic_port
   protocol                 = "tcp"
-  source_security_group_id = module.nlb_security_group[0].security_group_id
+  source_security_group_id = aws_security_group.nlb[0].id
   description              = "Allow traffic from NLB"
 }
 
@@ -230,12 +228,12 @@ resource "aws_security_group_rule" "asg_ingress_from_nlb" {
 resource "aws_security_group_rule" "asg_ingress_healthcheck" {
   count = var.create_nlb && local.health_check_port != var.traffic_port ? 1 : 0
 
-  security_group_id        = module.asg_security_group.security_group_id
+  security_group_id        = aws_security_group.asg.id
   type                     = "ingress"
   from_port                = local.health_check_port
   to_port                  = local.health_check_port
   protocol                 = "tcp"
-  source_security_group_id = module.nlb_security_group[0].security_group_id
+  source_security_group_id = aws_security_group.nlb[0].id
   description              = "Allow health checks from NLB"
 }
 
@@ -243,7 +241,7 @@ resource "aws_security_group_rule" "asg_ingress_healthcheck" {
 resource "aws_security_group_rule" "asg_ingress" {
   for_each = var.asg_ingress_rules
 
-  security_group_id = module.asg_security_group.security_group_id
+  security_group_id = aws_security_group.asg.id
   type              = "ingress"
   from_port         = each.value.from_port
   to_port           = each.value.to_port
@@ -256,7 +254,7 @@ resource "aws_security_group_rule" "asg_ingress" {
 resource "aws_security_group_rule" "asg_egress" {
   for_each = var.asg_egress_rules
 
-  security_group_id = module.asg_security_group.security_group_id
+  security_group_id = aws_security_group.asg.id
   type              = "egress"
   from_port         = each.value.from_port
   to_port           = each.value.to_port
@@ -267,7 +265,7 @@ resource "aws_security_group_rule" "asg_egress" {
 
 # Egress to S3 (HTTPS) via VPC Endpoint prefix list
 resource "aws_security_group_rule" "asg_egress_to_s3" {
-  security_group_id = module.asg_security_group.security_group_id
+  security_group_id = aws_security_group.asg.id
   type              = "egress"
   from_port         = 443
   to_port           = 443
@@ -280,7 +278,7 @@ resource "aws_security_group_rule" "asg_egress_to_s3" {
 resource "aws_security_group_rule" "asg_egress_to_elasticache" {
   count = var.elasticache_config.enabled ? 1 : 0
 
-  security_group_id        = module.asg_security_group.security_group_id
+  security_group_id        = aws_security_group.asg.id
   type                     = "egress"
   from_port                = var.elasticache_config.port
   to_port                  = var.elasticache_config.port
@@ -298,7 +296,7 @@ resource "aws_security_group_rule" "elasticache_ingress_from_asg" {
   from_port                = var.elasticache_config.port
   to_port                  = var.elasticache_config.port
   protocol                 = "tcp"
-  source_security_group_id = module.asg_security_group.security_group_id
+  source_security_group_id = aws_security_group.asg.id
   description              = "Allow inbound traffic from rate limiter instances"
 }
 
@@ -312,6 +310,9 @@ resource "aws_lb" "this" {
   internal           = var.internal
   load_balancer_type = "network"
   subnets            = var.nlb_subnet_ids
+
+  # Security groups for NLB (supported in newer AWS regions)
+  security_groups = [aws_security_group.nlb[0].id]
 
   enable_cross_zone_load_balancing = var.enable_cross_zone_load_balancing
   enable_deletion_protection       = var.enable_deletion_protection
@@ -408,7 +409,7 @@ resource "aws_launch_template" "this" {
   instance_type = var.instance_type
   key_name      = local.key_name
 
-  vpc_security_group_ids = [module.asg_security_group.security_group_id]
+  vpc_security_group_ids = [aws_security_group.asg.id]
   user_data              = base64encode(local.userdata_content)
 
   iam_instance_profile {

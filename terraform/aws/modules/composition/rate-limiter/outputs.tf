@@ -54,22 +54,22 @@ output "target_group_name" {
 # =========================================================================
 output "nlb_security_group_id" {
   description = "ID of the NLB security group"
-  value       = var.create_nlb ? module.nlb_security_group[0].security_group_id : null
+  value       = var.create_nlb ? aws_security_group.nlb[0].id : null
 }
 
 output "nlb_security_group_arn" {
   description = "ARN of the NLB security group"
-  value       = var.create_nlb ? module.nlb_security_group[0].security_group_arn : null
+  value       = var.create_nlb ? aws_security_group.nlb[0].arn : null
 }
 
 output "asg_security_group_id" {
   description = "ID of the ASG security group"
-  value       = module.asg_security_group.security_group_id
+  value       = aws_security_group.asg.id
 }
 
 output "asg_security_group_arn" {
   description = "ARN of the ASG security group"
-  value       = module.asg_security_group.security_group_arn
+  value       = aws_security_group.asg.arn
 }
 
 # =========================================================================
