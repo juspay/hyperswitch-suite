@@ -140,3 +140,16 @@ variable "s3_bucket" {
   })
   default = {}
 }
+
+# =========================================================================
+# Feature: SES (Simple Email Service)
+# =========================================================================
+
+variable "ses" {
+  description = "SES configuration. Set to {} to disable SES policy. Only accepts existing SES role ARN (does NOT create SES resources)."
+  type = object({
+    enabled  = optional(bool, false)  # Set true to enable SES policy
+    role_arn = optional(string, null) # Existing SES role ARN to assume
+  })
+  default = {}
+}

@@ -46,4 +46,8 @@ locals {
 
   # S3 bucket feature
   s3_bucket_create = try(var.s3_bucket.enabled, false)
+
+  # SES feature
+  ses_enabled  = try(var.ses.enabled, false)
+  ses_role_arn = local.ses_enabled ? try(var.ses.role_arn, null) : null
 }
