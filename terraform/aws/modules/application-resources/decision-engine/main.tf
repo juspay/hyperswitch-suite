@@ -75,3 +75,61 @@ resource "aws_iam_role_policy" "inline" {
   role   = aws_iam_role.this.name
   policy = each.value
 }
+
+# =========================================================================
+# IAM - SES POLICY
+# =========================================================================
+resource "aws_iam_policy" "ses_policy" {
+  count = local.ses_enabled ? 1 : 0
+
+  name = "${local.name_prefix}-ses-policy"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = concat(
+      # SES role assumption
+      local.ses_role_arn != null ? [
+        {
+          Sid    = "AllowSESRoleAssume"
+          Effect = "Allow"
+          Action = [
+            "sts:AssumeRole"
+          ]
+          Resource = local.ses_role_arn
+        },
+        {
+          Sid    = "AllowSESTokenOperations"
+          Effect = "Allow"
+          Action = [
+            "sts:GetSessionToken",
+            "sts:GetServiceBearerToken"
+          ]
+          Resource = local.ses_role_arn
+        }
+      ] : [],
+      # SES API operations
+      [
+        {
+          Sid    = "AllowSESOperations"
+          Effect = "Allow"
+          Action = [
+            "ses:ListTemplates",
+            "ses:SendEmail",
+            "ses:SendTemplatedEmail",
+            "ses:SendRawEmail",
+            "ses:ListVerifiedEmailAddresses"
+          ]
+          Resource = "*"
+        }
+      ]
+    )
+  })
+
+  tags = local.common_tags
+}
+
+resource "aws_iam_role_policy_attachment" "ses_policy_attachment" {
+  count = local.ses_enabled ? 1 : 0
+
+  role       = aws_iam_role.this.name
+  policy_arn = aws_iam_policy.ses_policy[0].arn
+}
