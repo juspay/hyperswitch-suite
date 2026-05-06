@@ -62,17 +62,26 @@ class APICalls(SequentialTaskSet):
                         headers={
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
-                            'api-key' : api_key
-                        })
+                            'api-key' : api_key,
+                            'x-Tenant-ID': 'public'
+                        },
+                        timeout=10)
         if response.status_code == 200:
             self.payment_id = json.loads(response.text)["payment_id"]
         else:
-            error_message = response.json().get("error", "Unknown error")
-            print(error_message)
+            self.payment_id = ""
+            try:
+                error_message = response.json().get("error", "Unknown error")
+                print(error_message)
+            except Exception:
+                print(f"Payment create failed with status {response.status_code}")
 
     @task
     def payment_confirm(self):
         global sample_payment_id, sample_log_captured
+
+        if not self.payment_id:
+            return
 
         payload = json.dumps({
             "payment_method": "card",
@@ -81,7 +90,7 @@ class APICalls(SequentialTaskSet):
                 "card": {
                     "card_number": "4242424242424242",
                     "card_exp_month": "10",
-                    "card_exp_year": "25",
+                    "card_exp_year": "30",
                     "card_holder_name": "joseph Doe",
                     "card_cvc": "123"
                 }
@@ -101,8 +110,10 @@ class APICalls(SequentialTaskSet):
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
                             'api-key' : api_key,
-                            'x-hs-latency' : 'true'
-                        })
+                            'x-hs-latency' : 'true',
+                            'x-Tenant-ID': 'public'
+                        },
+                        timeout=10)
         x_hs_latency = response.headers.get('x-hs-latency')
         print(x_hs_latency)
 
@@ -132,8 +143,11 @@ class APICalls(SequentialTaskSet):
             status = json.loads(response.text)["status"]
             print("Payment status: ", status)
         else:
-            error_message = response.json().get("error", "Unknown error")
-            print(error_message)
+            try:
+                error_message = response.json().get("error", "Unknown error")
+                print(error_message)
+            except Exception:
+                print(f"Payment confirm failed with status {response.status_code}")
 
 
 def save_load_test_results():

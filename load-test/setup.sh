@@ -65,29 +65,49 @@ echo -e "${GREEN}✔ Python3 and pip3 are installed.${RESET}"
 
 print_section "Setting Up Virtual Environment"
 
-# Create virtual environment
-python3 -m venv test_env
+# Remove stale venv if it exists (interrupted installs leave broken state)
+if [ -d "test_env" ]; then
+    echo -e "${YELLOW}Removing existing virtual environment...${RESET}"
+    rm -rf test_env
+fi
+
+# Create virtual environment (use python3.13 if available, python3.14 has broken ensurepip)
+PYTHON_CMD="python3"
+if command -v python3.13 &>/dev/null; then
+    PYTHON_CMD="python3.13"
+fi
+$PYTHON_CMD -m venv test_env
 echo -e "${GREEN}✔ Virtual environment 'test_env' created.${RESET}"
 
-# Activate the virtual environment
-source "test_env/bin/activate"
-echo -e "${GREEN}✔ Virtual environment activated.${RESET}"
+# Use venv binaries directly instead of source activate (more reliable in scripts)
+VENV_PYTHON="test_env/bin/python3"
+VENV_PIP="test_env/bin/pip"
 
 # Upgrade pip
-pip install --upgrade pip >/dev/null 2>&1
+if ! "$VENV_PIP" install --upgrade pip >/dev/null 2>&1; then
+    echo -e "${RED}✘ Failed to upgrade pip. Check network connection and try again.${RESET}"
+    exit 1
+fi
 echo -e "${GREEN}✔ Pip upgraded.${RESET}\n"
 
 # Install dependencies
 if [ -f "requirements.txt" ]; then
-    echo -e "${YELLOW}Installing dependencies from requirements.txt...${RESET}"
-    pip install --requirement requirements.txt | grep --invert-match --extended-regexp "Requirement already satisfied|already installed"
+    echo -e "${YELLOW}Installing dependencies from requirements.txt (this may take a few minutes)...${RESET}"
+    if ! "$VENV_PIP" install --progress-bar on --requirement requirements.txt; then
+        echo -e "${RED}✘ Failed to install dependencies. Check network connection and try again.${RESET}"
+        exit 1
+    fi
     echo -e "${GREEN}✔ Dependencies installed.${RESET}"
 else
     echo -e "${RED}No requirements.txt found. Skipping dependency installation.${RESET}"
 fi
 
-# Install Playwright browsers silently
-playwright install >/dev/null 2>&1
+echo -e "${YELLOW}Installing Playwright browsers...${RESET}"
+if ! test_env/bin/playwright install --with-deps chromium; then
+    echo -e "${RED}✘ Failed to install Playwright browsers. Check network connection and try again.${RESET}"
+    exit 1
+fi
+echo -e "${GREEN}✔ Playwright browsers installed.${RESET}"
 
 echo -e "\n${GREEN}✔ Virtual environment 'test_env' is set up and activated.${RESET}"
 echo -e "To activate it later, use: ${CYAN}source test_env/bin/activate${RESET}\n"
@@ -104,13 +124,13 @@ collect_input() {
     local example="$3"
 
     if [[ -n "$example" ]]; then
-        echo -e "➡ Enter $prompt $example: \c"
+        printf "➡ Enter $prompt $example: "
     else
-        echo -e "➡ Enter $prompt: \c"
+        printf "➡ Enter $prompt: "
     fi
 
     read -r value
-    echo "$key=\"$value\"" >>.env
+    printf '%s="%s"\n' "$key" "$value" >>.env
 }
 
 # Collect main credentials
@@ -222,7 +242,7 @@ echo -e "${GREEN}✔ Credentials stored in .env file securely.${RESET}\n"
 
 # Run Python script and exit if it fails
 echo -e "${YELLOW}Running script.py...${RESET}\n"
-if ! python3 script.py; then
+if ! "$VENV_PYTHON" script.py; then
     echo -e "${RED}❌ script.py failed! Exiting.${RESET}"
     exit 1
 fi

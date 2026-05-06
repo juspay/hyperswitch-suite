@@ -10,7 +10,6 @@ import requests
 import json
 import fitz
 import shutil
-from tqdm import tqdm
 from pathlib import Path
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -142,6 +141,39 @@ def calculator(regular_transactions, spike_transactions, scaling_factor):
     """
     return html_content
 
+SPINNER_FRAMES = ["⠋","⠙","⠹","⠸","⠼","⠴","⠦","⠧","⠇","⠏"]
+_spinner_task = None
+_spinner_msg = ""
+
+async def _spin():
+    global _spinner_msg
+    i = 0
+    while True:
+        print(f"\r  {SPINNER_FRAMES[i % len(SPINNER_FRAMES)]} {_spinner_msg}   ", end="", flush=True)
+        i += 1
+        await asyncio.sleep(0.12)
+
+def start_spinner(msg):
+    global _spinner_task, _spinner_msg
+    _spinner_msg = msg
+    if _spinner_task is None or _spinner_task.done():
+        _spinner_task = asyncio.ensure_future(_spin())
+
+def update_spinner(msg):
+    global _spinner_msg
+    _spinner_msg = msg
+
+def stop_spinner(final_msg=""):
+    global _spinner_task
+    if _spinner_task and not _spinner_task.done():
+        _spinner_task.cancel()
+        _spinner_task = None
+    clear = " " * 60
+    if final_msg:
+        print(f"\r  ✅ {final_msg}{clear}")
+    else:
+        print(f"\r{clear}", end="\r")
+
 # Function to get storage usage through manual input
 def get_storage_usage_manual(input_string):
     return float(input(f"\n{YELLOW}You can run this psql query to get the storage used in bytes!{RESET}\n{CYAN}{PSQL_QUERY}{RESET}{input_string}"))
@@ -257,16 +289,29 @@ async def query_loki_logs(payment_id, output_filename, duration_minutes=10):
         print(f"❌ Error querying Loki logs: {e}")
 
 # Function to create merchant account for hyperswitch
-def run_merchant_create(test_spec):
+def run_merchant_create(test_spec, max_attempts=3):
     """Runs the merchant_create.py script and waits for completion."""
     print(f"\n🔹 Creating Merchant for {test_spec} testing...")
-    try:
-        result = subprocess.run([sys.executable, "merchant_create.py"], capture_output=True, text=True, check=True)
-        time.sleep(2)
-        print("  ✅ Merchant created successfully.")
-    except subprocess.CalledProcessError as e:
-        print(f"Error running merchant_create.py: {e.stderr}")
-        sys.exit(1)  # Exit the script if merchant_create.py fails
+    for attempt in range(1, max_attempts + 1):
+        try:
+            result = subprocess.run([sys.executable, "merchant_create.py"], capture_output=True, text=True, check=True, stdin=subprocess.DEVNULL)
+            time.sleep(2)
+            print("  ✅ Merchant created successfully.")
+            return
+        except subprocess.CalledProcessError as e:
+            print(f"  ⚠ Attempt {attempt}/{max_attempts} failed")
+            if e.stdout:
+                for line in e.stdout.strip().split('\n')[-5:]:
+                    print(f"    {line}")
+            if attempt < max_attempts:
+                wait = 5 * attempt
+                print(f"  ⏳ Retrying in {wait}s...")
+                time.sleep(wait)
+            else:
+                print(f"Error running merchant_create.py:\n{e.stderr}")
+                if e.stdout:
+                    print(f"Output:\n{e.stdout}")
+                sys.exit(1)
 
 # Function to run Locust load test
 async def run_locust(test_spec, users,run_time, file_name):
@@ -278,17 +323,17 @@ async def run_locust(test_spec, users,run_time, file_name):
     if os.getenv('GEN_SAMPLE_LOG', 'false').lower() == 'true':
         env['GEN_SAMPLE_LOG'] = 'true'
 
-    subprocess.Popen([
-        "locust", "--locustfile", "locustfile.py", "--headless",
-        "--users", f"{users}", "--spawn-rate", f"{int(users/2)}", "--run-time", f"{run_time}s",
+    venv_bin = Path(__file__).parent / "test_env" / "bin"
+    locust_bin = str(venv_bin / "locust")
+    locust_proc = subprocess.Popen([
+        locust_bin, "--locustfile", "locustfile.py", "--headless",
+        "--users", f"{users}", "--spawn-rate", f"{max(int(users/2), 1)}", "--run-time", f"{run_time}s",
         "--html", f"output/temp/{file_name}.html", "--host", HYPERSWITCH_HOST_URL
     ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env)
     print(f"    ⏳ Load test running for {test_spec}...")
-    # Run the loading bar while the Locust test runs
-    await loading_bar(run_time)
-    time.sleep(5)
+    await loading_bar(run_time, locust_proc)
 
-    # Read load test results from JSON file
+    print(f"    📊 Reading test results...")
     p99_value = "N/A"
     payment_id = None
     try:
@@ -314,49 +359,56 @@ async def run_locust(test_spec, users,run_time, file_name):
     output_file = Path(f'output/temp/{file_name}.pdf').resolve()
     input_file = Path(f'output/temp/{file_name}.html').resolve()
     try:
-
+        start_spinner(f"Generating PDF for {test_spec}...")
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
             page = await browser.new_page()
 
-            # Load the HTML file
+            update_spinner(f"Rendering {test_spec} report...")
             await page.goto(f"file://{input_file}", wait_until="load")
             rendered_html = await page.content()
             edited_html = rendered_html.replace('Locust Test Report', f'Locust Report for {test_spec}')
             with open(input_file, "w", encoding="utf-8") as f:
                 f.write(edited_html)
             await browser.close()
+            update_spinner(f"Converting {test_spec} to PDF...")
             await html_to_pdf(input_file, output_file)
+            stop_spinner(f"{test_spec} report saved")
 
     except Exception as error:
-        print(f"❌ Failed to save locust report as pdf: {error}")
+        stop_spinner()
+        print(f"    ❌ Failed to save locust report as pdf: {error}")
 
 # Function to generate the overview report
 async def generate_med_report_table(requirement_content, total_bytes_list):
+    start_spinner("Building overview report...")
     file_names = ["test_normal", "test_spike"]
     rps_list = [NORMAL_RPS, SPIKE_RPS]
     p99_values = [NORMAL_APPLICATION_LATENCY, SPIKE_APPLICATION_LATENCY]
     results = []
 
     for idx, file_name in enumerate(file_names):
-        with open(f"output/temp/{file_name}.html", "r", encoding="utf-8") as file:
-            html_content = file.read()
+        try:
+            with open(f"output/temp/{file_name}.html", "r", encoding="utf-8") as file:
+                html_content = file.read()
+        except FileNotFoundError:
+            html_content = ""
 
         soup = BeautifulSoup(html_content, "html.parser")
-        first_table = soup.find("tbody")
-        if first_table:
-            last_row = first_table.find_all("tr")[-1]  # Last row
-            columns = last_row.find_all("td")
-            num_requests = columns[2].text.strip()  # # Requests column
-            rps = columns[8].text.strip()           # RPS column
-        else:
-            num_requests, rps = "N/A", "N/A"
+        all_tbodies = soup.find_all("tbody")
 
-        second_table = soup.find_all("tbody")[1]  # Second table
-        if second_table:
-            last_row_95 = second_table.find_all("tr")[-1]  # Last row
+        if len(all_tbodies) >= 1:
+            last_row = all_tbodies[0].find_all("tr")[-1]
+            columns = last_row.find_all("td")
+            num_requests = columns[2].text.strip() if len(columns) > 2 else "0"
+            rps = columns[8].text.strip() if len(columns) > 8 else "0"
+        else:
+            num_requests, rps = "0", "0"
+
+        if len(all_tbodies) >= 2:
+            last_row_95 = all_tbodies[1].find_all("tr")[-1]
             columns_95 = last_row_95.find_all("td")
-            response_time = columns_95[7].text.strip()  # 95th percentile response time column
+            response_time = columns_95[7].text.strip() if len(columns_95) > 7 else "N/A"
         else:
             response_time = "N/A"
 
@@ -446,7 +498,9 @@ async def generate_med_report_table(requirement_content, total_bytes_list):
     with open(html_file, "w", encoding="utf-8") as file:
         file.write(new_html_segment)
 
+    update_spinner("Converting overview to PDF...")
     await html_to_pdf(html_file, pdf_file)
+    stop_spinner("Overview report saved")
 
 # Function to download Grafana dashboard snapshots
 async def download_dashboard_pdf(json_data, idx, duration):
@@ -559,6 +613,7 @@ async def append_snap_to_pdf():
 
 # Function to create the references section
 async def create_reference_section():
+    start_spinner("Building references section...")
     html_content =f"""<div style="padding:0 24px;">
     <h1>References</h1>
 
@@ -650,7 +705,9 @@ async def create_reference_section():
     with open(html_file, "w", encoding="utf-8") as file:
         file.write(html_content)
 
+    update_spinner("Converting references to PDF...")
     await html_to_pdf(html_file, pdf_file)
+    stop_spinner("References section saved")
 
 # Function to convert HTML to PDF using Playwright
 async def html_to_pdf(html_file,output_file):
@@ -658,7 +715,30 @@ async def html_to_pdf(html_file,output_file):
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
             page = await browser.new_page()
-            await page.goto(f"file://{html_file}", wait_until="load")
+            try:
+                await page.goto(f"file://{html_file}", wait_until="networkidle", timeout=30000)
+            except Exception:
+                pass
+
+            canvases = await page.query_selector_all("canvas")
+            for canvas in canvases:
+                try:
+                    box = await canvas.bounding_box()
+                    if box and box["width"] > 0 and box["height"] > 0:
+                        screenshot_bytes = await canvas.screenshot()
+                        import base64
+                        data_uri = f"data:image/png;base64,{base64.b64encode(screenshot_bytes).decode()}"
+                        await page.evaluate("""(args) => {
+                            const [canvasEl, dataUri] = args;
+                            const img = document.createElement('img');
+                            img.src = dataUri;
+                            img.style.width = canvasEl.style.width || canvasEl.offsetWidth + 'px';
+                            img.style.height = canvasEl.style.height || canvasEl.offsetHeight + 'px';
+                            canvasEl.parentNode.replaceChild(img, canvasEl);
+                        }""", [canvas, data_uri])
+                except Exception:
+                    pass
+
             await page.add_style_tag(content=f"""
                 @page {{
                     size: A4;
@@ -739,8 +819,6 @@ async def html_to_pdf(html_file,output_file):
                 }}
             """)
 
-            await asyncio.sleep(2)
-            # Generate PDF
             await page.pdf(
                 path=str(output_file),
                 format="A4",
@@ -754,10 +832,14 @@ async def html_to_pdf(html_file,output_file):
 
 # Function to merge multiple PDFs into one
 def merge_pdfs():
+    print("    📄 Merging final report...")
     output_file = Path("output/report.pdf").resolve()
-    pdf_list = ["overview_report", "test_normal", "test_spike", "references"]
+    pdf_list = ["overview_report", "test_normal"]
+    if Path("output/temp/test_spike.pdf").exists():
+        pdf_list.append("test_spike")
+    pdf_list.append("references")
     if GRAFANA_PERMISSION == "true":
-        pdf_list.insert(3, "metric_report")
+        pdf_list.insert(len(pdf_list) - 1, "metric_report")
 
     merged_pdf = fitz.open()
     for pdf in pdf_list:
@@ -767,9 +849,28 @@ def merge_pdfs():
     print(f"✅ PDF successfully created: {output_file}")
 
 # Function to display a loading bar
-async def loading_bar(duration):
-    for _ in tqdm(range(100), desc="Running Locust",ncols=150, ascii=True):
-        await asyncio.sleep(duration / 100)
+async def loading_bar(duration, proc):
+    elapsed = 0
+    while elapsed < duration:
+        if proc.poll() is not None:
+            break
+        pct = min(int(elapsed / duration * 100), 99)
+        filled = pct // 2
+        bar = "█" * filled + "░" * (50 - filled)
+        mins = int(elapsed) // 60
+        secs = int(elapsed) % 60
+        print(f"\r    {bar} {pct:3d}%  {mins:02d}:{secs:02d} / {duration//60:02d}:{duration%60:02d}", end="", flush=True)
+        await asyncio.sleep(1)
+        elapsed += 1
+    print(f"\r    {'█' * 50} 100%  {duration//60:02d}:{duration%60:02d}          ")
+    start_spinner("Waiting for Locust to finalize results...")
+    try:
+        loop = asyncio.get_event_loop()
+        await asyncio.wait_for(loop.run_in_executor(None, proc.wait), timeout=60)
+        stop_spinner("Locust finished")
+    except asyncio.TimeoutError:
+        proc.terminate()
+        stop_spinner("Locust timed out, terminated")
 
 # Function to clean up environment variables
 def cleanup():
@@ -801,7 +902,7 @@ def cleanup():
 def handle_interrupt(sig, frame):
     print("\n❌ Keyboard interrupt detected.")
     cleanup()
-    exit(1)
+    os._exit(1)
 
 # Register signal handlers for graceful shutdown
 signal.signal(signal.SIGINT, handle_interrupt)
@@ -815,9 +916,18 @@ async def main():
 
     # Get all the required inputs
     regular_transactions = int(input("Enter the no. of transactions per year during usual traffic : "))
-    spike_transactions = int(input("Enter the no. of transactions per second [TPS] during spike : "))
     test_duration_normal = 60 * int(input("Enter the duration for the Load Test under regular traffic [in mins] : "))
-    test_duration_spike = 60 * int(input("Enter the duration for the Load Test under spike traffic [in mins] : "))
+
+    run_spike = input("Do you want to run the Spike load test as well? [y/n] (default: y): ").strip().lower()
+    run_spike = run_spike != "n"
+
+    if run_spike:
+        spike_transactions = int(input("Enter the no. of transactions per second [TPS] during spike : "))
+        test_duration_spike = 60 * int(input("Enter the duration for the Load Test under spike traffic [in mins] : "))
+    else:
+        spike_transactions = 0
+        test_duration_spike = 0
+
     scaling_factor = int(input("Enter your preferred scaling factor for the server [default is 10x] : ") or 10)
     requirements_content = calculator(regular_transactions,spike_transactions, scaling_factor)
 
@@ -833,20 +943,28 @@ async def main():
     final_storage = float(get_storage_usage("\nEnter the final disk storage size after load-test [in bytes] : "))
     total_bytes_regular = final_storage - initial_storage
 
-    print("\n🚀 Initializing spike load test...")
+    total_bytes_spike = 0
+    if run_spike:
+        print("\n🚀 Initializing spike load test...")
 
-    # Check initial storage usage
-    initial_storage = float(get_storage_usage("\nEnter the initial disk storage size before spike-test [in bytes] : "))
+        # Check initial storage usage
+        initial_storage = float(get_storage_usage("\nEnter the initial disk storage size before spike-test [in bytes] : "))
 
-    # Run Locust load test for spike
-    run_merchant_create("Spike")
-    await run_locust("Spike", int(SPIKE_RPS)+5, test_duration_spike, "test_spike")
+        # Run Locust load test for spike
+        run_merchant_create("Spike")
+        await run_locust("Spike", int(SPIKE_RPS)+5, test_duration_spike, "test_spike")
 
-    # Check final storage usage
-    final_storage = float(get_storage_usage("\nEnter the final disk storage size after spike-test [in bytes] : "))
-    total_bytes_spike = final_storage - initial_storage
+        # Check final storage usage
+        final_storage = float(get_storage_usage("\nEnter the final disk storage size after spike-test [in bytes] : "))
+        total_bytes_spike = final_storage - initial_storage
 
     print("\n✅ Load test completed.")
+
+    if not run_spike:
+        Path("output/temp").mkdir(parents=True, exist_ok=True)
+        with open("output/temp/test_spike.html", "w") as f:
+            f.write("<html><body><h1>Spike test was skipped</h1></body></html>")
+        SPIKE_APPLICATION_LATENCY = "N/A"
 
     print("\n⚙️  Generating Report...")
 
@@ -868,6 +986,8 @@ async def main():
 if __name__ == "__main__":
     try:
         asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\n❌ Interrupted.")
     except Exception as e:
         print(f"Error occurred: {e}")
     finally:
