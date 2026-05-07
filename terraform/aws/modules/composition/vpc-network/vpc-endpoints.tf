@@ -37,6 +37,10 @@ locals {
       service_name = "com.amazonaws.${var.region}.ecs-agent"
       type         = "Interface"
     }
+    efs = {
+      service_name = "com.amazonaws.${var.region}.elasticfilesystem"
+      type         = "Interface"
+    }
     elasticloadbalancing = {
       service_name = "com.amazonaws.${var.region}.elasticloadbalancing"
       type         = "Interface"
