@@ -190,3 +190,18 @@ variable "assume_role" {
   })
   default = {}
 }
+
+# =========================================================================
+# Feature: Additional IAM Policies
+# =========================================================================
+# Map of additional IAM policies to create and attach to the IAM role.
+# Each entry creates an aws_iam_policy and attaches it to the role.
+# Use this for cross-region or cross-account access not covered by built-in features.
+
+variable "additional_iam_policies" {
+  description = "Map of additional IAM policies to create and attach to the IAM role. Each key is used as a policy name suffix. Value is an object with a `policy` field containing the IAM policy document as JSON string."
+  type = map(object({
+    policy = string # IAM policy document as JSON string
+  }))
+  default = {}
+}
