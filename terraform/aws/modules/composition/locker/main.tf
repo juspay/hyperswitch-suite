@@ -280,6 +280,7 @@ module "locker_instance" {
   instance_type               = var.instance_type
   key_name                    = local.key_name
   monitoring                  = true
+  user_data                   = var.user_data
   subnet_id                   = local.locker_subnet_ids[count.index % length(local.locker_subnet_ids)]
   vpc_security_group_ids      = [local.locker_security_group_id]
   associate_public_ip_address = false

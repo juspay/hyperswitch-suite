@@ -55,10 +55,10 @@ output "alb_listener_arns" {
 
 output "alb_listener_details" {
   description = "Details of the ALB listeners (port and protocol)"
-  value       = { for key, listener in var.alb_listeners : key => {
+  value = { for key, listener in var.alb_listeners : key => {
     port     = listener.port
     protocol = listener.protocol
-  }}
+  } }
 }
 
 # =========================================================================
@@ -102,6 +102,11 @@ output "db_cluster_arn" {
   value       = var.create_locker_database && var.database_config != null ? module.database[0].cluster_arn : null
 }
 
+output "db_cluster_identifier" {
+  description = "The cluster identifier of the RDS Aurora database for CloudWatch metrics"
+  value       = var.create_locker_database && var.database_config != null ? module.database[0].cluster_identifier : null
+}
+
 output "db_security_group_id" {
   description = "The security group ID of the RDS database"
   value       = var.create_locker_database && var.database_config != null ? module.database[0].security_group_id : null
@@ -115,4 +120,9 @@ output "db_subnet_group_id" {
 output "db_instance_endpoints" {
   description = "Map of instance endpoints for the RDS cluster"
   value       = var.create_locker_database && var.database_config != null ? module.database[0].cluster_instance_endpoints : null
+}
+
+output "db_cluster_instance_ids" {
+  description = "Map of RDS cluster instance identifiers for CloudWatch instance-level metrics"
+  value       = var.create_locker_database && var.database_config != null ? module.database[0].cluster_instance_ids : {}
 }

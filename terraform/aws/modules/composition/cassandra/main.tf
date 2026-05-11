@@ -41,11 +41,9 @@ resource "aws_ssm_parameter" "cassandra_private_key" {
 }
 
 # =========================================================================
-# SECURITY - CASSANDRA SECURITY GROUP (via base module)
+# SECURITY - CASSANDRA SECURITY GROUP
 # =========================================================================
-module "cassandra_sg" {
-  source = "../../base/security-group"
-
+resource "aws_security_group" "cassandra" {
   name        = "${local.name_prefix}-sg"
   description = "Security group for Cassandra cluster nodes"
   vpc_id      = var.vpc_id
@@ -54,35 +52,53 @@ module "cassandra_sg" {
 }
 
 # =========================================================================
-# SECURITY GROUP - INTRA-CLUSTER RULES (via base module)
+# SECURITY GROUP RULES - SELF (Intra-cluster communication)
 # =========================================================================
-# Self-referencing rules for inter-node communication
-# These are module-internal rules and belong here.
-# Cross-module rules (e.g., EKS → Cassandra, jump-host → Cassandra)
-# are managed in the security-rules live layer.
-module "cassandra_intra_cluster_rules" {
-  source = "../../base/security-group-rules"
+resource "aws_security_group_rule" "cassandra_self_ingress" {
+  type                     = "ingress"
+  description              = "Allow all TCP traffic from itself"
+  from_port                = 0
+  to_port                  = 65535
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.cassandra.id
+  source_security_group_id = aws_security_group.cassandra.id
+}
 
-  security_group_id = module.cassandra_sg.sg_id
+resource "aws_security_group_rule" "cassandra_self_egress" {
+  type                     = "egress"
+  description              = "Allow all TCP traffic to itself"
+  from_port                = 0
+  to_port                  = 65535
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.cassandra.id
+  source_security_group_id = aws_security_group.cassandra.id
+}
 
-  rules = [
-    {
-      type        = "ingress"
-      description = "Allow all TCP traffic from itself"
-      from_port   = 0
-      to_port     = 65535
-      protocol    = "tcp"
-      sg_id       = [module.cassandra_sg.sg_id]
-    },
-    {
-      type        = "egress"
-      description = "Allow all TCP traffic to itself"
-      from_port   = 0
-      to_port     = 65535
-      protocol    = "tcp"
-      sg_id       = [module.cassandra_sg.sg_id]
-    }
-  ]
+# =========================================================================
+# SECURITY GROUP RULES - VPC ENDPOINT (AWS API access)
+# =========================================================================
+resource "aws_security_group_rule" "cassandra_vpc_endpoint_egress" {
+  count = var.vpc_endpoint_security_group_id != null ? 1 : 0
+
+  type                     = "egress"
+  description              = "HTTPS access to VPC endpoints"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.cassandra.id
+  source_security_group_id = var.vpc_endpoint_security_group_id
+}
+
+resource "aws_security_group_rule" "vpc_endpoint_cassandra_ingress" {
+  count = var.vpc_endpoint_security_group_id != null ? 1 : 0
+
+  type                     = "ingress"
+  description              = "HTTPS access from Cassandra"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = var.vpc_endpoint_security_group_id
+  source_security_group_id = aws_security_group.cassandra.id
 }
 
 # =========================================================================
@@ -157,8 +173,8 @@ module "seed_discovery_api" {
   name        = "${local.name_prefix}-seed-api"
   description = "API Gateway for Cassandra seed discovery"
 
-  endpoint_type      = "PRIVATE"
-  vpc_endpoint_ids   = var.api_gateway_vpce_id != null ? [var.api_gateway_vpce_id] : []
+  endpoint_type    = "PRIVATE"
+  vpc_endpoint_ids = var.api_gateway_vpce_id != null ? [var.api_gateway_vpce_id] : []
 
   resources = [
     {
@@ -192,51 +208,62 @@ module "seed_discovery_api" {
 }
 
 # =========================================================================
-# IAM - ROLE & INSTANCE PROFILE (via base module)
+# IAM - ROLE & INSTANCE PROFILE
 # =========================================================================
-module "cassandra_iam_role" {
-  source = "../../base/iam-role"
+resource "aws_iam_role" "cassandra" {
+  name        = "${local.name_prefix}-role"
+  description = "IAM role for Cassandra cluster instances"
 
-  name                    = "${local.name_prefix}-role"
-  description             = "IAM role for Cassandra cluster instances"
-  service_identifiers     = ["ec2.amazonaws.com"]
-  create_instance_profile = true
-
-  # Managed policies
-  managed_policy_arns = [
-    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
-    "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
-  ]
-
-  # Inline policies
-  inline_policies = {
-    # EC2 seed node policy (logs + EC2 operations for seed discovery and node management)
-    cassandra-ec2-seed-node-policy = jsonencode({
-      Version = "2012-10-17"
-      Statement = [
-        {
-          Effect = "Allow"
-          Action = [
-            "logs:CreateLogGroup",
-            "logs:CreateLogStream",
-            "logs:PutLogEvents"
-          ]
-          Resource = "*"
-        },
-        {
-          Effect = "Allow"
-          Action = [
-            "ec2:DescribeInstances",
-            "ec2:CreateNetworkInterface",
-            "ec2:DescribeNetworkInterfaces",
-            "ec2:DeleteNetworkInterface",
-            "ec2:TerminateInstances"
-          ]
-          Resource = "*"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
         }
-      ]
-    })
-  }
+      }
+    ]
+  })
+
+  tags = local.common_tags
+}
+
+resource "aws_iam_role_policy" "cassandra_ec2" {
+  name = "cassandra-ec2-seed-node-policy"
+  role = aws_iam_role.cassandra.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ec2:DescribeInstances",
+          "ec2:CreateNetworkInterface",
+          "ec2:DescribeNetworkInterfaces",
+          "ec2:DeleteNetworkInterface",
+          "ec2:TerminateInstances"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_instance_profile" "cassandra" {
+  name = "${local.name_prefix}-instance-profile"
+  role = aws_iam_role.cassandra.name
 
   tags = local.common_tags
 }
@@ -248,7 +275,7 @@ resource "aws_network_interface" "cassandra" {
   count = var.node_count
 
   subnet_id       = local.cassandra_subnet_id
-  security_groups = [module.cassandra_sg.sg_id]
+  security_groups = [aws_security_group.cassandra.id]
 
   tags = merge(
     local.common_tags,
@@ -258,7 +285,7 @@ resource "aws_network_interface" "cassandra" {
     }
   )
 
-  depends_on = [module.cassandra_sg]
+  depends_on = [aws_security_group.cassandra]
 }
 
 # =========================================================================
@@ -276,7 +303,7 @@ resource "aws_instance" "cassandra" {
     device_index         = 0
   }
 
-  iam_instance_profile = module.cassandra_iam_role.instance_profile_name
+  iam_instance_profile = aws_iam_instance_profile.cassandra.name
   user_data            = base64encode(local.user_data_config)
   monitoring           = true
 
@@ -288,10 +315,10 @@ resource "aws_instance" "cassandra" {
     encrypted   = true
   }
 
-  # IMDSv2 enforcement (security best practice)
+  # IMDSv2 configuration
   metadata_options {
     http_endpoint               = "enabled"
-    http_tokens                 = "required"
+    http_tokens                 = var.metadata_http_tokens
     http_put_response_hop_limit = 1
     instance_metadata_tags      = "enabled"
   }
@@ -306,8 +333,11 @@ resource "aws_instance" "cassandra" {
 
   depends_on = [
     aws_network_interface.cassandra,
-    module.cassandra_iam_role,
-    module.cassandra_intra_cluster_rules,
+    aws_iam_instance_profile.cassandra,
+    aws_security_group_rule.cassandra_self_ingress,
+    aws_security_group_rule.cassandra_self_egress,
+    aws_security_group_rule.cassandra_vpc_endpoint_egress,
+    aws_security_group_rule.vpc_endpoint_cassandra_ingress,
     module.seed_discovery_api
   ]
 }

@@ -313,7 +313,6 @@ resource "aws_security_group_rule" "internal_jump_default_ingress_from_external"
   description              = "Allow SSH from external jump host only"
 }
 
-
 # Create AWS key pair for internal jump (public key only)
 resource "aws_key_pair" "internal_jump" {
   key_name   = "${local.internal_name_prefix}-keypair"
@@ -388,13 +387,15 @@ module "external_jump_instance" {
 
   associate_public_ip_address = true
   monitoring                  = true
-  user_data_base64 = base64encode(templatefile("${path.module}/templates/userdata.sh", {
-    jump_type         = "external"
-    environment       = var.environment
-    cloudwatch_region = data.aws_region.current.id
-    internal_jump_ip  = module.internal_jump_instance.private_ip
-    os_username       = var.ssm_os_username
-  }))
+  user_data_base64 = base64encode(
+    var.external_userdata_override != null ? var.external_userdata_override : templatefile("${path.module}/templates/userdata.sh", {
+      jump_type         = "external"
+      environment       = var.environment
+      cloudwatch_region = data.aws_region.current.id
+      internal_jump_ip  = module.internal_jump_instance.private_ip
+      os_username       = var.ssm_os_username
+    })
+  )
 
   # Root volume configuration
   root_block_device = {

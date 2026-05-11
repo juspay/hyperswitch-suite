@@ -303,9 +303,8 @@ resource "aws_instance" "keeper" {
   instance_type = var.keeper_instance_type
   key_name      = local.key_name
 
-  network_interface {
+  primary_network_interface {
     network_interface_id = aws_network_interface.keeper[count.index].id
-    device_index         = 0
   }
 
   iam_instance_profile = aws_iam_instance_profile.clickhouse.name
@@ -317,22 +316,6 @@ resource "aws_instance" "keeper" {
     volume_type           = var.keeper_root_volume_type
     encrypted             = true
     delete_on_termination = true
-  }
-
-  ebs_block_device {
-    device_name           = var.keeper_data_device_name
-    volume_size           = var.keeper_data_volume_size
-    volume_type           = var.keeper_data_volume_type
-    encrypted             = true
-    delete_on_termination = false
-  }
-
-  ebs_block_device {
-    device_name           = var.keeper_data2_device_name
-    volume_size           = var.keeper_data2_volume_size
-    volume_type           = var.keeper_data2_volume_type
-    encrypted             = true
-    delete_on_termination = false
   }
 
   metadata_options {
@@ -359,41 +342,63 @@ resource "aws_instance" "keeper" {
 }
 
 # =========================================================================
-# LOAD BALANCER - SECURITY GROUP
+# STORAGE - EBS VOLUMES (KEEPERS)
 # =========================================================================
-resource "aws_security_group" "alb" {
-  name        = "${local.alb_name_prefix}-alb-sg"
-  description = "Security group for Clickhouse Application Load Balancer"
-  vpc_id      = var.vpc_id
+
+resource "aws_ebs_volume" "keeper_data" {
+  count = var.keeper_count
+
+  availability_zone = aws_instance.keeper[count.index].availability_zone
+  size              = var.keeper_data_volume_size
+  type              = var.keeper_data_volume_type
+  encrypted         = true
 
   tags = merge(local.common_tags, {
-    Name = "${local.alb_name_prefix}-alb-sg"
+    Name       = "Clickhouse-Keeper-${count.index}-data"
+    cluster    = "clickhouse-keeper"
+    Persistent = "true"
   })
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
-# =========================================================================
-# LOAD BALANCER - SECURITY GROUP RULES
-# =========================================================================
-# ALB Egress to Server
-resource "aws_security_group_rule" "alb_egress_to_server" {
-  security_group_id        = aws_security_group.alb.id
-  type                     = "egress"
-  from_port                = var.clickhouse_port
-  to_port                  = var.clickhouse_port
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.server.id
-  description              = "Allow ALB to send traffic to Clickhouse server instances"
+resource "aws_ebs_volume" "keeper_data2" {
+  count = var.keeper_count
+
+  availability_zone = aws_instance.keeper[count.index].availability_zone
+  size              = var.keeper_data2_volume_size
+  type              = var.keeper_data2_volume_type
+  encrypted         = true
+
+  tags = merge(local.common_tags, {
+    Name       = "Clickhouse-Keeper-${count.index}-data2"
+    cluster    = "clickhouse-keeper"
+    Persistent = "true"
+  })
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
-# Server Ingress from ALB
-resource "aws_security_group_rule" "server_ingress_from_alb" {
-  security_group_id        = aws_security_group.server.id
-  type                     = "ingress"
-  from_port                = var.clickhouse_port
-  to_port                  = var.clickhouse_port
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.alb.id
-  description              = "Allow traffic from ALB to Clickhouse server instances"
+resource "aws_volume_attachment" "keeper_data" {
+  count = var.keeper_count
+
+  device_name  = var.keeper_data_device_name
+  volume_id    = aws_ebs_volume.keeper_data[count.index].id
+  instance_id  = aws_instance.keeper[count.index].id
+  force_detach = true
+}
+
+resource "aws_volume_attachment" "keeper_data2" {
+  count = var.keeper_count
+
+  device_name  = var.keeper_data2_device_name
+  volume_id    = aws_ebs_volume.keeper_data2[count.index].id
+  instance_id  = aws_instance.keeper[count.index].id
+  force_detach = true
 }
 
 # =========================================================================
@@ -404,7 +409,7 @@ resource "aws_lb" "clickhouse_alb" {
   internal           = true
   load_balancer_type = "application"
   subnets            = var.alb_subnet_ids
-  security_groups    = [aws_security_group.alb.id]
+  security_groups    = [aws_security_group.server.id]
 
   tags = merge(local.common_tags, {
     Name = "${local.alb_name_prefix}-alb"
@@ -486,9 +491,8 @@ resource "aws_instance" "server" {
   instance_type = var.server_instance_type
   key_name      = local.key_name
 
-  network_interface {
+  primary_network_interface {
     network_interface_id = aws_network_interface.server[count.index].id
-    device_index         = 0
   }
 
   iam_instance_profile = aws_iam_instance_profile.clickhouse.name
@@ -500,22 +504,6 @@ resource "aws_instance" "server" {
     volume_type           = var.server_root_volume_type
     encrypted             = true
     delete_on_termination = true
-  }
-
-  ebs_block_device {
-    device_name           = var.server_data_device_name
-    volume_size           = var.server_data_volume_size
-    volume_type           = var.server_data_volume_type
-    encrypted             = true
-    delete_on_termination = false
-  }
-
-  ebs_block_device {
-    device_name           = var.server_data2_device_name
-    volume_size           = var.server_data2_volume_size
-    volume_type           = var.server_data2_volume_type
-    encrypted             = true
-    delete_on_termination = false
   }
 
   metadata_options {
@@ -540,6 +528,66 @@ resource "aws_instance" "server" {
     aws_security_group_rule.vpc_endpoint_server_ingress,
     time_sleep.wait_for_keeper
   ]
+}
+
+# =========================================================================
+# STORAGE - EBS VOLUMES (SERVERS)
+# =========================================================================
+
+resource "aws_ebs_volume" "server_data" {
+  count = var.server_count
+
+  availability_zone = aws_instance.server[count.index].availability_zone
+  size              = var.server_data_volume_size
+  type              = var.server_data_volume_type
+  encrypted         = true
+
+  tags = merge(local.common_tags, {
+    Name       = "Clickhouse-Server-${count.index}-data"
+    cluster    = "clickhouse-server"
+    Persistent = "true"
+  })
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "aws_ebs_volume" "server_data2" {
+  count = var.server_count
+
+  availability_zone = aws_instance.server[count.index].availability_zone
+  size              = var.server_data2_volume_size
+  type              = var.server_data2_volume_type
+  encrypted         = true
+
+  tags = merge(local.common_tags, {
+    Name       = "Clickhouse-Server-${count.index}-data2"
+    cluster    = "clickhouse-server"
+    Persistent = "true"
+  })
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "aws_volume_attachment" "server_data" {
+  count = var.server_count
+
+  device_name  = var.server_data_device_name
+  volume_id    = aws_ebs_volume.server_data[count.index].id
+  instance_id  = aws_instance.server[count.index].id
+  force_detach = true
+}
+
+resource "aws_volume_attachment" "server_data2" {
+  count = var.server_count
+
+  device_name  = var.server_data2_device_name
+  volume_id    = aws_ebs_volume.server_data2[count.index].id
+  instance_id  = aws_instance.server[count.index].id
+  force_detach = true
 }
 
 # =========================================================================

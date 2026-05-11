@@ -127,8 +127,8 @@ output "alb_dns_name" {
 }
 
 output "alb_security_group_id" {
-  description = "Security group ID of the Clickhouse ALB"
-  value       = aws_security_group.alb.id
+  description = "Security group ID used by the Clickhouse ALB"
+  value       = aws_security_group.server.id
 }
 
 output "alb_listener_arns" {

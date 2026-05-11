@@ -72,3 +72,13 @@ output "nat_gateway_ips" {
   description = "NAT Gateway public IPs"
   value       = module.vpc_network.nat_gateway_public_ips
 }
+
+output "vpc_peering_connection_ids" {
+  description = "Map of VPC peering connection IDs"
+  value       = module.vpc_network.vpc_peering_connection_ids
+}
+
+output "vpc_peering_accepter_ids" {
+  description = "Map of accepted VPC peering connection IDs (accepter side)"
+  value       = module.vpc_network.vpc_peering_accepter_ids
+}

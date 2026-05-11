@@ -1,0 +1,374 @@
+name: Terraform Validate
+
+permissions:
+  contents: read
+  pull-requests: write
+
+on:
+  pull_request:
+    paths:
+      - 'terraform/**/*.tf'
+      - 'terraform/**/*.tfvars'
+      - '.github/workflows/terraform-validate.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TF_IN_AUTOMATION: true
+  TF_INPUT: false
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID || 'mock' }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY || 'mock' }}
+  AWS_DEFAULT_REGION: eu-central-1
+
+jobs:
+  detect-changes:
+    name: Detect Changed Files
+    runs-on: ubuntu-latest
+    outputs:
+      terraform-files: ${{ steps.changed.outputs.terraform_files }}
+      terraform-dirs: ${{ steps.changed.outputs.terraform_dirs }}
+      has-changes: ${{ steps.changed.outputs.has_changes }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Get changed terraform files
+        id: changed
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'terraform/**/*.tf' 'terraform/**/*.tfvars' | grep -v '.terraform' || true)
+          
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "terraform_files=[]" >> $GITHUB_OUTPUT
+            echo "terraform_dirs=[]" >> $GITHUB_OUTPUT
+            echo "No terraform files changed"
+            exit 0
+          fi
+          
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+          
+          TF_FILES=$(echo "$CHANGED_FILES" | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "terraform_files=$TF_FILES" >> $GITHUB_OUTPUT
+          
+          TF_DIRS=$(echo "$CHANGED_FILES" | xargs -I{} dirname {} | sort -u | jq -R -s -c 'split("\n") | map(select(length > 0))')
+          echo "terraform_dirs=$TF_DIRS" >> $GITHUB_OUTPUT
+          
+          echo "Changed terraform files:"
+          echo "$CHANGED_FILES"
+          echo ""
+          echo "Affected directories:"
+          echo "$TF_DIRS" | jq -r '.[]'
+
+  terraform-fmt:
+    name: Terraform Format Check
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has-changes == 'true'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.5"
+
+      - name: Check formatting on changed files
+        id: fmt
+        run: |
+          EXIT_CODE=0
+          FAILED_FILES=""
+          
+          FILES='${{ needs.detect-changes.outputs.terraform-files }}'
+          
+          for file in $(echo "$FILES" | jq -r '.[]'); do
+            if [ ! -f "$file" ]; then
+              continue
+            fi
+            
+            echo "Checking: $file"
+            if ! terraform fmt -check "$file" 2>&1; then
+              EXIT_CODE=1
+              FAILED_FILES="${FAILED_FILES}${file}\n"
+              echo "::error file=$file::Terraform file needs formatting. Run 'terraform fmt $file' to fix."
+            fi
+          done
+          
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo ""
+            echo "::error::Terraform format check failed."
+            echo ""
+            echo "Files needing formatting:"
+            echo -e "$FAILED_FILES"
+            echo ""
+            echo "Run locally: terraform fmt -recursive terraform/"
+          fi
+          
+          exit $EXIT_CODE
+
+  tflint:
+    name: TFLint
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has-changes == 'true'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+
+      - name: Init TFLint
+        run: tflint --init
+
+      - name: Run TFLint on changed directories
+        id: lint
+        run: |
+          EXIT_CODE=0
+          PASSED_DIRS=""
+          FAILED_DIRS=""
+          
+          DIRS='${{ needs.detect-changes.outputs.terraform-dirs }}'
+          
+          for dir in $(echo "$DIRS" | jq -r '.[]'); do
+            if [ -z "$dir" ] || [ ! -d "$dir" ]; then
+              continue
+            fi
+            
+            echo "=================================================="
+            echo "Linting: $dir"
+            echo "=================================================="
+            
+            LINT_OUTPUT=$(tflint --chdir="$dir" --format=compact 2>&1)
+            LINT_EXIT=$?
+            
+            if [ $LINT_EXIT -ne 0 ]; then
+              echo "::error file=$dir::TFLint found issues"
+              echo "$LINT_OUTPUT"
+              FAILED_DIRS="${FAILED_DIRS}$dir\n"
+              EXIT_CODE=1
+              
+              echo "$LINT_OUTPUT" | while read -r line; do
+                if echo "$line" | grep -qE "^[^:]+:[0-9]+:[0-9]+:"; then
+                  FILE=$(echo "$line" | cut -d: -f1)
+                  LINE=$(echo "$line" | cut -d: -f2)
+                  MSG=$(echo "$line" | cut -d: -f4-)
+                  echo "::error file=$dir/$FILE,line=$LINE::$MSG"
+                fi
+              done
+            else
+              echo "[PASS] No lint issues in $dir"
+              PASSED_DIRS="${PASSED_DIRS}$dir\n"
+            fi
+            
+            echo ""
+          done
+          
+          echo ""
+          echo "=================================================="
+          echo "TFLINT SUMMARY"
+          echo "=================================================="
+          echo ""
+          echo "PASSED:"
+          echo -e "$PASSED_DIRS" | grep -v "^$" || echo "None"
+          echo ""
+          echo "FAILED:"
+          echo -e "$FAILED_DIRS" | grep -v "^$" || echo "None"
+          
+          exit $EXIT_CODE
+
+  terraform-validate:
+    name: Terraform Validate
+    runs-on: ubuntu-latest
+    needs: [detect-changes, terraform-fmt]
+    if: needs.detect-changes.outputs.has-changes == 'true' && needs.terraform-fmt.result == 'success'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.5"
+
+      - name: Create CI provider override
+        run: |
+          cat > /tmp/ci_providers_override.tf << 'EOF'
+          provider "aws" {
+            region                      = "eu-central-1"
+            skip_credentials_validation = true
+            skip_metadata_api_check     = true
+            skip_requesting_account_id  = true
+          }
+          EOF
+
+      - name: Validate changed directories
+        id: validate
+        run: |
+          EXIT_CODE=0
+          PASSED_DIRS=""
+          FAILED_DIRS=""
+          
+          DIRS='${{ needs.detect-changes.outputs.terraform-dirs }}'
+          
+          for dir in $(echo "$DIRS" | jq -r '.[]'); do
+            if [ -z "$dir" ] || [ ! -d "$dir" ]; then
+              continue
+            fi
+            
+            echo "=================================================="
+            echo "Validating: $dir"
+            echo "=================================================="
+            
+            cp /tmp/ci_providers_override.tf "$dir/" 2>/dev/null || true
+            
+            echo "Running terraform init -backend=false..."
+            INIT_OUTPUT=$(terraform init -backend=false -get=true -upgrade "$dir" 2>&1)
+            INIT_EXIT=$?
+            
+            rm -f "$dir/ci_providers_override.tf" 2>/dev/null || true
+            
+            if [ $INIT_EXIT -ne 0 ]; then
+              echo "::error file=$dir::Terraform init failed"
+              echo "$INIT_OUTPUT"
+              FAILED_DIRS="${FAILED_DIRS}$dir (init failed)\n"
+              EXIT_CODE=1
+              continue
+            fi
+            
+            echo "Running terraform validate..."
+            VALIDATE_OUTPUT=$(terraform validate "$dir" 2>&1)
+            VALIDATE_EXIT=$?
+            
+            if [ $VALIDATE_EXIT -ne 0 ]; then
+              echo "::error file=$dir::Terraform validation failed"
+              echo "$VALIDATE_OUTPUT"
+              
+              echo "$VALIDATE_OUTPUT" | grep -E "Error:" | while read -r error_line; do
+                FILE_LINE=$(echo "$error_line" | grep -oE "on [^ ]+ line [0-9]+" || true)
+                if [ -n "$FILE_LINE" ]; then
+                  FILE=$(echo "$FILE_LINE" | awk '{print $2}')
+                  LINE=$(echo "$FILE_LINE" | awk '{print $4}')
+                  MSG=$(echo "$error_line" | sed 's/.*Error:/Error:/')
+                  echo "::error file=$dir/$FILE,line=$LINE::$MSG"
+                fi
+              done
+              
+              FAILED_DIRS="${FAILED_DIRS}$dir (validation failed)\n"
+              EXIT_CODE=1
+            else
+              echo "[PASS] Validation passed for $dir"
+              PASSED_DIRS="${PASSED_DIRS}$dir\n"
+            fi
+            
+            rm -rf "$dir/.terraform" 2>/dev/null || true
+            rm -f "$dir/.terraform.lock.hcl" 2>/dev/null || true
+            
+            echo ""
+          done
+          
+          echo ""
+          echo "=================================================="
+          echo "VALIDATION SUMMARY"
+          echo "=================================================="
+          echo ""
+          echo "PASSED:"
+          echo -e "$PASSED_DIRS" | grep -v "^$" || echo "None"
+          echo ""
+          echo "FAILED:"
+          echo -e "$FAILED_DIRS" | grep -v "^$" || echo "None"
+          
+          exit $EXIT_CODE
+
+  terraform-check-summary:
+    name: Terraform Check Summary
+    runs-on: ubuntu-latest
+    needs: [detect-changes, terraform-fmt, tflint, terraform-validate]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## Terraform CI Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          HAS_CHANGES='${{ needs.detect-changes.outputs.has-changes }}'
+          
+          if [ "$HAS_CHANGES" != "true" ]; then
+            echo "No terraform files changed in this PR." >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          
+          FMT_RESULT="${{ needs.terraform-fmt.result }}"
+          TFLINT_RESULT="${{ needs.tflint.result }}"
+          VALIDATE_RESULT="${{ needs.terraform-validate.result }}"
+          
+          if [ "$FMT_RESULT" == "success" ]; then
+            echo "| Format Check | PASSED |" >> $GITHUB_STEP_SUMMARY
+          elif [ "$FMT_RESULT" == "skipped" ]; then
+            echo "| Format Check | SKIPPED |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Format Check | FAILED |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "$TFLINT_RESULT" == "success" ]; then
+            echo "| TFLint | PASSED |" >> $GITHUB_STEP_SUMMARY
+          elif [ "$TFLINT_RESULT" == "skipped" ]; then
+            echo "| TFLint | SKIPPED |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| TFLint | FAILED |" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "$VALIDATE_RESULT" == "success" ]; then
+            echo "| Validation | PASSED |" >> $GITHUB_STEP_SUMMARY
+          elif [ "$VALIDATE_RESULT" == "skipped" ]; then
+            echo "| Validation | SKIPPED (fmt failed first) |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "| Validation | FAILED |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Check required results
+        run: |
+          HAS_CHANGES='${{ needs.detect-changes.outputs.has-changes }}'
+          
+          if [ "$HAS_CHANGES" != "true" ]; then
+            echo "No terraform changes to check"
+            exit 0
+          fi
+          
+          FMT_RESULT="${{ needs.terraform-fmt.result }}"
+          TFLINT_RESULT="${{ needs.tflint.result }}"
+          VALIDATE_RESULT="${{ needs.terraform-validate.result }}"
+          
+          FAILED="false"
+          
+          if [ "$FMT_RESULT" != "success" ]; then
+            echo "::error::Format check failed or was skipped"
+            FAILED="true"
+          fi
+          
+          if [ "$TFLINT_RESULT" != "success" ]; then
+            echo "::error::TFLint check failed or was skipped"
+            FAILED="true"
+          fi
+          
+          if [ "$VALIDATE_RESULT" != "success" ]; then
+            echo "::error::Validation failed or was skipped"
+            FAILED="true"
+          fi
+          
+          if [ "$FAILED" == "true" ]; then
+            exit 1
+          fi
+          
+          echo "All required terraform checks passed!"

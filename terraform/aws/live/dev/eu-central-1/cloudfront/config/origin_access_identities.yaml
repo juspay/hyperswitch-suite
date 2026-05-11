@@ -1,0 +1,9 @@
+# Origin Access Identities (OAI) - v4.2.0 compatible
+# Define OAIs that will be referenced by S3 origins
+# Note: OAI is the legacy method; OAC is preferred in v6.0+
+
+- name: "hyperswitch-web-s3-assets-oai"
+  comment: "OAI for S3 static assets bucket (web-app distribution)"
+
+- name: "hyperswitch-media-s3-oai"
+  comment: "OAI for S3 media bucket (media-cdn distribution)"

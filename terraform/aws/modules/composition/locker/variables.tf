@@ -31,6 +31,12 @@ variable "instance_type" {
   default     = "t3.medium"
 }
 
+variable "user_data" {
+  description = "Raw user data to provide to locker EC2 instances"
+  type        = string
+  default     = null
+}
+
 variable "instance_count" {
   description = "Number of EC2 instances to create"
   type        = number

@@ -46,3 +46,8 @@ output "secrets_manager_policy_json" {
   description = "JSON of the Secrets Manager access policy"
   value       = data.aws_iam_policy_document.secrets_manager_access.json
 }
+
+output "region" {
+  description = "AWS region where resources are created"
+  value       = data.aws_region.current.id
+}

@@ -64,7 +64,6 @@ locals {
     name == null ? null : (
       startswith(name, "arn:") ? null :
       can(regex("^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$", name)) ? null :
-      contains(keys(module.cloudfront_resources.cache_policy_ids), name) ? null :
       startswith(name, "Managed-") ? name :
       "Managed-${name}"
     )
@@ -75,7 +74,6 @@ locals {
     name == null ? null : (
       startswith(name, "arn:") ? null :
       can(regex("^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$", name)) ? null :
-      contains(keys(module.cloudfront_resources.origin_request_policy_ids), name) ? null :
       startswith(name, "Managed-") ? name :
       "Managed-${name}"
     )
@@ -86,7 +84,6 @@ locals {
     name == null ? null : (
       startswith(name, "arn:") ? null :
       can(regex("^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$", name)) ? null :
-      contains(keys(module.cloudfront_resources.response_headers_policy_ids), name) ? null :
       startswith(name, "Managed-") ? name :
       "Managed-${name}"
     )

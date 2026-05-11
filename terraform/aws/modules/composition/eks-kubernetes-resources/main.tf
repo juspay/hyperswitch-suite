@@ -280,6 +280,26 @@ resource "kubernetes_storage_class_v1" "ebs_gp3" {
   depends_on = [terraform_data.cluster_ready]
 }
 
+# -----------------------------------------------------------------------------
+# Custom Storage Classes (e.g. EFS)
+# -----------------------------------------------------------------------------
+resource "kubernetes_storage_class_v1" "custom" {
+  for_each = var.custom_storage_classes
+
+  metadata {
+    name        = each.key
+    annotations = each.value.annotations
+  }
+
+  storage_provisioner    = each.value.storage_provisioner
+  volume_binding_mode    = each.value.volume_binding_mode
+  reclaim_policy         = each.value.reclaim_policy
+  allow_volume_expansion = each.value.allow_volume_expansion
+  parameters             = each.value.parameters
+
+  depends_on = [terraform_data.cluster_ready]
+}
+
 # =============================================================================
 # Cluster Autoscaler ECR Resources (Optional)
 # =============================================================================

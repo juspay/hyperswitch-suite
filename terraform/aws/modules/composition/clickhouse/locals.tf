@@ -25,8 +25,7 @@ locals {
   # Build server IP list from ENI private IPs
   server_ips = [for i in range(var.server_count) : aws_network_interface.server[i].private_ip]
 
-  # Build shard configuration - one shard with all servers
-  shard_config = [local.server_ips]
+  shard_config = local.server_ips
 
   # Default IAM inline policy (Kafka-like permissions)
   default_inline_policies = {

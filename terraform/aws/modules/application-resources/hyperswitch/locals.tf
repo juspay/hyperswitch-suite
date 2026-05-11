@@ -47,6 +47,9 @@ locals {
   lambda_enabled      = var.lambda != {} && try(var.lambda.enabled, false)
   lambda_function_arns = local.lambda_enabled ? try(var.lambda.function_arns, []) : []
 
+  # Additional IAM Policies feature
+  additional_iam_policies_enabled = length(var.additional_iam_policies) > 0
+
   # =========================================================================
   # OIDC Configuration
   # =========================================================================
