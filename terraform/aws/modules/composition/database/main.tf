@@ -248,6 +248,9 @@ resource "aws_rds_cluster" "main" {
       master_password,
       availability_zones,
       cluster_members,
+      # Ignore global_cluster_identifier when creating global cluster from existing cluster
+      # AWS automatically populates this after association, causing perpetual diff
+      global_cluster_identifier,
     ]
   }
 }
