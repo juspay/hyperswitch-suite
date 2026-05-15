@@ -161,7 +161,7 @@ resource "aws_rds_cluster" "main" {
   # Monitoring
   enabled_cloudwatch_logs_exports       = var.enabled_cloudwatch_logs_exports
   performance_insights_enabled          = var.performance_insights_enabled
-  performance_insights_kms_key_id       = local.kms_key_arn_for_performance_insights
+  performance_insights_kms_key_id       = var.performance_insights_enabled ? local.kms_key_arn_for_performance_insights : null
   performance_insights_retention_period = var.performance_insights_enabled ? var.performance_insights_retention_period : null
   monitoring_interval                   = var.monitoring_interval
   monitoring_role_arn                   = var.monitoring_role_arn
@@ -296,7 +296,7 @@ resource "aws_rds_cluster_instance" "instances" {
 
   # Performance Insights
   performance_insights_enabled          = each.value.performance_insights_enabled != null ? each.value.performance_insights_enabled : var.performance_insights_enabled
-  performance_insights_kms_key_id       = each.value.performance_insights_kms_key_id != null ? each.value.performance_insights_kms_key_id : local.kms_key_arn_for_performance_insights
+  performance_insights_kms_key_id       = (each.value.performance_insights_enabled != null ? each.value.performance_insights_enabled : var.performance_insights_enabled) ? (each.value.performance_insights_kms_key_id != null ? each.value.performance_insights_kms_key_id : local.kms_key_arn_for_performance_insights) : null
   performance_insights_retention_period = (each.value.performance_insights_enabled != null ? each.value.performance_insights_enabled : var.performance_insights_enabled) ? (each.value.performance_insights_retention_period != null ? each.value.performance_insights_retention_period : var.performance_insights_retention_period) : null
 
   # High Availability
