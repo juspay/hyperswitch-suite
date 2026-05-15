@@ -90,9 +90,6 @@ module "kms" {
   key_service_users  = try(var.kms.key_service_users, [])
   key_owners         = try(var.kms.key_owners, [])
 
-  # Enable grants for RDS service
-  grants = try(var.kms.grants, {})
-
   # Policy for RDS service access
   source_policy_documents = [data.aws_iam_policy_document.rds_kms_policy[0].json]
 
