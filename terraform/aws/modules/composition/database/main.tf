@@ -64,9 +64,6 @@ resource "aws_rds_global_cluster" "main" {
       engine_version,
     ]
   }
-
-  # Ensure RDS cluster is created before global cluster when using it as source
-  depends_on = [aws_rds_cluster.main]
 }
 
 
