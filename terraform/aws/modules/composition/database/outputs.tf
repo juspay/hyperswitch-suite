@@ -226,3 +226,21 @@ output "tags_all" {
   description = "Map of tags assigned to the resource, including those inherited from the provider"
   value       = aws_rds_cluster.main.tags_all
 }
+
+# ============================================================================
+# KMS Key Outputs
+# ============================================================================
+output "module_kms_key_arn" {
+  description = "The ARN of the created KMS key (if kms.create=true)"
+  value       = local.kms_create ? module.kms[0].key_arn : null
+}
+
+output "module_kms_key_id" {
+  description = "The ID of the created KMS key (if kms.create=true)"
+  value       = local.kms_create ? module.kms[0].key_id : null
+}
+
+output "module_kms_key_aliases" {
+  description = "The aliases of the created KMS key (if kms.create=true)"
+  value       = local.kms_create ? module.kms[0].aliases : null
+}
