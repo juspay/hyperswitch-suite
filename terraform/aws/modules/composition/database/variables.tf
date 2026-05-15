@@ -648,18 +648,6 @@ variable "kms" {
     key_service_users  = optional(list(string), [])
     key_owners         = optional(list(string), [])
 
-    # Grants configuration
-    grants = optional(map(object({
-      name              = string
-      grantee_principal = string
-      operations        = list(string)
-      retiring_principal = optional(string)
-      constraints = optional(object({
-        encryption_context_subset = optional(map(string))
-        encryption_context_equals = optional(map(string))
-      }))
-      grant_tokens = optional(list(string))
-    })), {})
   })
   default = null
 }
