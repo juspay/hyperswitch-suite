@@ -33,12 +33,19 @@ resource "aws_rds_cluster_parameter_group" "custom" {
 # ============================================================================
 # This resource creates the global cluster that spans multiple regions
 # Only created when create_global_cluster is true and this is not a secondary cluster
+# Note: When using the module-created RDS cluster as source for the global cluster
+# (use_existing_as_global_primary=true with no explicit source_db_cluster_identifier),
+# this resource depends on aws_rds_cluster.main being created first.
 resource "aws_rds_global_cluster" "main" {
   count = var.create_global_cluster && !local.is_secondary_cluster ? 1 : 0
 
-  global_cluster_identifier    = local.global_cluster_identifier
-  source_db_cluster_identifier = var.use_existing_as_global_primary ? var.source_db_cluster_identifier : null
-  force_destroy                = var.use_existing_as_global_primary
+  global_cluster_identifier = local.global_cluster_identifier
+  # Use explicitly provided source, or fall back to module-created RDS cluster ARN
+  # when use_existing_as_global_primary=true but no source_db_cluster_identifier provided
+  source_db_cluster_identifier = var.use_existing_as_global_primary ? (
+    var.source_db_cluster_identifier != null ? var.source_db_cluster_identifier : aws_rds_cluster.main.id
+  ) : null
+  force_destroy = var.use_existing_as_global_primary
 
   engine                   = var.use_existing_as_global_primary ? null : var.engine
   engine_version           = var.use_existing_as_global_primary ? null : var.engine_version
@@ -57,6 +64,9 @@ resource "aws_rds_global_cluster" "main" {
       engine_version,
     ]
   }
+
+  # Ensure RDS cluster is created before global cluster when using it as source
+  depends_on = [aws_rds_cluster.main]
 }
 
 
