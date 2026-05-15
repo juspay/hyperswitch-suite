@@ -43,7 +43,7 @@ resource "aws_rds_global_cluster" "main" {
   # Use explicitly provided source, or fall back to module-created RDS cluster ARN
   # when use_existing_as_global_primary=true but no source_db_cluster_identifier provided
   source_db_cluster_identifier = var.use_existing_as_global_primary ? (
-    var.source_db_cluster_identifier != null ? var.source_db_cluster_identifier : aws_rds_cluster.main.id
+    var.source_db_cluster_identifier != null ? var.source_db_cluster_identifier : aws_rds_cluster.main.arn
   ) : null
   force_destroy = var.use_existing_as_global_primary
 
