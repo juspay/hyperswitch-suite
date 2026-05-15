@@ -191,11 +191,11 @@ resource "aws_rds_cluster" "main" {
   }
 
   # Global Cluster
-  # Only set global_cluster_identifier if:
-  # 1. Creating new cluster for global DB (create_global_cluster=true, use_existing_as_global_primary=false)
-  # 2. This is a secondary cluster (local.is_secondary_cluster=true, pass via var.global_cluster_identifier)
-  # Do NOT set if use_existing_as_global_primary=true - AWS handles relationship via source_db_cluster_identifier
-  global_cluster_identifier      = var.create_global_cluster && !local.is_secondary_cluster && !var.use_existing_as_global_primary ? aws_rds_global_cluster.main[0].id : (local.is_secondary_cluster ? var.global_cluster_identifier : null)
+  # Per AWS documentation, when creating a global cluster from an existing DB cluster,
+  # do NOT set global_cluster_identifier here. AWS automatically populates it after
+  # the global cluster associates with this cluster via source_db_cluster_identifier.
+  # Only set for secondary clusters joining an existing global cluster.
+  global_cluster_identifier      = local.is_secondary_cluster ? var.global_cluster_identifier : null
   enable_global_write_forwarding = var.enable_global_write_forwarding
 
   # Local Write Forwarding
@@ -255,8 +255,8 @@ resource "aws_rds_cluster" "main" {
       master_password,
       availability_zones,
       cluster_members,
-      # Ignore global_cluster_identifier when creating global cluster from existing cluster
-      # AWS automatically populates this after association, causing perpetual diff
+      # AWS automatically populates global_cluster_identifier after associating
+      # the cluster with a global cluster. Ignoring prevents perpetual diff.
       global_cluster_identifier,
     ]
   }
