@@ -110,3 +110,21 @@ output "database_cluster_instance_endpoints" {
   description = "Map of cluster instance endpoints (if database is created)"
   value       = var.create_database ? module.database[0].cluster_instance_endpoints : null
 }
+
+# =========================================================================
+# DATABASE KMS OUTPUTS
+# =========================================================================
+output "database_kms_key_arn" {
+  description = "ARN of the database KMS key (if created by the module)"
+  value       = var.create_database ? module.database[0].module_kms_key_arn : null
+}
+
+output "database_kms_key_id" {
+  description = "ID of the database KMS key (if created by the module)"
+  value       = var.create_database ? module.database[0].module_kms_key_id : null
+}
+
+output "database_kms_key_aliases" {
+  description = "Aliases of the database KMS key (if created by the module)"
+  value       = var.create_database ? module.database[0].module_kms_key_aliases : null
+}

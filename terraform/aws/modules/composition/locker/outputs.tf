@@ -126,3 +126,21 @@ output "db_cluster_instance_ids" {
   description = "Map of RDS cluster instance identifiers for CloudWatch instance-level metrics"
   value       = var.create_locker_database && var.database_config != null ? module.database[0].cluster_instance_ids : {}
 }
+
+# =========================================================================
+# DATABASE KMS OUTPUTS
+# =========================================================================
+output "db_kms_key_arn" {
+  description = "ARN of the database KMS key (if created by the module)"
+  value       = var.create_locker_database && var.database_config != null ? module.database[0].module_kms_key_arn : null
+}
+
+output "db_kms_key_id" {
+  description = "ID of the database KMS key (if created by the module)"
+  value       = var.create_locker_database && var.database_config != null ? module.database[0].module_kms_key_id : null
+}
+
+output "db_kms_key_aliases" {
+  description = "Aliases of the database KMS key (if created by the module)"
+  value       = var.create_locker_database && var.database_config != null ? module.database[0].module_kms_key_aliases : null
+}

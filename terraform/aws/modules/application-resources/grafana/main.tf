@@ -69,7 +69,7 @@ resource "aws_iam_role_policy_attachment" "customer_managed" {
 # DATABASE
 # =========================================================================
 module "database" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/database?ref=database-v0.1.4"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/database?ref=database-v0.1.6"
 
   count = var.create_database ? 1 : 0
 
@@ -163,6 +163,9 @@ module "database" {
   # Features
   enable_http_endpoint = var.database_enable_http_endpoint
   backtrack_window     = var.database_backtrack_window
+
+  # KMS
+  kms = var.database_kms
 
   # Global Cluster
   create_global_cluster          = var.database_create_global_cluster
