@@ -1,7 +1,7 @@
 module "database" {
   count = var.create_locker_database ? 1 : 0
 
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/database?ref=database-v0.1.4"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/database?ref=database-v0.1.5"
 
   environment  = var.environment
   project_name = var.project_name

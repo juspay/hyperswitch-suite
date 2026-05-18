@@ -69,7 +69,7 @@ resource "aws_iam_role_policy_attachment" "customer_managed" {
 # DATABASE
 # =========================================================================
 module "database" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/database?ref=database-v0.1.4"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/database?ref=database-v0.1.5"
 
   count = var.create_database ? 1 : 0
 
