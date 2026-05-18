@@ -1,7 +1,7 @@
 module "database" {
   count = var.create_database ? 1 : 0
 
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/database?ref=database-v0.1.5"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/database?ref=database-v0.1.6"
 
   environment  = var.environment
   project_name = var.project_name
@@ -83,6 +83,8 @@ module "database" {
   custom_parameter_group_family         = var.database_config.custom_parameter_group_family
   custom_parameter_group_description    = var.database_config.custom_parameter_group_description
   custom_parameter_group_parameters     = var.database_config.custom_parameter_group_parameters
+
+  kms = var.database_config.kms
 
   cluster_instances = {
     for key, instance in var.database_config.cluster_instances : key => merge(
