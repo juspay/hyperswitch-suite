@@ -224,10 +224,13 @@ module "ebs_csi_irsa" {
 
 # -----------------------------------------------------------------------------
 # IAM Role for EFS CSI Driver (IRSA)
+# Only created when the EFS CSI addon is enabled
 # -----------------------------------------------------------------------------
 module "efs_csi_irsa" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
   version = "5.44.0"
+
+  count = contains(keys(var.eks_addons), "aws-efs-csi-driver") ? 1 : 0
 
   role_name = "${var.environment}-${var.project_name}-efs-csi"
 

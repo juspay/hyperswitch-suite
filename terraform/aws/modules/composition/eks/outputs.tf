@@ -103,7 +103,7 @@ output "ebs_csi_iam_role_arn" {
 
 output "efs_csi_iam_role_arn" {
   description = "IAM role ARN for EFS CSI Driver"
-  value       = module.efs_csi_irsa.iam_role_arn
+  value       = try(module.efs_csi_irsa[0].iam_role_arn, null)
 }
 
 output "oidc_provider_arn" {
