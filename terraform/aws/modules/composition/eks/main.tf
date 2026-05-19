@@ -5,7 +5,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = ">= 6.28"
     }
     tls = {
       source  = "hashicorp/tls"
@@ -143,10 +143,10 @@ resource "aws_iam_role_policy_attachment" "cluster_policies" {
 # -----------------------------------------------------------------------------
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 20.0"
+  version = "21.20.0"
 
-  cluster_name    = "${var.environment}-${var.project_name}-cluster-${var.cluster_name_version}"
-  cluster_version = var.cluster_version
+  name    = "${var.environment}-${var.project_name}-cluster-${var.cluster_name_version}"
+  kubernetes_version = var.cluster_version
 
   vpc_id                   = var.vpc_id
   subnet_ids               = var.subnet_ids
@@ -157,12 +157,12 @@ module "eks" {
   iam_role_arn    = var.create_cluster_iam_role ? aws_iam_role.cluster[0].arn : var.cluster_iam_role_arn
 
   # Cluster endpoint access configuration
-  cluster_endpoint_public_access       = var.cluster_endpoint_public_access
-  cluster_endpoint_private_access      = var.cluster_endpoint_private_access
-  cluster_endpoint_public_access_cidrs = var.cluster_endpoint_public_access_cidrs
+  endpoint_public_access       = var.cluster_endpoint_public_access
+  endpoint_private_access      = var.cluster_endpoint_private_access
+  endpoint_public_access_cidrs = var.cluster_endpoint_public_access_cidrs
 
   # Cluster security group - allow VPN access
-  cluster_security_group_additional_rules = {
+  security_group_additional_rules = {
     vpn_access = {
       description = "Allow VPN CIDR blocks to communicate with the cluster API"
       protocol    = "tcp"
