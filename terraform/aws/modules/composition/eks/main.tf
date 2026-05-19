@@ -142,7 +142,7 @@ resource "aws_iam_role_policy_attachment" "cluster_policies" {
 # EKS Cluster using terraform-aws-modules/eks
 # -----------------------------------------------------------------------------
 module "eks" {
-  source  = "git::https://github.com/Shailesh-714/terraform-aws-eks?ref=use-dualstack-in-tls-fetch"
+  source  = "git::https://github.com/Shailesh-714/terraform-aws-eks?ref=test-02"
 
   name    = "${var.environment}-${var.project_name}-cluster-${var.cluster_name_version}"
   kubernetes_version = var.cluster_version
