@@ -2,6 +2,250 @@
 
 All notable changes to Hyperswitch will be documented here.
 
+
+## Hyperswitch Suite v1.18
+
+### [Hyperswitch App Server v1.123.1 (2026-05-19)](https://github.com/juspay/hyperswitch/releases/tag/v1.123.1)
+
+#### Docker Images
+
+- `v1.123.1` (with AWS SES support): `docker pull docker.juspay.io/juspaydotin/hyperswitch-router:v1.123.1`
+
+- `v1.123.1-standalone` (without AWS SES support): `docker pull docker.juspay.io/juspaydotin/hyperswitch-router:v1.123.1-standalone`
+
+#### Features
+
+- **Connector:** [Peachpayments] Add COF Data For CardWithLimitedDetails CIT And No-3DS Cards CIT ([#12001](https://github.com/juspay/hyperswitch/pull/12001))
+- **blocking:** Add profile-based payment method blocking with CardSubtype variants ([#11796](https://github.com/juspay/hyperswitch/pull/11796)) ([#11915](https://github.com/juspay/hyperswitch/pull/11915))
+- **connector:**
+  - [Stripe] Googlepay Predecrypted flow stripe ([#11919](https://github.com/juspay/hyperswitch/pull/11919))
+  - [ACI] Add Apple Pay and Google Pay wallet support ([#12209](https://github.com/juspay/hyperswitch/pull/12209))
+  - [Cybersource] added 3ds support to setup mandate flow in Cybersource ([#12329](https://github.com/juspay/hyperswitch/pull/12329))
+
+#### Bug Fixes
+
+- **analytics:** Analytics query fix ([#12316](https://github.com/juspay/hyperswitch/pull/12316))
+- **connector:**
+  - [Nmi] add first name and last name for payments ([#12003](https://github.com/juspay/hyperswitch/pull/12003))
+  - [Worldpayxml] update status mapping ([#11749](https://github.com/juspay/hyperswitch/pull/11749)) ([#12167](https://github.com/juspay/hyperswitch/pull/12167))
+- Add `client_secret` validation in session and eligibility authentication apis ([#11085](https://github.com/juspay/hyperswitch/pull/11085))
+
+#### Compatibility
+
+This version of the Hyperswitch App server is compatible with the following versions of the other components:
+
+- Control Center: [v1.38.4](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.38.4)
+- Web Client: [v0.131.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.131.0)
+- WooCommerce Plugin: [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)
+- Card Vault: [v0.7.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.7.0)
+- Encryption Service: [v0.1.12](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.12)
+
+#### Database Migration Changes
+
+```sql
+DB Difference between v1.123.0 and v1.123.1
+-- Your SQL goes here
+ALTER TABLE business_profile
+ADD COLUMN IF NOT EXISTS payment_method_blocking JSONB;
+-- Your SQL goes here
+CREATE TABLE IF NOT EXISTS card_issuers (
+    id VARCHAR(64) PRIMARY KEY,
+    issuer_name VARCHAR NOT NULL UNIQUE,
+    created_at TIMESTAMP NOT NULL,
+    last_modified_at TIMESTAMP NOT NULL
+);
+```
+
+#### Configuration Changes
+
+```patch
+diff --git a/config/deployments/sandbox.toml b/config/deployments/sandbox.toml
+index 57cd9688e7..e0f0c84fb8 100644
+--- a/config/deployments/sandbox.toml
++++ b/config/deployments/sandbox.toml
+@@ -226,47 +226,47 @@ adyen = "Star,Pulse,Accel,Nyce"
+ enabled = true
+
+ [zero_mandates.supported_payment_methods]
+ bank_debit.ach = { connector_list = "gocardless,adyen,payload" }
+ bank_debit.becs = { connector_list = "gocardless,adyen" }
+ bank_debit.bacs = { connector_list = "gocardless" }
+ bank_debit.sepa = { connector_list = "gocardless,adyen" }
+ card.credit.connector_list = "checkout,stripe,adyen,zift,authorizedotnet,cybersource,datatrans,worldpay,nmi,bankofamerica,wellsfargo,bamboraapac,nexixpay,novalnet,paypal,archipel,tesouro,mollie"
+ card.debit.connector_list = "checkout,stripe,adyen,zift,authorizedotnet,cybersource,datatrans,worldpay,nmi,bankofamerica,wellsfargo,bamboraapac,nexixpay,novalnet,paypal,archipel,tesouro,mollie"
+ pay_later.klarna.connector_list = "adyen"
+-wallet.apple_pay.connector_list = "checkout,stripe,adyen,cybersource,bankofamerica,novalnet,nuvei,authorizedotnet,nmi,tesouro,worldpaymodular,worldpayxml"
+-wallet.samsung_pay.connector_list = "cybersource"
+-wallet.google_pay.connector_list = "checkout,stripe,adyen,cybersource,bankofamerica,novalnet,nuvei,authorizedotnet,nmi,tesouro,worldpaymodular,worldpayxml"
++wallet.apple_pay.connector_list = "aci,checkout,stripe,adyen,cybersource,bankofamerica,novalnet,nuvei,authorizedotnet,nmi,tesouro,worldpaymodular,worldpayxml"
++wallet.samsung_pay.connector_list = "aci,cybersource"
++wallet.google_pay.connector_list = "aci,checkout,stripe,adyen,cybersource,bankofamerica,novalnet,nuvei,authorizedotnet,nmi,tesouro,worldpaymodular,worldpayxml"
+ wallet.paypal.connector_list = "adyen,novalnet"
+ wallet.momo.connector_list = "adyen"
+ wallet.kakao_pay.connector_list = "adyen"
+ wallet.go_pay.connector_list = "adyen"
+ wallet.gcash.connector_list = "adyen"
+ wallet.dana.connector_list = "adyen"
+ wallet.twint.connector_list = "adyen"
+ wallet.vipps.connector_list = "adyen"
+ bank_redirect.ideal.connector_list = "adyen"
+ bank_redirect.bancontact_card.connector_list = "adyen"
+ bank_redirect.trustly.connector_list = "adyen"
+ bank_redirect.open_banking_uk.connector_list = "adyen"
+
+ [mandates.supported_payment_methods]
+ bank_debit.ach = { connector_list = "gocardless,adyen,stripe,payload" }
+ bank_debit.becs = { connector_list = "gocardless,stripe,adyen" }
+ bank_debit.bacs = { connector_list = "stripe,gocardless" }
+ bank_debit.sepa = { connector_list = "gocardless,adyen,stripe,deutschebank" }
+-card.credit.connector_list = "aci,checkout,stripe,adyen,authorizedotnet,cybersource,datatrans,globalpay,worldpay,multisafepay,nmi,nexinets,noon,bankofamerica,braintree,nuvei,payme,wellsfargo,bamboraapac,elavon,fiuu,nexixpay,novalnet,paybox,paypal,xendit,moneris,archipel,worldpayvantiv,payload,paysafe,finix,tesouro,mollie,airwallex"
+-card.debit.connector_list = "aci,checkout,stripe,adyen,authorizedotnet,cybersource,datatrans,globalpay,worldpay,multisafepay,nmi,nexinets,noon,bankofamerica,braintree,nuvei,payme,wellsfargo,bamboraapac,elavon,fiuu,nexixpay,novalnet,paybox,paypal,xendit,moneris,archipel,worldpayvantiv,payload,paysafe,finix,tesouro,mollie,airwallex"
++card.credit.connector_list = "aci,checkout,stripe,adyen,authorizedotnet,cybersource,datatrans,globalpay,worldpay,multisafepay,nmi,nexinets,noon,bankofamerica,braintree,nuvei,payme,wellsfargo,bamboraapac,elavon,fiuu,nexixpay,novalnet,paybox,paypal,xendit,moneris,archipel,worldpayvantiv,payload,paysafe,finix,tesouro,mollie,airwallex,peachpayments"
++card.debit.connector_list = "aci,checkout,stripe,adyen,authorizedotnet,cybersource,datatrans,globalpay,worldpay,multisafepay,nmi,nexinets,noon,bankofamerica,braintree,nuvei,payme,wellsfargo,bamboraapac,elavon,fiuu,nexixpay,novalnet,paybox,paypal,xendit,moneris,archipel,worldpayvantiv,payload,paysafe,finix,tesouro,mollie,airwallex,peachpayments"
+ pay_later.klarna.connector_list = "adyen,aci"
+-wallet.apple_pay.connector_list = "checkout,stripe,adyen,braintree,cybersource,noon,bankofamerica,nexinets,novalnet,nuvei,authorizedotnet,wellsfargo,worldpaymodular,worldpayvantiv,finix,nmi,tesouro,worldpayxml"
+-wallet.samsung_pay.connector_list = "cybersource"
+-wallet.google_pay.connector_list = "checkout,stripe,adyen,cybersource,bankofamerica,noon,globalpay,multisafepay,novalnet,nuvei,authorizedotnet,wellsfargo,worldpaymodular,worldpayvantiv,finix,nmi,tesouro,worldpayxml"
++wallet.apple_pay.connector_list = "aci,checkout,stripe,adyen,braintree,cybersource,noon,bankofamerica,nexinets,novalnet,nuvei,authorizedotnet,wellsfargo,worldpaymodular,worldpayvantiv,finix,nmi,tesouro,worldpayxml"
++wallet.samsung_pay.connector_list = "aci,cybersource"
++wallet.google_pay.connector_list = "aci,checkout,stripe,adyen,cybersource,bankofamerica,noon,globalpay,multisafepay,novalnet,nuvei,authorizedotnet,wellsfargo,worldpaymodular,worldpayvantiv,finix,nmi,tesouro,worldpayxml"
+ wallet.paypal.connector_list = "adyen,globalpay,nexinets,novalnet,paypal,authorizedotnet"
+ wallet.momo.connector_list = "adyen"
+ wallet.kakao_pay.connector_list = "adyen"
+ wallet.go_pay.connector_list = "adyen"
+ wallet.gcash.connector_list = "adyen"
+ wallet.dana.connector_list = "adyen"
+ wallet.twint.connector_list = "adyen"
+ wallet.vipps.connector_list = "adyen"
+
+ bank_redirect.ideal.connector_list = "stripe,adyen,globalpay,multisafepay,nexinets,aci"
+@@ -824,20 +824,23 @@ debit = { country = "AD,AE,AT,BE,BG,CH,CN,CO,CR,CY,CZ,DE,DK,DO,EE,EG,ES,ET,FI,FR
+ mb_way = { country = "EE,ES,PT", currency = "EUR" }
+ ali_pay = { country = "CN", currency = "CNY" }
+ eps = { country = "AT", currency = "EUR" }
+ ideal = { country = "NL", currency = "EUR" }
+ giropay = { country = "DE", currency = "EUR" }
+ sofort = { country = "AT,BE,CH,DE,ES,GB,IT,NL,PL", currency = "CHF,EUR,GBP,HUF,PLN"}
+ interac = { country = "CA", currency = "CAD,USD"}
+ przelewy24 = { country = "PL", currency = "CZK,EUR,GBP,PLN" }
+ trustly = { country = "ES,GB,SE,NO,AT,NL,DE,DK,FI,EE,LT,LV", currency = "CZK,DKK,EUR,GBP,NOK,SEK" }
+ klarna = { country = "AU,AT,BE,CA,CZ,DK,FI,FR,DE,GR,IE,IT,NL,NZ,NO,PL,PT,ES,SE,CH,GB,US", currency = "CHF,DKK,EUR,GBP,NOK,PLN,SEK,USD,AUD,NZD,CAD" }
++apple_pay = { country = "AU,CN,HK,JP,MO,MY,NZ,SG,TW,AM,AT,AZ,BY,BE,BG,HR,CY,CZ,DK,EE,FO,FI,FR,GE,DE,GR,GL,GG,HU,IS,IE,IM,IT,KZ,JE,LV,LI,LT,LU,MT,MD,MC,ME,NL,NO,PL,PT,RO,SM,RS,SK,SI,ES,SE,CH,UA,GB,AR,CO,CR,BR,MX,PE,BH,IL,JO,KW,PS,QA,SA,AE,CA,US,KR,VN,MA,ZA", currency = "AED,AUD,CAD,CHF,EUR,GBP,HKD,SGD,USD" }
++google_pay = { country = "AL,DZ,AS,AO,AG,AR,AU,AT,AZ,BH,BY,BE,BR,BG,CA,CL,CO,HR,CZ,DK,DO,EG,EE,FI,FR,DE,GR,HK,HU,IN,ID,IE,IL,IT,JP,JO,KZ,KE,KW,LV,LB,LT,LU,MY,MX,NL,NZ,NO,OM,PK,PA,PE,PH,PL,PT,QA,RO,SA,SG,SK,ZA,ES,LK,SE,CH,TW,TH,TR,UA,AE,GB,US,UY,VN" }
++samsung_pay = { country = "AU,BH,BR,CA,CN,DK,FI,FR,DE,HK,IN,IT,JP,KZ,KR,KW,MY,NZ,NO,OM,QA,SA,SG,ZA,ES,SE,CH,TW,AE,GB,US", currency = "AED,AUD,CAD,CHF,EUR,GBP,HKD,SGD,USD" }
+
+ [pm_filters.gigadat]
+ interac = { currency = "CAD"}
+
+ [pm_filters.loonio]
+ interac = { currency = "CAD"}
+
+ [pm_filters.coingate]
+ crypto_currency = { country = "AL, AD, AT, BE, BA, BG, HR, CZ, DK, EE, FI, FR, DE, GR, HU, IS, IE, IT, LV, LT, LU, MT, MD, NL, NO, PL, PT, RO, RS, SK, SI, ES, SE, CH, UA, GB, AR, BR, CL, CO, CR, DO, SV, GD, MX, PE, LC, AU, NZ, CY, HK, IN, IL, JP, KR, QA, SA, SG, EG", currency = "EUR, USD, GBP" }
+
+@@ -922,21 +925,21 @@ redsys = { payment_method = "card" }
+ #tokenization configuration which describe token lifetime and payment method for specific connector
+ [tokenization]
+ braintree = { long_lived_token = false, payment_method = "card,wallet" }
+ checkout = { long_lived_token = false, payment_method = "wallet", apple_pay_pre_decrypt_flow = "network_tokenization", google_pay_pre_decrypt_flow = "network_tokenization" }
+ gocardless = { long_lived_token = true, payment_method = "bank_debit" }
+ hipay = { long_lived_token = false, payment_method = "card" }
+ mollie = { long_lived_token = false, payment_method = "card" }
+ payme = { long_lived_token = false, payment_method = "card" }
+ square = { long_lived_token = false, payment_method = "card" }
+ stax = { long_lived_token = true, payment_method = "card,bank_debit" }
+-stripe = { long_lived_token = false, payment_method = "wallet", payment_method_type = { list = "google_pay", type = "disable_only" } }
++stripe = { long_lived_token = false, payment_method = "wallet", google_pay_pre_decrypt_flow = "connector_tokenization" ,payment_method_type = { list = "google_pay", type = "disable_only" }}
+ billwerk = {long_lived_token = false, payment_method = "card"}
+ globalpay = { long_lived_token = false, payment_method = "card", flow = "mandates" }
+ dwolla = { long_lived_token = true, payment_method = "bank_debit" }
+ finix= { long_lived_token = false, payment_method = "card,wallet" }
+ paysafe= { long_lived_token = false, payment_method = "card,wallet" ,payment_method_type = { type = "enable_only", list = "apple_pay,credit,debit"},allowed_card_authentication_type= "no_three_ds"}
+
+ [webhooks]
+ outgoing_enabled = true
+ redis_lock_expiry_seconds = 180
+```
+
+**Full Changelog:** [`v1.123.0...v1.123.1`](https://github.com/juspay/hyperswitch/compare/v1.123.0...v1.123.1)
+
+### [Hyperswitch Control Center v1.38.4 (2026-05-13)](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.38.4)
+
+#### Features
+- Add Trustly connector for payments and payouts ([#4616](https://github.com/juspay/hyperswitch-control-center/pull/4616))
+- Add pix automatic payment method types for santander ([#4656](https://github.com/juspay/hyperswitch-control-center/pull/4656))
+- Show horizontal scrollbar on global search result tables ([#4707](https://github.com/juspay/hyperswitch-control-center/pull/4707))
+
+#### Enhancement
+- Parallelize dashboard API calls in setUpDashboard ([#4521](https://github.com/juspay/hyperswitch-control-center/pull/4521))
+- MaxPageWidth issue across dashboard ([#4533](https://github.com/juspay/hyperswitch-control-center/pull/4533))
+- Patch @juspay/blend-design-system for React 18 compatibility ([#4513](https://github.com/juspay/hyperswitch-control-center/pull/4513))
+- Migrate Accordion to Blend Design System ([#4405](https://github.com/juspay/hyperswitch-control-center/pull/4405))
+- Add upload assets modal in themecreate ([#4297](https://github.com/juspay/hyperswitch-control-center/pull/4297))
+- Rename `iDEAL` to `iDEAL | Wero` pmt ([#4644](https://github.com/juspay/hyperswitch-control-center/pull/4644))
+- Migrate BreadCrumbNavigation to Blend Design System ([#4406](https://github.com/juspay/hyperswitch-control-center/pull/4406))
+- Standardize dashboard spacing and typography ([#4653](https://github.com/juspay/hyperswitch-control-center/pull/4653))
+
+#### Fixes
+- Add parsing of card_network from network token dict ([#4765](https://github.com/juspay/hyperswitch-control-center/pull/4765))
+
+#### Compatibility
+This version of the Hyperswitch Control Center is compatible with the following versions of other components:
+
+- App Server Version: [v1.123.1](https://github.com/juspay/hyperswitch/releases/tag/v1.123.1)
+- Web Client Version: [v0.131.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.131.0)
+- WooCommerce Plugin Version: [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)
+- Card Vault Version: [v0.7.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.7.0)
+- Key Manager: [v0.1.12](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.12)
+
+**Full Changelog**: https://github.com/juspay/hyperswitch-control-center/compare/v1.38.3...v1.38.4
+
+### [Hyperswitch Web v0.131.0 (2026-5-20)](https://github.com/juspay/hyperswitch-web/releases/tag/v0.131.0)
+
+#### Features
+- feat: replaced payment methods management v1 sdk support with PMM v2 flow ([#1398](https://github.com/juspay/hyperswitch-web/pull/1398))
+- feat: add validations for cpf and cnpj input ([#1402](https://github.com/juspay/hyperswitch-web/pull/1402))
+- feat: add copy button for EMV Pix raw QR data ([#1405](https://github.com/juspay/hyperswitch-web/pull/1405))
+- feat: card installments ([#1412](https://github.com/juspay/hyperswitch-web/pull/1412))
+- feat: update iDEAL payment method branding to iDEAL | Wero ([#1425](https://github.com/juspay/hyperswitch-web/pull/1425))
+- feat: add hideCardExpiry config to savedMethodCustomization for compact saved card view ([#1443](https://github.com/juspay/hyperswitch-web/pull/1443))
+- feat: implement CVC Widget for secure saved card payments ([#1444](https://github.com/juspay/hyperswitch-web/pull/1444))
+- feat: added new layout for grouped saved methods ([#1445](https://github.com/juspay/hyperswitch-web/pull/1445))
+- feat: redesign installment selection UI ([#1465](https://github.com/juspay/hyperswitch-web/pull/1465))
+
+#### Fixes
+- fix: openssl vulnerability in docker image ([#1393](https://github.com/juspay/hyperswitch-web/pull/1393))
+- fix: correct useMemo dependency array syntax in CommonCardProps ([#1418](https://github.com/juspay/hyperswitch-web/pull/1418))
+- fix: added ready event, isCvcEmpty event and id support in cvc widget ([#1468](https://github.com/juspay/hyperswitch-web/pull/1468))
+- fix: apply buttonRadius styling to PayPal SDK button container ([#1466](https://github.com/juspay/hyperswitch-web/pull/1466))
+- fix: premount loader race condition ([#1470](https://github.com/juspay/hyperswitch-web/pull/1470))
+- fix: used payment input field and redirection logic ([#1473](https://github.com/juspay/hyperswitch-web/pull/1473))
+- fix: installments selection reset on saved methods screen and checkbox alignment ([#1474](https://github.com/juspay/hyperswitch-web/pull/1474))
+- fix: separated cvc info event for cvc widget ([#1479](https://github.com/juspay/hyperswitch-web/pull/1479))
+- fix: prevent stale iframe matching and null response in CVC widget confirm flow ([#1477](https://github.com/juspay/hyperswitch-web/pull/1477))
+- fix: pre mount loader response message handling in promise ([#1482](https://github.com/juspay/hyperswitch-web/pull/1482))
+
+#### Refactor
+- refactor: remove payment methods ephemeral key flow ([#1399](https://github.com/juspay/hyperswitch-web/pull/1399))
+- refactor: removed payments v2 features ([#1410](https://github.com/juspay/hyperswitch-web/pull/1410))
+- refactor: reorganize cypress e2e tests into categorized folder structure ([#1461](https://github.com/juspay/hyperswitch-web/pull/1461))
+
+#### CI/CD
+- test: fixed saved card and added interac testcase ([#1408](https://github.com/juspay/hyperswitch-web/pull/1408))
+
+#### Compatibility
+This version of the Hyperswitch SDK is compatible with the following versions of other components:
+
+| Component           | Version |
+|---------------------|---------|
+| Control Center      | [v1.38.4](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.38.4)  |
+| App Server          | [v1.123.1](https://github.com/juspay/hyperswitch/releases/tag/v1.123.1)    |
+| WooCommerce Plugin  | [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)    |
+| Card Vault          | [v0.7.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.7.0)    |
+| Key Manager         | [v0.1.12](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.12)    |
+
+**Full Changelog**: https://github.com/juspay/hyperswitch-web/compare/v0.130.0...v0.131.0
+
 ## Hyperswitch Suite v1.17
 
 ### [Hyperswitch App Server v1.123.0 (2026-04-13)](https://github.com/juspay/hyperswitch/releases/tag/v1.123.0)
