@@ -85,6 +85,30 @@ output "kms_key_arns" {
 }
 
 # =========================================================================
+# Global Database Outputs
+# =========================================================================
+
+output "db_global_cluster_id" {
+  description = "Global Cluster Identifier"
+  value       = var.create_locker_database && var.database_config != null ? module.database[0].global_cluster_id : null
+}
+
+output "db_global_cluster_arn" {
+  description = "ARN of the Global Cluster"
+  value       = var.create_locker_database && var.database_config != null ? module.database[0].global_cluster_arn : null
+}
+
+output "db_global_cluster_identifier" {
+  description = "Global Cluster Identifier name"
+  value       = var.create_locker_database && var.database_config != null ? module.database[0].global_cluster_identifier : null
+}
+
+output "db_global_writer_endpoint" {
+  description = "Global writer endpoint for the Aurora Global Database"
+  value       = var.create_locker_database && var.database_config != null ? module.database[0].global_writer_endpoint : null
+}
+
+# =========================================================================
 # Database Outputs
 # =========================================================================
 output "db_cluster_endpoint" {
