@@ -73,7 +73,7 @@ module "database" {
   restore_to_point_in_time              = var.database_config.restore_to_point_in_time
   s3_import                             = var.database_config.s3_import
   create_global_cluster                 = var.database_config.create_global_cluster
-  global_cluster_identifier             = var.database_config.global_cluster_identifier
+  global_cluster_identifier             = var.database_config.global_cluster_identifier != null ? var.database_config.global_cluster_identifier : "${local.name_prefix}-global"
   global_deletion_protection            = var.database_config.global_deletion_protection
   enable_global_write_forwarding        = var.database_config.enable_global_write_forwarding
   use_existing_as_global_primary        = var.database_config.use_existing_as_global_primary
