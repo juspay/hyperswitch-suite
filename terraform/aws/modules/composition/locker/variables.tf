@@ -143,7 +143,7 @@ variable "database_config" {
     engine_mode                           = optional(string, "provisioned")
     engine_lifecycle_support              = optional(string, "open-source-rds-extended-support")
     cluster_scalability_type              = optional(string, null)
-    master_username                       = string
+    master_username                       = optional(string, null)
     master_password                       = optional(string, null)
     manage_master_user_password           = optional(bool, null)
     master_user_secret_kms_key_id         = optional(string, null)
