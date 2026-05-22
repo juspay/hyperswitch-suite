@@ -41,3 +41,8 @@ output "cluster_service_accounts" {
     cluster_name => statement.subjects
   }
 }
+
+output "region" {
+  description = "AWS region where resources are created"
+  value       = data.aws_region.current.region
+}
