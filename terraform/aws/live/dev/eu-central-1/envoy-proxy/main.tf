@@ -85,6 +85,7 @@ module "envoy_proxy" {
   # SSL/TLS Configuration
   enable_https_listener         = var.enable_https_listener
   ssl_certificate_arn           = var.ssl_certificate_arn
+  additional_certificate_arns   = var.additional_certificate_arns
   ssl_policy                    = var.ssl_policy
   enable_http_to_https_redirect = var.enable_http_to_https_redirect
 

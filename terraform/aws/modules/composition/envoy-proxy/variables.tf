@@ -137,6 +137,12 @@ variable "enable_http_to_https_redirect" {
   default     = false
 }
 
+variable "additional_certificate_arns" {
+  description = "List of additional SSL certificate ARNs to attach to the HTTPS listener for SNI (Server Name Indication) support. Allows serving different certificates for different domains on the same listener."
+  type        = list(string)
+  default     = []
+}
+
 # =========================================================================
 # Advanced Listener Rules Configuration
 # =========================================================================
