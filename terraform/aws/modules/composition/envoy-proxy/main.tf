@@ -71,9 +71,40 @@ module "logs_bucket" {
     }
   }
 
-  # Note: Lifecycle rules removed - manage log retention manually if needed
+  # Allow ELB service to deliver access logs to this bucket
+  attach_elb_log_delivery_policy = local.alb_access_logs_enabled
 
   tags = local.common_tags
+}
+
+resource "aws_s3_bucket_policy" "alb_access_logs_existing_bucket" {
+  count = !var.create_logs_bucket && local.alb_access_logs_enabled ? 1 : 0
+
+  bucket = var.logs_bucket_name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "AllowALBWrite"
+        Effect    = "Allow"
+        Principal = {
+          AWS = data.aws_elb_service_account.current.arn
+        }
+        Action   = "s3:PutObject"
+        Resource = "arn:aws:s3:::${var.logs_bucket_name}/${local.alb_access_logs_prefix}/*"
+      },
+      {
+        Sid       = "AllowALBReadACL"
+        Effect    = "Allow"
+        Principal = {
+          Service = "elasticloadbalancing.amazonaws.com"
+        }
+        Action   = "s3:GetBucketAcl"
+        Resource = "arn:aws:s3:::${var.logs_bucket_name}"
+      }
+    ]
+  })
 }
 
 # =========================================================================
@@ -347,6 +378,13 @@ module "alb" {
   enable_deletion_protection       = var.environment == "prod" ? true : false
   enable_cross_zone_load_balancing = true
   enable_http2                     = true
+
+
+  access_logs = local.alb_access_logs_enabled ? {
+    enabled = true
+    bucket  = local.logs_bucket_name
+    prefix  = local.alb_access_logs_prefix
+  } : {}
 
   # We'll create target groups and listeners separately for more control
   create_security_group = false

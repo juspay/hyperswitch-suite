@@ -712,6 +712,22 @@ variable "scaling_policies" {
   }
 }
 
+# =========================================================================
+# ALB Access Logs Configuration
+# =========================================================================
+
+variable "enable_alb_access_logs" {
+  description = "Enable ALB access logs and push them to the S3 logs bucket. Requires create_lb = true and create_logs_bucket = true (or an existing logs bucket with the appropriate policy). If create_lb = false, this setting has no effect."
+  type        = bool
+  default     = true
+}
+
+variable "alb_access_logs_prefix" {
+  description = "S3 key prefix for ALB access logs. Defaults to the AWS standard prefix pattern 'AWSLogs/{account_id}'"
+  type        = string
+  default     = null
+}
+
 variable "tags" {
   description = "Common tags to apply to all resources"
   type        = map(string)
