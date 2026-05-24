@@ -39,7 +39,7 @@ data "aws_iam_policy_document" "rds_kms_policy" {
     condition {
       test     = "StringEquals"
       variable = "kms:ViaService"
-      values   = ["rds.${data.aws_region.current.name}.amazonaws.com"]
+      values   = ["rds.${data.aws_region.current.region}.amazonaws.com"]
     }
   }
 }
