@@ -68,7 +68,7 @@ variable "engine_mode" {
   default     = "provisioned"
 
   validation {
-    condition     = var.engine_mode == null || contains(["global", "parallelquery", "provisioned", "serverless", ""], var.engine_mode)
+    condition     = var.engine_mode == null || contains(["global", "parallelquery", "provisioned", "serverless", ""], coalesce(var.engine_mode, ""))
     error_message = "engine_mode must be one of: global, parallelquery, provisioned, serverless, or empty string."
   }
 }
@@ -79,7 +79,7 @@ variable "engine_lifecycle_support" {
   default     = "open-source-rds-extended-support"
 
   validation {
-    condition     = var.engine_lifecycle_support == null || contains(["open-source-rds-extended-support", "open-source-rds-extended-support-disabled"], var.engine_lifecycle_support)
+    condition     = var.engine_lifecycle_support == null || contains(["open-source-rds-extended-support", "open-source-rds-extended-support-disabled"], coalesce(var.engine_lifecycle_support, ""))
     error_message = "engine_lifecycle_support must be one of: open-source-rds-extended-support, open-source-rds-extended-support-disabled."
   }
 }
@@ -148,7 +148,7 @@ variable "cluster_scalability_type" {
   default     = null
 
   validation {
-    condition     = var.cluster_scalability_type == null || contains(["limitless", "standard"], var.cluster_scalability_type)
+    condition     = var.cluster_scalability_type == null || contains(["limitless", "standard"], coalesce(var.cluster_scalability_type, ""))
     error_message = "cluster_scalability_type must be one of: limitless, standard."
   }
 }
@@ -206,7 +206,7 @@ variable "network_type" {
   default     = "IPV4"
 
   validation {
-    condition     = var.network_type == null || contains(["IPV4", "DUAL"], var.network_type)
+    condition     = var.network_type == null || contains(["IPV4", "DUAL"], coalesce(var.network_type, ""))
     error_message = "network_type must be one of: IPV4, DUAL."
   }
 }
@@ -420,7 +420,7 @@ variable "database_insights_mode" {
   default     = null
 
   validation {
-    condition     = var.database_insights_mode == null || contains(["standard", "advanced"], var.database_insights_mode)
+    condition     = var.database_insights_mode == null || contains(["standard", "advanced"], coalesce(var.database_insights_mode, ""))
     error_message = "database_insights_mode must be one of: standard, advanced."
   }
 }
@@ -608,8 +608,8 @@ variable "kms" {
   EOT
   type = object({
     # Key source: either create new or use existing
-    create           = optional(bool, false)       # Set true to create KMS key, false to use existing
-    existing_key_arn = optional(string, null)      # Existing KMS key ARN to use (when create=false)
+    create           = optional(bool, false)  # Set true to create KMS key, false to use existing
+    existing_key_arn = optional(string, null) # Existing KMS key ARN to use (when create=false)
 
     # Key creation settings (used when create=true)
     description  = optional(string, null)
