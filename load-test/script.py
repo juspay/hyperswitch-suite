@@ -280,7 +280,7 @@ async def run_locust(test_spec, users,run_time, file_name):
 
     subprocess.Popen([
         "locust", "--locustfile", "locustfile.py", "--headless",
-        "--users", f"{users}", "--spawn-rate", f"{int(users/2)}", "--run-time", f"{run_time}s",
+        "--users", f"{users}", "--spawn-rate", f"{max(1, int(users/2))}", "--run-time", f"{run_time}s",
         "--html", f"output/temp/{file_name}.html", "--host", HYPERSWITCH_HOST_URL
     ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env)
     print(f"    ⏳ Load test running for {test_spec}...")
@@ -814,11 +814,23 @@ async def main():
     Path("output/temp").mkdir(parents=True, exist_ok=True)
 
     # Get all the required inputs
-    regular_transactions = int(input("Enter the no. of transactions per year during usual traffic : "))
-    spike_transactions = int(input("Enter the no. of transactions per second [TPS] during spike : "))
-    test_duration_normal = 60 * int(input("Enter the duration for the Load Test under regular traffic [in mins] : "))
-    test_duration_spike = 60 * int(input("Enter the duration for the Load Test under spike traffic [in mins] : "))
-    scaling_factor = int(input("Enter your preferred scaling factor for the server [default is 10x] : ") or 10)
+    def prompt_positive_int(prompt, default=None):
+        while True:
+            try:
+                raw = input(prompt)
+                value = int(raw or default)
+                if value <= 0:
+                    print("Please enter a positive integer.")
+                    continue
+                return value
+            except (ValueError, TypeError):
+                print("Invalid input. Please enter a positive integer.")
+
+    regular_transactions = prompt_positive_int("Enter the no. of transactions per year during usual traffic : ")
+    spike_transactions = prompt_positive_int("Enter the no. of transactions per second [TPS] during spike : ")
+    test_duration_normal = 60 * prompt_positive_int("Enter the duration for the Load Test under regular traffic [in mins] : ")
+    test_duration_spike = 60 * prompt_positive_int("Enter the duration for the Load Test under spike traffic [in mins] : ")
+    scaling_factor = prompt_positive_int("Enter your preferred scaling factor for the server [default is 10x] : ", default=10)
     requirements_content = calculator(regular_transactions,spike_transactions, scaling_factor)
 
     print("\n🚀 Starting load test...")

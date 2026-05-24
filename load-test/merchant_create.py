@@ -45,7 +45,7 @@ def merchant_account_create():
         "webhook_details": {
             "webhook_version": "1.0.1",
             "webhook_username": "ekart_retail",
-            "webhook_password": "password_ekart@123",
+            "webhook_password": os.getenv("WEBHOOK_PASSWORD", "changeme"),
             "webhook_url": "https://webhook.site",
             "payment_created_enabled": True,
             "payment_succeeded_enabled": True,
@@ -71,16 +71,19 @@ def api_key_create(m_id):
     return response["api_key"] if response else None
 
 def get_api_key_from_env():
-    return "test_key"
+    api_key = os.getenv("STRIPE_API_KEY")
+    if not api_key:
+        raise ValueError("STRIPE_API_KEY environment variable is not set")
+    return api_key
 
-def connector_create(merchant_id):
-    api_key_from_env = get_api_key_from_env()
+def connector_create(merchant_id, merchant_api_key):
+    stripe_api_key = get_api_key_from_env()
     payload = json.dumps({
         "connector_type": "payment_processor",
         "connector_name": "stripe_test",
         "connector_account_details": {
             "auth_type": "HeaderKey",
-            "api_key": api_key_from_env
+            "api_key": stripe_api_key
         },
         "test_mode": True,
         "disabled": False,
@@ -102,11 +105,10 @@ def connector_create(merchant_id):
         "business_country": "US",
         "business_label": "default"
     })
-    command = f"curl --silent --show-error --fail --request POST {HYPERSWITCH_HOST_URL}/account/{merchant_id}/connectors --header 'Content-Type: application/json' --header 'Accept: application/json' --header 'api-key: {api_key}' --data '{payload}'"
+    command = f"curl --silent --show-error --fail --request POST {HYPERSWITCH_HOST_URL}/account/{merchant_id}/connectors --header 'Content-Type: application/json' --header 'Accept: application/json' --header 'api-key: {merchant_api_key}' --data '{payload}'"
     run_curl(command)
 
 def main():
-    global merchant_id, api_key
     print("Creating Merchant Account...")
     merchant_id = merchant_account_create()
     if merchant_id:
@@ -115,9 +117,10 @@ def main():
         if api_key:
             with open(".secrets.env", "w") as f:
                 f.write(f"{api_key}\n")
+            os.chmod(".secrets.env", 0o600)
             print("Merchant ID and API key saved!")
             print("Creating connector...")
-            connector_create(merchant_id)
+            connector_create(merchant_id, api_key)
             print("Merchant Account created successfully!")
         else:
             print("Failed to create API Key.")
