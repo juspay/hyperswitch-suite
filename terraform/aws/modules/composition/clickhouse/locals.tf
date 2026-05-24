@@ -27,24 +27,41 @@ locals {
 
   shard_config = local.server_ips
 
-  # Default IAM inline policy (Kafka-like permissions)
+  # Default IAM inline policy for ClickHouse EC2 instances.
+  # ec2:Describe* and autoscaling:Describe* are needed for cluster discovery.
+  # Wildcard resources are required for Describe operations (AWS does not support resource-level restrictions).
   default_inline_policies = {
     clickhouse-ec2-policy = jsonencode({
       Version = "2012-10-17"
       Statement = [
         {
-          Action   = "ec2:*"
+          Sid    = "AllowEC2Describe"
+          Action = [
+            "ec2:DescribeInstances",
+            "ec2:DescribeTags",
+            "ec2:DescribeVolumes",
+            "ec2:DescribeSecurityGroups",
+            "ec2:DescribeNetworkInterfaces",
+            "ec2:DescribeAvailabilityZones"
+          ]
           Effect   = "Allow"
           Resource = "*"
         },
         {
-          Action   = "autoscaling:*"
+          Sid    = "AllowAutoscalingDescribe"
+          Action = [
+            "autoscaling:DescribeAutoScalingGroups",
+            "autoscaling:DescribeAutoScalingInstances",
+            "autoscaling:DescribeLaunchConfigurations",
+            "autoscaling:DescribeTags"
+          ]
           Effect   = "Allow"
           Resource = "*"
         },
         {
-          Effect   = "Allow"
-          Action   = "iam:CreateServiceLinkedRole"
+          Sid    = "AllowServiceLinkedRoleCreation"
+          Effect = "Allow"
+          Action = "iam:CreateServiceLinkedRole"
           Resource = "*"
           Condition = {
             StringEquals = {
@@ -56,6 +73,7 @@ locals {
           }
         },
         {
+          Sid      = "AllowStsAssumeRole"
           Action   = "sts:AssumeRole"
           Effect   = "Allow"
           Resource = "*"
