@@ -229,13 +229,13 @@ jobs:
             echo "=================================================="
             
             cp /tmp/ci_providers_override.tf "$dir/" 2>/dev/null || true
-            
+
             echo "Running terraform init -backend=false..."
-            INIT_OUTPUT=$(terraform init -backend=false -get=true -upgrade "$dir" 2>&1)
+            INIT_OUTPUT=$(terraform -chdir="$dir" init -backend=false -get=true -upgrade 2>&1)
             INIT_EXIT=$?
-            
+
             rm -f "$dir/ci_providers_override.tf" 2>/dev/null || true
-            
+
             if [ $INIT_EXIT -ne 0 ]; then
               echo "::error file=$dir::Terraform init failed"
               echo "$INIT_OUTPUT"
@@ -243,9 +243,9 @@ jobs:
               EXIT_CODE=1
               continue
             fi
-            
+
             echo "Running terraform validate..."
-            VALIDATE_OUTPUT=$(terraform validate "$dir" 2>&1)
+            VALIDATE_OUTPUT=$(terraform -chdir="$dir" validate 2>&1)
             VALIDATE_EXIT=$?
             
             if [ $VALIDATE_EXIT -ne 0 ]; then
