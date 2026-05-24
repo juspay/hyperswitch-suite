@@ -32,7 +32,7 @@ jobs:
       has-changes: ${{ steps.changed.outputs.has_changes }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -72,12 +72,12 @@ jobs:
     if: needs.detect-changes.outputs.has-changes == 'true'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "~1.5"
+          terraform_version: "1.5.7"
 
       - name: Check formatting on changed files
         id: fmt
@@ -119,12 +119,12 @@ jobs:
     if: needs.detect-changes.outputs.has-changes == 'true'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup TFLint
         uses: terraform-linters/setup-tflint@v4
         with:
-          tflint_version: latest
+          tflint_version: v0.53.0
 
       - name: Init TFLint
         run: tflint --init
@@ -192,12 +192,12 @@ jobs:
     if: needs.detect-changes.outputs.has-changes == 'true' && needs.terraform-fmt.result == 'success'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "~1.5"
+          terraform_version: "1.5.7"
 
       - name: Create CI provider override
         run: |
