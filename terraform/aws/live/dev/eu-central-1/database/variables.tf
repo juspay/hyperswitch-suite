@@ -251,9 +251,9 @@ variable "preferred_maintenance_window" {
 }
 
 variable "skip_final_snapshot" {
-  description = "Determines whether a final DB snapshot is created"
+  description = "Determines whether a final DB snapshot is created before the DB cluster is deleted. Set to true only for non-production environments."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "final_snapshot_identifier" {
@@ -291,9 +291,9 @@ variable "deletion_protection" {
 }
 
 variable "delete_automated_backups" {
-  description = "Specifies whether to remove automated backups immediately"
+  description = "Specifies whether to remove automated backups immediately after the DB cluster is deleted"
   type        = bool
-  default     = true
+  default     = false
 }
 
 # ============================================================================
