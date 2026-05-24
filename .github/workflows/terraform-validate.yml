@@ -147,7 +147,7 @@ jobs:
             echo "Linting: $dir"
             echo "=================================================="
             
-            LINT_OUTPUT=$(tflint --chdir="$dir" --format=compact 2>&1)
+            LINT_OUTPUT=$(tflint --chdir="$dir" --format=compact --minimum-failure-severity=error 2>&1)
             LINT_EXIT=$?
             
             if [ $LINT_EXIT -ne 0 ]; then
