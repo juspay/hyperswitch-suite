@@ -24,12 +24,6 @@ variable "region" {
 # Network Configuration
 # ============================================================================
 
-variable "vpc_id" {
-  description = "VPC ID where RDS will be deployed"
-  type        = string
-  default     = null # Will be fetched from remote state
-}
-
 variable "subnet_ids" {
   description = "List of subnet IDs for RDS DB subnet group"
   type        = list(string)
@@ -328,12 +322,6 @@ variable "monitoring_interval" {
   description = "Interval for Enhanced Monitoring metrics"
   type        = number
   default     = 0
-}
-
-variable "monitoring_role_arn" {
-  description = "ARN for the IAM role for enhanced monitoring"
-  type        = string
-  default     = null
 }
 
 variable "database_insights_mode" {

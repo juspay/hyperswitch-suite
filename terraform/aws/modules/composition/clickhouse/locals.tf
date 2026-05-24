@@ -1,5 +1,5 @@
 locals {
-  name_prefix = "${var.environment}-${var.project_name}-clickhouse"
+  name_prefix     = "${var.environment}-${var.project_name}-clickhouse"
   alb_name_prefix = "${var.environment}-ckh"
 
   common_tags = merge(
@@ -35,7 +35,7 @@ locals {
       Version = "2012-10-17"
       Statement = [
         {
-          Sid    = "AllowEC2Describe"
+          Sid = "AllowEC2Describe"
           Action = [
             "ec2:DescribeInstances",
             "ec2:DescribeTags",
@@ -48,7 +48,7 @@ locals {
           Resource = "*"
         },
         {
-          Sid    = "AllowAutoscalingDescribe"
+          Sid = "AllowAutoscalingDescribe"
           Action = [
             "autoscaling:DescribeAutoScalingGroups",
             "autoscaling:DescribeAutoScalingInstances",
@@ -59,9 +59,9 @@ locals {
           Resource = "*"
         },
         {
-          Sid    = "AllowServiceLinkedRoleCreation"
-          Effect = "Allow"
-          Action = "iam:CreateServiceLinkedRole"
+          Sid      = "AllowServiceLinkedRoleCreation"
+          Effect   = "Allow"
+          Action   = "iam:CreateServiceLinkedRole"
           Resource = "*"
           Condition = {
             StringEquals = {
@@ -82,7 +82,7 @@ locals {
     })
   }
 
-  inline_policies = length(var.iam_inline_policies) > 0 ? var.iam_inline_policies : local.default_inline_policies
+  inline_policies  = length(var.iam_inline_policies) > 0 ? var.iam_inline_policies : local.default_inline_policies
   managed_policies = var.iam_managed_policy_arns
 
   # Keeper user data - use template if provided, else use default
