@@ -426,8 +426,8 @@ resource "aws_lb_listener" "envoy_http" {
         dynamic "target_group" {
           for_each = local.auto_scaling_groups
           content {
-            arn    = target_group.value.target_group_arn
-            weight = target_group.value.weight
+            arn    = each.value.target_group_arn
+            weight = each.value.weight
           }
         }
         stickiness {
@@ -457,8 +457,8 @@ resource "aws_lb_listener" "envoy_https" {
       dynamic "target_group" {
         for_each = local.auto_scaling_groups
         content {
-          arn    = target_group.value.target_group_arn
-          weight = target_group.value.weight
+          arn    = each.value.target_group_arn
+          weight = each.value.weight
         }
       }
       stickiness {
