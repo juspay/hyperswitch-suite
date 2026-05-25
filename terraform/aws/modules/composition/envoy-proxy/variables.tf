@@ -277,10 +277,17 @@ variable "deployments" {
     weight                    = number
     desired_capacity          = optional(number)
     launch_template_id        = optional(string)
-    launch_template_version   = optional(string)
+    launch_template_version   = string
     target_group_name         = optional(string)
     existing_target_group_arn = optional(string)
   }))
+
+  default = {
+    "stable" = {
+      weight = 100
+      launch_template_version = "$Latest"
+    }
+  }
 
   validation {
     condition     = length(var.deployments) >= 1
