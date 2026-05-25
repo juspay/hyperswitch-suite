@@ -73,7 +73,7 @@ locals {
       desired_capacity        = coalesce(d.desired_capacity, var.desired_capacity)
       launch_template_id      = d.launch_template_id != null ? d.launch_template_id : aws_launch_template.envoy[0].id
       launch_template_version = d.launch_template_version
-      target_group_arn        = d.existing_target_group_arn != null ? d.existing_target_group_arn : (var.create_target_group ? aws_lb_target_group.envoy[name].arn : null)
+      tg_available            = var.create_target_group || d.existing_target_group_arn != null
     }
   }
 
@@ -82,5 +82,9 @@ locals {
       create_tg         = d.existing_target_group_arn == null
       target_group_name = coalesce(d.target_group_name, "${substr("${name}-${local.name_prefix}", 0, 32)}")
     }
+  }
+
+  target_group_arns = {
+    for name, d in var.deployments : name => d.existing_target_group_arn != null ? d.existing_target_group_arn : (var.create_target_group ? aws_lb_target_group.envoy[name].arn : null)
   }
 }

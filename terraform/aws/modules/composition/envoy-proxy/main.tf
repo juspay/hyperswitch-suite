@@ -657,7 +657,7 @@ module "asg" {
   version = "9.2.0"
 
   # Ensure S3 config files are uploaded before ASG starts
-  depends_on = [aws_s3_object.envoy_config_files]
+  depends_on = [aws_s3_object.envoy_config_files, aws_launch_template.envoy]
 
   name = each.value.asg_name
 
@@ -711,9 +711,9 @@ module "asg" {
   default_cooldown          = 300
 
   # Traffic sources (replaces target_group_arns in v8+)
-  traffic_source_attachments = each.value.target_group_arn != null ? {
+  traffic_source_attachments = each.value.tg_available ? {
     envoy_tg = {
-      traffic_source_identifier = each.value.target_group_arn
+      traffic_source_identifier = local.target_group_arns[each.key]
       traffic_source_type       = "elbv2"
     }
   } : null
