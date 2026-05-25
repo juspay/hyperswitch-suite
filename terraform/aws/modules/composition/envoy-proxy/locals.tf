@@ -66,75 +66,21 @@ locals {
   iam_role_arn  = var.create_iam_role ? module.envoy_iam_role[0].iam_role_arn : data.aws_iam_role.existing_envoy_role[0].arn
   iam_role_name = var.create_iam_role ? module.envoy_iam_role[0].iam_role_name : data.aws_iam_role.existing_envoy_role[0].name
 
-  # Launch Template selection - use created or existing
-  launch_template_id      = var.use_existing_launch_template ? var.existing_launch_template_id : aws_launch_template.envoy[0].id
-  launch_template_version = var.use_existing_launch_template ? var.existing_launch_template_version : aws_launch_template.envoy[0].latest_version
-
-  enable_bg_rollout = var.blue_green_rollout != null && length(try(data.aws_autoscaling_groups.groups_blue.names, [])) > 0
-
-  rollout_version = length(try(data.aws_autoscaling_groups.groups_blue.names, [])) > 0 ? (
-    tonumber(
-      try(
-        [for t in data.aws_autoscaling_group.asg_blue[0].tag : t.value if t.key == "Version"][0],
-        "0"
-      )
-    )
-  ) : 0
-
-  standard_version = length(try(data.aws_autoscaling_groups.groups_green.names, [])) > 0 ? (
-    tonumber(
-      try(
-        [for t in data.aws_autoscaling_group.asg_green[0].tag : t.value if t.key == "Version"][0],
-        "0"
-      )
-    )
-  ) : local.rollout_version
-
-  target_group_arns = var.create_target_group ? [aws_lb_target_group.envoy[local.standard_version].arn] : [var.existing_tg_arn]
-
-  deployments = local.enable_bg_rollout ? merge(
-    try(var.blue_green_rollout.blue_weight, null) != null ? {
-      (local.rollout_version) = {
-        lt_version          = data.aws_autoscaling_group.asg_blue[0].launch_template[0].version
-        lt_id               = data.aws_autoscaling_group.asg_blue[0].launch_template[0].id
-        deployment          = "blue"
-        target_group_arns   = data.aws_autoscaling_group.asg_blue[0].target_group_arns
-        weight              = var.blue_green_rollout.blue_weight
-        name                = data.aws_autoscaling_group.asg_blue[0].name
-        vpc_zone_identifier = data.aws_autoscaling_group.asg_blue[0].vpc_zone_identifier
-      }
-    } : {},
-    try(var.blue_green_rollout.green_weight, null) != null ? {
-      (local.rollout_version + 1) = {
-        lt_version          = local.launch_template_version
-        lt_id               = local.launch_template_id
-        deployment          = "green"
-        target_group_arns   = local.target_group_arns
-        weight              = var.blue_green_rollout.green_weight
-        name                = "${local.name_prefix}-asg-v${local.rollout_version + 1}"
-        vpc_zone_identifier = var.proxy_subnet_ids
-      }
-    } : {}
-    ) : {
-    (local.standard_version) = {
-      lt_version          = local.launch_template_version
-      lt_id               = local.launch_template_id
-      deployment          = "blue"
-      target_group_arns   = local.target_group_arns
-      weight              = 100
-      name                = "${local.name_prefix}-asg-v${local.standard_version}"
-      vpc_zone_identifier = var.proxy_subnet_ids
+  auto_scaling_groups = {
+    for name, d in var.deployments : name => {
+      asg_name                = coalesce(d.asg_name, "${local.name_prefix}-${name}")
+      weight                  = d.weight
+      desired_capacity        = coalesce(d.desired_capacity, var.desired_capacity)
+      launch_template_id      = d.launch_template_id != null ? d.launch_template_id : aws_launch_template.envoy[0].id
+      launch_template_version = d.launch_template_version
+      target_group_arn        = d.existing_target_group_arn != null ? d.existing_target_group_arn : (var.create_target_group ? aws_lb_target_group.envoy[name].arn : null)
     }
   }
 
-  target_groups = local.enable_bg_rollout ? merge(
-    try(var.blue_green_rollout.blue_weight, null) != null ? {
-      (local.rollout_version) = "blue"
-    } : {},
-    try(var.blue_green_rollout.green_weight, null) != null ? {
-      (local.rollout_version + 1) = "green"
-    } : {}
-    ) : {
-    (local.standard_version) = "blue"
+  target_groups = {
+    for name, d in var.deployments : name => {
+      create_tg         = d.existing_target_group_arn == null
+      target_group_name = coalesce(d.target_group_name, "${substr("${name}-${local.name_prefix}", 0, 32)}")
+    }
   }
 }

@@ -1,11 +1,6 @@
 variable "environment" {
-  description = "Environment name (dev, integ, prd, prod, sbx)"
+  description = "Environment name (dev, integ, prod, sandbox)"
   type        = string
-
-  validation {
-    condition     = contains(["dev", "integ", "prd", "prod", "sbx"], var.environment)
-    error_message = "Environment must be one of: dev, integ, prd, prod, sbx"
-  }
 }
 
 variable "project_name" {
@@ -62,7 +57,6 @@ variable "lb_egress_rules" {
 
 # =========================================================================
 # Port Configuration Variables
-# These allow per-environment port configuration (e.g., dev uses 80, prod uses 8080)
 # =========================================================================
 
 variable "alb_http_listener_port" {
@@ -137,6 +131,12 @@ variable "enable_http_to_https_redirect" {
   default     = false
 }
 
+variable "additional_certificate_arns" {
+  description = "List of additional SSL certificate ARNs to attach to the HTTPS listener for SNI (Server Name Indication) support. Allows serving different certificates for different domains on the same listener."
+  type        = list(string)
+  default     = []
+}
+
 # =========================================================================
 # Advanced Listener Rules Configuration
 # =========================================================================
@@ -194,144 +194,122 @@ variable "waf_web_acl_arn" {
   default     = null
 }
 
-variable "ami_id" {
-  description = "AMI ID for Envoy instances (ignored if use_existing_launch_template = true)"
-  type        = string
-  default     = null
-}
+# =========================================================================
+# Launch Template Configuration
+# =========================================================================
 
-variable "instance_type" {
-  description = "EC2 instance type for Envoy proxy (ignored if use_existing_launch_template = true)"
-  type        = string
-  default     = "t3.medium"
-}
+variable "launch_template" {
+  description = <<-EOT
+    Launch template configuration. All fields control how module-managed
+    launch templates are created. Ignored when a deployment provides its own
+    launch_template_id.
+  EOT
 
-variable "set_lt_default_version" {
-  description = "Value of launch template version to be set as default. Conflicts with update_default_version"
-  type        = string
-  default     = null
-}
-
-variable "update_default_version" {
-  description = "Whether to update default version of launch template on every update. Conflicts with set_lt_default_version"
-  type        = bool
-  default     = false
-}
-
-variable "use_existing_launch_template" {
-  description = "Whether to use an existing launch template instead of creating a new one"
-  type        = bool
-  default     = false
-}
-
-variable "existing_launch_template_id" {
-  description = "ID of existing launch template to use (required if use_existing_launch_template = true)"
-  type        = string
-  default     = null
-}
-
-variable "existing_launch_template_version" {
-  description = "Version of existing launch template to use ($Latest, $Default, or specific version number)"
-  type        = string
-  default     = "$Latest"
-}
-
-variable "blue_green_rollout" {
-  description = "Blue-green rollout configuration for Envoy"
   type = object({
-    blue_weight  = number,
-    green_weight = number
+    create = optional(bool, true)
+    # --- Compute ---
+    ami_id        = string
+    instance_type = optional(string, "t3.medium")
+
+    # --- Versioning ---
+    update_default_version = optional(bool, true)
+    default_version        = optional(string, null)
+
+    # --- EBS ---
+    ebs_optimized           = optional(bool, true)
+    enable_ebs_block_device = optional(bool, true)
+    ebs_encrypted           = optional(bool, true)
+    root_volume_size        = optional(number, 20)
+    root_volume_type        = optional(string, "gp3")
+
+    # --- IMDS ---
+    imds_http_endpoint               = optional(string, null)
+    imds_http_tokens                 = optional(string, null)
+    imds_http_put_response_hop_limit = optional(number, null)
+    imds_instance_metadata_tags      = optional(string, null)
+
+    # --- Monitoring ---
+    enable_detailed_monitoring = optional(bool, true)
   })
-  default = null
+
+  validation {
+    condition     = var.launch_template.root_volume_size >= 8 && var.launch_template.root_volume_size <= 16384
+    error_message = "root_volume_size must be between 8 and 16384 GB"
+  }
+
+  validation {
+    condition     = contains(["gp2", "gp3", "io1", "io2", "st1", "sc1"], var.launch_template.root_volume_type)
+    error_message = "root_volume_type must be one of: gp2, gp3, io1, io2, st1, sc1"
+  }
+
+  validation {
+    condition     = var.launch_template.imds_http_tokens == null || contains(["required", "optional"], var.launch_template.imds_http_tokens)
+    error_message = "imds_http_tokens must be 'required', 'optional', or null"
+  }
+
+  validation {
+    condition     = var.launch_template.imds_http_endpoint == null || contains(["enabled", "disabled"], var.launch_template.imds_http_endpoint)
+    error_message = "imds_http_endpoint must be 'enabled', 'disabled', or null"
+  }
+
+  validation {
+    condition     = var.launch_template.imds_instance_metadata_tags == null || contains(["enabled", "disabled"], var.launch_template.imds_instance_metadata_tags)
+    error_message = "imds_instance_metadata_tags must be 'enabled', 'disabled', or null"
+  }
 }
 
 # =========================================================================
-# Launch Template Advanced Configuration (ignored if use_existing_launch_template = true)
+# Deployments Configuration
 # =========================================================================
 
-variable "ebs_optimized" {
-  description = "Enable EBS optimization for instances (ignored if use_existing_launch_template = true)"
-  type        = bool
-  default     = true
-}
+variable "deployments" {
+  description = <<-EOT
+    Map of concurrent Envoy deployments. Each key is an identifier (e.g., "v1", "v2").
+    Traffic is split across them via ALB weighted forward.
 
-variable "ebs_encrypted" {
-  description = "Enable EBS encryption for root volume (ignored if use_existing_launch_template = true or enable_ebs_block_device = false)"
-  type        = bool
-  default     = true
-}
+    - launch_template_id:      Optional. Provide to use an external launch template.
+    - launch_template_version: Optional. Defaults to "$Latest" for external LTs,
+                               or the module-managed LT's latest_version.
+  EOT
 
-variable "enable_ebs_block_device" {
-  description = "Enable EBS block device mapping in launch template. Set to false if AMI already has storage configured (ignored if use_existing_launch_template = true)"
-  type        = bool
-  default     = true
-}
-
-variable "root_volume_size" {
-  description = "Root volume size in GB (ignored if use_existing_launch_template = true or enable_ebs_block_device = false)"
-  type        = number
-  default     = 20
+  type = map(object({
+    asg_name                  = optional(string)
+    weight                    = number
+    desired_capacity          = optional(number)
+    launch_template_id        = optional(string)
+    launch_template_version   = optional(string)
+    target_group_name         = optional(string)
+    existing_target_group_arn = optional(string)
+  }))
 
   validation {
-    condition     = var.root_volume_size >= 8 && var.root_volume_size <= 16384
-    error_message = "Root volume size must be between 8 and 16384 GB"
+    condition     = length(var.deployments) >= 1
+    error_message = "At least one deployment must be specified."
+  }
+
+  validation {
+    condition = alltrue([
+      for d in var.deployments : d.weight >= 0 && d.weight <= 100
+    ])
+    error_message = "Each deployment weight must be between 0 and 100."
+  }
+
+  validation {
+    condition     = length(var.deployments) == 1 ? true : sum([for d in var.deployments : d.weight]) == 100
+    error_message = "When multiple deployments are specified, weights must sum to exactly 100."
+  }
+
+  validation {
+    condition = alltrue([
+      for d in var.deployments : d.launch_template_id != null || var.launch_template.create
+    ])
+    error_message = "Each deployment must specify launch_template_id, or var.launch_template.create must be true."
   }
 }
 
-variable "root_volume_type" {
-  description = "Root volume type: gp2, gp3, io1, io2, st1, sc1 (ignored if use_existing_launch_template = true or enable_ebs_block_device = false)"
-  type        = string
-  default     = "gp3"
-
-  validation {
-    condition     = contains(["gp2", "gp3", "io1", "io2", "st1", "sc1"], var.root_volume_type)
-    error_message = "Root volume type must be one of: gp2, gp3, io1, io2, st1, sc1"
-  }
-}
-
-variable "imds_http_tokens" {
-  description = "Whether IMDS requires session tokens (IMDSv2). Set to 'required' for IMDSv2, 'optional' for IMDSv1/v2, or null to use AWS default (ignored if use_existing_launch_template = true)"
-  type        = string
-  default     = null
-
-  validation {
-    condition     = var.imds_http_tokens == null || contains(["required", "optional"], var.imds_http_tokens)
-    error_message = "imds_http_tokens must be either 'required' (IMDSv2), 'optional' (IMDSv1/v2), or null (AWS default)"
-  }
-}
-
-variable "imds_http_endpoint" {
-  description = "Enable or disable the IMDS HTTP endpoint. Set to 'enabled', 'disabled', or null to use AWS default (ignored if use_existing_launch_template = true)"
-  type        = string
-  default     = null
-
-  validation {
-    condition     = var.imds_http_endpoint == null || contains(["enabled", "disabled"], var.imds_http_endpoint)
-    error_message = "imds_http_endpoint must be either 'enabled', 'disabled', or null (AWS default)"
-  }
-}
-
-variable "imds_http_put_response_hop_limit" {
-  description = "Desired HTTP PUT response hop limit for instance metadata requests (1-64), or null to use AWS default (ignored if use_existing_launch_template = true)"
-  type        = number
-  default     = null
-
-  validation {
-    condition     = var.imds_http_put_response_hop_limit == null || (var.imds_http_put_response_hop_limit >= 1 && var.imds_http_put_response_hop_limit <= 64)
-    error_message = "imds_http_put_response_hop_limit must be between 1 and 64, or null (AWS default)"
-  }
-}
-
-variable "imds_instance_metadata_tags" {
-  description = "Enable instance metadata tags. Set to 'enabled', 'disabled', or null to use AWS default (ignored if use_existing_launch_template = true)"
-  type        = string
-  default     = null
-
-  validation {
-    condition     = var.imds_instance_metadata_tags == null || contains(["enabled", "disabled"], var.imds_instance_metadata_tags)
-    error_message = "imds_instance_metadata_tags must be either 'enabled', 'disabled', or null (AWS default)"
-  }
-}
+# =========================================================================
+# SSH Key Configuration
+# =========================================================================
 
 variable "key_name" {
   description = "SSH key pair name (ignored if generate_ssh_key=true)"
@@ -344,6 +322,10 @@ variable "generate_ssh_key" {
   type        = bool
   default     = true
 }
+
+# =========================================================================
+# IAM Role Configuration
+# =========================================================================
 
 variable "create_iam_role" {
   description = "Whether to create a new IAM role or use existing one"
@@ -368,6 +350,10 @@ variable "existing_iam_instance_profile_name" {
   type        = string
   default     = null
 }
+
+# =========================================================================
+# Envoy Configuration
+# =========================================================================
 
 variable "custom_userdata" {
   description = "Custom userdata script for Envoy instances. This should be environment-specific and loaded from the live layer (e.g., file(\"$${path.module}/templates/userdata.sh\"))"
@@ -475,6 +461,10 @@ variable "max_instance_lifetime" {
   }
 }
 
+# =========================================================================
+# S3 Buckets
+# =========================================================================
+
 variable "create_logs_bucket" {
   description = "Whether to create a new S3 bucket for logs (if false, use existing bucket)"
   type        = bool
@@ -554,16 +544,20 @@ variable "eks_cluster_name" {
   default     = ""
 }
 
-variable "enable_detailed_monitoring" {
-  description = "Enable detailed CloudWatch monitoring (ignored if use_existing_launch_template = true)"
-  type        = bool
-  default     = true
-}
+# =========================================================================
+# Load Balancer Configuration
+# =========================================================================
 
 variable "create_lb" {
   description = "Whether to create a new Load Balancer"
   type        = bool
   default     = true
+}
+
+variable "lb_internal" {
+  description = "Whether the ALB is internal (true) or internet-facing (false)"
+  type        = bool
+  default     = false
 }
 
 variable "create_target_group" {
