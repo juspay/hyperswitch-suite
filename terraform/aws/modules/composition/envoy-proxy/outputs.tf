@@ -15,7 +15,7 @@ output "lb_zone_id" {
 
 output "target_group_arns" {
   description = "Map of deployment names to target group ARNs"
-  value       = { for k, v in local.auto_scaling_groups : k => v.target_group_arn }
+  value       = { for k, v in local.auto_scaling_groups : k => local.target_group_arns[k] }
 }
 
 output "launch_template_id" {
