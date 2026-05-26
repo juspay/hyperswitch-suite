@@ -148,7 +148,7 @@ module "envoy_iam_role" {
   trusted_role_services = ["ec2.amazonaws.com"]
 
   # Restrictive inline policies
-  custom_role_policy_arns = []
+  custom_role_policy_arns = var.additional_policy_arns
 
   inline_policy_statements = [
     # CloudWatch - Restricted to PutMetricData only

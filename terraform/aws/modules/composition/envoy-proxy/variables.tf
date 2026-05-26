@@ -358,6 +358,12 @@ variable "existing_iam_instance_profile_name" {
   default     = null
 }
 
+variable "additional_policy_arns" {
+  description = "List of additional IAM policy ARNs to attach to the Envoy IAM role (e.g., AmazonSSMManagedInstanceCore for SSM access)"
+  type        = list(string)
+  default     = []
+}
+
 # =========================================================================
 # Envoy Configuration
 # =========================================================================
