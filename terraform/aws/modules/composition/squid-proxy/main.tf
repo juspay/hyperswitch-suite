@@ -135,6 +135,8 @@ module "squid_iam_role" {
   service_identifiers     = ["ec2.amazonaws.com"]
   create_instance_profile = true
 
+  managed_policy_arns = var.additional_policy_arns
+
   # Restrictive inline policies
   inline_policies = {
     # CloudWatch - Restricted to PutMetricData only
