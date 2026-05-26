@@ -47,13 +47,13 @@ locals {
   config_bucket_arn  = var.create_config_bucket ? module.config_bucket[0].s3_bucket_arn : var.config_bucket_arn
 
   # Userdata templating - replace placeholders with actual values
-  # Supports: {{bucket-name}}, {{logs_bucket}}
+  # Supports: {{bucket-name}}, {{logs-bucket}}
   userdata_content = replace(
     replace(
       var.custom_userdata,
       "{{bucket-name}}", local.config_bucket_name
     ),
-    "{{logs_bucket}}", local.logs_bucket_name
+    "{{logs-bucket}}", local.logs_bucket_name
   )
 
   # IAM role selection - use created or existing
