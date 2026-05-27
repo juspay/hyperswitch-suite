@@ -26,6 +26,12 @@ variable "tags" {
   default     = {}
 }
 
+variable "host_domains" {
+  description = "Map of environment names to host domains for superposition. Example: { integ = 'integ.example.com', sandbox = 'sandbox.example.com' }"
+  type        = map(string)
+  default     = {}
+}
+
 # =========================================================================
 # EKS OIDC Configuration
 # =========================================================================
