@@ -11,6 +11,11 @@ output "account_id" {
   value       = data.aws_caller_identity.current.account_id
 }
 
+output "host_domains_map" {
+  description = "Map of environment names to host domains for Superposition"
+  value       = var.host_domains
+}
+
 # =========================================================================
 # IAM ROLE OUTPUTS
 # =========================================================================
