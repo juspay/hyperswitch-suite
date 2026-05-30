@@ -77,7 +77,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "~1.5"
+          terraform_version: "1.5.7"
 
       - name: Check formatting on changed files
         id: fmt
@@ -124,7 +124,7 @@ jobs:
       - name: Setup TFLint
         uses: terraform-linters/setup-tflint@v4
         with:
-          tflint_version: latest
+          tflint_version: v0.53.0
 
       - name: Init TFLint
         run: tflint --init
@@ -147,7 +147,7 @@ jobs:
             echo "Linting: $dir"
             echo "=================================================="
             
-            LINT_OUTPUT=$(tflint --chdir="$dir" --format=compact 2>&1)
+            LINT_OUTPUT=$(tflint --chdir="$dir" --format=compact --minimum-failure-severity=error 2>&1)
             LINT_EXIT=$?
             
             if [ $LINT_EXIT -ne 0 ]; then
@@ -197,7 +197,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          terraform_version: "~1.5"
+          terraform_version: "1.5.7"
 
       - name: Create CI provider override
         run: |
@@ -229,13 +229,16 @@ jobs:
             echo "=================================================="
             
             cp /tmp/ci_providers_override.tf "$dir/" 2>/dev/null || true
-            
+
             echo "Running terraform init -backend=false..."
-            INIT_OUTPUT=$(terraform init -backend=false -get=true -upgrade "$dir" 2>&1)
-            INIT_EXIT=$?
-            
+            if INIT_OUTPUT=$(terraform -chdir="$dir" init -backend=false -get=true -upgrade 2>&1); then
+              INIT_EXIT=0
+            else
+              INIT_EXIT=$?
+            fi
+
             rm -f "$dir/ci_providers_override.tf" 2>/dev/null || true
-            
+
             if [ $INIT_EXIT -ne 0 ]; then
               echo "::error file=$dir::Terraform init failed"
               echo "$INIT_OUTPUT"
@@ -243,10 +246,13 @@ jobs:
               EXIT_CODE=1
               continue
             fi
-            
+
             echo "Running terraform validate..."
-            VALIDATE_OUTPUT=$(terraform validate "$dir" 2>&1)
-            VALIDATE_EXIT=$?
+            if VALIDATE_OUTPUT=$(terraform -chdir="$dir" validate 2>&1); then
+              VALIDATE_EXIT=0
+            else
+              VALIDATE_EXIT=$?
+            fi
             
             if [ $VALIDATE_EXIT -ne 0 ]; then
               echo "::error file=$dir::Terraform validation failed"

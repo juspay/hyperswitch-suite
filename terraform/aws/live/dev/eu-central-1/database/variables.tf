@@ -24,12 +24,6 @@ variable "region" {
 # Network Configuration
 # ============================================================================
 
-variable "vpc_id" {
-  description = "VPC ID where RDS will be deployed"
-  type        = string
-  default     = null # Will be fetched from remote state
-}
-
 variable "subnet_ids" {
   description = "List of subnet IDs for RDS DB subnet group"
   type        = list(string)
@@ -251,9 +245,9 @@ variable "preferred_maintenance_window" {
 }
 
 variable "skip_final_snapshot" {
-  description = "Determines whether a final DB snapshot is created"
+  description = "Determines whether a final DB snapshot is created before the DB cluster is deleted. Set to true only for non-production environments."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "final_snapshot_identifier" {
@@ -291,9 +285,9 @@ variable "deletion_protection" {
 }
 
 variable "delete_automated_backups" {
-  description = "Specifies whether to remove automated backups immediately"
+  description = "Specifies whether to remove automated backups immediately after the DB cluster is deleted"
   type        = bool
-  default     = true
+  default     = false
 }
 
 # ============================================================================
@@ -328,12 +322,6 @@ variable "monitoring_interval" {
   description = "Interval for Enhanced Monitoring metrics"
   type        = number
   default     = 0
-}
-
-variable "monitoring_role_arn" {
-  description = "ARN for the IAM role for enhanced monitoring"
-  type        = string
-  default     = null
 }
 
 variable "database_insights_mode" {

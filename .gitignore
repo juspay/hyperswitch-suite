@@ -85,3 +85,6 @@ load-test/test_env/
 load-test/output/
 
 load-test/__pycache__
+
+# Claude Code local session files
+.claude/
