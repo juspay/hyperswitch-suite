@@ -1,0 +1,36 @@
+name: Generate Terraform Documentation
+
+on:
+  pull_request:
+    paths:
+      - "terraform/**/*.tf"
+      - "terraform/**/.terraform-docs.yml"
+      - ".github/workflows/terraform-docs.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  terraform-docs:
+    name: Update Module Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Generate Terraform docs for module layers
+        uses: terraform-docs/gh-actions@v1.4.1
+        with:
+          find-dir: terraform/aws/modules
+          output-file: README.md
+          output-method: inject
+          config-file: .terraform-docs.yml
+          git-push: "true"
+          git-commit-message: "docs(terraform): auto-update module documentation [skip ci]"
