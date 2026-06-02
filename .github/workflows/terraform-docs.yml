@@ -31,6 +31,6 @@ jobs:
           find-dir: terraform/aws/modules
           output-file: README.md
           output-method: inject
-          config-file: .terraform-docs.yml
+          config-file: terraform/aws/modules/.terraform-docs.yml
           git-push: "true"
           git-commit-message: "docs(terraform): auto-update module documentation [skip ci]"
