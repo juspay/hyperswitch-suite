@@ -148,7 +148,7 @@ module "envoy_iam_role" {
   trusted_role_services = ["ec2.amazonaws.com"]
 
   # Restrictive inline policies
-  custom_role_policy_arns = []
+  custom_role_policy_arns = var.additional_policy_arns
 
   inline_policy_statements = [
     # CloudWatch - Restricted to PutMetricData only
@@ -328,8 +328,6 @@ resource "aws_security_group_rule" "existing_lb_to_asg_healthcheck" {
 # =========================================================================
 # Application Load Balancer (Conditional - Create only if needed)
 # =========================================================================
-# External ALB sits between CloudFront and Envoy ASG
-# Architecture: CloudFront → External ALB → Envoy ASG → Internal ALB → EKS
 module "alb" {
   count   = var.create_lb ? 1 : 0
   source  = "terraform-aws-modules/alb/aws"
@@ -337,7 +335,7 @@ module "alb" {
 
   name               = "${local.name_prefix}-alb"
   load_balancer_type = "application"
-  internal           = false # Public-facing to receive from CloudFront
+  internal           = var.lb_internal
 
   vpc_id          = var.vpc_id
   subnets         = var.lb_subnet_ids
@@ -360,9 +358,11 @@ module "alb" {
 # Target group for ALB → Envoy ASG
 # Targets Envoy traffic listener port
 resource "aws_lb_target_group" "envoy" {
-  for_each = var.create_target_group ? local.target_groups : {}
+  for_each = var.create_target_group ? {
+    for name, tg in local.target_groups : name => tg if tg.create_tg
+  } : {}
 
-  name                 = "${local.name_prefix}-tg-${substr(md5("${var.target_group_protocol}-${var.envoy_traffic_port}"), 0, 6)}-v${each.key}"
+  name                 = each.value.target_group_name
   port                 = var.envoy_traffic_port
   protocol             = var.target_group_protocol # HTTP or HTTPS based on configuration
   vpc_id               = var.vpc_id
@@ -384,9 +384,7 @@ resource "aws_lb_target_group" "envoy" {
   tags = merge(
     local.common_tags,
     {
-      Name       = "${local.name_prefix}-tg"
-      Deployment = each.value
-      Version    = each.key
+      Name = each.value.target_group_name
     }
   )
 
@@ -422,20 +420,16 @@ resource "aws_lb_listener" "envoy_http" {
       }
     }
 
-    # Weighted Forward block (used only when not redirecting)
     dynamic "forward" {
       for_each = !(var.enable_https_listener && var.enable_http_to_https_redirect) ? [1] : []
       content {
-
-        # Canary target group (optional)
         dynamic "target_group" {
-          for_each = local.deployments
+          for_each = local.auto_scaling_groups
           content {
-            arn    = each.value.target_group_arns[0]
-            weight = each.value.weight
+            arn    = local.target_group_arns[target_group.key]
+            weight = target_group.value.weight
           }
         }
-
         stickiness {
           enabled  = false
           duration = 1
@@ -459,17 +453,14 @@ resource "aws_lb_listener" "envoy_https" {
 
   default_action {
     type = "forward"
-
     forward {
-
       dynamic "target_group" {
-        for_each = local.deployments
+        for_each = local.auto_scaling_groups
         content {
-          arn    = each.value.target_group_arns[0]
-          weight = each.value.weight
+          arn    = local.target_group_arns[target_group.key]
+          weight = target_group.value.weight
         }
       }
-
       stickiness {
         enabled  = false
         duration = 1
@@ -478,6 +469,18 @@ resource "aws_lb_listener" "envoy_https" {
   }
 
   tags = local.common_tags
+}
+
+# =========================================================================
+# Additional SSL Certificates for SNI Support
+# =========================================================================
+# Attach additional certificates to the HTTPS listener using Server Name Indication (SNI).
+# This allows the ALB to serve different certificates for different domains on the same port.
+resource "aws_lb_listener_certificate" "additional" {
+  for_each = var.create_lb && var.enable_https_listener ? toset(var.additional_certificate_arns) : []
+
+  listener_arn    = aws_lb_listener.envoy_https[0].arn
+  certificate_arn = each.value
 }
 
 # =========================================================================
@@ -572,54 +575,51 @@ resource "aws_wafv2_web_acl_association" "envoy_alb" {
 }
 
 # =========================================================================
-# Launch Template (Conditional - Create only if not using existing)
+# Launch Template
 # =========================================================================
 resource "aws_launch_template" "envoy" {
-  count = var.use_existing_launch_template ? 0 : 1
+  count = var.launch_template.create ? 1 : 0
 
   name_prefix = "${local.name_prefix}-"
   description = "Launch template for Envoy proxy instances - Config: ${substr(md5(local.envoy_config_content), 0, 8)}"
 
-  image_id               = var.ami_id
-  instance_type          = var.instance_type
+  image_id               = var.launch_template.ami_id
+  instance_type          = var.launch_template.instance_type
   key_name               = var.generate_ssh_key ? module.key_pair[0].key_pair_name : var.key_name
   vpc_security_group_ids = [module.asg_security_group.security_group_id]
-  ebs_optimized          = var.ebs_optimized
+  ebs_optimized          = var.launch_template.ebs_optimized
   user_data              = base64encode(local.userdata_content)
-  update_default_version = var.update_default_version
-  default_version = var.set_lt_default_version
+  update_default_version = var.launch_template.update_default_version
+  default_version        = var.launch_template.default_version
 
   iam_instance_profile {
     name = local.instance_profile_name
   }
 
   monitoring {
-    enabled = var.enable_detailed_monitoring
+    enabled = var.launch_template.enable_detailed_monitoring
   }
 
-  # Only include metadata_options if at least one IMDS setting is configured
   dynamic "metadata_options" {
-    for_each = var.imds_http_endpoint != null || var.imds_http_tokens != null || var.imds_http_put_response_hop_limit != null || var.imds_instance_metadata_tags != null ? [1] : []
+    for_each = var.launch_template.imds_http_endpoint != null || var.launch_template.imds_http_tokens != null || var.launch_template.imds_http_put_response_hop_limit != null || var.launch_template.imds_instance_metadata_tags != null ? [1] : []
     content {
-      http_endpoint               = var.imds_http_endpoint
-      http_tokens                 = var.imds_http_tokens
-      http_put_response_hop_limit = var.imds_http_put_response_hop_limit
-      instance_metadata_tags      = var.imds_instance_metadata_tags
+      http_endpoint               = var.launch_template.imds_http_endpoint
+      http_tokens                 = var.launch_template.imds_http_tokens
+      http_put_response_hop_limit = var.launch_template.imds_http_put_response_hop_limit
+      instance_metadata_tags      = var.launch_template.imds_instance_metadata_tags
     }
   }
 
-  # Conditional block device mapping - only add if enabled
-  # If your AMI already has storage configured, set enable_ebs_block_device = false
   dynamic "block_device_mappings" {
-    for_each = var.enable_ebs_block_device ? [1] : []
+    for_each = var.launch_template.enable_ebs_block_device ? [1] : []
     content {
       device_name = "/dev/xvda"
 
       ebs {
-        volume_size           = var.root_volume_size
-        volume_type           = var.root_volume_type
+        volume_size           = var.launch_template.root_volume_size
+        volume_type           = var.launch_template.root_volume_type
         delete_on_termination = true
-        encrypted             = var.ebs_encrypted
+        encrypted             = var.launch_template.ebs_encrypted
       }
     }
   }
@@ -650,7 +650,8 @@ resource "aws_launch_template" "envoy" {
 # Auto Scaling Group
 # =========================================================================
 module "asg" {
-  for_each = local.deployments
+
+  for_each = local.auto_scaling_groups
 
   source  = "terraform-aws-modules/autoscaling/aws"
   version = "9.2.0"
@@ -658,7 +659,7 @@ module "asg" {
   # Ensure S3 config files are uploaded before ASG starts
   depends_on = [aws_s3_object.envoy_config_files, aws_launch_template.envoy]
 
-  name = each.value.name
+  name = each.value.asg_name
 
   # =========================================================================
   # Launch Template Configuration Strategy
@@ -678,8 +679,8 @@ module "asg" {
   # Always use a launch template (either existing or our created one)
   # This prevents the ASG module from creating its own launch template
   create_launch_template  = false
-  launch_template_id      = each.value.lt_id
-  launch_template_version = each.value.lt_version
+  launch_template_id      = each.value.launch_template_id
+  launch_template_version = each.value.launch_template_version
 
   # For mixed instances policy (spot enabled)
   mixed_instances_policy = var.enable_spot_instances ? {
@@ -697,12 +698,12 @@ module "asg" {
 
 
   # VPC and networking
-  vpc_zone_identifier = each.value.vpc_zone_identifier
+  vpc_zone_identifier = var.proxy_subnet_ids
 
   # Capacity
   min_size         = var.min_size
   max_size         = var.max_size
-  desired_capacity = var.desired_capacity
+  desired_capacity = each.value.desired_capacity
 
   # Health check
   health_check_type         = "ELB"
@@ -710,9 +711,9 @@ module "asg" {
   default_cooldown          = 300
 
   # Traffic sources (replaces target_group_arns in v8+)
-  traffic_source_attachments = var.create_target_group || var.existing_tg_arn != null ? {
-    for idx, arn in each.value.target_group_arns : "envoy_tg_${idx}" => {
-      traffic_source_identifier = arn
+  traffic_source_attachments = each.value.tg_available ? {
+    envoy_tg = {
+      traffic_source_identifier = local.target_group_arns[each.key]
       traffic_source_type       = "elbv2"
     }
   } : null
@@ -734,7 +735,7 @@ module "asg" {
   # Scaling policies - Created separately below
 
   # Tags
-  tags = merge(local.common_tags, { Deployment = each.value.deployment, Version = each.key })
+  tags = local.common_tags
 }
 
 # =========================================================================
@@ -743,9 +744,9 @@ module "asg" {
 
 # CPU Target Tracking Scaling Policy
 resource "aws_autoscaling_policy" "cpu_target_tracking" {
-  for_each = var.enable_autoscaling && var.scaling_policies.cpu_target_tracking.enabled ? local.deployments : {}
+  for_each = var.enable_autoscaling && var.scaling_policies.cpu_target_tracking.enabled ? local.auto_scaling_groups : {}
 
-  name                   = "${local.name_prefix}-cpu-target-tracking"
+  name                   = "${local.name_prefix}-cpu-target-tracking-${each.key}"
   autoscaling_group_name = module.asg[each.key].autoscaling_group_name
   policy_type            = "TargetTrackingScaling"
 
@@ -759,7 +760,7 @@ resource "aws_autoscaling_policy" "cpu_target_tracking" {
 
 # Memory Target Tracking Scaling Policy
 resource "aws_autoscaling_policy" "memory_target_tracking" {
-  for_each = var.enable_autoscaling && var.scaling_policies.memory_target_tracking.enabled ? local.deployments : {}
+  for_each = var.enable_autoscaling && var.scaling_policies.memory_target_tracking.enabled ? local.auto_scaling_groups : {}
 
   name                   = "${local.name_prefix}-memory-target-tracking-${each.key}"
   autoscaling_group_name = module.asg[each.key].autoscaling_group_name

@@ -33,12 +33,19 @@ resource "aws_rds_cluster_parameter_group" "custom" {
 # ============================================================================
 # This resource creates the global cluster that spans multiple regions
 # Only created when create_global_cluster is true and this is not a secondary cluster
+# Note: When using the module-created RDS cluster as source for the global cluster
+# (use_existing_as_global_primary=true with no explicit source_db_cluster_identifier),
+# this resource depends on aws_rds_cluster.main being created first.
 resource "aws_rds_global_cluster" "main" {
   count = var.create_global_cluster && !local.is_secondary_cluster ? 1 : 0
 
-  global_cluster_identifier    = local.global_cluster_identifier
-  source_db_cluster_identifier = var.use_existing_as_global_primary ? var.source_db_cluster_identifier : null
-  force_destroy                = var.use_existing_as_global_primary
+  global_cluster_identifier = local.global_cluster_identifier
+  # Use explicitly provided source, or fall back to module-created RDS cluster ARN
+  # when use_existing_as_global_primary=true but no source_db_cluster_identifier provided
+  source_db_cluster_identifier = var.use_existing_as_global_primary ? (
+    var.source_db_cluster_identifier != null ? var.source_db_cluster_identifier : aws_rds_cluster.main.arn
+  ) : null
+  force_destroy = var.use_existing_as_global_primary
 
   engine                   = var.use_existing_as_global_primary ? null : var.engine
   engine_version           = var.use_existing_as_global_primary ? null : var.engine_version
@@ -102,7 +109,7 @@ resource "aws_rds_cluster" "main" {
   master_username               = var.master_username
   master_password               = var.master_password
   manage_master_user_password   = var.manage_master_user_password
-  master_user_secret_kms_key_id = var.master_user_secret_kms_key_id
+  master_user_secret_kms_key_id = local.kms_key_arn_for_master_secret
 
   # Multi-AZ Cluster Configuration
   db_cluster_instance_class = var.db_cluster_instance_class
@@ -135,7 +142,7 @@ resource "aws_rds_cluster" "main" {
 
   # Security and Encryption
   storage_encrypted                   = var.storage_encrypted
-  kms_key_id                          = var.kms_key_id
+  kms_key_id                          = local.kms_key_arn_for_storage
   iam_database_authentication_enabled = var.iam_database_authentication_enabled
   iam_roles                           = var.iam_roles
 
@@ -154,7 +161,7 @@ resource "aws_rds_cluster" "main" {
   # Monitoring
   enabled_cloudwatch_logs_exports       = var.enabled_cloudwatch_logs_exports
   performance_insights_enabled          = var.performance_insights_enabled
-  performance_insights_kms_key_id       = var.performance_insights_kms_key_id
+  performance_insights_kms_key_id       = var.performance_insights_enabled ? local.kms_key_arn_for_performance_insights : null
   performance_insights_retention_period = var.performance_insights_enabled ? var.performance_insights_retention_period : null
   monitoring_interval                   = var.monitoring_interval
   monitoring_role_arn                   = var.monitoring_role_arn
@@ -184,11 +191,11 @@ resource "aws_rds_cluster" "main" {
   }
 
   # Global Cluster
-  # Only set global_cluster_identifier if:
-  # 1. Creating new cluster for global DB (create_global_cluster=true, use_existing_as_global_primary=false)
-  # 2. This is a secondary cluster (local.is_secondary_cluster=true, pass via var.global_cluster_identifier)
-  # Do NOT set if use_existing_as_global_primary=true - AWS handles relationship via source_db_cluster_identifier
-  global_cluster_identifier      = var.create_global_cluster && !local.is_secondary_cluster && !var.use_existing_as_global_primary ? aws_rds_global_cluster.main[0].id : (local.is_secondary_cluster ? var.global_cluster_identifier : null)
+  # Per AWS documentation, when creating a global cluster from an existing DB cluster,
+  # do NOT set global_cluster_identifier here. AWS automatically populates it after
+  # the global cluster associates with this cluster via source_db_cluster_identifier.
+  # Only set for secondary clusters joining an existing global cluster.
+  global_cluster_identifier      = local.is_secondary_cluster ? var.global_cluster_identifier : null
   enable_global_write_forwarding = var.enable_global_write_forwarding
 
   # Local Write Forwarding
@@ -248,6 +255,9 @@ resource "aws_rds_cluster" "main" {
       master_password,
       availability_zones,
       cluster_members,
+      # AWS automatically populates global_cluster_identifier after associating
+      # the cluster with a global cluster. Ignoring prevents perpetual diff.
+      global_cluster_identifier,
     ]
   }
 }
@@ -286,7 +296,7 @@ resource "aws_rds_cluster_instance" "instances" {
 
   # Performance Insights
   performance_insights_enabled          = each.value.performance_insights_enabled != null ? each.value.performance_insights_enabled : var.performance_insights_enabled
-  performance_insights_kms_key_id       = each.value.performance_insights_kms_key_id != null ? each.value.performance_insights_kms_key_id : var.performance_insights_kms_key_id
+  performance_insights_kms_key_id       = (each.value.performance_insights_enabled != null ? each.value.performance_insights_enabled : var.performance_insights_enabled) ? (each.value.performance_insights_kms_key_id != null ? each.value.performance_insights_kms_key_id : local.kms_key_arn_for_performance_insights) : null
   performance_insights_retention_period = (each.value.performance_insights_enabled != null ? each.value.performance_insights_enabled : var.performance_insights_enabled) ? (each.value.performance_insights_retention_period != null ? each.value.performance_insights_retention_period : var.performance_insights_retention_period) : null
 
   # High Availability

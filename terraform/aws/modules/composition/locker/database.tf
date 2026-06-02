@@ -1,7 +1,7 @@
 module "database" {
   count = var.create_locker_database ? 1 : 0
 
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/database?ref=database-v0.1.4"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/database?ref=database-v0.1.6"
 
   environment  = var.environment
   project_name = var.project_name
@@ -73,7 +73,7 @@ module "database" {
   restore_to_point_in_time              = var.database_config.restore_to_point_in_time
   s3_import                             = var.database_config.s3_import
   create_global_cluster                 = var.database_config.create_global_cluster
-  global_cluster_identifier             = var.database_config.global_cluster_identifier
+  global_cluster_identifier             = var.database_config.global_cluster_identifier != null ? var.database_config.global_cluster_identifier : "${local.name_prefix}-global"
   global_deletion_protection            = var.database_config.global_deletion_protection
   enable_global_write_forwarding        = var.database_config.enable_global_write_forwarding
   use_existing_as_global_primary        = var.database_config.use_existing_as_global_primary
@@ -83,6 +83,8 @@ module "database" {
   custom_parameter_group_family         = var.database_config.custom_parameter_group_family
   custom_parameter_group_description    = var.database_config.custom_parameter_group_description
   custom_parameter_group_parameters     = var.database_config.custom_parameter_group_parameters
+
+  kms = var.database_config.kms
 
   cluster_instances = {
     for key, instance in var.database_config.cluster_instances : key => merge(

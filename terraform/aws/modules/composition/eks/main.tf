@@ -5,7 +5,7 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = ">= 6.28"
     }
     tls = {
       source  = "hashicorp/tls"
@@ -142,11 +142,10 @@ resource "aws_iam_role_policy_attachment" "cluster_policies" {
 # EKS Cluster using terraform-aws-modules/eks
 # -----------------------------------------------------------------------------
 module "eks" {
-  source  = "terraform-aws-modules/eks/aws"
-  version = "~> 20.0"
+  source  = "../../base/eks"
 
-  cluster_name    = "${var.environment}-${var.project_name}-cluster-${var.cluster_name_version}"
-  cluster_version = var.cluster_version
+  name    = "${var.environment}-${var.project_name}-cluster-${var.cluster_name_version}"
+  kubernetes_version = var.cluster_version
 
   vpc_id                   = var.vpc_id
   subnet_ids               = var.subnet_ids
@@ -157,12 +156,12 @@ module "eks" {
   iam_role_arn    = var.create_cluster_iam_role ? aws_iam_role.cluster[0].arn : var.cluster_iam_role_arn
 
   # Cluster endpoint access configuration
-  cluster_endpoint_public_access       = var.cluster_endpoint_public_access
-  cluster_endpoint_private_access      = var.cluster_endpoint_private_access
-  cluster_endpoint_public_access_cidrs = var.cluster_endpoint_public_access_cidrs
+  endpoint_public_access       = var.cluster_endpoint_public_access
+  endpoint_private_access      = var.cluster_endpoint_private_access
+  endpoint_public_access_cidrs = var.cluster_endpoint_public_access_cidrs
 
   # Cluster security group - allow VPN access
-  cluster_security_group_additional_rules = {
+  security_group_additional_rules = {
     vpn_access = {
       description = "Allow VPN CIDR blocks to communicate with the cluster API"
       protocol    = "tcp"
@@ -224,10 +223,13 @@ module "ebs_csi_irsa" {
 
 # -----------------------------------------------------------------------------
 # IAM Role for EFS CSI Driver (IRSA)
+# Only created when the EFS CSI addon is enabled
 # -----------------------------------------------------------------------------
 module "efs_csi_irsa" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
   version = "5.44.0"
+
+  count = contains(keys(var.eks_addons), "aws-efs-csi-driver") ? 1 : 0
 
   role_name = "${var.environment}-${var.project_name}-efs-csi"
 
