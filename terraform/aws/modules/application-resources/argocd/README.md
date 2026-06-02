@@ -4,13 +4,13 @@
 | Name | Version |
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 5.0 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.0 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 5.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 6.0 |
 
 ## Modules
 
@@ -57,6 +57,7 @@ No modules.
 |------|-------------|
 | <a name="output_cluster_service_accounts"></a> [cluster\_service\_accounts](#output\_cluster\_service\_accounts) | Map of cluster names to their service account subjects |
 | <a name="output_oidc_provider_urls"></a> [oidc\_provider\_urls](#output\_oidc\_provider\_urls) | Map of cluster names to their OIDC provider URLs |
+| <a name="output_region"></a> [region](#output\_region) | AWS region where resources are created |
 | <a name="output_role_arn"></a> [role\_arn](#output\_role\_arn) | ARN of the ArgoCD management IAM role |
 | <a name="output_role_id"></a> [role\_id](#output\_role\_id) | ID of the ArgoCD management IAM role |
 | <a name="output_role_name"></a> [role\_name](#output\_role\_name) | Name of the ArgoCD management IAM role |

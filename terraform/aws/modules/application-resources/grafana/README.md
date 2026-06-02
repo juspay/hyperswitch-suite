@@ -16,7 +16,7 @@
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_database"></a> [database](#module\_database) | git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/database | database-v0.1.4 |
+| <a name="module_database"></a> [database](#module\_database) | git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/database | database-v0.1.6 |
 
 ## Resources
 
@@ -79,6 +79,7 @@
 | <a name="input_database_iam_database_authentication_enabled"></a> [database\_iam\_database\_authentication\_enabled](#input\_database\_iam\_database\_authentication\_enabled) | Whether to enable IAM database authentication | `bool` | `false` | no |
 | <a name="input_database_iam_roles"></a> [database\_iam\_roles](#input\_database\_iam\_roles) | List of ARNs for IAM roles to associate with the RDS Cluster | `list(string)` | `[]` | no |
 | <a name="input_database_iops"></a> [database\_iops](#input\_database\_iops) | Provisioned IOPS for each DB instance in Multi-AZ cluster | `number` | `null` | no |
+| <a name="input_database_kms"></a> [database\_kms](#input\_database\_kms) | KMS key configuration for RDS encryption. Set create=true to create a new KMS key, or provide existing\_key\_arn to use an existing key | <pre>object({<br/>    create           = optional(bool, false)<br/>    existing_key_arn = optional(string, null)<br/>    description      = optional(string, null)<br/>    multi_region     = optional(bool, false)<br/>    create_replica           = optional(bool, false)<br/>    create_replica_external  = optional(bool, false)<br/>    primary_key_arn          = optional(string, null)<br/>    primary_external_key_arn = optional(string, null)<br/>    create_external     = optional(bool, false)<br/>    key_material_base64 = optional(string, null)<br/>    valid_to            = optional(string, null)<br/>    key_usage                = optional(string, null)<br/>    customer_master_key_spec = optional(string, null)<br/>    key_spec                 = optional(string, null)<br/>    deletion_window_in_days  = optional(number, null)<br/>    is_enabled                         = optional(bool, null)<br/>    enable_key_rotation                = optional(bool, true)<br/>    rotation_period_in_days            = optional(number, null)<br/>    bypass_policy_lockout_safety_check = optional(bool, null)<br/>    aliases                 = optional(list(string), [])<br/>    aliases_use_name_prefix = optional(bool, false)<br/>    key_administrators = optional(list(string), [])<br/>    key_users          = optional(list(string), [])<br/>    key_service_users  = optional(list(string), [])<br/>    key_owners         = optional(list(string), [])<br/>  })</pre> | `null` | no |
 | <a name="input_database_kms_key_id"></a> [database\_kms\_key\_id](#input\_database\_kms\_key\_id) | KMS key ID for encryption | `string` | `null` | no |
 | <a name="input_database_manage_master_user_password"></a> [database\_manage\_master\_user\_password](#input\_database\_manage\_master\_user\_password) | Whether to allow RDS to manage the master user password in Secrets Manager | `bool` | `true` | no |
 | <a name="input_database_master_password"></a> [database\_master\_password](#input\_database\_master\_password) | Master password for the database | `string` | `null` | no |
@@ -109,6 +110,7 @@
 | <a name="input_database_vpc_security_group_ids"></a> [database\_vpc\_security\_group\_ids](#input\_database\_vpc\_security\_group\_ids) | List of VPC security group IDs to associate with the database | `list(string)` | `[]` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (e.g., sandbox, dev, prod) | `string` | n/a | yes |
 | <a name="input_force_detach_policies"></a> [force\_detach\_policies](#input\_force\_detach\_policies) | Whether to force detaching policies when destroying the role | `bool` | `true` | no |
+| <a name="input_host_domains"></a> [host\_domains](#input\_host\_domains) | Map of environment names to host domains for grafana. Example: { integ = 'integ.example.com', sandbox = 'sandbox.example.com' } | `map(string)` | `{}` | no |
 | <a name="input_max_session_duration"></a> [max\_session\_duration](#input\_max\_session\_duration) | Maximum session duration for the role (in seconds) | `number` | `3600` | no |
 | <a name="input_project_name"></a> [project\_name](#input\_project\_name) | Project name for resource naming and tagging | `string` | n/a | yes |
 | <a name="input_region"></a> [region](#input\_region) | AWS region | `string` | `null` | no |
@@ -131,11 +133,15 @@
 | <a name="output_database_cluster_instance_ids"></a> [database\_cluster\_instance\_ids](#output\_database\_cluster\_instance\_ids) | Map of cluster instance identifiers (if database is created) |
 | <a name="output_database_enabled"></a> [database\_enabled](#output\_database\_enabled) | Whether database feature is enabled |
 | <a name="output_database_endpoint"></a> [database\_endpoint](#output\_database\_endpoint) | Writer endpoint for the database (if database is created) |
+| <a name="output_database_kms_key_aliases"></a> [database\_kms\_key\_aliases](#output\_database\_kms\_key\_aliases) | Aliases of the database KMS key (if created by the module) |
+| <a name="output_database_kms_key_arn"></a> [database\_kms\_key\_arn](#output\_database\_kms\_key\_arn) | ARN of the database KMS key (if created by the module) |
+| <a name="output_database_kms_key_id"></a> [database\_kms\_key\_id](#output\_database\_kms\_key\_id) | ID of the database KMS key (if created by the module) |
 | <a name="output_database_master_username"></a> [database\_master\_username](#output\_database\_master\_username) | Master username for the database (if database is created) |
 | <a name="output_database_name"></a> [database\_name](#output\_database\_name) | Name of the database (if database is created) |
 | <a name="output_database_port"></a> [database\_port](#output\_database\_port) | Port for the database (if database is created) |
 | <a name="output_database_reader_endpoint"></a> [database\_reader\_endpoint](#output\_database\_reader\_endpoint) | Reader endpoint for the database (if database is created) |
 | <a name="output_database_security_group_id"></a> [database\_security\_group\_id](#output\_database\_security\_group\_id) | ID of the security group for the database (if created) |
+| <a name="output_host_domains_map"></a> [host\_domains\_map](#output\_host\_domains\_map) | Map of environment names to host domains for Grafana |
 | <a name="output_oidc_enabled"></a> [oidc\_enabled](#output\_oidc\_enabled) | Whether OIDC/IRSA feature is enabled |
 | <a name="output_region"></a> [region](#output\_region) | AWS region where resources are created |
 | <a name="output_role_arn"></a> [role\_arn](#output\_role\_arn) | ARN of the IAM role for Grafana application |

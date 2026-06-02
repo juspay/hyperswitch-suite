@@ -14,7 +14,9 @@
 
 ## Modules
 
-No modules.
+| Name | Source | Version |
+|------|--------|---------|
+| <a name="module_kms"></a> [kms](#module\_kms) | terraform-aws-modules/kms/aws | 4.2.0 |
 
 ## Resources
 
@@ -26,6 +28,8 @@ No modules.
 | [aws_rds_cluster_parameter_group.custom](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/rds_cluster_parameter_group) | resource |
 | [aws_rds_global_cluster.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/rds_global_cluster) | resource |
 | [aws_security_group.rds_sg](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
+| [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
+| [aws_iam_policy_document.rds_kms_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
 
 ## Inputs
@@ -78,6 +82,7 @@ No modules.
 | <a name="input_iam_database_authentication_enabled"></a> [iam\_database\_authentication\_enabled](#input\_iam\_database\_authentication\_enabled) | (Optional) Specifies whether IAM database authentication is enabled | `bool` | `false` | no |
 | <a name="input_iam_roles"></a> [iam\_roles](#input\_iam\_roles) | (Optional) List of ARNs for the IAM roles to associate to the RDS Cluster | `list(string)` | `[]` | no |
 | <a name="input_iops"></a> [iops](#input\_iops) | (Optional) Amount of Provisioned IOPS for each DB instance in the Multi-AZ DB cluster. Must be a multiple between .5 and 50 of the storage amount | `number` | `null` | no |
+| <a name="input_kms"></a> [kms](#input\_kms) | KMS key configuration for RDS encryption. Set create=true to create a new KMS key,<br/>or provide existing\_key\_arn to use an existing key. If both are null/empty,<br/>will use AWS managed key (aws/rds) or var.kms\_key\_id. | <pre>object({<br/>    # Key source: either create new or use existing<br/>    create           = optional(bool, false)       # Set true to create KMS key, false to use existing<br/>    existing_key_arn = optional(string, null)      # Existing KMS key ARN to use (when create=false)<br/><br/>    # Key creation settings (used when create=true)<br/>    description  = optional(string, null)<br/>    multi_region = optional(bool, false)<br/><br/>    # Replica key settings<br/>    create_replica           = optional(bool, false)<br/>    create_replica_external  = optional(bool, false)<br/>    primary_key_arn          = optional(string, null)<br/>    primary_external_key_arn = optional(string, null)<br/><br/>    # External key settings<br/>    create_external     = optional(bool, false)<br/>    key_material_base64 = optional(string, null)<br/>    valid_to            = optional(string, null)<br/><br/>    # Key specifications<br/>    key_usage                = optional(string, null)<br/>    customer_master_key_spec = optional(string, null)<br/>    key_spec                 = optional(string, null)<br/>    deletion_window_in_days  = optional(number, null)<br/><br/>    # Key settings<br/>    is_enabled                         = optional(bool, null)<br/>    enable_key_rotation                = optional(bool, true)<br/>    rotation_period_in_days            = optional(number, null)<br/>    bypass_policy_lockout_safety_check = optional(bool, null)<br/><br/>    # Aliases<br/>    aliases                 = optional(list(string), [])<br/>    aliases_use_name_prefix = optional(bool, false)<br/><br/>    # Access control (for key policy)<br/>    key_administrators = optional(list(string), [])<br/>    key_users          = optional(list(string), [])<br/>    key_service_users  = optional(list(string), [])<br/>    key_owners         = optional(list(string), [])<br/><br/>  })</pre> | `null` | no |
 | <a name="input_kms_key_id"></a> [kms\_key\_id](#input\_kms\_key\_id) | (Optional) ARN for the KMS encryption key | `string` | `null` | no |
 | <a name="input_manage_master_user_password"></a> [manage\_master\_user\_password](#input\_manage\_master\_user\_password) | (Optional) Set to true to allow RDS to manage the master user password in Secrets Manager. Cannot be set if master\_password is provided | `bool` | `null` | no |
 | <a name="input_master_password"></a> [master\_password](#input\_master\_password) | (Optional, required unless manage\_master\_user\_password is true or snapshot\_identifier is provided) Password for the master DB user | `string` | `null` | no |
@@ -151,6 +156,9 @@ No modules.
 | <a name="output_kms_key_id"></a> [kms\_key\_id](#output\_kms\_key\_id) | KMS key identifier for encryption |
 | <a name="output_master_user_secret"></a> [master\_user\_secret](#output\_master\_user\_secret) | Block that specifies the master user secret. Only available when manage\_master\_user\_password is set to true |
 | <a name="output_master_username"></a> [master\_username](#output\_master\_username) | Master username for the database |
+| <a name="output_module_kms_key_aliases"></a> [module\_kms\_key\_aliases](#output\_module\_kms\_key\_aliases) | The aliases of the created KMS key (if kms.create=true) |
+| <a name="output_module_kms_key_arn"></a> [module\_kms\_key\_arn](#output\_module\_kms\_key\_arn) | The ARN of the created KMS key (if kms.create=true) |
+| <a name="output_module_kms_key_id"></a> [module\_kms\_key\_id](#output\_module\_kms\_key\_id) | The ID of the created KMS key (if kms.create=true) |
 | <a name="output_port"></a> [port](#output\_port) | Database port |
 | <a name="output_preferred_backup_window"></a> [preferred\_backup\_window](#output\_preferred\_backup\_window) | Daily time range during which the backups happen |
 | <a name="output_preferred_maintenance_window"></a> [preferred\_maintenance\_window](#output\_preferred\_maintenance\_window) | Maintenance window |
