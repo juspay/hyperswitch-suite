@@ -2,20 +2,20 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.0 |
 
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | >= 6.0 |
 
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_kms"></a> [kms](#module\_kms) | terraform-aws-modules/kms/aws | 4.2.0 |
 | <a name="module_s3_dashboard_themes"></a> [s3\_dashboard\_themes](#module\_s3\_dashboard\_themes) | terraform-aws-modules/s3-bucket/aws | ~> 5.0 |
 | <a name="module_s3_file_uploads"></a> [s3\_file\_uploads](#module\_s3\_file\_uploads) | terraform-aws-modules/s3-bucket/aws | ~> 5.0 |
@@ -23,7 +23,7 @@
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_iam_policy.additional](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.assume_role_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.kms_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
@@ -52,7 +52,7 @@
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_additional_assume_role_statements"></a> [additional\_assume\_role\_statements](#input\_additional\_assume\_role\_statements) | Additional IAM assume role policy statements to append | `list(any)` | `[]` | no |
 | <a name="input_additional_iam_policies"></a> [additional\_iam\_policies](#input\_additional\_iam\_policies) | Map of additional IAM policies to create and attach to the IAM role. Each key is used as a policy name suffix. Value is an object with a `policy` field containing the IAM policy document as JSON string. | <pre>map(object({<br/>    policy = string # IAM policy document as JSON string<br/>  }))</pre> | `{}` | no |
 | <a name="input_assume_role"></a> [assume\_role](#input\_assume\_role) | Cross-account assume role configuration. Set to {} to disable assume role policy. | <pre>object({<br/>    enabled          = optional(bool, false)<br/>    target_role_arns = optional(list(string), []) # List of role ARNs to allow assuming<br/>    account_id       = optional(string, null)     # Account ID for wildcard role assumption<br/>  })</pre> | `{}` | no |
@@ -71,7 +71,7 @@
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_account_id"></a> [account\_id](#output\_account\_id) | AWS account ID |
 | <a name="output_additional_iam_policies_arns"></a> [additional\_iam\_policies\_arns](#output\_additional\_iam\_policies\_arns) | Map of additional IAM policy ARNs (key = policy name suffix, value = ARN) |
 | <a name="output_assume_role_enabled"></a> [assume\_role\_enabled](#output\_assume\_role\_enabled) | Whether cross-account assume role feature is enabled |

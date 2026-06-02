@@ -170,7 +170,7 @@ No requirements.
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | n/a |
 
 ## Modules
@@ -180,13 +180,13 @@ No modules.
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_lb_listener.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener) | resource |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_alpn_policy"></a> [alpn\_policy](#input\_alpn\_policy) | Name of the Application-Layer Protocol Negotiation (ALPN) policy | `string` | `null` | no |
 | <a name="input_certificate_arn"></a> [certificate\_arn](#input\_certificate\_arn) | ARN of the default SSL server certificate (required for TLS) | `string` | `null` | no |
 | <a name="input_load_balancer_arn"></a> [load\_balancer\_arn](#input\_load\_balancer\_arn) | ARN of the network load balancer | `string` | n/a | yes |
@@ -200,7 +200,7 @@ No modules.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_listener_arn"></a> [listener\_arn](#output\_listener\_arn) | ARN of the listener |
 | <a name="output_listener_id"></a> [listener\_id](#output\_listener\_id) | ID of the listener |
 | <a name="output_listener_port"></a> [listener\_port](#output\_listener\_port) | Port of the listener |

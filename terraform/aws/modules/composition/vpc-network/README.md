@@ -2,20 +2,20 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.0 |
 
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.0 |
 
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_common_internet_rt"></a> [common\_internet\_rt](#module\_common\_internet\_rt) | ../../base/route-table | n/a |
 | <a name="module_common_internet_s3_rt"></a> [common\_internet\_s3\_rt](#module\_common\_internet\_s3\_rt) | ../../base/route-table | n/a |
 | <a name="module_common_local_nat_s3_rt"></a> [common\_local\_nat\_s3\_rt](#module\_common\_local\_nat\_s3\_rt) | ../../base/route-table | n/a |
@@ -52,7 +52,7 @@
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_route.accepter_peering_routes](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route) | resource |
 | [aws_route.peering_routes](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route) | resource |
 | [aws_route_table_association.data_stack](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route_table_association) | resource |
@@ -74,7 +74,7 @@
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_availability_zones"></a> [availability\_zones](#input\_availability\_zones) | List of availability zones to use for subnets | `list(string)` | n/a | yes |
 | <a name="input_create_dhcp_options"></a> [create\_dhcp\_options](#input\_create\_dhcp\_options) | Should be true if you want to specify a DHCP options set | `bool` | `false` | no |
 | <a name="input_create_internet_gateway"></a> [create\_internet\_gateway](#input\_create\_internet\_gateway) | Controls if an Internet Gateway should be created | `bool` | `true` | no |
@@ -146,7 +146,7 @@
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_common_internet_route_table_id"></a> [common\_internet\_route\_table\_id](#output\_common\_internet\_route\_table\_id) | ID of the CommonInternet route table |
 | <a name="output_common_internet_s3_route_table_id"></a> [common\_internet\_s3\_route\_table\_id](#output\_common\_internet\_s3\_route\_table\_id) | ID of the CommonInternetS3 route table |
 | <a name="output_common_local_nat_s3_route_table_id"></a> [common\_local\_nat\_s3\_route\_table\_id](#output\_common\_local\_nat\_s3\_route\_table\_id) | ID of the Common Local NAT S3 route table (NAT + S3 access) |

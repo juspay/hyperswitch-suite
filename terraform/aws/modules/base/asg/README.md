@@ -6,7 +6,7 @@ No requirements.
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | n/a |
 
 ## Modules
@@ -16,7 +16,7 @@ No modules.
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_autoscaling_group.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_group) | resource |
 | [aws_autoscaling_policy.cpu_target_tracking](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_policy) | resource |
 | [aws_autoscaling_policy.memory_target_tracking](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_policy) | resource |
@@ -24,7 +24,7 @@ No modules.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_capacity_rebalance"></a> [capacity\_rebalance](#input\_capacity\_rebalance) | Enable capacity rebalancing for spot instances | `bool` | `false` | no |
 | <a name="input_default_cooldown"></a> [default\_cooldown](#input\_default\_cooldown) | Time in seconds between scaling activities | `number` | `300` | no |
 | <a name="input_desired_capacity"></a> [desired\_capacity](#input\_desired\_capacity) | Desired number of instances | `number` | `1` | no |
@@ -55,7 +55,7 @@ No modules.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_asg_arn"></a> [asg\_arn](#output\_asg\_arn) | The ARN of the Auto Scaling Group |
 | <a name="output_asg_availability_zones"></a> [asg\_availability\_zones](#output\_asg\_availability\_zones) | The availability zones of the Auto Scaling Group |
 | <a name="output_asg_desired_capacity"></a> [asg\_desired\_capacity](#output\_asg\_desired\_capacity) | The desired capacity of the Auto Scaling Group |

@@ -2,21 +2,21 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.0 |
 
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.0 |
 | <a name="provider_tls"></a> [tls](#provider\_tls) | n/a |
 
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_external_jump_iam_role"></a> [external\_jump\_iam\_role](#module\_external\_jump\_iam\_role) | terraform-aws-modules/iam/aws//modules/iam-role | ~> 6.2 |
 | <a name="module_external_jump_instance"></a> [external\_jump\_instance](#module\_external\_jump\_instance) | terraform-aws-modules/ec2-instance/aws | ~> 6.0 |
 | <a name="module_external_jump_sg"></a> [external\_jump\_sg](#module\_external\_jump\_sg) | terraform-aws-modules/security-group/aws | ~> 5.0 |
@@ -28,7 +28,7 @@
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_cloudwatch_log_group.jump_host](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
 | [aws_key_pair.internal_jump](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/key_pair) | resource |
 | [aws_security_group_rule.external_jump_default_egress_https](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
@@ -42,7 +42,7 @@
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_enable_internal_jump_ssm"></a> [enable\_internal\_jump\_ssm](#input\_enable\_internal\_jump\_ssm) | Enable SSM Session Manager access for internal jump host. When true, adds SSM policies to internal jump IAM role | `bool` | `false` | no |
 | <a name="input_enable_migration_mode"></a> [enable\_migration\_mode](#input\_enable\_migration\_mode) | Enable SSM SendCommand permissions for Packer migration. Should be disabled after migration is complete for security. Only affects: ssm:DescribeInstanceInformation, ssm:SendCommand, ssm:GetCommandInvocation, ssm:ListCommandInvocations | `bool` | `false` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (e.g., dev, integ, prod) | `string` | n/a | yes |
@@ -65,7 +65,7 @@
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_cloudwatch_log_groups"></a> [cloudwatch\_log\_groups](#output\_cloudwatch\_log\_groups) | Map of CloudWatch log group names |
 | <a name="output_connection_guide"></a> [connection\_guide](#output\_connection\_guide) | Guide for connecting to jump hosts |
 | <a name="output_external_iam_role_arn"></a> [external\_iam\_role\_arn](#output\_external\_iam\_role\_arn) | The ARN of the IAM role for external jump host |

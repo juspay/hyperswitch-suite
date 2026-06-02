@@ -6,7 +6,7 @@ No requirements.
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | n/a |
 
 ## Modules
@@ -16,13 +16,13 @@ No modules.
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_launch_template.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/launch_template) | resource |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_ami_id"></a> [ami\_id](#input\_ami\_id) | AMI ID to use for instances | `string` | n/a | yes |
 | <a name="input_block_device_mappings"></a> [block\_device\_mappings](#input\_block\_device\_mappings) | Block device mappings | <pre>list(object({<br/>    device_name = string<br/>    ebs = optional(object({<br/>      volume_size           = number<br/>      volume_type           = optional(string, "gp3")<br/>      iops                  = optional(number, null)<br/>      throughput            = optional(number, null)<br/>      delete_on_termination = optional(bool, true)<br/>      encrypted             = optional(bool, true)<br/>      kms_key_id            = optional(string, null)<br/>    }))<br/>  }))</pre> | `[]` | no |
 | <a name="input_description"></a> [description](#input\_description) | Description of the launch template | `string` | `"Managed by Terraform"` | no |
@@ -44,7 +44,7 @@ No modules.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_lt_arn"></a> [lt\_arn](#output\_lt\_arn) | The ARN of the launch template |
 | <a name="output_lt_default_version"></a> [lt\_default\_version](#output\_lt\_default\_version) | The default version of the launch template |
 | <a name="output_lt_id"></a> [lt\_id](#output\_lt\_id) | The ID of the launch template |

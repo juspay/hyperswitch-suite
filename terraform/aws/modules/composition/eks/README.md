@@ -2,7 +2,7 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 5.0 |
 | <a name="requirement_time"></a> [time](#requirement\_time) | ~> 0.9 |
 | <a name="requirement_tls"></a> [tls](#requirement\_tls) | ~> 4.0 |
@@ -10,14 +10,14 @@
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 5.0 |
 | <a name="provider_tls"></a> [tls](#provider\_tls) | ~> 4.0 |
 
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_ebs_csi_irsa"></a> [ebs\_csi\_irsa](#module\_ebs\_csi\_irsa) | terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks | 5.44.0 |
 | <a name="module_efs_csi_irsa"></a> [efs\_csi\_irsa](#module\_efs\_csi\_irsa) | terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks | 5.44.0 |
 | <a name="module_eks"></a> [eks](#module\_eks) | terraform-aws-modules/eks/aws | ~> 20.0 |
@@ -25,7 +25,7 @@
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_eks_addon.after_nodes](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_addon) | resource |
 | [aws_eks_addon.before_nodes](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_addon) | resource |
 | [aws_eks_node_group.custom_nodes](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_node_group) | resource |
@@ -52,7 +52,7 @@
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_cluster_access_entries"></a> [cluster\_access\_entries](#input\_cluster\_access\_entries) | Map of IAM principals to grant access to the EKS cluster | `any` | `{}` | no |
 | <a name="input_cluster_custom_policy_json"></a> [cluster\_custom\_policy\_json](#input\_cluster\_custom\_policy\_json) | Custom IAM policy JSON for cluster role (additional permissions). Set to null to skip. | `string` | `null` | no |
 | <a name="input_cluster_endpoint_private_access"></a> [cluster\_endpoint\_private\_access](#input\_cluster\_endpoint\_private\_access) | Enable private API server endpoint | `bool` | `true` | no |
@@ -98,7 +98,7 @@
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_cluster_arn"></a> [cluster\_arn](#output\_cluster\_arn) | The Amazon Resource Name (ARN) of the cluster |
 | <a name="output_cluster_certificate_authority_data"></a> [cluster\_certificate\_authority\_data](#output\_cluster\_certificate\_authority\_data) | Base64 encoded certificate data required to communicate with the cluster |
 | <a name="output_cluster_endpoint"></a> [cluster\_endpoint](#output\_cluster\_endpoint) | Endpoint for your Kubernetes API server |

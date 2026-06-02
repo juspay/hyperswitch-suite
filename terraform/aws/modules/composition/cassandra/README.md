@@ -2,7 +2,7 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.0 |
 | <a name="requirement_tls"></a> [tls](#requirement\_tls) | >= 4.0 |
@@ -10,21 +10,21 @@
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | >= 6.0 |
 | <a name="provider_tls"></a> [tls](#provider\_tls) | >= 4.0 |
 
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_seed_discovery_api"></a> [seed\_discovery\_api](#module\_seed\_discovery\_api) | ../../base/api-gateway | n/a |
 | <a name="module_seed_discovery_lambda"></a> [seed\_discovery\_lambda](#module\_seed\_discovery\_lambda) | ../../base/lambda | n/a |
 
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_cloudwatch_log_group.cassandra](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
 | [aws_iam_instance_profile.cassandra](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_instance_profile) | resource |
 | [aws_iam_role.cassandra](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
@@ -44,7 +44,7 @@
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_additional_subnet_ids"></a> [additional\_subnet\_ids](#input\_additional\_subnet\_ids) | Additional subnet IDs for multi-AZ deployment (optional) | `list(string)` | `[]` | no |
 | <a name="input_ami_id"></a> [ami\_id](#input\_ami\_id) | AMI ID for Cassandra instances (ARM-based AMI recommended for m7g instances) | `string` | n/a | yes |
 | <a name="input_api_gateway_vpce_id"></a> [api\_gateway\_vpce\_id](#input\_api\_gateway\_vpce\_id) | VPC Endpoint ID for the API Gateway (execute-api). Required for PRIVATE API Gateway endpoint type. | `string` | `null` | no |
@@ -82,7 +82,7 @@
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_cassandra_security_group_arn"></a> [cassandra\_security\_group\_arn](#output\_cassandra\_security\_group\_arn) | Security group ARN of the Cassandra cluster |
 | <a name="output_cassandra_security_group_id"></a> [cassandra\_security\_group\_id](#output\_cassandra\_security\_group\_id) | Security group ID of the Cassandra cluster |
 | <a name="output_cluster_name"></a> [cluster\_name](#output\_cluster\_name) | Cassandra cluster name |

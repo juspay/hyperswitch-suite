@@ -2,7 +2,7 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 6.0 |
 | <a name="requirement_helm"></a> [helm](#requirement\_helm) | ~> 3.1 |
@@ -11,7 +11,7 @@
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 6.0 |
 | <a name="provider_helm"></a> [helm](#provider\_helm) | ~> 3.1 |
 | <a name="provider_kubernetes"></a> [kubernetes](#provider\_kubernetes) | ~> 3.0 |
@@ -19,13 +19,13 @@
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_aws_load_balancer_controller_irsa"></a> [aws\_load\_balancer\_controller\_irsa](#module\_aws\_load\_balancer\_controller\_irsa) | terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks | ~> 5.0 |
 
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [helm_release.alb_controller](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [kubernetes_service_account_v1.alb_controller](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/service_account_v1) | resource |
 | [aws_eks_cluster.eks](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/eks_cluster) | data source |
@@ -36,7 +36,7 @@
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_additional_service_account_annotations"></a> [additional\_service\_account\_annotations](#input\_additional\_service\_account\_annotations) | Additional annotations to apply to the ALB Controller Service Account | `map(string)` | `{}` | no |
 | <a name="input_alb_controller_chart_version"></a> [alb\_controller\_chart\_version](#input\_alb\_controller\_chart\_version) | Version of the AWS Load Balancer Controller Helm chart | `string` | `"1.14.0"` | no |
 | <a name="input_alb_controller_namespace"></a> [alb\_controller\_namespace](#input\_alb\_controller\_namespace) | Namespace ALB Controller is installed on | `string` | `"kube-system"` | no |
@@ -57,7 +57,7 @@
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_alb_controller_role_arn"></a> [alb\_controller\_role\_arn](#output\_alb\_controller\_role\_arn) | The ARN of the AWS Load Balancer Controller IAM role |
 | <a name="output_alb_controller_service_account"></a> [alb\_controller\_service\_account](#output\_alb\_controller\_service\_account) | Service Account Name of AWS Load Balancer Controller |
 | <a name="output_region"></a> [region](#output\_region) | AWS region where resources are created |

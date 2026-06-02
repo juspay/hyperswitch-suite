@@ -2,21 +2,21 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.0 |
 
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.0 |
 | <a name="provider_tls"></a> [tls](#provider\_tls) | n/a |
 
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_asg"></a> [asg](#module\_asg) | ../../base/asg | n/a |
 | <a name="module_config_bucket"></a> [config\_bucket](#module\_config\_bucket) | ../../base/s3-bucket | n/a |
 | <a name="module_launch_template"></a> [launch\_template](#module\_launch\_template) | ../../base/launch-template | n/a |
@@ -30,7 +30,7 @@
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_iam_instance_profile.squid_profile](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_instance_profile) | resource |
 | [aws_key_pair.squid_key_pair](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/key_pair) | resource |
 | [aws_s3_object.squid_config_files](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_object) | resource |
@@ -48,7 +48,7 @@
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_ami_id"></a> [ami\_id](#input\_ami\_id) | AMI ID for Squid instances (ignored if use\_existing\_launch\_template = true) | `string` | `null` | no |
 | <a name="input_config_bucket_arn"></a> [config\_bucket\_arn](#input\_config\_bucket\_arn) | ARN of S3 bucket containing Squid configuration files (required if create\_config\_bucket=false) | `string` | `""` | no |
 | <a name="input_config_bucket_name"></a> [config\_bucket\_name](#input\_config\_bucket\_name) | Name of S3 bucket containing Squid configuration files (required if create\_config\_bucket=false) | `string` | `""` | no |
@@ -112,7 +112,7 @@
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_asg_id"></a> [asg\_id](#output\_asg\_id) | ID of the Auto Scaling Group |
 | <a name="output_asg_name"></a> [asg\_name](#output\_asg\_name) | Name of the Auto Scaling Group |
 | <a name="output_asg_security_group_id"></a> [asg\_security\_group\_id](#output\_asg\_security\_group\_id) | Security group ID for ASG instances |

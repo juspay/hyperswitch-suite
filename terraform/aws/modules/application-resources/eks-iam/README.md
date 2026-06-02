@@ -6,19 +6,19 @@ No requirements.
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | 6.31.0 |
 
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_s3_bucket"></a> [s3\_bucket](#module\_s3\_bucket) | terraform-aws-modules/s3-bucket/aws | ~> 5.0 |
 
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_iam_role.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role_policy.inline](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
 | [aws_iam_role_policy.s3_permissions](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
@@ -29,7 +29,7 @@ No requirements.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_app_name"></a> [app\_name](#input\_app\_name) | Application name (e.g., hyperswitch, control-centre) | `string` | n/a | yes |
 | <a name="input_assume_role_principals"></a> [assume\_role\_principals](#input\_assume\_role\_principals) | Cross-account assume role trust. type: AWS for IAM roles, Federated for federated identities, Service for AWS services | <pre>list(object({<br/>    type        = string<br/>    identifiers = list(string)<br/>  }))</pre> | `null` | no |
 | <a name="input_aws_managed_policy_names"></a> [aws\_managed\_policy\_names](#input\_aws\_managed\_policy\_names) | List of AWS managed policy names to attach (e.g., AmazonEC2ContainerRegistryReadOnly) | `list(string)` | `[]` | no |
@@ -59,7 +59,7 @@ No requirements.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_role_arn"></a> [role\_arn](#output\_role\_arn) | ARN of the created IAM role |
 | <a name="output_role_id"></a> [role\_id](#output\_role\_id) | ID of the created IAM role |
 | <a name="output_role_name"></a> [role\_name](#output\_role\_name) | Name of the created IAM role |

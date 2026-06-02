@@ -6,7 +6,7 @@ No requirements.
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | n/a |
 
 ## Modules
@@ -16,13 +16,13 @@ No modules.
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_dynamodb_table.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/dynamodb_table) | resource |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_attributes"></a> [attributes](#input\_attributes) | List of attribute definitions | <pre>list(object({<br/>    name = string<br/>    type = string  # S (string), N (number), or B (binary)<br/>  }))</pre> | n/a | yes |
 | <a name="input_billing_mode"></a> [billing\_mode](#input\_billing\_mode) | Billing mode for the table (PROVISIONED or PAY\_PER\_REQUEST) | `string` | `"PAY_PER_REQUEST"` | no |
 | <a name="input_enable_encryption"></a> [enable\_encryption](#input\_enable\_encryption) | Enable server-side encryption | `bool` | `true` | no |
@@ -42,7 +42,7 @@ No modules.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_table_arn"></a> [table\_arn](#output\_table\_arn) | The ARN of the table |
 | <a name="output_table_id"></a> [table\_id](#output\_table\_id) | The ID (name) of the table |
 | <a name="output_table_name"></a> [table\_name](#output\_table\_name) | The name of the table |

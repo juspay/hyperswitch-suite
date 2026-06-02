@@ -2,14 +2,14 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 5.0 |
 
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 5.0 |
 
 ## Modules
@@ -19,7 +19,7 @@ No modules.
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_iam_role.argocd_management](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role_policy.cross_account_assume](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
 | [aws_iam_role_policy_attachment.additional](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
@@ -32,7 +32,7 @@ No modules.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_additional_assume_role_statements"></a> [additional\_assume\_role\_statements](#input\_additional\_assume\_role\_statements) | Additional IAM policy statements to add to the role's assume role policy | `list(any)` | `[]` | no |
 | <a name="input_additional_policy_arns"></a> [additional\_policy\_arns](#input\_additional\_policy\_arns) | Additional policy ARNs to attach to the ArgoCD role | `list(string)` | `[]` | no |
 | <a name="input_argocd_namespace"></a> [argocd\_namespace](#input\_argocd\_namespace) | Kubernetes namespace where ArgoCD is deployed | `string` | `"argocd"` | no |
@@ -54,7 +54,7 @@ No modules.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_cluster_service_accounts"></a> [cluster\_service\_accounts](#output\_cluster\_service\_accounts) | Map of cluster names to their service account subjects |
 | <a name="output_oidc_provider_urls"></a> [oidc\_provider\_urls](#output\_oidc\_provider\_urls) | Map of cluster names to their OIDC provider URLs |
 | <a name="output_role_arn"></a> [role\_arn](#output\_role\_arn) | ARN of the ArgoCD management IAM role |

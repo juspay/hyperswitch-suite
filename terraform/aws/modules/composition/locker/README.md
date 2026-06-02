@@ -2,7 +2,7 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.0 |
 | <a name="requirement_tls"></a> [tls](#requirement\_tls) | >= 4.0 |
@@ -10,14 +10,14 @@
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | >= 6.0 |
 | <a name="provider_tls"></a> [tls](#provider\_tls) | >= 4.0 |
 
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_database"></a> [database](#module\_database) | git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/database | database-v0.1.4 |
 | <a name="module_kms"></a> [kms](#module\_kms) | terraform-aws-modules/kms/aws | 4.2.0 |
 | <a name="module_locker_instance"></a> [locker\_instance](#module\_locker\_instance) | terraform-aws-modules/ec2-instance/aws | ~> 6.1.5 |
@@ -25,7 +25,7 @@
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_cloudwatch_log_group.locker](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
 | [aws_iam_instance_profile.locker](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_instance_profile) | resource |
 | [aws_iam_policy.locker_ecr](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
@@ -55,7 +55,7 @@
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_alb_listeners"></a> [alb\_listeners](#input\_alb\_listeners) | ALB listener configurations for the Application Load Balancer | <pre>map(object({<br/>    port             = number<br/>    protocol         = string<br/>    target_group_arn = optional(string) # If not provided, will use the default locker target group<br/>    certificate_arn  = optional(string) # Required for HTTPS protocol<br/>  }))</pre> | <pre>{<br/>  "http": {<br/>    "port": 80,<br/>    "protocol": "HTTP"<br/>  }<br/>}</pre> | no |
 | <a name="input_alb_subnet_ids"></a> [alb\_subnet\_ids](#input\_alb\_subnet\_ids) | List of subnet IDs for the Application Load Balancer. At least two subnets in two different Availability Zones are required. | `list(string)` | n/a | yes |
 | <a name="input_ami_id"></a> [ami\_id](#input\_ami\_id) | Custom AMI ID for locker instance | `string` | n/a | yes |
@@ -80,7 +80,7 @@
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_alb_dns_name"></a> [alb\_dns\_name](#output\_alb\_dns\_name) | DNS name of the Application Load Balancer |
 | <a name="output_alb_listener_arns"></a> [alb\_listener\_arns](#output\_alb\_listener\_arns) | ARNs of the ALB listeners |
 | <a name="output_alb_listener_details"></a> [alb\_listener\_details](#output\_alb\_listener\_details) | Details of the ALB listeners (port and protocol) |

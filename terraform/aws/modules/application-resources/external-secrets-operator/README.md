@@ -168,14 +168,14 @@ See the main project LICENSE file.
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 5.0 |
 
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 5.0 |
 
 ## Modules
@@ -185,7 +185,7 @@ No modules.
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_iam_role.external_secrets](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role_policy.secrets_manager_access](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
 | [aws_iam_role_policy_attachment.additional](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
@@ -198,7 +198,7 @@ No modules.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_additional_assume_role_statements"></a> [additional\_assume\_role\_statements](#input\_additional\_assume\_role\_statements) | Additional IAM policy statements to add to the role's assume role policy | `list(any)` | `[]` | no |
 | <a name="input_additional_policy_arns"></a> [additional\_policy\_arns](#input\_additional\_policy\_arns) | Additional policy ARNs to attach to the External Secrets Operator role | `list(string)` | `[]` | no |
 | <a name="input_aws_account_id"></a> [aws\_account\_id](#input\_aws\_account\_id) | AWS Account ID where the role is created | `string` | n/a | yes |
@@ -218,7 +218,7 @@ No modules.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_cluster_service_accounts"></a> [cluster\_service\_accounts](#output\_cluster\_service\_accounts) | Map of cluster names to their service account subjects |
 | <a name="output_oidc_provider_urls"></a> [oidc\_provider\_urls](#output\_oidc\_provider\_urls) | Map of cluster names to their OIDC provider URLs |
 | <a name="output_region"></a> [region](#output\_region) | AWS region where resources are created |

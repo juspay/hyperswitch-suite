@@ -2,33 +2,33 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.0 |
 
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.0 |
 
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_lock_table"></a> [lock\_table](#module\_lock\_table) | ../../base/dynamodb-table | n/a |
 | <a name="module_state_bucket"></a> [state\_bucket](#module\_state\_bucket) | ../../base/s3-bucket | n/a |
 
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_s3_bucket_policy.enforce_tls](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_policy) | resource |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_allow_destroy"></a> [allow\_destroy](#input\_allow\_destroy) | Allow destruction of the bucket (should be false for prod) | `bool` | `false` | no |
 | <a name="input_dynamodb_billing_mode"></a> [dynamodb\_billing\_mode](#input\_dynamodb\_billing\_mode) | Billing mode for DynamoDB (PROVISIONED or PAY\_PER\_REQUEST) | `string` | `"PAY_PER_REQUEST"` | no |
 | <a name="input_dynamodb_kms_key_arn"></a> [dynamodb\_kms\_key\_arn](#input\_dynamodb\_kms\_key\_arn) | ARN of KMS key for DynamoDB encryption (null uses AWS managed key) | `string` | `null` | no |
@@ -47,7 +47,7 @@
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_backend_config"></a> [backend\_config](#output\_backend\_config) | Backend configuration object for use in other Terraform deployments |
 | <a name="output_backend_config_formatted"></a> [backend\_config\_formatted](#output\_backend\_config\_formatted) | Formatted backend configuration for copy-paste into backend.tf files |
 | <a name="output_lock_table_arn"></a> [lock\_table\_arn](#output\_lock\_table\_arn) | The ARN of the lock table |

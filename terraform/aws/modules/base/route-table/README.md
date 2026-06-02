@@ -6,7 +6,7 @@ No requirements.
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | n/a |
 
 ## Modules
@@ -16,7 +16,7 @@ No modules.
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_route.internet_gateway](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route) | resource |
 | [aws_route.nat_gateway](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route) | resource |
 | [aws_route.vpc_peering](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route) | resource |
@@ -25,7 +25,7 @@ No modules.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_create_internet_gateway_route"></a> [create\_internet\_gateway\_route](#input\_create\_internet\_gateway\_route) | Whether to create a route to the internet gateway | `bool` | `false` | no |
 | <a name="input_create_nat_gateway_route"></a> [create\_nat\_gateway\_route](#input\_create\_nat\_gateway\_route) | Whether to create a route to a NAT gateway | `bool` | `false` | no |
 | <a name="input_create_vpc_peering_route"></a> [create\_vpc\_peering\_route](#input\_create\_vpc\_peering\_route) | Whether to create a route to a VPC peering connection | `bool` | `false` | no |
@@ -40,7 +40,7 @@ No modules.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_route_table_arn"></a> [route\_table\_arn](#output\_route\_table\_arn) | The ARN of the route table |
 | <a name="output_route_table_id"></a> [route\_table\_id](#output\_route\_table\_id) | The ID of the route table |
 | <a name="output_route_table_owner_id"></a> [route\_table\_owner\_id](#output\_route\_table\_owner\_id) | The ID of the AWS account that owns the route table |

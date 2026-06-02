@@ -2,7 +2,7 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.7 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.20 |
 | <a name="requirement_random"></a> [random](#requirement\_random) | >= 3.5 |
@@ -11,21 +11,21 @@
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | >= 6.20 |
 | <a name="provider_null"></a> [null](#provider\_null) | n/a |
 
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_cloudfront"></a> [cloudfront](#module\_cloudfront) | terraform-aws-modules/cloudfront/aws | ~> 4.2.0 |
 | <a name="module_log_bucket"></a> [log\_bucket](#module\_log\_bucket) | terraform-aws-modules/s3-bucket/aws | ~> 5.0 |
 
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_cloudfront_cache_policy.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudfront_cache_policy) | resource |
 | [aws_cloudfront_function.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudfront_function) | resource |
 | [aws_cloudfront_origin_request_policy.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudfront_origin_request_policy) | resource |
@@ -41,7 +41,7 @@
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_cache_policies"></a> [cache\_policies](#input\_cache\_policies) | Map of cache policies to create (keyed by policy name) | <pre>map(object({<br/>    name        = string<br/>    comment     = optional(string)<br/>    default_ttl = optional(number)<br/>    max_ttl     = optional(number)<br/>    min_ttl     = optional(number)<br/>    parameters_in_cache_key_and_forwarded_to_origin = optional(any)<br/>  }))</pre> | `{}` | no |
 | <a name="input_cloudfront_functions"></a> [cloudfront\_functions](#input\_cloudfront\_functions) | Map of CloudFront Functions to create (keyed by function name) | <pre>map(object({<br/>    name    = string<br/>    runtime = optional(string, "cloudfront-js-1.0")<br/>    comment = optional(string)<br/>    code    = string<br/>    publish = optional(bool, true)<br/>  }))</pre> | `{}` | no |
 | <a name="input_common_tags"></a> [common\_tags](#input\_common\_tags) | Common tags to apply to all resources | `map(string)` | `{}` | no |
@@ -59,7 +59,7 @@
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_cache_policies"></a> [cache\_policies](#output\_cache\_policies) | Map of Cache Policies |
 | <a name="output_cache_policy_ids"></a> [cache\_policy\_ids](#output\_cache\_policy\_ids) | Map of Cache Policy IDs |
 | <a name="output_cloudfront_function_arns"></a> [cloudfront\_function\_arns](#output\_cloudfront\_function\_arns) | Map of CloudFront Function ARNs |

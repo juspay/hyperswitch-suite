@@ -2,7 +2,7 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.0 |
 | <a name="requirement_time"></a> [time](#requirement\_time) | >= 0.13.1 |
@@ -11,7 +11,7 @@
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | >= 6.0 |
 | <a name="provider_time"></a> [time](#provider\_time) | >= 0.13.1 |
 | <a name="provider_tls"></a> [tls](#provider\_tls) | >= 4.0 |
@@ -23,7 +23,7 @@ No modules.
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_ebs_volume.keeper_data](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ebs_volume) | resource |
 | [aws_ebs_volume.keeper_data2](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ebs_volume) | resource |
 | [aws_ebs_volume.server_data](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ebs_volume) | resource |
@@ -67,7 +67,7 @@ No modules.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_alb_listeners"></a> [alb\_listeners](#input\_alb\_listeners) | ALB listener configurations for the Application Load Balancer | <pre>map(object({<br/>    port             = number<br/>    protocol         = string<br/>    target_group_arn = optional(string)<br/>    certificate_arn  = optional(string)<br/>  }))</pre> | <pre>{<br/>  "http": {<br/>    "port": 80,<br/>    "protocol": "HTTP"<br/>  }<br/>}</pre> | no |
 | <a name="input_alb_subnet_ids"></a> [alb\_subnet\_ids](#input\_alb\_subnet\_ids) | List of subnet IDs for the Application Load Balancer. At least two subnets in two different Availability Zones are required. | `list(string)` | n/a | yes |
 | <a name="input_clickhouse_port"></a> [clickhouse\_port](#input\_clickhouse\_port) | Port for Clickhouse HTTP interface | `number` | `8123` | no |
@@ -112,7 +112,7 @@ No modules.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_alb_dns_name"></a> [alb\_dns\_name](#output\_alb\_dns\_name) | DNS name of the Application Load Balancer |
 | <a name="output_alb_listener_arns"></a> [alb\_listener\_arns](#output\_alb\_listener\_arns) | ARNs of the ALB listeners |
 | <a name="output_alb_security_group_id"></a> [alb\_security\_group\_id](#output\_alb\_security\_group\_id) | Security group ID used by the Clickhouse ALB |

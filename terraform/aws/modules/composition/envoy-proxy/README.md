@@ -2,20 +2,20 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.29 |
 
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | >= 6.29 |
 
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_alb"></a> [alb](#module\_alb) | terraform-aws-modules/alb/aws | ~> 9.0 |
 | <a name="module_asg"></a> [asg](#module\_asg) | terraform-aws-modules/autoscaling/aws | 9.2.0 |
 | <a name="module_asg_security_group"></a> [asg\_security\_group](#module\_asg\_security\_group) | terraform-aws-modules/security-group/aws | ~> 5.0 |
@@ -28,7 +28,7 @@
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_autoscaling_policy.cpu_target_tracking](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_policy) | resource |
 | [aws_autoscaling_policy.memory_target_tracking](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_policy) | resource |
 | [aws_iam_instance_profile.envoy_profile](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_instance_profile) | resource |
@@ -56,7 +56,7 @@
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_alb_http_listener_port"></a> [alb\_http\_listener\_port](#input\_alb\_http\_listener\_port) | Port for ALB HTTP listener (port that ALB listens on for incoming HTTP traffic) | `number` | `80` | no |
 | <a name="input_alb_https_listener_port"></a> [alb\_https\_listener\_port](#input\_alb\_https\_listener\_port) | Port for ALB HTTPS listener (port that ALB listens on for incoming HTTPS traffic) | `number` | `443` | no |
 | <a name="input_ami_id"></a> [ami\_id](#input\_ami\_id) | AMI ID for Envoy instances (ignored if use\_existing\_launch\_template = true) | `string` | `null` | no |
@@ -140,7 +140,7 @@
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_asg_ids"></a> [asg\_ids](#output\_asg\_ids) | Map of deployment names to Auto Scaling Group IDs |
 | <a name="output_asg_names"></a> [asg\_names](#output\_asg\_names) | Map of deployment names to Auto Scaling Group names |
 | <a name="output_asg_security_group_id"></a> [asg\_security\_group\_id](#output\_asg\_security\_group\_id) | Security group ID for ASG instances |

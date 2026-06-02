@@ -6,7 +6,7 @@ No requirements.
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | n/a |
 
 ## Modules
@@ -16,13 +16,13 @@ No modules.
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_lb_target_group.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_target_group) | resource |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_deregistration_delay"></a> [deregistration\_delay](#input\_deregistration\_delay) | Time in seconds for target deregistration | `number` | `300` | no |
 | <a name="input_health_check"></a> [health\_check](#input\_health\_check) | Health check configuration | <pre>object({<br/>    enabled             = optional(bool, true)<br/>    healthy_threshold   = optional(number, 3)<br/>    unhealthy_threshold = optional(number, 3)<br/>    timeout             = optional(number, 10)<br/>    interval            = optional(number, 30)<br/>    port                = optional(string, "traffic-port")<br/>    protocol            = optional(string, "TCP")<br/>    path                = optional(string, null)<br/>    matcher             = optional(string, null)<br/>  })</pre> | <pre>{<br/>  "enabled": true,<br/>  "healthy_threshold": 3,<br/>  "interval": 30,<br/>  "port": "traffic-port",<br/>  "protocol": "TCP",<br/>  "timeout": 10,<br/>  "unhealthy_threshold": 3<br/>}</pre> | no |
 | <a name="input_name"></a> [name](#input\_name) | Name of the target group | `string` | n/a | yes |
@@ -36,7 +36,7 @@ No modules.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_tg_arn"></a> [tg\_arn](#output\_tg\_arn) | The ARN of the target group |
 | <a name="output_tg_arn_suffix"></a> [tg\_arn\_suffix](#output\_tg\_arn\_suffix) | The ARN suffix for use with CloudWatch metrics |
 | <a name="output_tg_id"></a> [tg\_id](#output\_tg\_id) | The ID of the target group |

@@ -2,7 +2,7 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.0 |
 | <a name="requirement_time"></a> [time](#requirement\_time) | >= 0.13.1 |
@@ -11,7 +11,7 @@
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | >= 6.0 |
 | <a name="provider_time"></a> [time](#provider\_time) | >= 0.13.1 |
 | <a name="provider_tls"></a> [tls](#provider\_tls) | >= 4.0 |
@@ -23,7 +23,7 @@ No modules.
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_iam_instance_profile.kafka](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_instance_profile) | resource |
 | [aws_iam_role.kafka](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role_policy.kafka_ec2](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
@@ -54,7 +54,7 @@ No modules.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_broker_ami_id"></a> [broker\_ami\_id](#input\_broker\_ami\_id) | AMI ID for Kafka broker instances | `string` | n/a | yes |
 | <a name="input_broker_count"></a> [broker\_count](#input\_broker\_count) | Number of Kafka broker nodes to create | `number` | `3` | no |
 | <a name="input_broker_data_device_name"></a> [broker\_data\_device\_name](#input\_broker\_data\_device\_name) | Device name for the broker data EBS volume | `string` | `"/dev/sdb"` | no |
@@ -87,7 +87,7 @@ No modules.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_broker_eni_ids"></a> [broker\_eni\_ids](#output\_broker\_eni\_ids) | List of ENI IDs attached to Kafka broker instances |
 | <a name="output_broker_eni_private_ips"></a> [broker\_eni\_private\_ips](#output\_broker\_eni\_private\_ips) | List of private IPs of the broker ENIs |
 | <a name="output_broker_instance_ids"></a> [broker\_instance\_ids](#output\_broker\_instance\_ids) | List of IDs of the Kafka broker instances |

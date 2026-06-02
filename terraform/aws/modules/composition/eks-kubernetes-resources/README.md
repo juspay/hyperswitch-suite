@@ -2,7 +2,7 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 5.0 |
 | <a name="requirement_helm"></a> [helm](#requirement\_helm) | ~> 3.1 |
 | <a name="requirement_kubernetes"></a> [kubernetes](#requirement\_kubernetes) | ~> 3.0 |
@@ -10,7 +10,7 @@
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 5.0 |
 | <a name="provider_helm"></a> [helm](#provider\_helm) | ~> 3.1 |
 | <a name="provider_kubernetes"></a> [kubernetes](#provider\_kubernetes) | ~> 3.0 |
@@ -19,13 +19,13 @@
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_cluster_autoscaler_irsa"></a> [cluster\_autoscaler\_irsa](#module\_cluster\_autoscaler\_irsa) | terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks | 5.44.0 |
 
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_ecr_lifecycle_policy.cluster_autoscaler](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecr_lifecycle_policy) | resource |
 | [aws_ecr_repository.cluster_autoscaler](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecr_repository) | resource |
 | [helm_release.hyperswitch_stack](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
@@ -51,7 +51,7 @@
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_cluster_autoscaler_architectures"></a> [cluster\_autoscaler\_architectures](#input\_cluster\_autoscaler\_architectures) | List of CPU architectures for multi-arch image sync (e.g., ['amd64', 'arm64']) | `list(string)` | <pre>[<br/>  "amd64",<br/>  "arm64"<br/>]</pre> | no |
 | <a name="input_cluster_autoscaler_cluster_version"></a> [cluster\_autoscaler\_cluster\_version](#input\_cluster\_autoscaler\_cluster\_version) | Kubernetes cluster version (used to determine autoscaler version if image\_version not specified) | `string` | `null` | no |
 | <a name="input_cluster_autoscaler_command"></a> [cluster\_autoscaler\_command](#input\_cluster\_autoscaler\_command) | Full command override for cluster autoscaler (replaces default command if provided) | `list(string)` | `null` | no |
@@ -102,7 +102,7 @@
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_cluster_autoscaler_deployment_name"></a> [cluster\_autoscaler\_deployment\_name](#output\_cluster\_autoscaler\_deployment\_name) | Deployment name for cluster autoscaler |
 | <a name="output_cluster_autoscaler_ecr_repository_arn"></a> [cluster\_autoscaler\_ecr\_repository\_arn](#output\_cluster\_autoscaler\_ecr\_repository\_arn) | ECR repository ARN for cluster autoscaler image (if created) |
 | <a name="output_cluster_autoscaler_ecr_repository_url"></a> [cluster\_autoscaler\_ecr\_repository\_url](#output\_cluster\_autoscaler\_ecr\_repository\_url) | ECR repository URL for cluster autoscaler image (if created) |

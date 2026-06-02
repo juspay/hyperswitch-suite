@@ -2,7 +2,7 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.28 |
 | <a name="requirement_helm"></a> [helm](#requirement\_helm) | ~> 3.1 |
@@ -11,7 +11,7 @@
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | >= 6.28 |
 | <a name="provider_helm"></a> [helm](#provider\_helm) | ~> 3.1 |
 | <a name="provider_kubernetes"></a> [kubernetes](#provider\_kubernetes) | ~> 3.0 |
@@ -23,7 +23,7 @@ No modules.
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_security_group.lb_security_group](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
 | [helm_release.istio_base](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.istio_gateway](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
@@ -35,7 +35,7 @@ No modules.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_common_tags"></a> [common\_tags](#input\_common\_tags) | Common tags to apply to all resources | `map(string)` | `{}` | no |
 | <a name="input_create_helm_releases"></a> [create\_helm\_releases](#input\_create\_helm\_releases) | Whether to create the Helm releases for Istio components | `bool` | `true` | no |
 | <a name="input_create_lb_security_group"></a> [create\_lb\_security\_group](#input\_create\_lb\_security\_group) | This creates a security group to attach to load-balancer through annotations | `bool` | `true` | no |
@@ -56,7 +56,7 @@ No modules.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_cluster_name"></a> [cluster\_name](#output\_cluster\_name) | Name of the EKS cluster |
 | <a name="output_host_domains_map"></a> [host\_domains\_map](#output\_host\_domains\_map) | Map of environment names to list of host domains for Istio Gateway |
 | <a name="output_lb_security_group_id"></a> [lb\_security\_group\_id](#output\_lb\_security\_group\_id) | ID of the created load balancer security group |

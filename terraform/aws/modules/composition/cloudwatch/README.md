@@ -2,14 +2,14 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.32.1 |
 
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | >= 6.32.1 |
 
 ## Modules
@@ -19,7 +19,7 @@ No modules.
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_cloudwatch_dashboard.dashboards](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_dashboard) | resource |
 | [aws_cloudwatch_log_group.log_groups](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
 | [aws_cloudwatch_log_resource_policy.log_policies](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_resource_policy) | resource |
@@ -34,7 +34,7 @@ No modules.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_classified_anomaly_alarms"></a> [classified\_anomaly\_alarms](#input\_classified\_anomaly\_alarms) | Map of classified anomaly detection alarms.<br/>Each alarm MUST define at least sev1.<br/>Set dimension\_key to a key in var.dimension\_map to resolve dimensions automatically.<br/>Or set dimensions explicitly to override. | <pre>map(object({<br/>    classification = string<br/>    metric_name    = string<br/>    namespace      = string<br/>    dimension_key  = optional(string, "")<br/>    dimensions     = optional(map(string), {})<br/>    period         = optional(number, 300)<br/>    statistic      = optional(string, "Average")<br/>    severities = map(object({<br/>      comparison_operator = optional(string, "GreaterThanUpperThreshold")<br/>      standard_deviations = optional(number, 2)<br/>      description         = string<br/>      evaluation_periods  = optional(number, 2)<br/>      treat_missing_data  = optional(string, "notBreaching")<br/>      skip_ok_action      = optional(bool, true)<br/>    }))<br/>  }))</pre> | `{}` | no |
 | <a name="input_classified_metric_alarms"></a> [classified\_metric\_alarms](#input\_classified\_metric\_alarms) | Map of classified metric alarms with multi-severity support.<br/>Each alarm MUST define at least sev1.<br/>Set dimension\_key to a key in var.dimension\_map to resolve dimensions automatically.<br/>Or set dimensions explicitly to override. | <pre>map(object({<br/>    classification = string<br/>    metric_name    = string<br/>    namespace      = string<br/>    dimension_key  = optional(string, "")<br/>    dimensions     = optional(map(string), {})<br/>    period         = optional(number, 60)<br/>    statistic      = optional(string, "Average")<br/>    severities = map(object({<br/>      threshold           = number<br/>      comparison_operator = optional(string, "GreaterThanThreshold")<br/>      description         = string<br/>      evaluation_periods  = optional(number, 5)<br/>      datapoints_to_alarm = optional(number)<br/>      treat_missing_data  = optional(string, "notBreaching")<br/>      skip_ok_action      = optional(bool, true)<br/>    }))<br/>  }))</pre> | `{}` | no |
 | <a name="input_composite_alarms"></a> [composite\_alarms](#input\_composite\_alarms) | Map of CloudWatch composite alarms with metric math | <pre>map(object({<br/>    alarm_name          = string<br/>    alarm_description   = optional(string, "")<br/>    comparison_operator = string<br/>    evaluation_periods  = number<br/>    threshold           = number<br/>    treat_missing_data  = optional(string, "missing")<br/>    metrics = list(object({<br/>      id          = string<br/>      expression  = optional(string)<br/>      label       = optional(string)<br/>      return_data = optional(bool, true)<br/>    }))<br/>    alarm_actions             = optional(list(string), [])<br/>    ok_actions                = optional(list(string), [])<br/>    insufficient_data_actions = optional(list(string), [])<br/>  }))</pre> | `{}` | no |
@@ -53,7 +53,7 @@ No modules.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_alarms_by_classification"></a> [alarms\_by\_classification](#output\_alarms\_by\_classification) | Map of classifications to alarm keys for organization |
 | <a name="output_anomaly_alarms_by_classification"></a> [anomaly\_alarms\_by\_classification](#output\_anomaly\_alarms\_by\_classification) | Map of classifications to anomaly alarm keys for organization |
 | <a name="output_classified_alarm_arns"></a> [classified\_alarm\_arns](#output\_classified\_alarm\_arns) | Map of classified alarm keys to ARNs |

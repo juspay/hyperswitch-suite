@@ -6,7 +6,7 @@ No requirements.
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | n/a |
 
 ## Modules
@@ -16,7 +16,7 @@ No modules.
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_api_gateway_deployment.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_deployment) | resource |
 | [aws_api_gateway_integration.lambda](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration) | resource |
 | [aws_api_gateway_integration_response.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/api_gateway_integration_response) | resource |
@@ -31,7 +31,7 @@ No modules.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_access_log_destination_arn"></a> [access\_log\_destination\_arn](#input\_access\_log\_destination\_arn) | ARN of the CloudWatch log group for API Gateway access logs | `string` | `null` | no |
 | <a name="input_access_log_format"></a> [access\_log\_format](#input\_access\_log\_format) | Format of access logs for API Gateway | `string` | `null` | no |
 | <a name="input_description"></a> [description](#input\_description) | Description of the API Gateway | `string` | `"Managed by Terraform"` | no |
@@ -49,7 +49,7 @@ No modules.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_deployment_id"></a> [deployment\_id](#output\_deployment\_id) | ID of the deployment |
 | <a name="output_invoke_url"></a> [invoke\_url](#output\_invoke\_url) | URL to invoke the API at this stage |
 | <a name="output_resource_ids"></a> [resource\_ids](#output\_resource\_ids) | Map of resource path to resource ID |

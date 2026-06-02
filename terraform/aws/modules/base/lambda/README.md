@@ -6,7 +6,7 @@ No requirements.
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_archive"></a> [archive](#provider\_archive) | n/a |
 | <a name="provider_aws"></a> [aws](#provider\_aws) | n/a |
 
@@ -17,7 +17,7 @@ No modules.
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_cloudwatch_log_group.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
 | [aws_iam_role.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role_policy.inline](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
@@ -31,7 +31,7 @@ No modules.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_create_iam_role"></a> [create\_iam\_role](#input\_create\_iam\_role) | Whether to create a new IAM role for the Lambda function | `bool` | `true` | no |
 | <a name="input_create_log_group"></a> [create\_log\_group](#input\_create\_log\_group) | Whether to create a CloudWatch log group for the Lambda function | `bool` | `true` | no |
 | <a name="input_description"></a> [description](#input\_description) | Description of the Lambda function | `string` | `"Managed by Terraform"` | no |
@@ -59,7 +59,7 @@ No modules.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_function_arn"></a> [function\_arn](#output\_function\_arn) | ARN of the Lambda function |
 | <a name="output_function_invoke_arn"></a> [function\_invoke\_arn](#output\_function\_invoke\_arn) | Invoke ARN of the Lambda function |
 | <a name="output_function_name"></a> [function\_name](#output\_function\_name) | Name of the Lambda function |
