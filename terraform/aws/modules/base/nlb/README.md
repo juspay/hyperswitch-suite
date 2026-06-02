@@ -100,3 +100,49 @@ module "nlb" {
 - The module includes lifecycle management with create_before_destroy
 - NLB supports preserving client IP addresses by default
 - Cross-zone load balancing is enabled by default for even distribution
+
+<!-- BEGIN_TF_DOCS -->
+## Requirements
+
+No requirements.
+
+## Providers
+
+| Name | Version |
+| ---- | ------- |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | n/a |
+
+## Modules
+
+No modules.
+
+## Resources
+
+| Name | Type |
+| ---- | ---- |
+| [aws_lb.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb) | resource |
+
+## Inputs
+
+| Name | Description | Type | Default | Required |
+| ---- | ----------- | ---- | ------- | :------: |
+| <a name="input_access_logs"></a> [access\_logs](#input\_access\_logs) | Access logs configuration | <pre>object({<br/>    enabled = optional(bool, false)<br/>    bucket  = optional(string, null)<br/>    prefix  = optional(string, null)<br/>  })</pre> | <pre>{<br/>  "enabled": false<br/>}</pre> | no |
+| <a name="input_enable_cross_zone_load_balancing"></a> [enable\_cross\_zone\_load\_balancing](#input\_enable\_cross\_zone\_load\_balancing) | Enable cross-zone load balancing | `bool` | `true` | no |
+| <a name="input_enable_deletion_protection"></a> [enable\_deletion\_protection](#input\_enable\_deletion\_protection) | Enable deletion protection on the load balancer | `bool` | `false` | no |
+| <a name="input_internal"></a> [internal](#input\_internal) | Whether the load balancer is internal or external | `bool` | `true` | no |
+| <a name="input_name"></a> [name](#input\_name) | Name of the network load balancer | `string` | n/a | yes |
+| <a name="input_security_groups"></a> [security\_groups](#input\_security\_groups) | List of security group IDs to attach to the load balancer | `list(string)` | `[]` | no |
+| <a name="input_subnets"></a> [subnets](#input\_subnets) | List of subnet IDs to attach to the load balancer | `list(string)` | n/a | yes |
+| <a name="input_tags"></a> [tags](#input\_tags) | Map of tags to apply to the load balancer | `map(string)` | `{}` | no |
+
+## Outputs
+
+| Name | Description |
+| ---- | ----------- |
+| <a name="output_nlb_arn"></a> [nlb\_arn](#output\_nlb\_arn) | ARN of the network load balancer |
+| <a name="output_nlb_arn_suffix"></a> [nlb\_arn\_suffix](#output\_nlb\_arn\_suffix) | ARN suffix for use with CloudWatch Metrics |
+| <a name="output_nlb_dns_name"></a> [nlb\_dns\_name](#output\_nlb\_dns\_name) | DNS name of the network load balancer |
+| <a name="output_nlb_id"></a> [nlb\_id](#output\_nlb\_id) | ID of the network load balancer |
+| <a name="output_nlb_name"></a> [nlb\_name](#output\_nlb\_name) | Name of the network load balancer |
+| <a name="output_nlb_zone_id"></a> [nlb\_zone\_id](#output\_nlb\_zone\_id) | Canonical hosted zone ID of the network load balancer |
+<!-- END_TF_DOCS -->

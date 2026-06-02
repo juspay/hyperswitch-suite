@@ -496,3 +496,45 @@ For questions or issues with this migration:
 2. Check Terraform plan output carefully
 3. Ensure all prerequisites are met
 4. Verify state files are backed up before migration
+
+<!-- BEGIN_TF_DOCS -->
+## Requirements
+
+| Name | Version |
+| ---- | ------- |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.0 |
+
+## Providers
+
+| Name | Version |
+| ---- | ------- |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 6.0 |
+
+## Modules
+
+No modules.
+
+## Resources
+
+| Name | Type |
+| ---- | ---- |
+| [aws_security_group_rule.egress](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
+| [aws_security_group_rule.ingress](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
+
+## Inputs
+
+| Name | Description | Type | Default | Required |
+| ---- | ----------- | ---- | ------- | :------: |
+| <a name="input_egress_rules"></a> [egress\_rules](#input\_egress\_rules) | Map of egress rules grouped by security group ID, keyed by rule name | <pre>map(object({<br/>    sg_id = string<br/>    rules = list(object({<br/>      description     = string<br/>      from_port       = number<br/>      to_port         = number<br/>      protocol        = string<br/>      cidr            = optional(list(string))    # IPv4 CIDR blocks<br/>      ipv6_cidr       = optional(list(string))    # IPv6 CIDR blocks<br/>      sg_id           = optional(list(string))    # Security Group IDs<br/>      prefix_list_ids = optional(list(string))    # VPC Endpoint Prefix Lists<br/>    }))<br/>  }))</pre> | `{}` | no |
+| <a name="input_ingress_rules"></a> [ingress\_rules](#input\_ingress\_rules) | Map of ingress rules grouped by security group ID, keyed by rule name | <pre>map(object({<br/>    sg_id = string<br/>    rules = list(object({<br/>      description     = string<br/>      from_port       = number<br/>      to_port         = number<br/>      protocol        = string<br/>      cidr            = optional(list(string))    # IPv4 CIDR blocks<br/>      ipv6_cidr       = optional(list(string))    # IPv6 CIDR blocks<br/>      sg_id           = optional(list(string))    # Security Group IDs<br/>      prefix_list_ids = optional(list(string))    # VPC Endpoint Prefix Lists<br/>    }))<br/>  }))</pre> | `{}` | no |
+| <a name="input_region"></a> [region](#input\_region) | AWS Region | `string` | `null` | no |
+
+## Outputs
+
+| Name | Description |
+| ---- | ----------- |
+| <a name="output_egress_rule_ids"></a> [egress\_rule\_ids](#output\_egress\_rule\_ids) | Map of egress security group rule IDs grouped by security group ID |
+| <a name="output_ingress_rule_ids"></a> [ingress\_rule\_ids](#output\_ingress\_rule\_ids) | Map of ingress security group rule IDs grouped by security group ID |
+| <a name="output_rules_summary"></a> [rules\_summary](#output\_rules\_summary) | Summary of security rules created |
+<!-- END_TF_DOCS -->

@@ -78,3 +78,38 @@ module "eks_iam" {
   ]
 }
 ```
+<!-- BEGIN_TF_DOCS -->
+## Requirements
+
+No requirements.
+
+## Providers
+
+| Name | Version |
+| ---- | ------- |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.31.0 |
+
+## Modules
+
+No modules.
+
+## Resources
+
+| Name | Type |
+| ---- | ---- |
+| [aws_iam_policy.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
+
+## Inputs
+
+| Name | Description | Type | Default | Required |
+| ---- | ----------- | ---- | ------- | :------: |
+| <a name="input_common_tags"></a> [common\_tags](#input\_common\_tags) | Common tags to apply to all resources | `map(string)` | `{}` | no |
+| <a name="input_policies"></a> [policies](#input\_policies) | Map of IAM policies to create | <pre>map(object({<br/>    name        = string<br/>    description = string<br/>    path        = string<br/>    policy      = string<br/>    tags        = optional(map(string), {})<br/>  }))</pre> | n/a | yes |
+
+## Outputs
+
+| Name | Description |
+| ---- | ----------- |
+| <a name="output_policy_arns"></a> [policy\_arns](#output\_policy\_arns) | Map of policy ARNs keyed by policy key |
+| <a name="output_policy_names"></a> [policy\_names](#output\_policy\_names) | Map of policy names keyed by policy key |
+<!-- END_TF_DOCS -->
