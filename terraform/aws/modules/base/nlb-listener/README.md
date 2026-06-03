@@ -161,3 +161,48 @@ The squid-proxy composition module uses this base module internally. See:
 - The module only supports forward action (NLB limitation)
 - No listener rules support (use ALB for advanced routing)
 - Protocol validation ensures only valid NLB protocols are used
+
+<!-- BEGIN_TF_DOCS -->
+## Requirements
+
+No requirements.
+
+## Providers
+
+| Name | Version |
+|------|---------|
+| <a name="provider_aws"></a> [aws](#provider\_aws) | n/a |
+
+## Modules
+
+No modules.
+
+## Resources
+
+| Name | Type |
+|------|------|
+| [aws_lb_listener.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener) | resource |
+
+## Inputs
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| <a name="input_alpn_policy"></a> [alpn\_policy](#input\_alpn\_policy) | Name of the Application-Layer Protocol Negotiation (ALPN) policy | `string` | `null` | no |
+| <a name="input_certificate_arn"></a> [certificate\_arn](#input\_certificate\_arn) | ARN of the default SSL server certificate (required for TLS) | `string` | `null` | no |
+| <a name="input_load_balancer_arn"></a> [load\_balancer\_arn](#input\_load\_balancer\_arn) | ARN of the network load balancer | `string` | n/a | yes |
+| <a name="input_name"></a> [name](#input\_name) | Name identifier for the listener (used in tags) | `string` | n/a | yes |
+| <a name="input_port"></a> [port](#input\_port) | Port on which the load balancer is listening | `number` | n/a | yes |
+| <a name="input_protocol"></a> [protocol](#input\_protocol) | Protocol for connections from clients to the load balancer | `string` | `"TCP"` | no |
+| <a name="input_ssl_policy"></a> [ssl\_policy](#input\_ssl\_policy) | Name of the SSL Policy for the listener (required for TLS) | `string` | `"ELBSecurityPolicy-TLS13-1-2-2021-06"` | no |
+| <a name="input_tags"></a> [tags](#input\_tags) | Map of tags to apply to the listener | `map(string)` | `{}` | no |
+| <a name="input_target_group_arn"></a> [target\_group\_arn](#input\_target\_group\_arn) | ARN of the target group to forward traffic to | `string` | n/a | yes |
+
+## Outputs
+
+| Name | Description |
+|------|-------------|
+| <a name="output_listener_arn"></a> [listener\_arn](#output\_listener\_arn) | ARN of the listener |
+| <a name="output_listener_id"></a> [listener\_id](#output\_listener\_id) | ID of the listener |
+| <a name="output_listener_port"></a> [listener\_port](#output\_listener\_port) | Port of the listener |
+| <a name="output_listener_protocol"></a> [listener\_protocol](#output\_listener\_protocol) | Protocol of the listener |
+<!-- END_TF_DOCS -->
