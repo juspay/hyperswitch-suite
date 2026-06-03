@@ -15,36 +15,27 @@ output "lb_zone_id" {
 
 output "target_group_arns" {
   description = "Map of deployment names to target group ARNs"
-  value       = { for v in local.deployments : v.deployment => v.target_group_arns }
+  value       = { for k, v in local.auto_scaling_groups : k => local.target_group_arns[k] }
 }
 
 output "launch_template_id" {
-  description = "ID of the launch template (created or existing)"
-  value       = local.launch_template_id
-}
-
-output "launch_template_version" {
-  description = "Version of the launch template being used"
-  value       = local.launch_template_version
+  description = "ID of the module-managed launch template (null if not created)"
+  value       = var.launch_template.create ? aws_launch_template.envoy[0].id : null
 }
 
 output "launch_template_created" {
-  description = "Whether launch template was created by this module (true) or using existing (false)"
-  value       = !var.use_existing_launch_template
+  description = "Whether launch template was created by this module"
+  value       = var.launch_template.create
 }
 
 output "asg_ids" {
   description = "Map of deployment names to Auto Scaling Group IDs"
-  value = {
-    for k, v in module.asg : local.deployments[k].deployment => v.autoscaling_group_id
-  }
+  value       = { for k, v in module.asg : k => v.autoscaling_group_id }
 }
 
 output "asg_names" {
   description = "Map of deployment names to Auto Scaling Group names"
-  value = {
-    for k, v in module.asg : local.deployments[k].deployment => v.autoscaling_group_name
-  }
+  value       = { for k, v in module.asg : k => v.autoscaling_group_name }
 }
 
 output "asg_security_group_id" {
@@ -135,4 +126,9 @@ output "ssh_key_retrieval_command" {
 output "config_version" {
   description = "Current configuration version hash"
   value       = substr(md5(local.envoy_config_content), 0, 8)
+}
+
+output "deployment_weights" {
+  description = "Map of deployment names to ALB traffic weights"
+  value       = { for k, v in local.auto_scaling_groups : k => v.weight }
 }
