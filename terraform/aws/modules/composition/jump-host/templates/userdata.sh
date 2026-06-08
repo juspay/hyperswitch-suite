@@ -22,7 +22,7 @@ systemctl restart sshd
 # Create custom MOTD in a way it won't be overwritten by cloud-init or other services
 cat > /etc/motd.d/40-hyperswitch <<EOF
 ================================================================================
-  Generic Jump Host - $ENVIRONMENT Environment
+  Jump Host - $ENVIRONMENT Environment
 
   Access: AWS Systems Manager Session Manager
   No SSH keys required - access via AWS Console or AWS CLI
@@ -33,4 +33,4 @@ EOF
 
 update-motd
 
-echo "Generic jump host setup complete in $ENVIRONMENT"
+echo "Jump host setup complete in $ENVIRONMENT"

@@ -20,12 +20,12 @@ variable "vpc_id" {
 }
 
 variable "subnet_id" {
-  description = "Subnet ID for the generic jump host (typically a private subnet)"
+  description = "Subnet ID for the jump host (typically a private subnet)"
   type        = string
 }
 
 variable "ami_id" {
-  description = "AMI ID for generic jump host (defaults to latest Amazon Linux 2023)"
+  description = "AMI ID for jump host (defaults to latest Amazon Linux 2023)"
   type        = string
   default     = null
 }

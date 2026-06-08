@@ -1,10 +1,10 @@
 output "jump_instance_id" {
-  description = "The ID of the generic jump host instance"
+  description = "The ID of the jump host instance"
   value       = module.jump_instance.id
 }
 
 output "jump_private_ip" {
-  description = "The private IP address of the generic jump host"
+  description = "The private IP address of the jump host"
   value       = module.jump_instance.private_ip
 }
 
@@ -14,17 +14,17 @@ output "jump_ssm_command" {
 }
 
 output "jump_iam_role_arn" {
-  description = "The ARN of the IAM role for the generic jump host"
+  description = "The ARN of the IAM role for the jump host"
   value       = module.jump_iam_role.arn
 }
 
 output "jump_iam_role_name" {
-  description = "The name of the IAM role for the generic jump host"
+  description = "The name of the IAM role for the jump host"
   value       = module.jump_iam_role.name
 }
 
 output "jump_security_group_id" {
-  description = "The ID of the generic jump host security group"
+  description = "The ID of the jump host security group"
   value       = module.jump_sg.security_group_id
 }
 
@@ -38,10 +38,6 @@ output "migration_mode_status" {
   value       = var.enable_migration_mode ? "ENABLED" : "DISABLED"
 }
 
-output "deployment_mode" {
-  description = "Current deployment mode - always 'generic' for this module"
-  value       = "generic"
-}
 
 output "ssm_session_preferences_document" {
   description = "Name of the SSM Session Manager preferences document (null when not created)"
@@ -69,7 +65,7 @@ output "ssm_s3_bucket_arn" {
 }
 
 output "connection_guide" {
-  description = "Guide for connecting to the generic jump host"
+  description = "Guide for connecting to the jump host"
   value = templatefile("${path.module}/templates/connection_guide.tftpl", {
     instance_id         = module.jump_instance.id
     log_group           = aws_cloudwatch_log_group.jump_host.name

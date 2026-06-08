@@ -1,6 +1,6 @@
 # CloudWatch Log Group for jump host logs
 resource "aws_cloudwatch_log_group" "jump_host" {
-  name              = "/aws/ec2/jump-host/${var.environment}-${var.project_name}/generic"
+  name              = "/aws/ec2/jump-host/${var.environment}-${var.project_name}/jump"
   retention_in_days = var.log_retention_days
 
   tags = merge(
@@ -142,7 +142,7 @@ resource "aws_ssm_document" "session_preferences" {
 }
 
 # =========================================================================
-# IAM Role for Generic Jump Host
+# IAM Role for Jump Host
 # =========================================================================
 module "jump_iam_role" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role"
@@ -178,7 +178,7 @@ module "jump_iam_role" {
           "logs:PutLogEvents",
           "logs:DescribeLogStreams"
         ]
-        resources = ["arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/jump-host/${var.environment}-${var.project_name}/generic*"]
+        resources = ["arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/jump-host/${var.environment}-${var.project_name}/jump*"]
       }
       KMSSessionEncryption = {
         sid    = "KMSSessionEncryption"
@@ -227,7 +227,7 @@ module "jump_iam_role" {
 }
 
 # =========================================================================
-# Security Group for Generic Jump Host
+# Security Group for Jump Host
 # =========================================================================
 module "jump_sg" {
   source  = "terraform-aws-modules/security-group/aws"
@@ -235,7 +235,7 @@ module "jump_sg" {
 
   name            = "${local.name_prefix}-sg"
   use_name_prefix = false
-  description     = "Security group for generic jump host"
+  description     = "Security group for jump host"
   vpc_id          = var.vpc_id
 
   egress_rules = ["all-all"]
@@ -249,7 +249,7 @@ module "jump_sg" {
 }
 
 # =========================================================================
-# Generic Jump Host Instance
+# Jump Host Instance
 # =========================================================================
 module "jump_instance" {
   source  = "terraform-aws-modules/ec2-instance/aws"
@@ -283,7 +283,7 @@ module "jump_instance" {
     local.common_tags,
     {
       Name     = local.name_prefix
-      JumpType = "generic"
+      JumpType = "jump"
     }
   )
 
