@@ -134,11 +134,31 @@ module "s3_bucket" {
 
   lifecycle_rule = try(var.s3.lifecycle_rules, [])
 
-  event_notification = try(var.s3.event_notifications, [])
-
   tags = local.common_tags
 
   force_destroy = try(var.s3.force_destroy, false)
+}
+
+# =========================================================================
+# S3 BUCKET NOTIFICATIONS
+# =========================================================================
+resource "aws_s3_bucket_notification" "this" {
+  count = local.s3_create && length(try(var.s3.event_notifications, [])) > 0 ? 1 : 0
+
+  bucket = module.s3_bucket[0].s3_bucket_id
+
+  dynamic "queue" {
+    for_each = try(var.s3.event_notifications, [])
+    content {
+      id            = queue.value.id
+      queue_arn     = queue.value.queue_arn
+      events        = queue.value.events
+      filter_prefix = try(queue.value.filter_prefix, null)
+      filter_suffix = try(queue.value.filter_suffix, null)
+    }
+  }
+
+  depends_on = [module.s3_bucket]
 }
 
 # =========================================================================
