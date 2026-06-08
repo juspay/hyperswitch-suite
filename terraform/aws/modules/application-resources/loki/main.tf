@@ -134,6 +134,8 @@ module "s3_bucket" {
 
   lifecycle_rule = try(var.s3.lifecycle_rules, [])
 
+  event_notification = try(var.s3.event_notifications, [])
+
   tags = local.common_tags
 
   force_destroy = try(var.s3.force_destroy, false)
