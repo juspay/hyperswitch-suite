@@ -240,3 +240,30 @@ module "vpc_endpoint_sg" {
     }
   )
 }
+
+# Custom VPC Endpoints
+module "custom_vpc_endpoints" {
+  source   = "../../base/vpc-endpoint"
+  for_each = var.custom_vpc_endpoints
+
+  vpc_id            = module.vpc.vpc_id
+  endpoint_name     = "${var.vpc_name}-${each.key}-endpoint"
+  service_name      = each.value.service_name
+  vpc_endpoint_type = "Interface"
+
+  subnet_ids = module.management_subnets[*].subnet_id
+  security_group_ids = compact(concat(
+    var.create_vpc_endpoint_security_group ? [module.vpc_endpoint_sg[0].sg_id] : [],
+    var.vpc_endpoint_security_group_ids
+  ))
+
+  private_dns_enabled = lookup(each.value, "private_dns_enabled", var.vpc_endpoint_private_dns_enabled)
+
+  tags = merge(
+    var.tags,
+    {
+      Name    = "${var.vpc_name}-${each.key}-endpoint"
+      Service = each.key
+    }
+  )
+}
