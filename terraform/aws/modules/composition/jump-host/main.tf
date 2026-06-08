@@ -1,52 +1,156 @@
 # CloudWatch Log Group for jump host logs
 resource "aws_cloudwatch_log_group" "jump_host" {
-  for_each = toset(["external", "internal"])
-
-  name              = "/aws/ec2/jump-host/${var.environment}/${each.key}"
+  name              = "/aws/ec2/jump-host/${var.environment}-${var.project_name}/generic"
   retention_in_days = var.log_retention_days
 
   tags = merge(
     local.common_tags,
     {
-      Name = "${var.environment}-${var.project_name}-${each.key}-jump-logs"
+      Name = "${local.name_prefix}-logs"
     }
   )
 }
 
-# Generate SSH key pair for internal jump access
-resource "tls_private_key" "internal_jump" {
-  algorithm = "RSA"
-  rsa_bits  = 4096
-}
+# =========================================================================
+# SSM Session Manager Logging Resources
+# =========================================================================
 
-# Store private key in SSM Parameter Store
-module "internal_jump_ssh_key_parameter" {
-  source  = "terraform-aws-modules/ssm-parameter/aws"
-  version = "~> 1.0"
+resource "aws_cloudwatch_log_group" "ssm_session_logs" {
+  count = var.create_ssm_cloudwatch_log_group && var.ssm_cloudwatch_logging_enabled ? 1 : 0
 
-  name        = "/jump-host/${var.environment}/internal/ssh-private-key"
-  description = "Private SSH key for accessing internal jump host from external jump"
-  type        = "SecureString"
-  value       = tls_private_key.internal_jump.private_key_pem
-  secure_type = true
+  name              = local.ssm_cloudwatch_log_group_name
+  retention_in_days = var.ssm_cloudwatch_log_group_retention_days
 
   tags = merge(
     local.common_tags,
     {
-      Name = "${local.internal_name_prefix}-ssh-key"
+      Name = "${var.environment}-${var.project_name}-ssm-session-logs"
     }
   )
 }
 
-# IAM Role for External Jump Host
-module "external_jump_iam_role" {
+resource "aws_s3_bucket" "ssm_session_logs" {
+  count = var.create_ssm_s3_bucket && var.ssm_s3_logging_enabled ? 1 : 0
+
+  bucket = local.ssm_s3_bucket_name
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name        = "${var.environment}-${var.project_name}-ssm-session-logs"
+      Environment = var.environment
+      Purpose     = "SSMSessionLogs"
+    }
+  )
+}
+
+resource "aws_s3_bucket_versioning" "ssm_session_logs" {
+  count  = var.create_ssm_s3_bucket && var.ssm_s3_logging_enabled ? 1 : 0
+  bucket = aws_s3_bucket.ssm_session_logs[0].id
+
+  versioning_configuration {
+    status = var.ssm_s3_bucket_versioning ? "Enabled" : "Suspended"
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "ssm_session_logs" {
+  count = var.create_ssm_s3_bucket && var.ssm_s3_logging_enabled && var.ssm_s3_bucket_lifecycle_days > 0 ? 1 : 0
+
+  bucket = aws_s3_bucket.ssm_session_logs[0].id
+
+  rule {
+    id     = "transition-to-glacier"
+    status = "Enabled"
+
+    filter {}
+
+    transition {
+      days          = var.ssm_s3_bucket_lifecycle_days
+      storage_class = "GLACIER"
+    }
+
+    noncurrent_version_transition {
+      noncurrent_days = var.ssm_s3_bucket_lifecycle_days
+      storage_class   = "GLACIER"
+    }
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "ssm_session_logs" {
+  count = var.create_ssm_s3_bucket && var.ssm_s3_logging_enabled ? 1 : 0
+
+  bucket = aws_s3_bucket.ssm_session_logs[0].id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "ssm_session_logs" {
+  count = var.create_ssm_s3_bucket && var.ssm_s3_logging_enabled ? 1 : 0
+
+  bucket = aws_s3_bucket.ssm_session_logs[0].id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+# =========================================================================
+# SSM Session Manager Preferences
+# =========================================================================
+resource "aws_ssm_document" "session_preferences" {
+  count = var.create_ssm_session_preferences ? 1 : 0
+
+  name            = "SSM-SessionManagerRunShell"
+  document_type   = "Session"
+  document_format = "JSON"
+
+  content = jsonencode({
+    schemaVersion = "1.0"
+    description   = "Session preferences for ${var.project_name} ${var.environment} jump host"
+    sessionType   = "Standard_Stream"
+    inputs = merge(
+      {
+        idleSessionTimeout          = tostring(var.ssm_idle_session_timeout)
+        runAsEnabled                = var.ssm_run_as_user != ""
+        cloudWatchEncryptionEnabled = var.ssm_cloudwatch_logging_enabled
+        s3EncryptionEnabled         = var.ssm_s3_logging_enabled
+        shellProfile = {
+          linux   = var.ssm_shell_profile_linux
+          windows = var.ssm_shell_profile_windows
+        }
+      },
+      var.ssm_max_session_duration != "" ? { maxSessionDuration = var.ssm_max_session_duration } : {},
+      var.ssm_run_as_user != "" ? { runAsDefaultUser = var.ssm_run_as_user } : {},
+      var.enable_ssm_session_encryption ? { kmsKeyId = "alias/aws/ssm" } : {},
+      var.ssm_cloudwatch_logging_enabled ? { cloudWatchLogGroupName = local.ssm_cloudwatch_log_group_name } : {},
+      var.ssm_s3_logging_enabled ? { s3BucketName = local.ssm_s3_bucket_name } : {},
+      var.ssm_s3_logging_enabled && var.ssm_s3_key_prefix != "" ? { s3KeyPrefix = var.ssm_s3_key_prefix } : {}
+    )
+  })
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${var.environment}-${var.project_name}-ssm-session-preferences"
+    }
+  )
+}
+
+# =========================================================================
+# IAM Role for Generic Jump Host
+# =========================================================================
+module "jump_iam_role" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role"
   version = "~> 6.2"
 
-  name                    = "${var.environment}-${var.project_name}-external-jump-role"
+  name                    = "${local.name_prefix}-role"
   create_instance_profile = true
 
-  # Trust policy for EC2
   trust_policy_permissions = {
     EC2AssumeRole = {
       actions = ["sts:AssumeRole"]
@@ -57,13 +161,11 @@ module "external_jump_iam_role" {
     }
   }
 
-  # Managed policies
   policies = {
     AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
     CloudWatchAgentServerPolicy  = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
   }
 
-  # Inline policies
   create_inline_policy = true
   inline_policy_permissions = merge(
     {
@@ -76,32 +178,7 @@ module "external_jump_iam_role" {
           "logs:PutLogEvents",
           "logs:DescribeLogStreams"
         ]
-        resources = ["arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/jump-host/${var.environment}/external*"]
-      }
-      SSMParameters = {
-        sid    = "SSMParameters"
-        effect = "Allow"
-        actions = [
-          "ssm:GetParameter",
-          "ssm:GetParameters"
-        ]
-        resources = ["arn:aws:ssm:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:parameter/jump-host/${var.environment}/internal/*"]
-      }
-      S3PackerMigration = {
-        sid    = "S3PackerMigration"
-        effect = "Allow"
-        actions = [
-          "s3:CreateBucket",
-          "s3:DeleteBucket",
-          "s3:PutObject",
-          "s3:GetObject",
-          "s3:DeleteObject",
-          "s3:ListBucket"
-        ]
-        resources = [
-          "arn:aws:s3:::packer-migration-temp-*",
-          "arn:aws:s3:::packer-migration-temp-*/*"
-        ]
+        resources = ["arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/jump-host/${var.environment}-${var.project_name}/generic*"]
       }
       KMSSessionEncryption = {
         sid    = "KMSSessionEncryption"
@@ -149,204 +226,52 @@ module "external_jump_iam_role" {
   tags = local.common_tags
 }
 
-# IAM Role for Internal Jump Host (Optional SSM Session Manager)
-module "internal_jump_iam_role" {
-  source  = "terraform-aws-modules/iam/aws//modules/iam-role"
-  version = "~> 6.2"
-
-  name                    = "${var.environment}-${var.project_name}-internal-jump-role"
-  create_instance_profile = true
-
-  # Trust policy for EC2
-  trust_policy_permissions = {
-    EC2AssumeRole = {
-      actions = ["sts:AssumeRole"]
-      principals = [{
-        type        = "Service"
-        identifiers = ["ec2.amazonaws.com"]
-      }]
-    }
-  }
-
-  # Managed policies
-  policies = merge(
-    {
-      CloudWatchAgentServerPolicy = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
-    },
-    var.enable_internal_jump_ssm ? {
-      AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-    } : {}
-  )
-
-  # Inline policies
-  create_inline_policy = true
-  inline_policy_permissions = merge(
-    {
-      CloudWatchLogs = {
-        sid    = "CloudWatchLogs"
-        effect = "Allow"
-        actions = [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents",
-          "logs:DescribeLogStreams"
-        ]
-        resources = ["arn:aws:logs:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:log-group:/aws/ec2/jump-host/${var.environment}/internal*"]
-      }
-    },
-    var.enable_internal_jump_ssm ? {
-      KMSSessionEncryption = {
-        sid    = "KMSSessionEncryption"
-        effect = "Allow"
-        actions = [
-          "kms:Decrypt",
-          "kms:GenerateDataKey"
-        ]
-        resources = [
-          "arn:aws:kms:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:key/*"
-        ]
-      }
-      SSMSessionLogging = {
-        sid    = "SSMSessionLogging"
-        effect = "Allow"
-        actions = [
-          "s3:PutObject"
-        ]
-        resources = [
-          "arn:aws:s3:::*/*"
-        ]
-      }
-      SSMSessionLoggingEncryption = {
-        sid       = "SSMSessionLoggingEncryption"
-        effect    = "Allow"
-        actions   = ["s3:GetEncryptionConfiguration"]
-        resources = ["*"]
-      }
-    } : {}
-  )
-
-  tags = local.common_tags
-}
-
-# Security Group for External Jump Host
-module "external_jump_sg" {
+# =========================================================================
+# Security Group for Generic Jump Host
+# =========================================================================
+module "jump_sg" {
   source  = "terraform-aws-modules/security-group/aws"
   version = "~> 5.0"
 
-  name            = "${local.external_name_prefix}-sg"
+  name            = "${local.name_prefix}-sg"
   use_name_prefix = false
-  description     = "Security group for external jump host"
+  description     = "Security group for generic jump host"
   vpc_id          = var.vpc_id
 
-  # Rules are managed separately below
-  egress_rules  = []
-  ingress_rules = []
+  egress_rules = ["all-all"]
 
   tags = merge(
     local.common_tags,
     {
-      Name = "${local.external_name_prefix}-sg"
+      Name = "${local.name_prefix}-sg"
     }
   )
 }
 
-# Security Group for Internal Jump Host
-module "internal_jump_sg" {
-  source  = "terraform-aws-modules/security-group/aws"
-  version = "~> 5.0"
-
-  name            = "${local.internal_name_prefix}-sg"
-  use_name_prefix = false
-  description     = "Security group for internal jump host"
-  vpc_id          = var.vpc_id
-
-  # Rules are managed separately below
-  egress_rules  = []
-  ingress_rules = []
-
-  tags = merge(
-    local.common_tags,
-    {
-      Name = "${local.internal_name_prefix}-sg"
-    }
-  )
-}
-
-
 # =========================================================================
-# External Jump Host - Default Egress Rules (Automatic)
+# Generic Jump Host Instance
 # =========================================================================
-# Default egress to internal jump on SSH
-resource "aws_security_group_rule" "external_jump_default_egress_to_internal" {
-  security_group_id        = module.external_jump_sg.security_group_id
-  type                     = "egress"
-  from_port                = 22
-  to_port                  = 22
-  protocol                 = "tcp"
-  source_security_group_id = module.internal_jump_sg.security_group_id
-  description              = "Allow SSH to internal jump host"
-}
-
-# Default egress for HTTPS (Session Manager, package downloads)
-resource "aws_security_group_rule" "external_jump_default_egress_https" {
-  security_group_id = module.external_jump_sg.security_group_id
-  type              = "egress"
-  from_port         = 443
-  to_port           = 443
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  description       = "Allow HTTPS for Session Manager and package downloads"
-}
-
-
-# =========================================================================
-# Internal Jump Host - Default Ingress Rules (Automatic)
-# =========================================================================
-# Default ingress from external jump on SSH
-resource "aws_security_group_rule" "internal_jump_default_ingress_from_external" {
-  security_group_id        = module.internal_jump_sg.security_group_id
-  type                     = "ingress"
-  from_port                = 22
-  to_port                  = 22
-  protocol                 = "tcp"
-  source_security_group_id = module.external_jump_sg.security_group_id
-  description              = "Allow SSH from external jump host only"
-}
-
-# Create AWS key pair for internal jump (public key only)
-resource "aws_key_pair" "internal_jump" {
-  key_name   = "${local.internal_name_prefix}-keypair"
-  public_key = tls_private_key.internal_jump.public_key_openssh
-
-  tags = merge(
-    local.common_tags,
-    {
-      Name = "${local.internal_name_prefix}-keypair"
-    }
-  )
-}
-
-# Internal Jump Host Instance (must be created first to get its IP)
-module "internal_jump_instance" {
+module "jump_instance" {
   source  = "terraform-aws-modules/ec2-instance/aws"
   version = "~> 6.0"
 
-  name = local.internal_name_prefix
+  name = local.name_prefix
 
-  ami                    = local.internal_ami_id
+  ami                    = local.ami_id
   instance_type          = var.instance_type
-  subnet_id              = var.private_subnet_id
-  vpc_security_group_ids = [module.internal_jump_sg.security_group_id]
-  iam_instance_profile   = module.internal_jump_iam_role.instance_profile_name
-  key_name               = aws_key_pair.internal_jump.key_name
+  subnet_id              = var.subnet_id
+  vpc_security_group_ids = [module.jump_sg.security_group_id]
+  iam_instance_profile   = module.jump_iam_role.instance_profile_name
 
   create_security_group = false
 
   associate_public_ip_address = false
   monitoring                  = true
-  user_data_base64            = base64encode(local.userdata_internal)
+  user_data_base64            = base64encode(templatefile("${path.module}/templates/userdata.sh", {
+    environment       = var.environment
+    cloudwatch_region = data.aws_region.current.id
+  }))
 
-  # Root volume configuration
   root_block_device = {
     size                  = var.root_volume_size
     type                  = var.root_volume_type
@@ -354,70 +279,15 @@ module "internal_jump_instance" {
     delete_on_termination = true
   }
 
-  # IMDSv2 is enabled by default in v5+
-
   tags = merge(
     local.common_tags,
     {
-      Name     = local.internal_name_prefix
-      JumpType = "internal"
+      Name     = local.name_prefix
+      JumpType = "generic"
     }
   )
 
   depends_on = [
-    aws_cloudwatch_log_group.jump_host,
-    aws_key_pair.internal_jump
-  ]
-}
-
-# External Jump Host Instance (created after internal to get its IP)
-module "external_jump_instance" {
-  source  = "terraform-aws-modules/ec2-instance/aws"
-  version = "~> 6.0"
-
-  name = local.external_name_prefix
-
-  ami                    = local.external_ami_id
-  instance_type          = var.instance_type
-  subnet_id              = var.public_subnet_id
-  vpc_security_group_ids = [module.external_jump_sg.security_group_id]
-  iam_instance_profile   = module.external_jump_iam_role.instance_profile_name
-
-  create_security_group = false
-
-  associate_public_ip_address = true
-  monitoring                  = true
-  user_data_base64 = base64encode(
-    var.external_userdata_override != null ? var.external_userdata_override : templatefile("${path.module}/templates/userdata.sh", {
-      jump_type         = "external"
-      environment       = var.environment
-      cloudwatch_region = data.aws_region.current.id
-      internal_jump_ip  = module.internal_jump_instance.private_ip
-      os_username       = var.ssm_os_username
-    })
-  )
-
-  # Root volume configuration
-  root_block_device = {
-    size                  = var.root_volume_size
-    type                  = var.root_volume_type
-    encrypted             = true
-    delete_on_termination = true
-  }
-
-  # IMDSv2 is enabled by default in v5+
-
-  tags = merge(
-    local.common_tags,
-    {
-      Name     = local.external_name_prefix
-      JumpType = "external"
-    }
-  )
-
-  depends_on = [
-    aws_cloudwatch_log_group.jump_host,
-    module.internal_jump_instance,
-    module.internal_jump_ssh_key_parameter
+    aws_cloudwatch_log_group.jump_host
   ]
 }
