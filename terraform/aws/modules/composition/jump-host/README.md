@@ -40,7 +40,7 @@
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_ami_id"></a> [ami\_id](#input\_ami\_id) | AMI ID for generic jump host (defaults to latest Amazon Linux 2023) | `string` | `null` | no |
+| <a name="input_ami_id"></a> [ami\_id](#input\_ami\_id) | AMI ID for jump host (defaults to latest Amazon Linux 2023) | `string` | `null` | no |
 | <a name="input_create_ssm_cloudwatch_log_group"></a> [create\_ssm\_cloudwatch\_log\_group](#input\_create\_ssm\_cloudwatch\_log\_group) | Whether to create a CloudWatch log group for SSM session logs. | `bool` | `false` | no |
 | <a name="input_create_ssm_s3_bucket"></a> [create\_ssm\_s3\_bucket](#input\_create\_ssm\_s3\_bucket) | Whether to create an S3 bucket for SSM session logs. | `bool` | `false` | no |
 | <a name="input_create_ssm_session_preferences"></a> [create\_ssm\_session\_preferences](#input\_create\_ssm\_session\_preferences) | Whether to create the SSM Session Manager preferences document. Set to false if another environment in the same AWS account already manages this account-level setting. | `bool` | `true` | no |
@@ -68,7 +68,7 @@
 | <a name="input_ssm_s3_logging_enabled"></a> [ssm\_s3\_logging\_enabled](#input\_ssm\_s3\_logging\_enabled) | Enable S3 logging for SSM sessions | `bool` | `false` | no |
 | <a name="input_ssm_shell_profile_linux"></a> [ssm\_shell\_profile\_linux](#input\_ssm\_shell\_profile\_linux) | Linux shell profile for SSM sessions. Runs when session starts. | `string` | `""` | no |
 | <a name="input_ssm_shell_profile_windows"></a> [ssm\_shell\_profile\_windows](#input\_ssm\_shell\_profile\_windows) | Windows shell profile for SSM sessions. | `string` | `""` | no |
-| <a name="input_subnet_id"></a> [subnet\_id](#input\_subnet\_id) | Subnet ID for the generic jump host (typically a private subnet) | `string` | n/a | yes |
+| <a name="input_subnet_id"></a> [subnet\_id](#input\_subnet\_id) | Subnet ID for the jump host (typically a private subnet) | `string` | n/a | yes |
 | <a name="input_tags"></a> [tags](#input\_tags) | A map of tags to add to all resources | `map(string)` | `{}` | no |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC ID where jump host will be deployed | `string` | n/a | yes |
 
@@ -77,13 +77,12 @@
 | Name | Description |
 |------|-------------|
 | <a name="output_cloudwatch_log_group_name"></a> [cloudwatch\_log\_group\_name](#output\_cloudwatch\_log\_group\_name) | Name of the CloudWatch log group for jump host logs |
-| <a name="output_connection_guide"></a> [connection\_guide](#output\_connection\_guide) | Guide for connecting to the generic jump host |
-| <a name="output_deployment_mode"></a> [deployment\_mode](#output\_deployment\_mode) | Current deployment mode - always 'generic' for this module |
-| <a name="output_jump_iam_role_arn"></a> [jump\_iam\_role\_arn](#output\_jump\_iam\_role\_arn) | The ARN of the IAM role for the generic jump host |
-| <a name="output_jump_iam_role_name"></a> [jump\_iam\_role\_name](#output\_jump\_iam\_role\_name) | The name of the IAM role for the generic jump host |
-| <a name="output_jump_instance_id"></a> [jump\_instance\_id](#output\_jump\_instance\_id) | The ID of the generic jump host instance |
-| <a name="output_jump_private_ip"></a> [jump\_private\_ip](#output\_jump\_private\_ip) | The private IP address of the generic jump host |
-| <a name="output_jump_security_group_id"></a> [jump\_security\_group\_id](#output\_jump\_security\_group\_id) | The ID of the generic jump host security group |
+| <a name="output_connection_guide"></a> [connection\_guide](#output\_connection\_guide) | Guide for connecting to the jump host |
+| <a name="output_jump_iam_role_arn"></a> [jump\_iam\_role\_arn](#output\_jump\_iam\_role\_arn) | The ARN of the IAM role for the jump host |
+| <a name="output_jump_iam_role_name"></a> [jump\_iam\_role\_name](#output\_jump\_iam\_role\_name) | The name of the IAM role for the jump host |
+| <a name="output_jump_instance_id"></a> [jump\_instance\_id](#output\_jump\_instance\_id) | The ID of the jump host instance |
+| <a name="output_jump_private_ip"></a> [jump\_private\_ip](#output\_jump\_private\_ip) | The private IP address of the jump host |
+| <a name="output_jump_security_group_id"></a> [jump\_security\_group\_id](#output\_jump\_security\_group\_id) | The ID of the jump host security group |
 | <a name="output_jump_ssm_command"></a> [jump\_ssm\_command](#output\_jump\_ssm\_command) | AWS CLI command to connect to jump host via Session Manager |
 | <a name="output_migration_mode_status"></a> [migration\_mode\_status](#output\_migration\_mode\_status) | Current migration mode status for SSM SendCommand permissions |
 | <a name="output_ssm_cloudwatch_log_group_arn"></a> [ssm\_cloudwatch\_log\_group\_arn](#output\_ssm\_cloudwatch\_log\_group\_arn) | ARN of the CloudWatch log group for SSM session logs (null when not created by this module) |
