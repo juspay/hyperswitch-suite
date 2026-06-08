@@ -120,6 +120,15 @@ variable "s3" {
     force_destroy      = optional(bool, false)
     versioning_enabled = optional(bool, false)
     lifecycle_rules    = optional(any, [])
+
+    # S3 event notifications (e.g. send object create events to SQS)
+    event_notifications = optional(list(object({
+      id            = string
+      queue_arn     = string
+      events        = list(string)
+      filter_prefix = optional(string, null)
+      filter_suffix = optional(string, null)
+    })), [])
   })
   default = {}
 }
