@@ -20,7 +20,10 @@ module "certificate" {
   source  = "terraform-aws-modules/acm/aws"
   version = "6.3.0"
 
-  for_each = var.certificates
+  for_each = {
+    for k, v in var.certificates : k => v
+    if v.enabled
+  }
 
   domain_name = each.value.domain_name
 

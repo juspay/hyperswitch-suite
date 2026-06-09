@@ -44,6 +44,7 @@ certificates = {
 }
 EOT
   type = map(object({
+    enabled                                     = optional(bool, true)
     domain_name                                 = string
     subject_alternative_names                   = optional(list(string), [])
     zone_id                                     = optional(string, null)
