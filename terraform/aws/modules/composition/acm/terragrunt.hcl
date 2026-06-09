@@ -4,7 +4,7 @@ include "root" {
 }
 
 terraform {
-  source = "../"
+  source = "."
 }
 
 inputs = {
