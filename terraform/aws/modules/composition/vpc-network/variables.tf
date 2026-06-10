@@ -448,6 +448,15 @@ variable "vpc_endpoint_private_dns_enabled" {
   default     = true
 }
 
+variable "custom_vpc_endpoints" {
+  description = "Map of custom PrivateLink VPC endpoints to create with arbitrary service names"
+  type = map(object({
+    service_name        = string
+    private_dns_enabled = optional(bool, true)
+  }))
+  default = {}
+}
+
 ###################
 # VPC Peering Configuration
 # Supports: cross-account, cross-region peering
