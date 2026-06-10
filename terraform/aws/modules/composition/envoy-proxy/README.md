@@ -118,6 +118,7 @@
 | <a name="input_target_group_protocol"></a> [target\_group\_protocol](#input\_target\_group\_protocol) | Protocol for target group (HTTP or HTTPS) | `string` | `"HTTP"` | no |
 | <a name="input_termination_policies"></a> [termination\_policies](#input\_termination\_policies) | List of policies to use when selecting instances to terminate (OldestLaunchTemplate, OldestInstance, Default, etc.) | `list(string)` | <pre>[<br/>  "OldestLaunchTemplate",<br/>  "OldestInstance",<br/>  "Default"<br/>]</pre> | no |
 | <a name="input_upload_config_to_s3"></a> [upload\_config\_to\_s3](#input\_upload\_config\_to\_s3) | Whether to upload config files from local directory to S3 | `bool` | `false` | no |
+| <a name="input_virtual_hosts_domains"></a> [virtual\_hosts\_domains](#input\_virtual\_hosts\_domains) | List of domain names for the Envoy virtual host (for envoy.yaml templating) | `list(string)` | `[]` | no |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC ID where resources will be created | `string` | n/a | yes |
 | <a name="input_waf_web_acl_arn"></a> [waf\_web\_acl\_arn](#input\_waf\_web\_acl\_arn) | ARN of AWS WAFv2 WebACL to associate with ALB (required if enable\_waf = true) | `string` | `null` | no |
 
