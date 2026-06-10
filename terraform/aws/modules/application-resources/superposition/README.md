@@ -77,6 +77,10 @@
 | <a name="output_database_port"></a> [database\_port](#output\_database\_port) | Port for the database (if database is created) |
 | <a name="output_database_reader_endpoint"></a> [database\_reader\_endpoint](#output\_database\_reader\_endpoint) | Reader endpoint for the database (if database is created) |
 | <a name="output_database_security_group_id"></a> [database\_security\_group\_id](#output\_database\_security\_group\_id) | ID of the security group for the database (if created) |
+| <a name="output_db_global_cluster_arn"></a> [db\_global\_cluster\_arn](#output\_db\_global\_cluster\_arn) | ARN of the Global Cluster |
+| <a name="output_db_global_cluster_id"></a> [db\_global\_cluster\_id](#output\_db\_global\_cluster\_id) | Global Cluster Identifier |
+| <a name="output_db_global_cluster_identifier"></a> [db\_global\_cluster\_identifier](#output\_db\_global\_cluster\_identifier) | Global Cluster Identifier name |
+| <a name="output_db_global_writer_endpoint"></a> [db\_global\_writer\_endpoint](#output\_db\_global\_writer\_endpoint) | Global writer endpoint for the Aurora Global Database |
 | <a name="output_host_domains_map"></a> [host\_domains\_map](#output\_host\_domains\_map) | Map of environment names to host domains for Superposition |
 | <a name="output_inline_policies_enabled"></a> [inline\_policies\_enabled](#output\_inline\_policies\_enabled) | Whether inline policies feature is enabled |
 | <a name="output_oidc_enabled"></a> [oidc\_enabled](#output\_oidc\_enabled) | Whether OIDC/IRSA feature is enabled |

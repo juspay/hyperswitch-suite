@@ -62,14 +62,39 @@ output "inline_policies_enabled" {
   value       = local.inline_policies_enabled
 }
 
+# =========================================================================
+# Global Database Outputs
+# =========================================================================
+
+output "db_global_cluster_id" {
+  description = "Global Cluster Identifier"
+  value       = var.create_database && var.database_config != null ? module.database[0].global_cluster_id : null
+}
+
+output "db_global_cluster_arn" {
+  description = "ARN of the Global Cluster"
+  value       = var.create_database && var.database_config != null ? module.database[0].global_cluster_arn : null
+}
+
+output "db_global_cluster_identifier" {
+  description = "Global Cluster Identifier name"
+  value       = var.create_database && var.database_config != null ? module.database[0].global_cluster_identifier : null
+}
+
+output "db_global_writer_endpoint" {
+  description = "Global writer endpoint for the Aurora Global Database"
+  value       = var.create_database && var.database_config != null ? module.database[0].global_writer_endpoint : null
+}
+
+
+# =========================================================================
+# DATABASE OUTPUTS
+# =========================================================================
 output "database_enabled" {
   description = "Whether database feature is enabled"
   value       = local.database_enabled
 }
 
-# =========================================================================
-# DATABASE OUTPUTS
-# =========================================================================
 output "database_cluster_id" {
   description = "RDS Cluster Identifier (if database is created)"
   value       = var.create_database ? module.database[0].cluster_id : null
