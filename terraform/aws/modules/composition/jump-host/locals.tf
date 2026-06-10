@@ -1,6 +1,5 @@
 locals {
-  external_name_prefix = "${var.environment}-${var.project_name}-external-jump"
-  internal_name_prefix = "${var.environment}-${var.project_name}-internal-jump"
+  name_prefix = "${var.environment}-${var.project_name}-jump"
 
   common_tags = merge(
     var.tags,
@@ -12,14 +11,9 @@ locals {
     }
   )
 
-  external_ami_id = var.external_jump_ami_id != null ? var.external_jump_ami_id : data.aws_ami.amazon_linux_2023[0].id
-  internal_ami_id = var.internal_jump_ami_id != null ? var.internal_jump_ami_id : data.aws_ami.amazon_linux_2023[0].id
+  ami_id = var.ami_id != null ? var.ami_id : data.aws_ami.amazon_linux_2023[0].id
 
-  userdata_internal = var.internal_userdata_override != null ? var.internal_userdata_override : templatefile("${path.module}/templates/userdata.sh", {
-    jump_type         = "internal"
-    environment       = var.environment
-    cloudwatch_region = data.aws_region.current.id
-    internal_jump_ip  = "" # Not used for internal jump
-    os_username       = "ec2-user"
-  })
+  ssm_cloudwatch_log_group_name = var.create_ssm_cloudwatch_log_group ? "${var.ssm_cloudwatch_log_group_name_prefix}-${var.environment}" : var.ssm_cloudwatch_log_group_name
+
+  ssm_s3_bucket_name = var.create_ssm_s3_bucket ? "${var.ssm_s3_bucket_name_prefix}-${var.environment}-${data.aws_region.current.id}-${data.aws_caller_identity.current.account_id}" : var.ssm_s3_bucket_name
 }

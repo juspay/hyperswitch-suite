@@ -11,30 +11,27 @@
 | Name | Version |
 |------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.0 |
-| <a name="provider_tls"></a> [tls](#provider\_tls) | n/a |
 
 ## Modules
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_external_jump_iam_role"></a> [external\_jump\_iam\_role](#module\_external\_jump\_iam\_role) | terraform-aws-modules/iam/aws//modules/iam-role | ~> 6.2 |
-| <a name="module_external_jump_instance"></a> [external\_jump\_instance](#module\_external\_jump\_instance) | terraform-aws-modules/ec2-instance/aws | ~> 6.0 |
-| <a name="module_external_jump_sg"></a> [external\_jump\_sg](#module\_external\_jump\_sg) | terraform-aws-modules/security-group/aws | ~> 5.0 |
-| <a name="module_internal_jump_iam_role"></a> [internal\_jump\_iam\_role](#module\_internal\_jump\_iam\_role) | terraform-aws-modules/iam/aws//modules/iam-role | ~> 6.2 |
-| <a name="module_internal_jump_instance"></a> [internal\_jump\_instance](#module\_internal\_jump\_instance) | terraform-aws-modules/ec2-instance/aws | ~> 6.0 |
-| <a name="module_internal_jump_sg"></a> [internal\_jump\_sg](#module\_internal\_jump\_sg) | terraform-aws-modules/security-group/aws | ~> 5.0 |
-| <a name="module_internal_jump_ssh_key_parameter"></a> [internal\_jump\_ssh\_key\_parameter](#module\_internal\_jump\_ssh\_key\_parameter) | terraform-aws-modules/ssm-parameter/aws | ~> 1.0 |
+| <a name="module_jump_iam_role"></a> [jump\_iam\_role](#module\_jump\_iam\_role) | terraform-aws-modules/iam/aws//modules/iam-role | ~> 6.2 |
+| <a name="module_jump_instance"></a> [jump\_instance](#module\_jump\_instance) | terraform-aws-modules/ec2-instance/aws | ~> 6.0 |
+| <a name="module_jump_sg"></a> [jump\_sg](#module\_jump\_sg) | terraform-aws-modules/security-group/aws | ~> 5.0 |
 
 ## Resources
 
 | Name | Type |
 |------|------|
 | [aws_cloudwatch_log_group.jump_host](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
-| [aws_key_pair.internal_jump](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/key_pair) | resource |
-| [aws_security_group_rule.external_jump_default_egress_https](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
-| [aws_security_group_rule.external_jump_default_egress_to_internal](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
-| [aws_security_group_rule.internal_jump_default_ingress_from_external](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
-| [tls_private_key.internal_jump](https://registry.terraform.io/providers/hashicorp/tls/latest/docs/resources/private_key) | resource |
+| [aws_cloudwatch_log_group.ssm_session_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
+| [aws_s3_bucket.ssm_session_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket) | resource |
+| [aws_s3_bucket_lifecycle_configuration.ssm_session_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_lifecycle_configuration) | resource |
+| [aws_s3_bucket_public_access_block.ssm_session_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_public_access_block) | resource |
+| [aws_s3_bucket_server_side_encryption_configuration.ssm_session_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_server_side_encryption_configuration) | resource |
+| [aws_s3_bucket_versioning.ssm_session_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_versioning) | resource |
+| [aws_ssm_document.session_preferences](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ssm_document) | resource |
 | [aws_ami.amazon_linux_2023](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/ami) | data source |
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
 | [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
@@ -43,44 +40,54 @@
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_enable_internal_jump_ssm"></a> [enable\_internal\_jump\_ssm](#input\_enable\_internal\_jump\_ssm) | Enable SSM Session Manager access for internal jump host. When true, adds SSM policies to internal jump IAM role | `bool` | `false` | no |
-| <a name="input_enable_migration_mode"></a> [enable\_migration\_mode](#input\_enable\_migration\_mode) | Enable SSM SendCommand permissions for Packer migration. Should be disabled after migration is complete for security. Only affects: ssm:DescribeInstanceInformation, ssm:SendCommand, ssm:GetCommandInvocation, ssm:ListCommandInvocations | `bool` | `false` | no |
+| <a name="input_ami_id"></a> [ami\_id](#input\_ami\_id) | AMI ID for jump host (defaults to latest Amazon Linux 2023) | `string` | `null` | no |
+| <a name="input_create_ssm_cloudwatch_log_group"></a> [create\_ssm\_cloudwatch\_log\_group](#input\_create\_ssm\_cloudwatch\_log\_group) | Whether to create a CloudWatch log group for SSM session logs. | `bool` | `false` | no |
+| <a name="input_create_ssm_s3_bucket"></a> [create\_ssm\_s3\_bucket](#input\_create\_ssm\_s3\_bucket) | Whether to create an S3 bucket for SSM session logs. | `bool` | `false` | no |
+| <a name="input_create_ssm_session_preferences"></a> [create\_ssm\_session\_preferences](#input\_create\_ssm\_session\_preferences) | Whether to create the SSM Session Manager preferences document. Set to false if another environment in the same AWS account already manages this account-level setting. | `bool` | `true` | no |
+| <a name="input_enable_migration_mode"></a> [enable\_migration\_mode](#input\_enable\_migration\_mode) | Enable SSM SendCommand permissions for Packer migration. Should be disabled after migration is complete for security. | `bool` | `false` | no |
+| <a name="input_enable_ssm_session_encryption"></a> [enable\_ssm\_session\_encryption](#input\_enable\_ssm\_session\_encryption) | Enable KMS encryption for SSM Session Manager sessions | `bool` | `true` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (e.g., dev, integ, prod) | `string` | n/a | yes |
-| <a name="input_external_jump_ami_id"></a> [external\_jump\_ami\_id](#input\_external\_jump\_ami\_id) | AMI ID for external jump host (defaults to latest Amazon Linux 2) | `string` | `null` | no |
-| <a name="input_external_userdata_override"></a> [external\_userdata\_override](#input\_external\_userdata\_override) | Custom userdata script for external jump host. If set, replaces the default template entirely. | `string` | `null` | no |
-| <a name="input_instance_type"></a> [instance\_type](#input\_instance\_type) | Instance type for jump hosts | `string` | `"t3.micro"` | no |
-| <a name="input_internal_jump_ami_id"></a> [internal\_jump\_ami\_id](#input\_internal\_jump\_ami\_id) | AMI ID for internal jump host (defaults to latest Amazon Linux 2) | `string` | `null` | no |
-| <a name="input_internal_userdata_override"></a> [internal\_userdata\_override](#input\_internal\_userdata\_override) | Custom userdata script for internal jump host. If set, replaces the default template entirely. | `string` | `null` | no |
+| <a name="input_instance_type"></a> [instance\_type](#input\_instance\_type) | Instance type for jump host | `string` | `"t3.micro"` | no |
 | <a name="input_log_retention_days"></a> [log\_retention\_days](#input\_log\_retention\_days) | CloudWatch log retention in days | `number` | `30` | no |
-| <a name="input_private_subnet_id"></a> [private\_subnet\_id](#input\_private\_subnet\_id) | Private subnet ID for internal jump host | `string` | n/a | yes |
 | <a name="input_project_name"></a> [project\_name](#input\_project\_name) | Name of the project | `string` | n/a | yes |
-| <a name="input_public_subnet_id"></a> [public\_subnet\_id](#input\_public\_subnet\_id) | Public subnet ID for external jump host | `string` | n/a | yes |
 | <a name="input_region"></a> [region](#input\_region) | (Optional) Region where this resource will be managed. Defaults to the Region set in the provider configuration | `string` | `null` | no |
 | <a name="input_root_volume_size"></a> [root\_volume\_size](#input\_root\_volume\_size) | Size of the root volume in GiB | `number` | `20` | no |
 | <a name="input_root_volume_type"></a> [root\_volume\_type](#input\_root\_volume\_type) | Type of the root volume | `string` | `"gp3"` | no |
-| <a name="input_ssm_os_username"></a> [ssm\_os\_username](#input\_ssm\_os\_username) | OS username for SSM Session Manager access. Defaults to the standard username used by SSM Agent. Can be overridden based on your environment and SSM config. | `string` | `"ssm-user"` | no |
+| <a name="input_ssm_cloudwatch_log_group_name"></a> [ssm\_cloudwatch\_log\_group\_name](#input\_ssm\_cloudwatch\_log\_group\_name) | CloudWatch log group name for SSM session logs. Required when ssm\_cloudwatch\_logging\_enabled=true and create\_ssm\_cloudwatch\_log\_group=false. Ignored when create\_ssm\_cloudwatch\_log\_group=true. | `string` | `""` | no |
+| <a name="input_ssm_cloudwatch_log_group_name_prefix"></a> [ssm\_cloudwatch\_log\_group\_name\_prefix](#input\_ssm\_cloudwatch\_log\_group\_name\_prefix) | Name prefix for the SSM CloudWatch log group. Only used when create\_ssm\_cloudwatch\_log\_group=true. | `string` | `"/aws/ssm/session-logs"` | no |
+| <a name="input_ssm_cloudwatch_log_group_retention_days"></a> [ssm\_cloudwatch\_log\_group\_retention\_days](#input\_ssm\_cloudwatch\_log\_group\_retention\_days) | CloudWatch log retention in days for SSM session logs. Only used when create\_ssm\_cloudwatch\_log\_group=true. | `number` | `90` | no |
+| <a name="input_ssm_cloudwatch_logging_enabled"></a> [ssm\_cloudwatch\_logging\_enabled](#input\_ssm\_cloudwatch\_logging\_enabled) | Enable CloudWatch logging for SSM sessions | `bool` | `true` | no |
+| <a name="input_ssm_idle_session_timeout"></a> [ssm\_idle\_session\_timeout](#input\_ssm\_idle\_session\_timeout) | Idle session timeout in minutes. Session terminates after this period of inactivity. | `number` | `10` | no |
+| <a name="input_ssm_max_session_duration"></a> [ssm\_max\_session\_duration](#input\_ssm\_max\_session\_duration) | Maximum session duration in minutes. Leave empty string for unlimited. | `string` | `""` | no |
+| <a name="input_ssm_run_as_user"></a> [ssm\_run\_as\_user](#input\_ssm\_run\_as\_user) | Default OS user to run sessions as (e.g., 'ubuntu'). When set, SSM creates OS users based on IAM user name and runs sessions as that user. Leave empty to disable run-as functionality (uses ssm-user). | `string` | `""` | no |
+| <a name="input_ssm_s3_bucket_lifecycle_days"></a> [ssm\_s3\_bucket\_lifecycle\_days](#input\_ssm\_s3\_bucket\_lifecycle\_days) | Number of days before transitioning objects to Glacier. Set to 0 to disable lifecycle rules. | `number` | `90` | no |
+| <a name="input_ssm_s3_bucket_name"></a> [ssm\_s3\_bucket\_name](#input\_ssm\_s3\_bucket\_name) | S3 bucket name for SSM session logs. Required when ssm\_s3\_logging\_enabled=true and create\_ssm\_s3\_bucket=false. | `string` | `""` | no |
+| <a name="input_ssm_s3_bucket_name_prefix"></a> [ssm\_s3\_bucket\_name\_prefix](#input\_ssm\_s3\_bucket\_name\_prefix) | Name prefix for the SSM S3 bucket. Only used when create\_ssm\_s3\_bucket=true. | `string` | `"ssm-session-logs"` | no |
+| <a name="input_ssm_s3_bucket_versioning"></a> [ssm\_s3\_bucket\_versioning](#input\_ssm\_s3\_bucket\_versioning) | Enable versioning for the SSM S3 bucket. | `bool` | `true` | no |
+| <a name="input_ssm_s3_key_prefix"></a> [ssm\_s3\_key\_prefix](#input\_ssm\_s3\_key\_prefix) | S3 key prefix for SSM session logs | `string` | `"session-manager"` | no |
+| <a name="input_ssm_s3_logging_enabled"></a> [ssm\_s3\_logging\_enabled](#input\_ssm\_s3\_logging\_enabled) | Enable S3 logging for SSM sessions | `bool` | `false` | no |
+| <a name="input_ssm_shell_profile_linux"></a> [ssm\_shell\_profile\_linux](#input\_ssm\_shell\_profile\_linux) | Linux shell profile for SSM sessions. Runs when session starts. | `string` | `""` | no |
+| <a name="input_ssm_shell_profile_windows"></a> [ssm\_shell\_profile\_windows](#input\_ssm\_shell\_profile\_windows) | Windows shell profile for SSM sessions. | `string` | `""` | no |
+| <a name="input_subnet_id"></a> [subnet\_id](#input\_subnet\_id) | Subnet ID for the jump host (typically a private subnet) | `string` | n/a | yes |
 | <a name="input_tags"></a> [tags](#input\_tags) | A map of tags to add to all resources | `map(string)` | `{}` | no |
-| <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC ID where jump hosts will be deployed | `string` | n/a | yes |
+| <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC ID where jump host will be deployed | `string` | n/a | yes |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
-| <a name="output_cloudwatch_log_groups"></a> [cloudwatch\_log\_groups](#output\_cloudwatch\_log\_groups) | Map of CloudWatch log group names |
-| <a name="output_connection_guide"></a> [connection\_guide](#output\_connection\_guide) | Guide for connecting to jump hosts |
-| <a name="output_external_iam_role_arn"></a> [external\_iam\_role\_arn](#output\_external\_iam\_role\_arn) | The ARN of the IAM role for external jump host |
-| <a name="output_external_jump_instance_id"></a> [external\_jump\_instance\_id](#output\_external\_jump\_instance\_id) | The ID of the external jump host instance |
-| <a name="output_external_jump_private_ip"></a> [external\_jump\_private\_ip](#output\_external\_jump\_private\_ip) | The private IP address of the external jump host |
-| <a name="output_external_jump_public_ip"></a> [external\_jump\_public\_ip](#output\_external\_jump\_public\_ip) | The public IP address of the external jump host |
-| <a name="output_external_jump_ssm_command"></a> [external\_jump\_ssm\_command](#output\_external\_jump\_ssm\_command) | AWS CLI command to connect to external jump host via Session Manager |
-| <a name="output_external_security_group_id"></a> [external\_security\_group\_id](#output\_external\_security\_group\_id) | The ID of the external jump host security group |
-| <a name="output_internal_iam_role_arn"></a> [internal\_iam\_role\_arn](#output\_internal\_iam\_role\_arn) | The ARN of the IAM role for internal jump host |
-| <a name="output_internal_iam_role_name"></a> [internal\_iam\_role\_name](#output\_internal\_iam\_role\_name) | The name of the IAM role for internal jump host |
-| <a name="output_internal_jump_instance_id"></a> [internal\_jump\_instance\_id](#output\_internal\_jump\_instance\_id) | The ID of the internal jump host instance |
-| <a name="output_internal_jump_private_ip"></a> [internal\_jump\_private\_ip](#output\_internal\_jump\_private\_ip) | The private IP address of the internal jump host |
-| <a name="output_internal_jump_ssh_key_retrieval_command"></a> [internal\_jump\_ssh\_key\_retrieval\_command](#output\_internal\_jump\_ssh\_key\_retrieval\_command) | Command to retrieve internal jump SSH private key |
-| <a name="output_internal_jump_ssh_key_ssm_path"></a> [internal\_jump\_ssh\_key\_ssm\_path](#output\_internal\_jump\_ssh\_key\_ssm\_path) | SSM Parameter Store path for internal jump SSH private key |
-| <a name="output_internal_jump_ssm_command"></a> [internal\_jump\_ssm\_command](#output\_internal\_jump\_ssm\_command) | AWS CLI command to connect to internal jump host via Session Manager |
-| <a name="output_internal_security_group_id"></a> [internal\_security\_group\_id](#output\_internal\_security\_group\_id) | The ID of the internal jump host security group |
+| <a name="output_cloudwatch_log_group_name"></a> [cloudwatch\_log\_group\_name](#output\_cloudwatch\_log\_group\_name) | Name of the CloudWatch log group for jump host logs |
+| <a name="output_connection_guide"></a> [connection\_guide](#output\_connection\_guide) | Guide for connecting to the jump host |
+| <a name="output_jump_iam_role_arn"></a> [jump\_iam\_role\_arn](#output\_jump\_iam\_role\_arn) | The ARN of the IAM role for the jump host |
+| <a name="output_jump_iam_role_name"></a> [jump\_iam\_role\_name](#output\_jump\_iam\_role\_name) | The name of the IAM role for the jump host |
+| <a name="output_jump_instance_id"></a> [jump\_instance\_id](#output\_jump\_instance\_id) | The ID of the jump host instance |
+| <a name="output_jump_private_ip"></a> [jump\_private\_ip](#output\_jump\_private\_ip) | The private IP address of the jump host |
+| <a name="output_jump_security_group_id"></a> [jump\_security\_group\_id](#output\_jump\_security\_group\_id) | The ID of the jump host security group |
+| <a name="output_jump_ssm_command"></a> [jump\_ssm\_command](#output\_jump\_ssm\_command) | AWS CLI command to connect to jump host via Session Manager |
 | <a name="output_migration_mode_status"></a> [migration\_mode\_status](#output\_migration\_mode\_status) | Current migration mode status for SSM SendCommand permissions |
+| <a name="output_ssm_cloudwatch_log_group_arn"></a> [ssm\_cloudwatch\_log\_group\_arn](#output\_ssm\_cloudwatch\_log\_group\_arn) | ARN of the CloudWatch log group for SSM session logs (null when not created by this module) |
+| <a name="output_ssm_cloudwatch_log_group_name"></a> [ssm\_cloudwatch\_log\_group\_name](#output\_ssm\_cloudwatch\_log\_group\_name) | Name of the CloudWatch log group for SSM session logs (null when not created) |
+| <a name="output_ssm_s3_bucket_arn"></a> [ssm\_s3\_bucket\_arn](#output\_ssm\_s3\_bucket\_arn) | ARN of the S3 bucket for SSM session logs (null when not created by this module) |
+| <a name="output_ssm_s3_bucket_name"></a> [ssm\_s3\_bucket\_name](#output\_ssm\_s3\_bucket\_name) | Name of the S3 bucket for SSM session logs (null when not enabled) |
+| <a name="output_ssm_session_preferences_document"></a> [ssm\_session\_preferences\_document](#output\_ssm\_session\_preferences\_document) | Name of the SSM Session Manager preferences document (null when not created) |
 <!-- END_TF_DOCS -->
