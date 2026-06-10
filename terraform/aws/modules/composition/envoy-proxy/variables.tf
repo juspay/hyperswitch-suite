@@ -284,7 +284,7 @@ variable "deployments" {
 
   default = {
     "stable" = {
-      weight = 100
+      weight                  = 100
       launch_template_version = "$Latest"
     }
   }
@@ -549,6 +549,12 @@ variable "internal_loadbalancer_dns" {
   description = "Internal load balancer DNS (for envoy.yaml templating)"
   type        = string
   default     = ""
+}
+
+variable "virtual_hosts_domains" {
+  description = "List of domain names for the Envoy virtual host (for envoy.yaml templating)"
+  type        = list(string)
+  default     = []
 }
 
 variable "eks_cluster_name" {
