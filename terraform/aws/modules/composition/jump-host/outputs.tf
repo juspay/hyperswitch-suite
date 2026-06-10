@@ -23,6 +23,10 @@ output "jump_iam_role_name" {
   value       = module.jump_iam_role.name
 }
 
+output "jump_security_group_id" {
+  description = "The ID of the jump host security group"
+  value       = module.jump_sg.security_group_id
+}
 
 output "cloudwatch_log_group_name" {
   description = "Name of the CloudWatch log group for jump host logs"
@@ -63,8 +67,8 @@ output "ssm_s3_bucket_arn" {
 output "connection_guide" {
   description = "Guide for connecting to the jump host"
   value = templatefile("${path.module}/templates/connection_guide.tftpl", {
-    instance_id         = module.jump_instance.id
-    log_group           = aws_cloudwatch_log_group.jump_host.name
-    ssm_run_as_user     = var.ssm_run_as_user
+    instance_id     = module.jump_instance.id
+    log_group       = aws_cloudwatch_log_group.jump_host.name
+    ssm_run_as_user = var.ssm_run_as_user
   })
 }

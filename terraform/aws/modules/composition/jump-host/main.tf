@@ -227,6 +227,26 @@ module "jump_iam_role" {
 }
 
 # =========================================================================
+# Security Group for Jump Host
+# =========================================================================
+module "jump_sg" {
+  source  = "terraform-aws-modules/security-group/aws"
+  version = "~> 5.0"
+
+  name            = "${local.name_prefix}-sg"
+  use_name_prefix = false
+  description     = "Security group for jump host"
+  vpc_id          = var.vpc_id
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.name_prefix}-sg"
+    }
+  )
+}
+
+# =========================================================================
 # Jump Host Instance
 # =========================================================================
 module "jump_instance" {
@@ -238,14 +258,14 @@ module "jump_instance" {
   ami                    = local.ami_id
   instance_type          = var.instance_type
   subnet_id              = var.subnet_id
-  vpc_security_group_ids = var.security_group_ids
+  vpc_security_group_ids = [module.jump_sg.security_group_id]
   iam_instance_profile   = module.jump_iam_role.instance_profile_name
 
   create_security_group = false
 
   associate_public_ip_address = false
   monitoring                  = true
-  user_data_base64            = base64encode(templatefile("${path.module}/templates/userdata.sh", {
+  user_data_base64 = base64encode(templatefile("${path.module}/templates/userdata.sh", {
     environment       = var.environment
     cloudwatch_region = data.aws_region.current.id
   }))
