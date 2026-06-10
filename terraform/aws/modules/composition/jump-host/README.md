@@ -18,7 +18,6 @@
 |------|--------|---------|
 | <a name="module_jump_iam_role"></a> [jump\_iam\_role](#module\_jump\_iam\_role) | terraform-aws-modules/iam/aws//modules/iam-role | ~> 6.2 |
 | <a name="module_jump_instance"></a> [jump\_instance](#module\_jump\_instance) | terraform-aws-modules/ec2-instance/aws | ~> 6.0 |
-| <a name="module_jump_sg"></a> [jump\_sg](#module\_jump\_sg) | terraform-aws-modules/security-group/aws | ~> 5.0 |
 
 ## Resources
 
@@ -53,6 +52,7 @@
 | <a name="input_region"></a> [region](#input\_region) | (Optional) Region where this resource will be managed. Defaults to the Region set in the provider configuration | `string` | `null` | no |
 | <a name="input_root_volume_size"></a> [root\_volume\_size](#input\_root\_volume\_size) | Size of the root volume in GiB | `number` | `20` | no |
 | <a name="input_root_volume_type"></a> [root\_volume\_type](#input\_root\_volume\_type) | Type of the root volume | `string` | `"gp3"` | no |
+| <a name="input_security_group_ids"></a> [security\_group\_ids](#input\_security\_group\_ids) | List of security group IDs to attach to the jump host instance | `list(string)` | n/a | yes |
 | <a name="input_ssm_cloudwatch_log_group_name"></a> [ssm\_cloudwatch\_log\_group\_name](#input\_ssm\_cloudwatch\_log\_group\_name) | CloudWatch log group name for SSM session logs. Required when ssm\_cloudwatch\_logging\_enabled=true and create\_ssm\_cloudwatch\_log\_group=false. Ignored when create\_ssm\_cloudwatch\_log\_group=true. | `string` | `""` | no |
 | <a name="input_ssm_cloudwatch_log_group_name_prefix"></a> [ssm\_cloudwatch\_log\_group\_name\_prefix](#input\_ssm\_cloudwatch\_log\_group\_name\_prefix) | Name prefix for the SSM CloudWatch log group. Only used when create\_ssm\_cloudwatch\_log\_group=true. | `string` | `"/aws/ssm/session-logs"` | no |
 | <a name="input_ssm_cloudwatch_log_group_retention_days"></a> [ssm\_cloudwatch\_log\_group\_retention\_days](#input\_ssm\_cloudwatch\_log\_group\_retention\_days) | CloudWatch log retention in days for SSM session logs. Only used when create\_ssm\_cloudwatch\_log\_group=true. | `number` | `90` | no |
@@ -82,7 +82,6 @@
 | <a name="output_jump_iam_role_name"></a> [jump\_iam\_role\_name](#output\_jump\_iam\_role\_name) | The name of the IAM role for the jump host |
 | <a name="output_jump_instance_id"></a> [jump\_instance\_id](#output\_jump\_instance\_id) | The ID of the jump host instance |
 | <a name="output_jump_private_ip"></a> [jump\_private\_ip](#output\_jump\_private\_ip) | The private IP address of the jump host |
-| <a name="output_jump_security_group_id"></a> [jump\_security\_group\_id](#output\_jump\_security\_group\_id) | The ID of the jump host security group |
 | <a name="output_jump_ssm_command"></a> [jump\_ssm\_command](#output\_jump\_ssm\_command) | AWS CLI command to connect to jump host via Session Manager |
 | <a name="output_migration_mode_status"></a> [migration\_mode\_status](#output\_migration\_mode\_status) | Current migration mode status for SSM SendCommand permissions |
 | <a name="output_ssm_cloudwatch_log_group_arn"></a> [ssm\_cloudwatch\_log\_group\_arn](#output\_ssm\_cloudwatch\_log\_group\_arn) | ARN of the CloudWatch log group for SSM session logs (null when not created by this module) |
