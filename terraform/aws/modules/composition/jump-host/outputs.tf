@@ -23,10 +23,6 @@ output "jump_iam_role_name" {
   value       = module.jump_iam_role.name
 }
 
-output "jump_security_group_id" {
-  description = "The ID of the jump host security group"
-  value       = module.jump_sg.security_group_id
-}
 
 output "cloudwatch_log_group_name" {
   description = "Name of the CloudWatch log group for jump host logs"

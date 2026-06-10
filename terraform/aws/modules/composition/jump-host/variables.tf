@@ -1,3 +1,8 @@
+variable "security_group_ids" {
+  description = "List of security group IDs to attach to the jump host instance"
+  type        = list(string)
+}
+
 variable "region" {
   description = "(Optional) Region where this resource will be managed. Defaults to the Region set in the provider configuration"
   type        = string
