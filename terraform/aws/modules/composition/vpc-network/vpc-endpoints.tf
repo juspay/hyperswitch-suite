@@ -139,6 +139,23 @@ locals {
   enabled_gateway_endpoints   = { for k, v in local.gateway_endpoints : k => v if contains(var.gateway_vpc_endpoints, k) }
   enabled_interface_endpoints = { for k, v in local.interface_endpoints : k => v if contains(var.interface_vpc_endpoints, k) }
 
+  # Subnet IDs by tier for custom endpoints
+  endpoint_subnet_ids = {
+    external_incoming = module.external_incoming_subnets[*].subnet_id
+    management        = module.management_subnets[*].subnet_id
+    eks_workers       = module.eks_workers_subnets[*].subnet_id
+    eks_control_plane = module.eks_control_plane_subnets[*].subnet_id
+    database          = module.database_subnets[*].subnet_id
+    locker_database   = module.locker_database_subnets[*].subnet_id
+    locker_server     = module.locker_server_subnets[*].subnet_id
+    elasticache       = module.elasticache_subnets[*].subnet_id
+    data_stack        = module.data_stack_subnets[*].subnet_id
+    incoming_envoy    = module.incoming_envoy_subnets[*].subnet_id
+    outgoing_proxy    = module.outgoing_proxy_subnets[*].subnet_id
+    utils             = module.utils_subnets[*].subnet_id
+    lambda            = module.lambda_subnets[*].subnet_id
+  }
+
   # Route table IDs for gateway endpoints (using shared route tables)
   gateway_route_table_ids = compact(concat(
     [module.common_internet_s3_rt.route_table_id],
@@ -200,6 +217,54 @@ module "interface_vpc_endpoints" {
     {
       Name    = "${var.vpc_name}-${each.key}-endpoint"
       Service = each.key
+    }
+  )
+}
+
+# Custom Interface VPC Endpoints (PrivateLink services, etc.)
+module "custom_interface_vpc_endpoints" {
+  source   = "../../base/vpc-endpoint"
+  for_each = var.custom_interface_vpc_endpoints
+
+  vpc_id            = module.vpc.vpc_id
+  endpoint_name     = each.value.endpoint_name != "" ? each.value.endpoint_name : "${var.vpc_name}-${each.key}-endpoint"
+  service_name      = each.value.service_name
+  vpc_endpoint_type = "Interface"
+
+  subnet_ids = lookup(local.endpoint_subnet_ids, each.value.subnet_tier, module.eks_workers_subnets[*].subnet_id)
+  security_group_ids = compact(concat(
+    length(module.custom_vpc_endpoint_sg) > 0 ? [module.custom_vpc_endpoint_sg[0].sg_id] : [],
+    var.vpc_endpoint_security_group_ids
+  ))
+
+  private_dns_enabled = each.value.private_dns_enabled
+
+  tags = merge(
+    var.tags,
+    {
+      Name    = each.value.endpoint_name != "" ? each.value.endpoint_name : "${var.vpc_name}-${each.key}-endpoint"
+      Service = each.key
+    }
+  )
+}
+
+# Security Group for Custom VPC Endpoints (Wazuh, etc.)
+# Rules are managed by the security-rules composition module.
+module "custom_vpc_endpoint_sg" {
+  source = "../../base/security-group"
+  count  = length(var.custom_interface_vpc_endpoints) > 0 ? 1 : 0
+
+  name        = "${var.vpc_name}-custom-vpc-endpoint-sg"
+  description = "Security group for custom VPC endpoints"
+  vpc_id      = module.vpc.vpc_id
+
+  ingress_rules = []
+  egress_rules  = []
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.vpc_name}-custom-vpc-endpoint-sg"
     }
   )
 }
