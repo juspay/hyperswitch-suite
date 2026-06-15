@@ -21,7 +21,9 @@
 | <a name="module_common_local_nat_s3_rt"></a> [common\_local\_nat\_s3\_rt](#module\_common\_local\_nat\_s3\_rt) | ../../base/route-table | n/a |
 | <a name="module_common_local_route_rt"></a> [common\_local\_route\_rt](#module\_common\_local\_route\_rt) | ../../base/route-table | n/a |
 | <a name="module_common_local_s3_rt"></a> [common\_local\_s3\_rt](#module\_common\_local\_s3\_rt) | ../../base/route-table | n/a |
+| <a name="module_custom_interface_vpc_endpoints"></a> [custom\_interface\_vpc\_endpoints](#module\_custom\_interface\_vpc\_endpoints) | ../../base/vpc-endpoint | n/a |
 | <a name="module_custom_subnets"></a> [custom\_subnets](#module\_custom\_subnets) | ../../base/subnet | n/a |
+| <a name="module_custom_vpc_endpoint_sg"></a> [custom\_vpc\_endpoint\_sg](#module\_custom\_vpc\_endpoint\_sg) | ../../base/security-group | n/a |
 | <a name="module_data_stack_subnets"></a> [data\_stack\_subnets](#module\_data\_stack\_subnets) | ../../base/subnet | n/a |
 | <a name="module_database_route_table"></a> [database\_route\_table](#module\_database\_route\_table) | ../../base/route-table | n/a |
 | <a name="module_database_subnets"></a> [database\_subnets](#module\_database\_subnets) | ../../base/subnet | n/a |
@@ -80,6 +82,7 @@
 | <a name="input_create_internet_gateway"></a> [create\_internet\_gateway](#input\_create\_internet\_gateway) | Controls if an Internet Gateway should be created | `bool` | `true` | no |
 | <a name="input_create_nacl"></a> [create\_nacl](#input\_create\_nacl) | Controls if network ACL should be created for all subnets | `bool` | `true` | no |
 | <a name="input_create_vpc_endpoint_security_group"></a> [create\_vpc\_endpoint\_security\_group](#input\_create\_vpc\_endpoint\_security\_group) | Whether to create a security group for VPC endpoints | `bool` | `true` | no |
+| <a name="input_custom_interface_vpc_endpoints"></a> [custom\_interface\_vpc\_endpoints](#input\_custom\_interface\_vpc\_endpoints) | Map of custom interface VPC endpoints with full service names (e.g. PrivateLink services) | <pre>map(object({<br/>    service_name        = string<br/>    endpoint_name       = optional(string, "")<br/>    subnet_tier         = optional(string, "eks_workers")<br/>    private_dns_enabled = optional(bool, true)<br/>  }))</pre> | `{}` | no |
 | <a name="input_custom_subnet_groups"></a> [custom\_subnet\_groups](#input\_custom\_subnet\_groups) | Map of custom subnet groups with their configurations | <pre>map(object({<br/>    cidr_block         = string<br/>    availability_zone  = string<br/>    tier               = string<br/>    type               = string<br/>    create_route_table = optional(bool, true)<br/>    create_igw_route   = optional(bool, false)<br/>    create_nat_route   = optional(bool, false)<br/>    tags               = optional(map(string), {})<br/>  }))</pre> | `{}` | no |
 | <a name="input_data_stack_subnet_cidrs"></a> [data\_stack\_subnet\_cidrs](#input\_data\_stack\_subnet\_cidrs) | List of CIDR blocks for data stack subnets (one per AZ) - S3 endpoint access only | `list(string)` | `[]` | no |
 | <a name="input_data_stack_subnet_tags"></a> [data\_stack\_subnet\_tags](#input\_data\_stack\_subnet\_tags) | Additional tags for data stack subnets | `map(string)` | `{}` | no |
@@ -152,7 +155,9 @@
 | <a name="output_common_local_nat_s3_route_table_id"></a> [common\_local\_nat\_s3\_route\_table\_id](#output\_common\_local\_nat\_s3\_route\_table\_id) | ID of the Common Local NAT S3 route table (NAT + S3 access) |
 | <a name="output_common_local_route_table_id"></a> [common\_local\_route\_table\_id](#output\_common\_local\_route\_table\_id) | ID of the CommonLocalRoute route table |
 | <a name="output_common_local_s3_route_table_id"></a> [common\_local\_s3\_route\_table\_id](#output\_common\_local\_s3\_route\_table\_id) | ID of the CommonLocalS3 route table |
+| <a name="output_custom_interface_vpc_endpoint_ids"></a> [custom\_interface\_vpc\_endpoint\_ids](#output\_custom\_interface\_vpc\_endpoint\_ids) | Map of custom interface VPC endpoint IDs |
 | <a name="output_custom_subnet_ids"></a> [custom\_subnet\_ids](#output\_custom\_subnet\_ids) | Map of custom subnet IDs |
+| <a name="output_custom_vpc_endpoint_security_group_id"></a> [custom\_vpc\_endpoint\_security\_group\_id](#output\_custom\_vpc\_endpoint\_security\_group\_id) | Security group ID for custom VPC endpoints |
 | <a name="output_data_stack_subnet_cidr_blocks"></a> [data\_stack\_subnet\_cidr\_blocks](#output\_data\_stack\_subnet\_cidr\_blocks) | List of CIDR blocks of data stack subnets |
 | <a name="output_data_stack_subnet_ids"></a> [data\_stack\_subnet\_ids](#output\_data\_stack\_subnet\_ids) | List of IDs of data stack subnets |
 | <a name="output_database_route_table_id"></a> [database\_route\_table\_id](#output\_database\_route\_table\_id) | ID of the Database-RT (locker route table) |
