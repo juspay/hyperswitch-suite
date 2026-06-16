@@ -23,7 +23,6 @@
 | <a name="module_common_local_s3_rt"></a> [common\_local\_s3\_rt](#module\_common\_local\_s3\_rt) | ../../base/route-table | n/a |
 | <a name="module_custom_interface_vpc_endpoints"></a> [custom\_interface\_vpc\_endpoints](#module\_custom\_interface\_vpc\_endpoints) | ../../base/vpc-endpoint | n/a |
 | <a name="module_custom_subnets"></a> [custom\_subnets](#module\_custom\_subnets) | ../../base/subnet | n/a |
-| <a name="module_custom_vpc_endpoint_sg"></a> [custom\_vpc\_endpoint\_sg](#module\_custom\_vpc\_endpoint\_sg) | ../../base/security-group | n/a |
 | <a name="module_data_stack_subnets"></a> [data\_stack\_subnets](#module\_data\_stack\_subnets) | ../../base/subnet | n/a |
 | <a name="module_database_route_table"></a> [database\_route\_table](#module\_database\_route\_table) | ../../base/route-table | n/a |
 | <a name="module_database_subnets"></a> [database\_subnets](#module\_database\_subnets) | ../../base/subnet | n/a |
@@ -157,7 +156,6 @@
 | <a name="output_common_local_s3_route_table_id"></a> [common\_local\_s3\_route\_table\_id](#output\_common\_local\_s3\_route\_table\_id) | ID of the CommonLocalS3 route table |
 | <a name="output_custom_interface_vpc_endpoint_ids"></a> [custom\_interface\_vpc\_endpoint\_ids](#output\_custom\_interface\_vpc\_endpoint\_ids) | Map of custom interface VPC endpoint IDs |
 | <a name="output_custom_subnet_ids"></a> [custom\_subnet\_ids](#output\_custom\_subnet\_ids) | Map of custom subnet IDs |
-| <a name="output_custom_vpc_endpoint_security_group_id"></a> [custom\_vpc\_endpoint\_security\_group\_id](#output\_custom\_vpc\_endpoint\_security\_group\_id) | Security group ID for custom VPC endpoints |
 | <a name="output_data_stack_subnet_cidr_blocks"></a> [data\_stack\_subnet\_cidr\_blocks](#output\_data\_stack\_subnet\_cidr\_blocks) | List of CIDR blocks of data stack subnets |
 | <a name="output_data_stack_subnet_ids"></a> [data\_stack\_subnet\_ids](#output\_data\_stack\_subnet\_ids) | List of IDs of data stack subnets |
 | <a name="output_database_route_table_id"></a> [database\_route\_table\_id](#output\_database\_route\_table\_id) | ID of the Database-RT (locker route table) |
