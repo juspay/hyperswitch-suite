@@ -321,11 +321,6 @@ output "vpc_endpoint_security_group_id" {
   value       = try(module.vpc_endpoint_sg[0].sg_id, "")
 }
 
-output "custom_vpc_endpoint_security_group_id" {
-  description = "Security group ID for custom VPC endpoints"
-  value       = try(module.custom_vpc_endpoint_sg[0].sg_id, "")
-}
-
 output "custom_interface_vpc_endpoint_ids" {
   description = "Map of custom interface VPC endpoint IDs"
   value       = { for k, v in module.custom_interface_vpc_endpoints : k => v.vpc_endpoint_id }

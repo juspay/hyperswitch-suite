@@ -233,7 +233,7 @@ module "custom_interface_vpc_endpoints" {
 
   subnet_ids = lookup(local.endpoint_subnet_ids, each.value.subnet_tier, module.eks_workers_subnets[*].subnet_id)
   security_group_ids = compact(concat(
-    length(module.custom_vpc_endpoint_sg) > 0 ? [module.custom_vpc_endpoint_sg[0].sg_id] : [],
+    var.create_vpc_endpoint_security_group ? [module.vpc_endpoint_sg[0].sg_id] : [],
     var.vpc_endpoint_security_group_ids
   ))
 
@@ -244,27 +244,6 @@ module "custom_interface_vpc_endpoints" {
     {
       Name    = each.value.endpoint_name != "" ? each.value.endpoint_name : "${var.vpc_name}-${each.key}-endpoint"
       Service = each.key
-    }
-  )
-}
-
-# Security Group for Custom VPC Endpoints (Wazuh, etc.)
-# Rules are managed by the security-rules composition module.
-module "custom_vpc_endpoint_sg" {
-  source = "../../base/security-group"
-  count  = length(var.custom_interface_vpc_endpoints) > 0 ? 1 : 0
-
-  name        = "${var.vpc_name}-custom-vpc-endpoint-sg"
-  description = "Security group for custom VPC endpoints"
-  vpc_id      = module.vpc.vpc_id
-
-  ingress_rules = []
-  egress_rules  = []
-
-  tags = merge(
-    var.tags,
-    {
-      Name = "${var.vpc_name}-custom-vpc-endpoint-sg"
     }
   )
 }
