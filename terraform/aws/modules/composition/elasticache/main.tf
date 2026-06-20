@@ -74,7 +74,7 @@ resource "aws_elasticache_replication_group" "main" {
   network_type       = local.is_secondary_cluster ? null : var.network_type
 
   # High Availability
-  automatic_failover_enabled = local.is_secondary_cluster ? null : var.automatic_failover_enabled
+  automatic_failover_enabled = var.automatic_failover_enabled
   multi_az_enabled           = local.is_secondary_cluster ? null : var.multi_az_enabled
   global_replication_group_id = local.is_secondary_cluster ? var.global_replication_group_id : null
   # Security
