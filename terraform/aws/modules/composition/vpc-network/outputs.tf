@@ -321,6 +321,11 @@ output "vpc_endpoint_security_group_id" {
   value       = try(module.vpc_endpoint_sg[0].sg_id, "")
 }
 
+output "custom_vpc_endpoint_ids" {
+  description = "Map of Custom VPC Endpoint IDs"
+  value       = { for k, v in module.custom_vpc_endpoints : k => v.vpc_endpoint_id }
+}
+
 output "vpc_peering_connection_ids" {
   description = "Map of VPC peering connection IDs (requester side)"
   value       = { for k, v in aws_vpc_peering_connection.requester : k => v.id }
