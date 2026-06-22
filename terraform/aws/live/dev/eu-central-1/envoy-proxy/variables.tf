@@ -327,6 +327,12 @@ variable "enable_http_to_https_redirect" {
   default     = false
 }
 
+variable "additional_certificate_arns" {
+  description = "List of additional SSL certificate ARNs for SNI support"
+  type        = list(string)
+  default     = []
+}
+
 # =========================================================================
 # Advanced Listener Rules
 # =========================================================================
