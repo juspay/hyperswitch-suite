@@ -1448,6 +1448,65 @@ This version of the Hyperswitch Control Center is compatible with the following 
 
 **Full Changelog**: https://github.com/juspay/hyperswitch-control-center/compare/v1.38.4...v1.38.5
 
+### [Hyperswitch Web v0.132.0 (2026-06-30)](https://github.com/juspay/hyperswitch-web/releases/tag/v0.132.0)
+
+#### Features
+- feat: add SDK authorization support across Payment Method Management (PMM) flows ([#1415](https://github.com/juspay/hyperswitch-web/pull/1415))
+- feat: update intent support in SDK ([#1455](https://github.com/juspay/hyperswitch-web/pull/1455))
+- feat: eligibility API support for Web SDK ([#1486](https://github.com/juspay/hyperswitch-web/pull/1486))
+- feat: add EU stack support ([#1490](https://github.com/juspay/hyperswitch-web/pull/1490))
+- feat: support invoke_ddc next action handling ([#1493](https://github.com/juspay/hyperswitch-web/pull/1493))
+- feat: update intent callback return signature ([#1512](https://github.com/juspay/hyperswitch-web/pull/1512))
+- feat: display backend deny message for eligibility API responses ([#1513](https://github.com/juspay/hyperswitch-web/pull/1513))
+- feat: add dynamic fields support for Trustly ([#1543](https://github.com/juspay/hyperswitch-web/pull/1543))
+- feat: dynamically configure color-scheme meta tag based on merchant preference ([#1545](https://github.com/juspay/hyperswitch-web/pull/1545))
+- feat: add Light and Dark mode support for colorScheme ([#1546](https://github.com/juspay/hyperswitch-web/pull/1546))
+- feat: add saved method customization, selection icons, and enhanced layout controls ([#1548](https://github.com/juspay/hyperswitch-web/pull/1548))
+- feat: add alwaysSendCustomerAcceptance prop and payment method-level message configuration ([#1561](https://github.com/juspay/hyperswitch-web/pull/1561))
+- feat: add wallet-specific customization support ([#1565](https://github.com/juspay/hyperswitch-web/pull/1565))
+- feat: add hiddenPaymentMethods customization prop ([#1569](https://github.com/juspay/hyperswitch-web/pull/1569))
+- feat: support hidden payment methods in Headless integration ([#1573](https://github.com/juspay/hyperswitch-web/pull/1573))
+- feat: add cvcIcon customization prop ([#1582](https://github.com/juspay/hyperswitch-web/pull/1582))
+- feat: add card brand icon and reposition CVC icon in payment forms ([#1586](https://github.com/juspay/hyperswitch-web/pull/1586))
+
+#### Fixes
+- fix: add SDK authorization support for initPaymentSession, CVC Widget flow, and CVC prop validation ([#1487](https://github.com/juspay/hyperswitch-web/pull/1487))
+- fix: send card brand as "Unknown" instead of "NOTFOUND" and include isCvcEmpty in payment method info event ([#1501](https://github.com/juspay/hyperswitch-web/pull/1501))
+- fix: handle Google Pay script load failures in Headless flow ([#1515](https://github.com/juspay/hyperswitch-web/pull/1515))
+- fix: add /sdk to sdkUrl for EU stack ([#1524](https://github.com/juspay/hyperswitch-web/pull/1524))
+- fix: add SDK prefix to repoPublicPath ([#1526](https://github.com/juspay/hyperswitch-web/pull/1526))
+- fix: wallet confirmation flow in merged view ([#1535](https://github.com/juspay/hyperswitch-web/pull/1535))
+- fix: update dependencies for new SDK authorization flow ([#1536](https://github.com/juspay/hyperswitch-web/pull/1536))
+- fix: add isSaveCardsChecked functionality to isCustomerAcceptance for card payments ([#1551](https://github.com/juspay/hyperswitch-web/pull/1551))
+- fix: redirect handling in Payment Method Management flow ([#1554](https://github.com/juspay/hyperswitch-web/pull/1554))
+- fix: preserve camelCase keys and numeric values during merchant session validation ([#1571](https://github.com/juspay/hyperswitch-web/pull/1571))
+- fix: ensure SDK authorization dependency updates across all flows ([#1576](https://github.com/juspay/hyperswitch-web/pull/1576))
+- fix: add floating label support on saved payment methods screen ([#1578](https://github.com/juspay/hyperswitch-web/pull/1578))
+- fix: add overflow clipping and border radius to PayPal container ([#1567](https://github.com/juspay/hyperswitch-web/pull/1567))
+- fix: rename hideDefault to hideGeneric ([#1588](https://github.com/juspay/hyperswitch-web/pull/1588))
+
+#### Refactor
+- refactor: improve SDK logging with detailed error messages ([#1563](https://github.com/juspay/hyperswitch-web/pull/1563))
+- chore: update support email from hyperswitch@juspay.in to support.global@juspay.io ([#1502](https://github.com/juspay/hyperswitch-web/pull/1502))
+- revert: revert isSaveCardsChecked functionality for card payment customer acceptance ([#1557](https://github.com/juspay/hyperswitch-web/pull/1557))
+
+#### CI/CD
+- test: add Cypress test coverage for new SDK flows ([#1508](https://github.com/juspay/hyperswitch-web/pull/1508))
+
+#### Compatibility
+This version of the Hyperswitch SDK is compatible with the following versions of other components:
+
+| Component           | Version |
+|---------------------|---------|
+| Control Center      | [v1.38.5](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.38.5)  |
+| App Server          | [v1.124.0](https://github.com/juspay/hyperswitch/releases/tag/v1.124.0)    |
+| WooCommerce Plugin  | [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)    |
+| Card Vault          | [v0.7.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.7.0)    |
+| Key Manager         | [v0.1.12](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.12)    |
+
+**Full Changelog**: https://github.com/juspay/hyperswitch-web/compare/v0.131.0...v0.132.0
+
+
 
 ## Hyperswitch Suite v1.18
 
