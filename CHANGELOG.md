@@ -6,6 +6,25 @@ All notable changes to Hyperswitch will be documented here.
 
 ### [Hyperswitch App Server v1.124.0 (2026-06-29)](https://github.com/juspay/hyperswitch/releases/tag/v1.124.0)
 
+> [!IMPORTANT]
+> **Superposition as a Service for configuration management**
+>
+> Superposition is now a required dependency for configuration management in Hyperswitch. Deployments must have an active Superposition service it can connect to before upgrading to v1.124.0.
+>
+> For details about the design and implementation, see the documentation:
+> https://github.com/juspay/hyperswitch/wiki/Enhanced-configuration-management-&-reliability-in-Hyperswitch
+>
+> All configs that have been migrated to superposition are listed in [`config/superposition_seed.toml`](https://github.com/juspay/hyperswitch/blob/v1.124.0/config/superposition_seed.toml).  This file also defines dimensions related to the configs and their corresponding positions.
+>
+> For more information about Superposition concepts(dimensions, configs, overrides,experimentions), see:
+> https://juspay.io/superposition/docs/quick_start
+>
+> A migration package is provided as [`superposition_migration.zip`](https://github.com/juspay/hyperswitch/releases/download/v1.124.0/superposition_migration.zip). It includes:
+>
+> - A script to seed the required dimensions in Superposition.
+> - A script to migrate the supported database configurations into Superposition as overrides.
+> - The SQL query used to retrieve all database configurations that have been migrated.
+
 #### Docker Images
 
 - `v1.124.0` (with AWS SES support): `docker pull docker.juspay.io/juspaydotin/hyperswitch-router:v1.124.0`
