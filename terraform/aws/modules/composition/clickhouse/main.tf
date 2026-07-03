@@ -309,7 +309,7 @@ resource "aws_instance" "keeper" {
 
   iam_instance_profile = aws_iam_instance_profile.clickhouse.name
   user_data_base64     = base64encode(local.keeper_user_data)
-  monitoring           = true
+  monitoring           = false
 
   root_block_device {
     volume_size           = var.keeper_root_volume_size
@@ -497,7 +497,7 @@ resource "aws_instance" "server" {
 
   iam_instance_profile = aws_iam_instance_profile.clickhouse.name
   user_data_base64     = base64encode(local.server_user_data)
-  monitoring           = true
+  monitoring           = false
 
   root_block_device {
     volume_size           = var.server_root_volume_size

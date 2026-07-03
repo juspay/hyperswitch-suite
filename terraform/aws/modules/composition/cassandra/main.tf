@@ -305,7 +305,7 @@ resource "aws_instance" "cassandra" {
 
   iam_instance_profile = aws_iam_instance_profile.cassandra.name
   user_data            = base64encode(local.user_data_config)
-  monitoring           = true
+  monitoring           = false
 
   # Additional EBS volume for Cassandra data
   ebs_block_device {
