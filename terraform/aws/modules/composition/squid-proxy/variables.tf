@@ -185,10 +185,10 @@ variable "s3_config_path_prefix" {
   default     = "squid"
 }
 
-variable "config_files_source_path" {
-  description = "Local path to squid config files to upload to S3 (only used if upload_config_to_s3=true)"
-  type        = string
-  default     = "./config"
+variable "config_files" {
+  description = "Map of Squid config files to upload to S3. The key is the object key name (uploaded as <s3_config_path_prefix>/<key>) and the value is the local file path. Only used if upload_config_to_s3=true."
+  type        = map(string)
+  default     = {}
 }
 
 variable "enable_detailed_monitoring" {
