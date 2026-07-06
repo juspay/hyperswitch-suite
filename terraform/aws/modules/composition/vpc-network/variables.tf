@@ -456,6 +456,11 @@ variable "custom_interface_vpc_endpoints" {
     subnet_tier         = optional(string, "eks_workers")
     private_dns_enabled = optional(bool, true)
     service_region      = optional(string, null)
+    ip_address_type     = optional(string, null)
+    dns_options = optional(object({
+      dns_record_ip_type                             = optional(string, null)
+      private_dns_only_for_inbound_resolver_endpoint = optional(bool, null)
+    }), null)
   }))
   default = {}
 }

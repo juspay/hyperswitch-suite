@@ -234,6 +234,8 @@ module "custom_interface_vpc_endpoints" {
       service_name        = each.value.service_name
       service_region      = each.value.service_region
       private_dns_enabled = each.value.private_dns_enabled
+      ip_address_type     = each.value.ip_address_type
+      dns_options         = each.value.dns_options != null ? { dns_options = each.value.dns_options } : null
       subnet_ids          = lookup(local.endpoint_subnet_ids, each.value.subnet_tier, module.eks_workers_subnets[*].subnet_id)
       tags = merge(
         var.tags,
