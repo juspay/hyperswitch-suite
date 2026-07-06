@@ -323,7 +323,7 @@ resource "aws_instance" "broker" {
 
   iam_instance_profile = aws_iam_instance_profile.kafka.name
   user_data_base64     = base64encode(local.broker_user_data)
-  monitoring           = true
+  monitoring           = false
 
   root_block_device {
     volume_size           = var.broker_root_volume_size
@@ -380,7 +380,7 @@ resource "aws_instance" "controller" {
 
   iam_instance_profile = aws_iam_instance_profile.kafka.name
   user_data_base64     = base64encode(local.controller_user_data)
-  monitoring           = true
+  monitoring           = false
 
   root_block_device {
     volume_size           = var.controller_root_volume_size
