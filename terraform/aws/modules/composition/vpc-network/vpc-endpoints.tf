@@ -226,20 +226,20 @@ module "custom_interface_vpc_endpoints" {
   source  = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
   version = "5.21.0"
 
-  create = length(var.custom_interface_vpc_endpoints) > 0
+  for_each = var.custom_interface_vpc_endpoints
 
   vpc_id = module.vpc.vpc_id
   endpoints = {
-    for k, v in var.custom_interface_vpc_endpoints : k => {
-      service_name        = v.service_name
-      service_region      = v.service_region
-      private_dns_enabled = v.private_dns_enabled
-      subnet_ids          = lookup(local.endpoint_subnet_ids, v.subnet_tier, module.eks_workers_subnets[*].subnet_id)
+    (each.key) = {
+      service_name        = each.value.service_name
+      service_region      = each.value.service_region
+      private_dns_enabled = each.value.private_dns_enabled
+      subnet_ids          = lookup(local.endpoint_subnet_ids, each.value.subnet_tier, module.eks_workers_subnets[*].subnet_id)
       tags = merge(
         var.tags,
         {
-          Name    = v.endpoint_name != "" ? v.endpoint_name : "${var.vpc_name}-${k}-endpoint"
-          Service = k
+          Name    = each.value.endpoint_name != "" ? each.value.endpoint_name : "${var.vpc_name}-${each.key}-endpoint"
+          Service = each.key
         }
       )
     }
