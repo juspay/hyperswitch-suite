@@ -455,6 +455,7 @@ variable "custom_interface_vpc_endpoints" {
     endpoint_name       = optional(string, "")
     subnet_tier         = optional(string, "eks_workers")
     private_dns_enabled = optional(bool, true)
+    service_region      = optional(string, null)
   }))
   default = {}
 }

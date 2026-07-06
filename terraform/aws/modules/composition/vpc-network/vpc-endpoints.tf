@@ -223,29 +223,34 @@ module "interface_vpc_endpoints" {
 
 # Custom Interface VPC Endpoints (PrivateLink services, etc.)
 module "custom_interface_vpc_endpoints" {
-  source   = "../../base/vpc-endpoint"
-  for_each = var.custom_interface_vpc_endpoints
+  source  = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
+  version = "5.21.0"
 
-  vpc_id            = module.vpc.vpc_id
-  endpoint_name     = each.value.endpoint_name != "" ? each.value.endpoint_name : "${var.vpc_name}-${each.key}-endpoint"
-  service_name      = each.value.service_name
-  vpc_endpoint_type = "Interface"
+  create = length(var.custom_interface_vpc_endpoints) > 0
 
-  subnet_ids = lookup(local.endpoint_subnet_ids, each.value.subnet_tier, module.eks_workers_subnets[*].subnet_id)
+  vpc_id = module.vpc.vpc_id
+  endpoints = {
+    for k, v in var.custom_interface_vpc_endpoints : k => {
+      service_name        = v.service_name
+      service_region      = v.service_region
+      private_dns_enabled = v.private_dns_enabled
+      subnet_ids          = lookup(local.endpoint_subnet_ids, v.subnet_tier, module.eks_workers_subnets[*].subnet_id)
+      tags = merge(
+        var.tags,
+        {
+          Name    = v.endpoint_name != "" ? v.endpoint_name : "${var.vpc_name}-${k}-endpoint"
+          Service = k
+        }
+      )
+    }
+  }
+
   security_group_ids = compact(concat(
     var.create_vpc_endpoint_security_group ? [module.vpc_endpoint_sg[0].sg_id] : [],
     var.vpc_endpoint_security_group_ids
   ))
 
-  private_dns_enabled = each.value.private_dns_enabled
-
-  tags = merge(
-    var.tags,
-    {
-      Name    = each.value.endpoint_name != "" ? each.value.endpoint_name : "${var.vpc_name}-${each.key}-endpoint"
-      Service = each.key
-    }
-  )
+  tags = var.tags
 }
 
 # Security Group for VPC Endpoints

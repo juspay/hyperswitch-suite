@@ -323,7 +323,7 @@ output "vpc_endpoint_security_group_id" {
 
 output "custom_interface_vpc_endpoint_ids" {
   description = "Map of custom interface VPC endpoint IDs"
-  value       = { for k, v in module.custom_interface_vpc_endpoints : k => v.vpc_endpoint_id }
+  value       = { for k, v in module.custom_interface_vpc_endpoints.endpoints : k => v.id }
 }
 
 output "vpc_peering_connection_ids" {
