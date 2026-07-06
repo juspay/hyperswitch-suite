@@ -53,7 +53,7 @@
 | <a name="input_ami_id"></a> [ami\_id](#input\_ami\_id) | AMI ID for Squid instances (ignored if use\_existing\_launch\_template = true) | `string` | `null` | no |
 | <a name="input_config_bucket_arn"></a> [config\_bucket\_arn](#input\_config\_bucket\_arn) | ARN of S3 bucket containing Squid configuration files (required if create\_config\_bucket=false) | `string` | `""` | no |
 | <a name="input_config_bucket_name"></a> [config\_bucket\_name](#input\_config\_bucket\_name) | Name of S3 bucket containing Squid configuration files (required if create\_config\_bucket=false) | `string` | `""` | no |
-| <a name="input_config_files_source_path"></a> [config\_files\_source\_path](#input\_config\_files\_source\_path) | Local path to squid config files to upload to S3 (only used if upload\_config\_to\_s3=true) | `string` | `"./config"` | no |
+| <a name="input_config_files"></a> [config\_files](#input\_config\_files) | Map of Squid config files to upload to S3. The key is the object key name (uploaded as <s3\_config\_path\_prefix>/<key>) and the value is the local file path. Only used if upload\_config\_to\_s3=true. | `map(string)` | `{}` | no |
 | <a name="input_configure_root_volume"></a> [configure\_root\_volume](#input\_configure\_root\_volume) | Whether to explicitly configure root volume. If false, uses AMI defaults (not recommended) | `bool` | `true` | no |
 | <a name="input_create_config_bucket"></a> [create\_config\_bucket](#input\_create\_config\_bucket) | Whether to create a new S3 bucket for configuration files (if false, use existing bucket) | `bool` | `false` | no |
 | <a name="input_create_iam_role"></a> [create\_iam\_role](#input\_create\_iam\_role) | Whether to create a new IAM role or use existing one | `bool` | `true` | no |
