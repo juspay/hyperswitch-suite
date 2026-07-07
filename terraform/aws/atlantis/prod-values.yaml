@@ -1,0 +1,290 @@
+# =============================================================================
+# Atlantis Helm Chart - Production Values
+# =============================================================================
+# Atlantis is a self-hosted application that enables Terraform pull-request
+# automation. It listens for webhooks from your VCS, runs `terraform plan`
+# on PRs, and allows authorized users to apply changes via PR comments.
+#
+# Helm chart: https://github.com/runatlantis/helm-charts
+# Atlantis docs: https://www.runatlantis.io/docs/
+#
+# Usage:
+#   helm repo add runatlantis https://runatlantis.github.io/helm-charts
+#   helm upgrade --install atlantis runatlantis/atlantis \
+#     --namespace atlantis --create-namespace \
+#     -f prod-values.yaml
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Naming overrides
+# fullnameOverride: override the full resource name (e.g. "atlantis-prod")
+# nameOverride:     override only the chart name portion of the resource name
+# -----------------------------------------------------------------------------
+fullnameOverride: ""
+nameOverride: ""
+
+# -----------------------------------------------------------------------------
+# Atlantis server URL
+# The public URL at which Atlantis is reachable. VCS providers use this URL
+# to deliver webhook payloads and for users to click links back to Atlantis.
+# Must be HTTPS in production.
+# Example: "https://atlantis.example.com"
+# -----------------------------------------------------------------------------
+atlantisUrl: "https://atlantis.example.com"
+
+# -----------------------------------------------------------------------------
+# Organisation / repository allowlist
+# Comma-separated list of VCS organizations or individual repositories that
+# are permitted to trigger Atlantis. Wildcards are supported.
+#
+# Examples:
+#   "github.com/myorg/*"           – all repos in myorg
+#   "github.com/myorg/myrepo"      – a single repo
+#   "github.com/myorg/*,github.com/otherapp/repo" – multiple patterns
+# -----------------------------------------------------------------------------
+orgAllowlist: "github.com/your-org/*"
+
+# -----------------------------------------------------------------------------
+# Logging
+# logLevel controls the verbosity of Atlantis server logs.
+# Valid values: "debug" | "info" | "warn" | "error"
+# Use "info" for production; "debug" for troubleshooting.
+# -----------------------------------------------------------------------------
+logLevel: "info"
+
+# =============================================================================
+# VCS (Version Control System) Integration
+# Configure exactly ONE of the sections below for your VCS provider.
+# Credentials should be injected via Kubernetes Secrets (see the
+# `environmentSecrets` section) rather than stored in plain text here.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# GitHub Integration
+# Required fields:
+#   user   – GitHub username of the bot account (e.g. "atlantis-bot")
+#   token  – Personal Access Token with repo + admin:repo_hook scopes
+#   secret – Webhook secret configured when registering the Atlantis webhook
+#
+# For GitHub Enterprise, set `hostname` to your GHE hostname.
+# -----------------------------------------------------------------------------
+github:
+  user: ""        # e.g. "atlantis-bot"
+  token: ""       # Prefer referencing a Kubernetes Secret (see environmentSecrets)
+  secret: ""      # Webhook secret; prefer referencing a Kubernetes Secret
+  # hostname: ""  # Uncomment for GitHub Enterprise, e.g. "github.example.com"
+
+# -----------------------------------------------------------------------------
+# GitLab Integration (comment-out the github block and uncomment this one)
+# Required fields:
+#   user   – GitLab username of the bot account
+#   token  – Personal Access Token with api scope
+#   secret – Webhook secret token set in the GitLab webhook settings
+#
+# For self-hosted GitLab, set `hostname` to your GitLab hostname.
+# -----------------------------------------------------------------------------
+# gitlab:
+#   user: ""
+#   token: ""
+#   secret: ""
+#   # hostname: ""  # e.g. "gitlab.example.com"
+
+# -----------------------------------------------------------------------------
+# Bitbucket (Cloud) Integration
+# Required fields:
+#   user     – Bitbucket username of the bot account
+#   token    – App password with repository read/write permissions
+# Note: Bitbucket Cloud does not support webhook secrets.
+# For Bitbucket Server (Data Center), also set `baseURL`.
+# -----------------------------------------------------------------------------
+# bitbucket:
+#   user: ""
+#   token: ""
+#   # baseURL: ""  # e.g. "https://bitbucket.example.com" for Bitbucket Server
+
+# -----------------------------------------------------------------------------
+# Gitea Integration
+# Required fields:
+#   user   – Gitea username of the bot account
+#   token  – Gitea access token
+#   secret – Webhook secret
+# Also set `baseURL` to your Gitea instance URL.
+# -----------------------------------------------------------------------------
+# gitea:
+#   user: ""
+#   token: ""
+#   secret: ""
+#   baseURL: ""  # e.g. "https://gitea.example.com"
+
+# =============================================================================
+# Kubernetes Secret references for VCS credentials
+# Instead of embedding credentials in plain text above, reference pre-created
+# Kubernetes Secrets here. Each entry mounts a secret key as an environment
+# variable inside the Atlantis pod.
+#
+# Example: create the secret with:
+#   kubectl create secret generic atlantis-vcs \
+#     --namespace atlantis \
+#     --from-literal=ATLANTIS_GH_TOKEN=<token> \
+#     --from-literal=ATLANTIS_GH_WEBHOOK_SECRET=<secret>
+# =============================================================================
+environmentSecrets:
+  - name: ATLANTIS_GH_TOKEN
+    secretKeyRef:
+      name: atlantis-vcs
+      key: ATLANTIS_GH_TOKEN
+  - name: ATLANTIS_GH_WEBHOOK_SECRET
+    secretKeyRef:
+      name: atlantis-vcs
+      key: ATLANTIS_GH_WEBHOOK_SECRET
+
+# =============================================================================
+# Repository configuration
+# repoConfig points to a server-side repo config file (repos.yaml) mounted
+# inside the pod. This file controls which repos may use which workflows,
+# which commands are allowed, and other per-repo settings.
+# See: https://www.runatlantis.io/docs/server-side-repo-config.html
+# =============================================================================
+repoConfig: |
+  ---
+  repos:
+    - id: /.*/
+      allowed_overrides: [workflow]
+      allow_custom_workflows: false
+      delete_source_branch_on_merge: false
+      pre_workflow_hooks: []
+      post_workflow_hooks: []
+
+# =============================================================================
+# Persistence
+# Atlantis stores Terraform plan files and lock files on disk. A PVC is
+# required so that data survives pod restarts.
+# =============================================================================
+persistence:
+  enabled: true
+  storageClass: "gp3"   # Replace with your StorageClass (e.g. "gp2", "standard")
+  size: 5Gi
+  accessMode: ReadWriteOnce
+
+# =============================================================================
+# Service
+# The Kubernetes Service that exposes the Atlantis HTTP server (default: 4141).
+# =============================================================================
+service:
+  type: ClusterIP    # Use ClusterIP when fronted by an Ingress
+  port: 80
+  targetPort: 4141
+  # loadBalancerIP: ""  # Set if type=LoadBalancer and you need a static IP
+
+# =============================================================================
+# Ingress
+# Expose Atlantis externally via an Ingress resource.
+# Adjust annotations to match your Ingress controller (nginx, alb, etc.).
+# =============================================================================
+ingress:
+  enabled: true
+  ingressClassName: "nginx"   # Replace with your Ingress class
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # For AWS ALB Ingress Controller:
+    # kubernetes.io/ingress.class: "alb"
+    # alb.ingress.kubernetes.io/scheme: "internet-facing"
+    # alb.ingress.kubernetes.io/target-type: "ip"
+  hosts:
+    - host: atlantis.example.com   # Replace with your domain
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: atlantis-tls    # Pre-created TLS secret (cert-manager, etc.)
+      hosts:
+        - atlantis.example.com
+
+# =============================================================================
+# Resource requests and limits
+# Tune these values based on the number of concurrent Terraform runs and the
+# size of your state files. Each concurrent plan/apply spawns a separate
+# process, so memory pressure grows with parallelism.
+# =============================================================================
+resources:
+  requests:
+    cpu: "250m"
+    memory: "512Mi"
+  limits:
+    cpu: "1000m"
+    memory: "2Gi"
+
+# =============================================================================
+# Replica count
+# Atlantis does not support running multiple replicas with the default disk-
+# based locking. Keep this at 1 unless you configure an external lock store.
+# =============================================================================
+replicaCount: 1
+
+# =============================================================================
+# Service Account
+# An IRSA (IAM Roles for Service Accounts) annotation enables Atlantis pods
+# to assume an AWS IAM role for Terraform AWS provider authentication without
+# long-lived access keys.
+# =============================================================================
+serviceAccount:
+  create: true
+  name: "atlantis"
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::XXXXXXXXXXXX:role/atlantis-role"
+    # Replace XXXXXXXXXXXX with your AWS account ID and ensure the role
+    # has the permissions required by your Terraform configurations.
+
+# =============================================================================
+# Pod-level security context
+# Running Atlantis as a non-root user is a security best practice.
+# =============================================================================
+podSecurityContext:
+  fsGroup: 1000      # Volume mounts are writable by GID 1000
+  runAsUser: 100     # The official Atlantis image runs as UID 100 (the "atlantis" user)
+  runAsGroup: 1000   # Primary group for the process
+  runAsNonRoot: true
+
+# =============================================================================
+# Additional environment variables
+# Pass non-sensitive configuration to the Atlantis process as env vars.
+# Sensitive values must use `environmentSecrets` instead (see above).
+# =============================================================================
+environment:
+  # Maximum number of concurrent plan/apply operations
+  ATLANTIS_PARALLEL_POOL_SIZE: "3"
+  # Default Terraform version used when atlantis.yaml does not specify one
+  ATLANTIS_DEFAULT_TF_VERSION: "1.7.0"
+  # Disable auto-planning (require explicit `atlantis plan` comments)
+  # ATLANTIS_DISABLE_AUTOPLAN: "true"
+
+# =============================================================================
+# Extra volume mounts / volumes
+# Use these to mount additional configuration files (e.g. a custom repos.yaml,
+# provider credential files, or CA certificates) into the Atlantis pod.
+# =============================================================================
+extraVolumes: []
+# - name: aws-credentials
+#   secret:
+#     secretName: aws-credentials
+
+extraVolumeMounts: []
+# - name: aws-credentials
+#   mountPath: /root/.aws
+#   readOnly: true
+
+# =============================================================================
+# Affinity / Tolerations / Node selector
+# Pin Atlantis to specific nodes in production for predictable performance.
+# =============================================================================
+affinity: {}
+tolerations: []
+nodeSelector: {}
+
+# =============================================================================
+# Pod Disruption Budget
+# Prevent accidental disruption during cluster maintenance.
+# =============================================================================
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
