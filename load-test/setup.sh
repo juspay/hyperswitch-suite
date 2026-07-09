@@ -66,11 +66,17 @@ echo -e "${GREEN}✔ Python3 and pip3 are installed.${RESET}"
 print_section "Setting Up Virtual Environment"
 
 # Create virtual environment
-python3 -m venv test_env
+if ! python3 -m venv test_env; then
+    echo -e "${RED}❌ Failed to create virtual environment. Exiting.${RESET}"
+    exit 1
+fi
 echo -e "${GREEN}✔ Virtual environment 'test_env' created.${RESET}"
 
 # Activate the virtual environment
-source "test_env/bin/activate"
+if ! source "test_env/bin/activate"; then
+    echo -e "${RED}❌ Failed to activate virtual environment. Exiting.${RESET}"
+    exit 1
+fi
 echo -e "${GREEN}✔ Virtual environment activated.${RESET}"
 
 # Upgrade pip
@@ -94,8 +100,9 @@ echo -e "To activate it later, use: ${CYAN}source test_env/bin/activate${RESET}\
 
 print_section "Enter Credentials"
 
-# Create or overwrite .env file
+# Create or overwrite .env file with restricted permissions
 echo "# Stored credentials" >.env
+chmod 600 .env
 
 # Function to collect input with optional example
 collect_input() {
@@ -129,7 +136,7 @@ while true; do
     fi
 done
 
-if [[ "$track_storage" == "y" || "$track_storage" == "Y" ]]; then
+if [[ "$track_storage" == "y" ]]; then
     print_section "Checking for psql Client"
 
     # Check if psql is installed and has correct version
@@ -205,7 +212,7 @@ while true; do
     fi
 done
 
-if [[ "$include_grafana" == "y" || "$include_grafana" == "Y" ]]; then
+if [[ "$include_grafana" == "y" ]]; then
     echo "GRAFANA_PERMISSION=true" >>.env
     echo -e "\n${CYAN}Collecting Grafana credentials...${RESET}"
 
@@ -218,7 +225,7 @@ else
 fi
 
 print_section "Finalizing Setup"
-echo -e "${GREEN}✔ Credentials stored in .env file securely.${RESET}\n"
+echo -e "${GREEN}✔ Credentials stored in .env file (permissions: 600).${RESET}\n"
 
 # Run Python script and exit if it fails
 echo -e "${YELLOW}Running script.py...${RESET}\n"
