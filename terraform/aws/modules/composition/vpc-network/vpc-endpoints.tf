@@ -139,6 +139,23 @@ locals {
   enabled_gateway_endpoints   = { for k, v in local.gateway_endpoints : k => v if contains(var.gateway_vpc_endpoints, k) }
   enabled_interface_endpoints = { for k, v in local.interface_endpoints : k => v if contains(var.interface_vpc_endpoints, k) }
 
+  # Subnet IDs by tier for custom endpoints
+  endpoint_subnet_ids = {
+    external_incoming = module.external_incoming_subnets[*].subnet_id
+    management        = module.management_subnets[*].subnet_id
+    eks_workers       = module.eks_workers_subnets[*].subnet_id
+    eks_control_plane = module.eks_control_plane_subnets[*].subnet_id
+    database          = module.database_subnets[*].subnet_id
+    locker_database   = module.locker_database_subnets[*].subnet_id
+    locker_server     = module.locker_server_subnets[*].subnet_id
+    elasticache       = module.elasticache_subnets[*].subnet_id
+    data_stack        = module.data_stack_subnets[*].subnet_id
+    incoming_envoy    = module.incoming_envoy_subnets[*].subnet_id
+    outgoing_proxy    = module.outgoing_proxy_subnets[*].subnet_id
+    utils             = module.utils_subnets[*].subnet_id
+    lambda            = module.lambda_subnets[*].subnet_id
+  }
+
   # Route table IDs for gateway endpoints (using shared route tables)
   gateway_route_table_ids = compact(concat(
     [module.common_internet_s3_rt.route_table_id],
@@ -202,6 +219,40 @@ module "interface_vpc_endpoints" {
       Service = each.key
     }
   )
+}
+
+# Custom Interface VPC Endpoints (PrivateLink services, etc.)
+module "custom_interface_vpc_endpoints" {
+  source  = "terraform-aws-modules/vpc/aws//modules/vpc-endpoints"
+  version = "5.21.0"
+
+  for_each = var.custom_interface_vpc_endpoints
+
+  vpc_id = module.vpc.vpc_id
+  endpoints = {
+    (each.key) = {
+      service_name        = each.value.service_name
+      service_region      = each.value.service_region
+      private_dns_enabled = each.value.private_dns_enabled
+      ip_address_type     = each.value.ip_address_type
+      dns_options         = each.value.dns_options != null ? { dns_options = each.value.dns_options } : null
+      subnet_ids          = lookup(local.endpoint_subnet_ids, each.value.subnet_tier, module.eks_workers_subnets[*].subnet_id)
+      tags = merge(
+        var.tags,
+        {
+          Name    = each.value.endpoint_name != "" ? each.value.endpoint_name : "${var.vpc_name}-${each.key}-endpoint"
+          Service = each.key
+        }
+      )
+    }
+  }
+
+  security_group_ids = compact(concat(
+    var.create_vpc_endpoint_security_group ? [module.vpc_endpoint_sg[0].sg_id] : [],
+    var.vpc_endpoint_security_group_ids
+  ))
+
+  tags = var.tags
 }
 
 # Security Group for VPC Endpoints

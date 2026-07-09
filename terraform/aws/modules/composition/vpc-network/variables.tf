@@ -448,6 +448,23 @@ variable "vpc_endpoint_private_dns_enabled" {
   default     = true
 }
 
+variable "custom_interface_vpc_endpoints" {
+  description = "Map of custom interface VPC endpoints with full service names (e.g. PrivateLink services)"
+  type = map(object({
+    service_name        = string
+    endpoint_name       = optional(string, "")
+    subnet_tier         = optional(string, "eks_workers")
+    private_dns_enabled = optional(bool, true)
+    service_region      = optional(string, null)
+    ip_address_type     = optional(string, null)
+    dns_options = optional(object({
+      dns_record_ip_type                             = optional(string, null)
+      private_dns_only_for_inbound_resolver_endpoint = optional(bool, null)
+    }), null)
+  }))
+  default = {}
+}
+
 ###################
 # VPC Peering Configuration
 # Supports: cross-account, cross-region peering
