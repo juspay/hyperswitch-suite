@@ -117,8 +117,8 @@ resource "aws_ssm_document" "session_preferences" {
       {
         idleSessionTimeout          = tostring(var.ssm_idle_session_timeout)
         runAsEnabled                = var.ssm_run_as_user != ""
-        cloudWatchEncryptionEnabled = var.ssm_cloudwatch_logging_enabled
-        s3EncryptionEnabled         = var.ssm_s3_logging_enabled
+        cloudWatchEncryptionEnabled = var.enable_ssm_session_encryption
+        s3EncryptionEnabled         = var.enable_ssm_session_encryption
         shellProfile = {
           linux   = var.ssm_shell_profile_linux
           windows = var.ssm_shell_profile_windows
