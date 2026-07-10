@@ -385,6 +385,52 @@ index e5125cfefb..5d392f101a 100644
  
  [merchant_advice_codes.mastercard]
 ```
+```
+diff --git a/config/superposition_seed.toml b/config/superposition_seed.toml
+index 5f87a00087..77ab7aa316 100644
+--- a/config/superposition_seed.toml
++++ b/config/superposition_seed.toml
+@@ -150,20 +150,27 @@ value = false
+ schema = { type = "boolean" }
+ description = "Whether to call the PM modular service for an organization"
+ change_reason = "Initial setup"
+ 
+ [default-configs.should_schedule_modular_forward_compat]
+ value = false
+ schema = { type = "boolean" }
+ description = "Whether to schedule PM modular forward compatibility PT for a merchant"
+ change_reason = "Initial setup"
+ 
++[default-configs.should_trigger_fingerprint_migration]
++value = false
++schema = { type = "boolean" }
++description = "Whether to trigger fingerprint and entity_id migration for a merchant"
++change_reason = "Initial setup"
++
++
+ [default-configs.should_schedule_modular_backward_compat]
+ value = false
+ schema = { type = "boolean" }
+ description = "Whether to schedule PM modular backward compatibility PT for a merchant"
+ change_reason = "Initial setup"
+ 
+ [default-configs.should_trigger_backwards_compatibility_inline]
+ value = false
+ schema = { type = "boolean" }
+ description = "Whether to trigger PM modular backward compatibility inline for a merchant"
+@@ -248,11 +255,10 @@ frequencies = [[300, 5]]
+ schema = { type = "object" }
+ description = "Dispute sync retry process tracker mapping configuration"
+ change_reason = "Initial setup"
+ 
+ [default-configs.pt_mapping_dispute_sync.value]
+ max_retries_count = 5
+ 
+ [default-configs.pt_mapping_dispute_sync.value.default_mapping]
+ start_after = 60
+ frequencies = [[300, 5]]
+-
+```
 
 **Full Changelog:** [`v1.124.0...v1.125.0`](https://github.com/juspay/hyperswitch/compare/v1.124.0...v1.125.0)
 
