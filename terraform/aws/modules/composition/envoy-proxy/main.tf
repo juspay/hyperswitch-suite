@@ -389,7 +389,7 @@ resource "aws_lb_target_group" "envoy" {
   )
 
   lifecycle {
-    create_before_destroy = true
+    create_before_destroy = false
   }
 }
 
