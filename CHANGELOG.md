@@ -385,7 +385,7 @@ index e5125cfefb..5d392f101a 100644
  
  [merchant_advice_codes.mastercard]
 ```
-```
+```patch
 diff --git a/config/superposition_seed.toml b/config/superposition_seed.toml
 index 5f87a00087..77ab7aa316 100644
 --- a/config/superposition_seed.toml
