@@ -440,13 +440,48 @@ index e5125cfefb..5d392f101a 100644
 #### Compatibility
 This version of the Hyperswitch Control Center is compatible with the following versions of other components:
 
-- App Server Version: [v1.124.0](https://github.com/juspay/hyperswitch/releases/tag/v1.124.0)
+- App Server Version: [v1.125.0](https://github.com/juspay/hyperswitch/releases/tag/v1.125.0)
 - Web Client Version: [v0.132.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.132.0)
 - Card Vault Version: [v0.7.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.7.0)
 - Key Manager: [v0.1.13](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.13)
 
 **Full Changelog**: https://github.com/juspay/hyperswitch-control-center/compare/v1.38.5...v1.38.6
 
+### [Hyperswitch Encryption Service v0.1.13 (2026-07-03)](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.13)
+
+#### Refactors
+- **revert:** remove basic auth token comparison and dead code ([#68](https://github.com/juspay/hyperswitch-encryption-service/pull/68)) by @Shailesh-714
+
+#### Database Migrations
+> [!WARNING]
+> The following migration is **backward incompatible** and **can cause data loss**. **The query need NOT be run on production environments**, as the application would still function correctly even if the migration is not run. Additional columns not known to the application, being present on the database side is not a concern.
+
+```sql
+-- DB Difference between v0.1.12 and v0.1.13
+
+-- Do not run this migration in production environments.
+-- Dropping this column is a backward-incompatible change: the data will be
+-- permanently lost, and any rollback to a version that still relies on this
+-- column will break. Only run this once backward compatibility with older
+-- application versions is no longer required.
+ALTER TABLE data_key_store DROP COLUMN IF EXISTS token;
+```
+
+#### Configuration Changes
+```patch
+diff --git a/config/development.toml b/config/development.toml
+index 1dbf07e..6c726e6 100644
+--- a/config/development.toml
++++ b/config/development.toml
+@@ -33,5 +33,3 @@ log_format = "console"
+ 
+ [secrets]
+ master_key = "6d761d32f1b14ef34cf016d726b29b02b5cfce92a8959f1bfb65995c8100925e"
+-access_token = "secret123"
+-hash_context = "keymanager:hyperswitch"
+```
+
+**Full Changelog:** [`v0.1.12...v0.1.13`](https://github.com/juspay/hyperswitch-encryption-service/compare/v0.1.12...v0.1.13)
 
 ## Hyperswitch Suite v1.19
 
