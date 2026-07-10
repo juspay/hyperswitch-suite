@@ -40,6 +40,7 @@
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
+| <a name="input_additional_userdata"></a> [additional\_userdata](#input\_additional\_userdata) | Additional shell script to append to the default userdata. Runs after the built-in userdata.sh. | `string` | `""` | no |
 | <a name="input_ami_id"></a> [ami\_id](#input\_ami\_id) | AMI ID for jump host (defaults to latest Amazon Linux 2023) | `string` | `null` | no |
 | <a name="input_create_ssm_cloudwatch_log_group"></a> [create\_ssm\_cloudwatch\_log\_group](#input\_create\_ssm\_cloudwatch\_log\_group) | Whether to create a CloudWatch log group for SSM session logs. | `bool` | `false` | no |
 | <a name="input_create_ssm_s3_bucket"></a> [create\_ssm\_s3\_bucket](#input\_create\_ssm\_s3\_bucket) | Whether to create an S3 bucket for SSM session logs. | `bool` | `false` | no |
