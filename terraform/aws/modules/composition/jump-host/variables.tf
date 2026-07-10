@@ -189,3 +189,9 @@ variable "ssm_shell_profile_windows" {
   type        = string
   default     = ""
 }
+
+variable "additional_userdata" {
+  description = "Additional shell script to append to the default userdata. Runs after the built-in userdata.sh."
+  type        = string
+  default     = ""
+}

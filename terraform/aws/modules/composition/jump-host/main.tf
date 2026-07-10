@@ -265,10 +265,13 @@ module "jump_instance" {
 
   associate_public_ip_address = false
   monitoring                  = true
-  user_data_base64 = base64encode(templatefile("${path.module}/templates/userdata.sh", {
-    environment       = var.environment
-    cloudwatch_region = data.aws_region.current.id
-  }))
+  user_data_base64 = base64encode(join("\n", compact([
+    templatefile("${path.module}/templates/userdata.sh", {
+      environment       = var.environment
+      cloudwatch_region = data.aws_region.current.id
+    }),
+    var.additional_userdata,
+  ])))
 
   root_block_device = {
     size                  = var.root_volume_size
