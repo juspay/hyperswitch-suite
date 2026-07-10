@@ -496,7 +496,18 @@ This version of the Hyperswitch Control Center is compatible with the following 
 ### [Hyperswitch Encryption Service v0.1.13 (2026-07-03)](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.13)
 
 #### Refactors
-- **revert:** remove basic auth token comparison and dead code ([#68](https://github.com/juspay/hyperswitch-encryption-service/pull/68)) by @Shailesh-714
+- **revert:** remove basic auth token comparison and dead code ([#68](https://github.com/juspay/hyperswitch-encryption-service/pull/68))
+
+#### Compatibility
+
+This version of the Hyperswitch Encryption service is compatible with the following versions of the other components:
+
+- Hyperswitch App Server: [v1.125.0](https://github.com/juspay/hyperswitch/releases/tag/v1.125.0)
+- Control Center: [v1.38.6](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.38.6)
+- Web Client: [v0.132.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.132.0)
+- WooCommerce Plugin: [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)
+- Card Vault: [v0.7.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.7.0)
+- Superposition: [v0.102.0](https://github.com/juspay/superposition/releases/tag/v0.102.0)
 
 #### Database Migrations
 > [!WARNING]
