@@ -265,6 +265,13 @@ resource "aws_iam_role_policy_attachment" "cloudwatch_agent" {
   policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
 }
 
+resource "aws_iam_role_policy_attachment" "additional" {
+  for_each = toset(var.additional_policy_arns)
+
+  role       = aws_iam_role.locker.name
+  policy_arn = each.value
+}
+
 # =========================================================================
 # COMPUTE - EC2 INSTANCES
 # =========================================================================
