@@ -81,6 +81,12 @@ variable "log_retention_days" {
   default     = 30
 }
 
+variable "additional_policy_arns" {
+  description = "List of additional IAM policy ARNs to attach to the Locker IAM role (e.g., AmazonSSMManagedInstanceCore for SSM access)"
+  type        = list(string)
+  default     = []
+}
+
 variable "tags" {
   description = "Common tags to apply to all resources"
   type        = map(string)
@@ -209,31 +215,31 @@ variable "database_config" {
     custom_parameter_group_description    = optional(string, null)
     custom_parameter_group_parameters     = optional(list(map(string)), [])
     kms = optional(object({
-      create           = optional(bool, false)
-      existing_key_arn = optional(string, null)
-      description      = optional(string, null)
-      multi_region     = optional(bool, false)
-      create_replica           = optional(bool, false)
-      create_replica_external  = optional(bool, false)
-      primary_key_arn          = optional(string, null)
-      primary_external_key_arn = optional(string, null)
-      create_external     = optional(bool, false)
-      key_material_base64 = optional(string, null)
-      valid_to            = optional(string, null)
-      key_usage                = optional(string, null)
-      customer_master_key_spec = optional(string, null)
-      key_spec                 = optional(string, null)
-      deletion_window_in_days  = optional(number, null)
+      create                             = optional(bool, false)
+      existing_key_arn                   = optional(string, null)
+      description                        = optional(string, null)
+      multi_region                       = optional(bool, false)
+      create_replica                     = optional(bool, false)
+      create_replica_external            = optional(bool, false)
+      primary_key_arn                    = optional(string, null)
+      primary_external_key_arn           = optional(string, null)
+      create_external                    = optional(bool, false)
+      key_material_base64                = optional(string, null)
+      valid_to                           = optional(string, null)
+      key_usage                          = optional(string, null)
+      customer_master_key_spec           = optional(string, null)
+      key_spec                           = optional(string, null)
+      deletion_window_in_days            = optional(number, null)
       is_enabled                         = optional(bool, null)
       enable_key_rotation                = optional(bool, true)
       rotation_period_in_days            = optional(number, null)
       bypass_policy_lockout_safety_check = optional(bool, null)
-      aliases                 = optional(list(string), [])
-      aliases_use_name_prefix = optional(bool, false)
-      key_administrators = optional(list(string), [])
-      key_users          = optional(list(string), [])
-      key_service_users  = optional(list(string), [])
-      key_owners         = optional(list(string), [])
+      aliases                            = optional(list(string), [])
+      aliases_use_name_prefix            = optional(bool, false)
+      key_administrators                 = optional(list(string), [])
+      key_users                          = optional(list(string), [])
+      key_service_users                  = optional(list(string), [])
+      key_owners                         = optional(list(string), [])
     }), null)
     cluster_instances = optional(map(object({
       identifier                            = optional(string)
