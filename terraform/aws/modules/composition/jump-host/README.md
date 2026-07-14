@@ -70,6 +70,7 @@
 | <a name="input_ssm_shell_profile_windows"></a> [ssm\_shell\_profile\_windows](#input\_ssm\_shell\_profile\_windows) | Windows shell profile for SSM sessions. | `string` | `""` | no |
 | <a name="input_subnet_id"></a> [subnet\_id](#input\_subnet\_id) | Subnet ID for the jump host (typically a private subnet) | `string` | n/a | yes |
 | <a name="input_tags"></a> [tags](#input\_tags) | A map of tags to add to all resources | `map(string)` | `{}` | no |
+| <a name="input_user_data_base64"></a> [user\_data\_base64](#input\_user\_data\_base64) | Base64-encoded userdata script to pass to the jump host instance. When provided, overrides the module's built-in userdata template. | `string` | `null` | no |
 | <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC ID where jump host will be deployed | `string` | n/a | yes |
 
 ## Outputs
