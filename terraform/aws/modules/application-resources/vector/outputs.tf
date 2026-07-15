@@ -89,3 +89,41 @@ output "s3_policy_arn" {
   description = "ARN of the S3 IAM policy (if enabled)"
   value       = local.s3_enabled ? aws_iam_policy.s3_policy[0].arn : null
 }
+
+# =========================================================================
+# SQS QUEUE OUTPUTS
+# =========================================================================
+output "sqs_enabled" {
+  description = "Whether SQS queue feature is enabled"
+  value       = local.sqs_enabled
+}
+
+output "sqs_queue_url" {
+  description = "URL of the SQS queue (null if not created)"
+  value       = local.sqs_enabled ? aws_sqs_queue.this[0].url : null
+}
+
+output "sqs_queue_arn" {
+  description = "ARN of the SQS queue (null if not created)"
+  value       = local.sqs_enabled ? aws_sqs_queue.this[0].arn : null
+}
+
+output "sqs_queue_name" {
+  description = "Name of the SQS queue (null if not created)"
+  value       = local.sqs_enabled ? aws_sqs_queue.this[0].name : null
+}
+
+output "sqs_policy_arn" {
+  description = "ARN of the SQS IAM policy (if enabled)"
+  value       = local.sqs_enabled ? aws_iam_policy.sqs_policy[0].arn : null
+}
+
+output "sqs_cross_region_enabled" {
+  description = "Whether cross-region SQS read feature is enabled"
+  value       = local.sqs_cross_region_enabled
+}
+
+output "sqs_cross_region_policy_arn" {
+  description = "ARN of the cross-region SQS IAM policy (if enabled)"
+  value       = local.sqs_cross_region_enabled ? aws_iam_policy.sqs_cross_region_policy[0].arn : null
+}

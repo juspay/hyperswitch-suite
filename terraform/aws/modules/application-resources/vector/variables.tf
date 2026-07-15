@@ -123,3 +123,30 @@ variable "s3" {
   })
   default = {}
 }
+
+# =========================================================================
+# SQS Queue Configuration (for S3 → SQS notification pattern)
+# =========================================================================
+
+variable "sqs" {
+  description = "SQS queue configuration for S3 event notification. Set create=true to create a queue and wire S3 ObjectCreated notifications to it."
+  type = object({
+    create             = optional(bool, false)
+    queue_name         = optional(string, null)    # Auto-generated if not provided
+    message_retention  = optional(number, 1209600) # 14 days max (AWS limit)
+    receive_wait_time  = optional(number, 20)      # Long polling
+    visibility_timeout = optional(number, 300)     # 5 minutes
+  })
+  default = {}
+}
+
+variable "sqs_cross_region" {
+  description = "Cross-region SQS + S3 read configuration. Grants SQS receive/delete and S3 get-object permissions on remote-region resources."
+  type = object({
+    create      = optional(bool, false)
+    queue_arn   = optional(string, null) # ARN of remote SQS queue
+    bucket_arn  = optional(string, null) # ARN of remote S3 bucket
+    kms_key_arn = optional(string, null) # ARN of remote KMS key (if SSE-KMS used)
+  })
+  default = {}
+}
