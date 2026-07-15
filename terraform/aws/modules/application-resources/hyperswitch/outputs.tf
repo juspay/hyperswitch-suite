@@ -11,6 +11,11 @@ output "account_id" {
   value       = data.aws_caller_identity.current.account_id
 }
 
+output "public_domain" {
+  description = "Public domain name to access hyperswitch"
+  value       = var.public_domain
+}
+
 # =========================================================================
 # IAM ROLE OUTPUTS
 # =========================================================================
