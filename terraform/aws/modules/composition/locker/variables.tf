@@ -131,6 +131,12 @@ variable "alb_listeners" {
   }
 }
 
+variable "enable_alb_deletion_protection" {
+  description = "Enable deletion protection on the Application Load Balancer"
+  type        = bool
+  default     = false
+}
+
 variable "create_locker_database" {
   description = "Create a RDS Aurora PostgreSQL database for Locker"
   type        = bool
