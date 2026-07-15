@@ -21,6 +21,12 @@ variable "tags" {
   default     = {}
 }
 
+variable "public_domain" {
+  description = "Public domain name to access hyperswitch"
+  type        = string
+  default     = null
+}
+
 # =========================================================================
 # EKS OIDC Configuration
 # =========================================================================
