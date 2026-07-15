@@ -104,6 +104,146 @@ resource "aws_iam_role_policy_attachment" "s3_policy_attachment" {
 }
 
 # =========================================================================
+# SQS QUEUE (Optional - for S3 → SQS notification pattern)
+# =========================================================================
+resource "aws_sqs_queue" "this" {
+  count = local.sqs_enabled ? 1 : 0
+
+  name                       = local.sqs_queue_name
+  message_retention_seconds  = try(var.sqs.message_retention, 1209600)
+  receive_wait_time_seconds  = try(var.sqs.receive_wait_time, 20)
+  visibility_timeout_seconds = try(var.sqs.visibility_timeout, 300)
+
+  tags = local.common_tags
+}
+
+resource "aws_sqs_queue_policy" "this" {
+  count = local.sqs_enabled ? 1 : 0
+
+  queue_url = aws_sqs_queue.this[0].url
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Service = "s3.amazonaws.com"
+        }
+        Action   = "sqs:SendMessage"
+        Resource = aws_sqs_queue.this[0].arn
+        Condition = {
+          ArnEquals = {
+            "aws:SourceArn" = local.s3_bucket_arn
+          }
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_s3_bucket_notification" "this" {
+  count = local.sqs_enabled && local.s3_create ? 1 : 0
+
+  bucket = module.s3_bucket[0].s3_bucket_id
+
+  queue {
+    queue_arn     = aws_sqs_queue.this[0].arn
+    events        = ["s3:ObjectCreated:*"]
+  }
+
+  depends_on = [aws_sqs_queue_policy.this]
+}
+
+# =========================================================================
+# IAM - SQS POLICY (local queue - for S3→SQS producer side)
+# =========================================================================
+resource "aws_iam_policy" "sqs_policy" {
+  count = local.sqs_enabled ? 1 : 0
+
+  name = "${local.name_prefix}-sqs-policy"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowSQSAccess"
+        Effect = "Allow"
+        Action = [
+          "sqs:SendMessage",
+          "sqs:GetQueueAttributes",
+          "sqs:GetQueueUrl"
+        ]
+        Resource = aws_sqs_queue.this[0].arn
+      }
+    ]
+  })
+
+  tags = local.common_tags
+}
+
+resource "aws_iam_role_policy_attachment" "sqs_policy_attachment" {
+  count = local.sqs_enabled ? 1 : 0
+
+  role       = aws_iam_role.this.name
+  policy_arn = aws_iam_policy.sqs_policy[0].arn
+}
+
+# =========================================================================
+# IAM - CROSS-REGION SQS + S3 POLICY (DR backfill consumer)
+# =========================================================================
+resource "aws_iam_policy" "sqs_cross_region_policy" {
+  count = local.sqs_cross_region_enabled ? 1 : 0
+
+  name = "${local.name_prefix}-sqs-cross-region-policy"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = concat(
+      [
+        {
+          Sid    = "ConsumeRemoteSQS"
+          Effect = "Allow"
+          Action = [
+            "sqs:ReceiveMessage",
+            "sqs:DeleteMessage",
+            "sqs:GetQueueAttributes"
+          ]
+          Resource = try(var.sqs_cross_region.queue_arn, "*")
+        },
+        {
+          Sid    = "ReadRemoteS3"
+          Effect = "Allow"
+          Action = [
+            "s3:GetObject",
+            "s3:ListBucket"
+          ]
+          Resource = [
+            try(var.sqs_cross_region.bucket_arn, "*"),
+            "${try(var.sqs_cross_region.bucket_arn, "*")}/*"
+          ]
+        }
+      ],
+      try(var.sqs_cross_region.kms_key_arn, null) != null ? [
+        {
+          Sid      = "DecryptRemoteKMS"
+          Effect   = "Allow"
+          Action   = "kms:Decrypt"
+          Resource = var.sqs_cross_region.kms_key_arn
+        }
+      ] : []
+    )
+  })
+
+  tags = local.common_tags
+}
+
+resource "aws_iam_role_policy_attachment" "sqs_cross_region_policy_attachment" {
+  count = local.sqs_cross_region_enabled ? 1 : 0
+
+  role       = aws_iam_role.this.name
+  policy_arn = aws_iam_policy.sqs_cross_region_policy[0].arn
+}
+
+# =========================================================================
 # S3 BUCKET (Optional)
 # =========================================================================
 module "s3_bucket" {
