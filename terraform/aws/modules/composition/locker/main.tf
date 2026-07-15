@@ -303,11 +303,12 @@ module "locker_instance" {
 # LOAD BALANCER - APPLICATION LOAD BALANCER
 # =========================================================================
 resource "aws_lb" "locker_alb" {
-  name               = "${local.name_prefix}-alb"
-  internal           = true
-  load_balancer_type = "application"
-  subnets            = var.alb_subnet_ids
-  security_groups    = [aws_security_group.alb.id]
+  name                       = "${local.name_prefix}-alb"
+  internal                   = true
+  load_balancer_type         = "application"
+  subnets                    = var.alb_subnet_ids
+  security_groups            = [aws_security_group.alb.id]
+  enable_deletion_protection = var.enable_alb_deletion_protection
 
   tags = local.common_tags
 }
