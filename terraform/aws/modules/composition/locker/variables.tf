@@ -134,7 +134,7 @@ variable "alb_listeners" {
 variable "enable_alb_deletion_protection" {
   description = "Enable deletion protection on the Application Load Balancer"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "create_locker_database" {
