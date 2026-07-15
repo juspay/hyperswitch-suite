@@ -23,10 +23,17 @@
 | Name | Type |
 |------|------|
 | [aws_iam_policy.s3_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
+| [aws_iam_policy.sqs_cross_region_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
+| [aws_iam_policy.sqs_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_role.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role_policy_attachment.aws_managed](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.customer_managed](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.s3_policy_attachment](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.sqs_cross_region_policy_attachment](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.sqs_policy_attachment](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_s3_bucket_notification.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket_notification) | resource |
+| [aws_sqs_queue.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sqs_queue) | resource |
+| [aws_sqs_queue_policy.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sqs_queue_policy) | resource |
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
 | [aws_eks_cluster.eks](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/eks_cluster) | data source |
 | [aws_iam_openid_connect_provider.oidc](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_openid_connect_provider) | data source |
@@ -51,6 +58,8 @@
 | <a name="input_role_name"></a> [role\_name](#input\_role\_name) | Custom IAM role name. If null, auto-generated as {environment}-{project}-{app}-role | `string` | `null` | no |
 | <a name="input_role_path"></a> [role\_path](#input\_role\_path) | IAM role path | `string` | `"/"` | no |
 | <a name="input_s3"></a> [s3](#input\_s3) | S3 bucket configuration for Vector logs storage. Set to {} to disable. Set create=true to create bucket, or create=false with bucket\_arn to use existing. | <pre>object({<br/>    create     = optional(bool, false)  # Set true to create S3 bucket, false to use existing<br/>    bucket_arn = optional(string, null) # Existing S3 bucket ARN (used when create=false)<br/><br/>    # Bucket creation settings (used when create=true)<br/>    bucket_name        = optional(string, null) # Auto-generated if not provided<br/>    force_destroy      = optional(bool, false)<br/>    versioning_enabled = optional(bool, false)<br/>    lifecycle_rules    = optional(any, [])<br/>  })</pre> | `{}` | no |
+| <a name="input_sqs"></a> [sqs](#input\_sqs) | SQS queue configuration for S3 event notification. Set create=true to create a queue and wire S3 ObjectCreated notifications to it. | <pre>object({<br/>    create             = optional(bool, false)<br/>    queue_name         = optional(string, null)    # Auto-generated if not provided<br/>    message_retention  = optional(number, 1209600) # 14 days max (AWS limit)<br/>    receive_wait_time  = optional(number, 20)      # Long polling<br/>    visibility_timeout = optional(number, 300)     # 5 minutes<br/>  })</pre> | `{}` | no |
+| <a name="input_sqs_cross_region"></a> [sqs\_cross\_region](#input\_sqs\_cross\_region) | Cross-region SQS + S3 read configuration for DR backfill consumer. Grants SQS receive/delete and S3 get-object permissions on remote-region resources. | <pre>object({<br/>    create      = optional(bool, false)<br/>    queue_arn   = optional(string, null) # ARN of remote SQS queue<br/>    bucket_arn  = optional(string, null) # ARN of remote S3 bucket<br/>    kms_key_arn = optional(string, null) # ARN of remote KMS key (if SSE-KMS used)<br/>  })</pre> | `{}` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Common tags to apply to all resources | `map(string)` | `{}` | no |
 
 ## Outputs
@@ -73,4 +82,11 @@
 | <a name="output_s3_bucket_regional_domain_name"></a> [s3\_bucket\_regional\_domain\_name](#output\_s3\_bucket\_regional\_domain\_name) | Regional domain name of the S3 bucket (null if not created) |
 | <a name="output_s3_enabled"></a> [s3\_enabled](#output\_s3\_enabled) | Whether S3 bucket feature is enabled |
 | <a name="output_s3_policy_arn"></a> [s3\_policy\_arn](#output\_s3\_policy\_arn) | ARN of the S3 IAM policy (if enabled) |
+| <a name="output_sqs_cross_region_enabled"></a> [sqs\_cross\_region\_enabled](#output\_sqs\_cross\_region\_enabled) | Whether cross-region SQS read feature is enabled |
+| <a name="output_sqs_cross_region_policy_arn"></a> [sqs\_cross\_region\_policy\_arn](#output\_sqs\_cross\_region\_policy\_arn) | ARN of the cross-region SQS IAM policy (if enabled) |
+| <a name="output_sqs_enabled"></a> [sqs\_enabled](#output\_sqs\_enabled) | Whether SQS queue feature is enabled |
+| <a name="output_sqs_policy_arn"></a> [sqs\_policy\_arn](#output\_sqs\_policy\_arn) | ARN of the SQS IAM policy (if enabled) |
+| <a name="output_sqs_queue_arn"></a> [sqs\_queue\_arn](#output\_sqs\_queue\_arn) | ARN of the SQS queue (null if not created) |
+| <a name="output_sqs_queue_name"></a> [sqs\_queue\_name](#output\_sqs\_queue\_name) | Name of the SQS queue (null if not created) |
+| <a name="output_sqs_queue_url"></a> [sqs\_queue\_url](#output\_sqs\_queue\_url) | URL of the SQS queue (null if not created) |
 <!-- END_TF_DOCS -->
