@@ -30,6 +30,12 @@ variable "ami_id" {
   default     = null
 }
 
+variable "user_data_base64" {
+  description = "Base64-encoded userdata script to pass to the jump host instance. When provided, overrides the module's built-in userdata template."
+  type        = string
+  default     = null
+}
+
 variable "instance_type" {
   description = "Instance type for jump host"
   type        = string
