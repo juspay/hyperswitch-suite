@@ -189,7 +189,7 @@ resource "aws_iam_role_policy_attachment" "sqs_policy_attachment" {
 }
 
 # =========================================================================
-# IAM - CROSS-REGION SQS + S3 POLICY (DR backfill consumer)
+# IAM - CROSS-REGION SQS + S3 POLICY
 # =========================================================================
 resource "aws_iam_policy" "sqs_cross_region_policy" {
   count = local.sqs_cross_region_enabled ? 1 : 0

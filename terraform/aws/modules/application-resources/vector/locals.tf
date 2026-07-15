@@ -57,6 +57,6 @@ locals {
   sqs_enabled    = var.sqs != {} && try(var.sqs.create, false)
   sqs_queue_name = local.sqs_enabled ? (try(var.sqs.queue_name, null) != null ? var.sqs.queue_name : "${local.name_prefix}-queue") : null
 
-  # Cross-region SQS read (DR backfill consumer)
+  # Cross-region SQS read
   sqs_cross_region_enabled = var.sqs_cross_region != {} && try(var.sqs_cross_region.create, false)
 }

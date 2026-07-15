@@ -141,7 +141,7 @@ variable "sqs" {
 }
 
 variable "sqs_cross_region" {
-  description = "Cross-region SQS + S3 read configuration for DR backfill consumer. Grants SQS receive/delete and S3 get-object permissions on remote-region resources."
+  description = "Cross-region SQS + S3 read configuration. Grants SQS receive/delete and S3 get-object permissions on remote-region resources."
   type = object({
     create      = optional(bool, false)
     queue_arn   = optional(string, null) # ARN of remote SQS queue
