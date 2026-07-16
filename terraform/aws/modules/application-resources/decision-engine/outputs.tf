@@ -58,6 +58,14 @@ output "inline_policies_enabled" {
 }
 
 # =========================================================================
+# S3 IAM POLICY OUTPUTS
+# =========================================================================
+output "s3_policy_arn" {
+  description = "ARN of the S3 IAM policy attached to the Decision Engine role (if S3 bucket is enabled)"
+  value       = local.s3_bucket_create ? aws_iam_policy.s3_policy[0].arn : null
+}
+
+# =========================================================================
 # S3 BUCKET OUTPUTS
 # =========================================================================
 output "s3_bucket_id" {

@@ -77,6 +77,45 @@ resource "aws_iam_role_policy" "inline" {
 }
 
 # =========================================================================
+# IAM - S3 POLICY
+# =========================================================================
+resource "aws_iam_policy" "s3_policy" {
+  count = local.s3_bucket_create ? 1 : 0
+
+  name = "${local.name_prefix}-s3-policy"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowS3BucketAccess"
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:ListBucket",
+          "s3:GetObjectVersion",
+          "s3:DeleteObject",
+          "s3:GetBucketLocation"
+        ]
+        Resource = [
+          module.s3_bucket[0].s3_bucket_arn,
+          "${module.s3_bucket[0].s3_bucket_arn}/*"
+        ]
+      }
+    ]
+  })
+
+  tags = local.common_tags
+}
+
+resource "aws_iam_role_policy_attachment" "s3_policy_attachment" {
+  count = local.s3_bucket_create ? 1 : 0
+
+  role       = aws_iam_role.this.name
+  policy_arn = aws_iam_policy.s3_policy[0].arn
+}
+
+# =========================================================================
 # IAM - SES POLICY
 # =========================================================================
 resource "aws_iam_policy" "ses_policy" {
