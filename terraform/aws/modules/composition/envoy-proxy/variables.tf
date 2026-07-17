@@ -137,6 +137,31 @@ variable "additional_certificate_arns" {
   default     = []
 }
 
+variable "mutual_authentication" {
+  description = <<-EOT
+    Mutual TLS (mTLS) configuration for the ALB HTTPS listener.
+    - mode: The mutual authentication mode. Valid values are "off", "passthrough", or "verify". Use "off" to disable mTLS.
+    - trust_store_arn: The ARN of the trust store. Required when mode is "verify".
+  EOT
+  type = object({
+    mode            = optional(string, "off")
+    trust_store_arn = optional(string, null)
+  })
+  default = {
+    mode = "off"
+  }
+
+  validation {
+    condition     = contains(["off", "passthrough", "verify"], var.mutual_authentication.mode)
+    error_message = "mutual_authentication.mode must be one of: off, passthrough, verify"
+  }
+
+  validation {
+    condition     = var.mutual_authentication.mode != "verify" || var.mutual_authentication.trust_store_arn != null
+    error_message = "mutual_authentication.trust_store_arn is required when mode is 'verify'"
+  }
+}
+
 # =========================================================================
 # Advanced Listener Rules Configuration
 # =========================================================================

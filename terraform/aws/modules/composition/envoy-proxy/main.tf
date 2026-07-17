@@ -451,6 +451,11 @@ resource "aws_lb_listener" "envoy_https" {
   ssl_policy        = var.ssl_policy
   certificate_arn   = var.ssl_certificate_arn
 
+  mutual_authentication {
+    mode            = var.mutual_authentication.mode
+    trust_store_arn = var.mutual_authentication.trust_store_arn
+  }
+
   default_action {
     type = "forward"
     forward {
