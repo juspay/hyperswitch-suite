@@ -148,10 +148,18 @@ module "envoy_iam_role" {
   trusted_role_services = ["ec2.amazonaws.com"]
 
   # Restrictive inline policies
-  custom_role_policy_arns = var.additional_policy_arns
+  custom_role_policy_arns = concat(
+    [
+      "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
+      "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+    ],
+    var.additional_policy_arns
+  )
 
   inline_policy_statements = [
     # CloudWatch - Restricted to PutMetricData only
+    # Note: CloudWatchAgentServerPolicy managed policy also grants PutMetricData;
+    # this inline statement is kept for explicit, least-privilege fallback.
     {
       sid    = "PutMetricData"
       effect = "Allow"
@@ -159,6 +167,19 @@ module "envoy_iam_role" {
         "cloudwatch:PutMetricData"
       ]
       resources = ["*"]
+    },
+    # SSM Session Manager logging to S3 (required when SSM session logs are sent to S3)
+    {
+      sid    = "SSMSessionLogging"
+      effect = "Allow"
+      actions = [
+        "s3:PutObject",
+        "s3:GetEncryptionConfiguration"
+      ]
+      resources = [
+        "arn:aws:s3:::*",
+        "arn:aws:s3:::*/*"
+      ]
     },
     # S3 Config Bucket - Read-only access
     {
