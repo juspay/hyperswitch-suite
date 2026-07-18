@@ -115,17 +115,27 @@ resource "aws_autoscaling_group" "this" {
 
 # CPU Target Tracking Scaling Policy
 # Automatically scales to maintain target CPU utilization
-# AWS manages both scale-up and scale-down automatically
+# Uses a customized metric specification with a 60-second period so the policy
+# evaluates every minute (instead of relying on the predefined metric default).
 resource "aws_autoscaling_policy" "cpu_target_tracking" {
   count = var.enable_scaling_policies && var.scaling_policies.cpu_target_tracking.enabled ? 1 : 0
 
-  name                   = "${var.name}-cpu-target-tracking"
-  autoscaling_group_name = aws_autoscaling_group.this.name
-  policy_type            = "TargetTrackingScaling"
+  name                      = "${var.name}-cpu-target-tracking"
+  autoscaling_group_name    = aws_autoscaling_group.this.name
+  policy_type               = "TargetTrackingScaling"
+  estimated_instance_warmup = 10
 
   target_tracking_configuration {
-    predefined_metric_specification {
-      predefined_metric_type = "ASGAverageCPUUtilization"
+    customized_metric_specification {
+      metric_name = "CPUUtilization"
+      namespace   = "AWS/EC2"
+      statistic   = "Average"
+      period      = 60
+
+      metric_dimension {
+        name  = "AutoScalingGroupName"
+        value = aws_autoscaling_group.this.name
+      }
     }
     target_value = var.scaling_policies.cpu_target_tracking.target_value
   }
@@ -137,15 +147,17 @@ resource "aws_autoscaling_policy" "cpu_target_tracking" {
 resource "aws_autoscaling_policy" "memory_target_tracking" {
   count = var.enable_scaling_policies && var.scaling_policies.memory_target_tracking.enabled ? 1 : 0
 
-  name                   = "${var.name}-memory-target-tracking"
-  autoscaling_group_name = aws_autoscaling_group.this.name
-  policy_type            = "TargetTrackingScaling"
+  name                      = "${var.name}-memory-target-tracking"
+  autoscaling_group_name    = aws_autoscaling_group.this.name
+  policy_type               = "TargetTrackingScaling"
+  estimated_instance_warmup = 10
 
   target_tracking_configuration {
     customized_metric_specification {
       metric_name = "mem_used_percent"
       namespace   = "CWAgent"
       statistic   = "Average"
+      period      = 60
 
       metric_dimension {
         name  = "AutoScalingGroupName"

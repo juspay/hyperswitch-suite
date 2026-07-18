@@ -769,16 +769,34 @@ module "asg" {
 # =========================================================================
 
 # CPU Target Tracking Scaling Policy
+# Uses a customized metric specification with a 60-second period so the policy
+# evaluates every minute (instead of relying on the predefined metric default).
 resource "aws_autoscaling_policy" "cpu_target_tracking" {
   for_each = var.enable_autoscaling && var.scaling_policies.cpu_target_tracking.enabled ? local.auto_scaling_groups : {}
 
-  name                   = "${local.name_prefix}-cpu-target-tracking-${each.key}"
-  autoscaling_group_name = module.asg[each.key].autoscaling_group_name
-  policy_type            = "TargetTrackingScaling"
+  name                      = "${local.name_prefix}-cpu-target-tracking-${each.key}"
+  autoscaling_group_name    = module.asg[each.key].autoscaling_group_name
+  policy_type               = "TargetTrackingScaling"
+  estimated_instance_warmup = 10
 
   target_tracking_configuration {
-    predefined_metric_specification {
-      predefined_metric_type = "ASGAverageCPUUtilization"
+    customized_metric_specification {
+      metrics {
+        id          = "cpu_utilization"
+        return_data = true
+        metric_stat {
+          metric {
+            namespace   = "AWS/EC2"
+            metric_name = "CPUUtilization"
+            dimensions {
+              name  = "AutoScalingGroupName"
+              value = module.asg[each.key].autoscaling_group_name
+            }
+          }
+          stat   = "Average"
+          period = 60
+        }
+      }
     }
     target_value = var.scaling_policies.cpu_target_tracking.target_value
   }
@@ -788,9 +806,10 @@ resource "aws_autoscaling_policy" "cpu_target_tracking" {
 resource "aws_autoscaling_policy" "memory_target_tracking" {
   for_each = var.enable_autoscaling && var.scaling_policies.memory_target_tracking.enabled ? local.auto_scaling_groups : {}
 
-  name                   = "${local.name_prefix}-memory-target-tracking-${each.key}"
-  autoscaling_group_name = module.asg[each.key].autoscaling_group_name
-  policy_type            = "TargetTrackingScaling"
+  name                      = "${local.name_prefix}-memory-target-tracking-${each.key}"
+  autoscaling_group_name    = module.asg[each.key].autoscaling_group_name
+  policy_type               = "TargetTrackingScaling"
+  estimated_instance_warmup = 10
 
   target_tracking_configuration {
     customized_metric_specification {
@@ -805,7 +824,8 @@ resource "aws_autoscaling_policy" "memory_target_tracking" {
               value = module.asg[each.key].autoscaling_group_name
             }
           }
-          stat = "Average"
+          stat   = "Average"
+          period = 60
         }
       }
     }
