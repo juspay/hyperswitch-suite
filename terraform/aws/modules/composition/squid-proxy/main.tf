@@ -135,11 +135,19 @@ module "squid_iam_role" {
   service_identifiers     = ["ec2.amazonaws.com"]
   create_instance_profile = true
 
-  managed_policy_arns = var.additional_policy_arns
+  managed_policy_arns = concat(
+    [
+      "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
+      "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+    ],
+    var.additional_policy_arns
+  )
 
   # Restrictive inline policies
   inline_policies = {
     # CloudWatch - Restricted to PutMetricData only
+    # Note: CloudWatchAgentServerPolicy managed policy also grants PutMetricData;
+    # this inline policy is kept for explicit, least-privilege fallback.
     squid-cloudwatch-metrics = jsonencode({
       Version = "2012-10-17"
       Statement = [
@@ -150,6 +158,25 @@ module "squid_iam_role" {
             "cloudwatch:PutMetricData"
           ]
           Resource = "*"
+        }
+      ]
+    })
+
+    # SSM Session Manager logging to S3 (required when SSM session logs are sent to S3)
+    squid-ssm-session-logging = jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Sid    = "SSMSessionLogging"
+          Effect = "Allow"
+          Action = [
+            "s3:PutObject",
+            "s3:GetEncryptionConfiguration"
+          ]
+          Resource = [
+            "arn:aws:s3:::*",
+            "arn:aws:s3:::*/*"
+          ]
         }
       ]
     })
