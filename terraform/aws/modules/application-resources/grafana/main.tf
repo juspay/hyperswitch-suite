@@ -81,14 +81,14 @@ module "database" {
   # Network Configuration
   vpc_id                 = var.database_vpc_id
   subnet_ids             = var.database_subnet_ids
-  db_subnet_group_name   = var.database_db_subnet_group_name
+  db_subnet_group_name   = var.database_db_subnet_group_name != null ? var.database_db_subnet_group_name : "${local.name_prefix}-db-subnet-group"
   create_db_subnet_group = var.database_create_db_subnet_group
   network_type           = var.database_network_type
   port                   = var.database_port
   availability_zones     = var.database_availability_zones
 
   # Cluster Configuration
-  cluster_identifier        = var.database_cluster_identifier
+  cluster_identifier        = var.database_cluster_identifier != null ? var.database_cluster_identifier : "${local.name_prefix}-db"
   engine                    = var.database_engine
   engine_version            = var.database_engine_version
   engine_mode               = var.database_engine_mode
@@ -140,8 +140,8 @@ module "database" {
   # Network Security
   vpc_security_group_ids     = var.database_vpc_security_group_ids
   create_security_group      = var.database_create_security_group
-  security_group_name        = var.database_security_group_name
-  security_group_description = var.database_security_group_description
+  security_group_name        = var.database_security_group_name != null ? var.database_security_group_name : "${local.name_prefix}-db-sg"
+  security_group_description = var.database_security_group_description != null ? var.database_security_group_description : "Security group for Grafana database"
 
   # Monitoring
   enabled_cloudwatch_logs_exports       = var.database_enabled_cloudwatch_logs_exports
@@ -169,7 +169,7 @@ module "database" {
 
   # Global Cluster
   create_global_cluster          = var.database_create_global_cluster
-  global_cluster_identifier      = var.database_global_cluster_identifier
+  global_cluster_identifier      = var.database_global_cluster_identifier != null ? var.database_global_cluster_identifier : "${local.name_prefix}-global"
   global_deletion_protection     = var.database_global_deletion_protection
   enable_global_write_forwarding = var.database_enable_global_write_forwarding
   use_existing_as_global_primary = var.database_use_existing_as_global_primary
