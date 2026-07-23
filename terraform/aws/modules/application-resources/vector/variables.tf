@@ -116,7 +116,7 @@ variable "s3" {
     bucket_arn = optional(string, null) # Existing S3 bucket ARN (used when create=false)
 
     # Bucket creation settings (used when create=true)
-    bucket_name        = optional(string, null) # Auto-generated if not provided
+    bucket_name        = optional(string, null) # Auto-generated as {environment}-{project}-{app}-{region}-logs-storage if not provided
     force_destroy      = optional(bool, false)
     versioning_enabled = optional(bool, false)
     lifecycle_rules    = optional(any, [])
