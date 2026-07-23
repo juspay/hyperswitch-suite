@@ -49,7 +49,7 @@ locals {
   # =========================================================================
   # S3 Bucket Configuration
   # =========================================================================
-  s3_bucket_name = local.s3_create ? (try(var.s3.bucket_name, null) != null ? var.s3.bucket_name : "${local.name_prefix}-logs-storage") : null
+  s3_bucket_name = local.s3_create ? (try(var.s3.bucket_name, null) != null ? var.s3.bucket_name : "${local.name_prefix}-${data.aws_region.current.region}-logs-storage") : null
 
   # =========================================================================
   # SQS Queue Configuration
