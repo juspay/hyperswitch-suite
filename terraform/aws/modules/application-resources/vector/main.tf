@@ -148,8 +148,8 @@ resource "aws_s3_bucket_notification" "this" {
   bucket = module.s3_bucket[0].s3_bucket_id
 
   queue {
-    queue_arn     = aws_sqs_queue.this[0].arn
-    events        = ["s3:ObjectCreated:*"]
+    queue_arn = aws_sqs_queue.this[0].arn
+    events    = ["s3:ObjectCreated:*"]
   }
 
   depends_on = [aws_sqs_queue_policy.this]
