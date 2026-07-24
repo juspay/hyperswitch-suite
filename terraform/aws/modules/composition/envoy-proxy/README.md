@@ -35,6 +35,7 @@
 | [aws_launch_template.envoy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/launch_template) | resource |
 | [aws_lb_listener.envoy_http](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener) | resource |
 | [aws_lb_listener.envoy_https](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener) | resource |
+| [aws_lb_listener.envoy_mtls](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener) | resource |
 | [aws_lb_listener_certificate.additional](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener_certificate) | resource |
 | [aws_lb_listener_rule.custom_rules](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener_rule) | resource |
 | [aws_lb_target_group.envoy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_target_group) | resource |
@@ -103,7 +104,7 @@
 | <a name="input_max_instance_lifetime"></a> [max\_instance\_lifetime](#input\_max\_instance\_lifetime) | Maximum lifetime of instances in seconds (0 = no limit, min 86400 = 24 hours) | `number` | `0` | no |
 | <a name="input_max_size"></a> [max\_size](#input\_max\_size) | Maximum number of instances in ASG | `number` | `3` | no |
 | <a name="input_min_size"></a> [min\_size](#input\_min\_size) | Minimum number of instances in ASG | `number` | `1` | no |
-| <a name="input_mutual_authentication"></a> [mutual\_authentication](#input\_mutual\_authentication) | Mutual TLS (mTLS) configuration for the ALB HTTPS listener.<br/>- mode: The mutual authentication mode. Valid values are "off", "passthrough", or "verify". Use "off" to disable mTLS.<br/>- trust\_store\_arn: The ARN of the trust store. Required when mode is "verify". | <pre>object({<br/>    mode            = optional(string, "off")<br/>    trust_store_arn = optional(string, null)<br/>  })</pre> | <pre>{<br/>  "mode": "off"<br/>}</pre> | no |
+| <a name="input_mtls_listener"></a> [mtls\_listener](#input\_mtls\_listener) | Mutual TLS (mTLS) listener configuration. When enabled, creates a separate ALB HTTPS listener<br/>on a dedicated port with mutual TLS authentication enabled. The main HTTPS listener does not use mTLS.<br/>All settings for the mTLS listener are self-contained in this object.<br/>- enabled: Whether to create the mTLS listener.<br/>- port: Port for the mTLS listener.<br/>- ssl\_certificate\_arn: ACM certificate ARN for the mTLS listener (required).<br/>- ssl\_policy: SSL policy for the mTLS listener. Defaults to the module's `ssl_policy` if not specified.<br/>- mode: Mutual authentication mode. Valid values are "passthrough" or "verify".<br/>- trust\_store\_arn: The ARN of the trust store. Required when mode is "verify". | <pre>object({<br/>    enabled             = optional(bool, false)<br/>    port                = optional(number, 8443)<br/>    ssl_certificate_arn = string<br/>    ssl_policy          = optional(string, null)<br/>    mode                = optional(string, "verify")<br/>    trust_store_arn     = optional(string, null)<br/>  })</pre> | <pre>{<br/>  "enabled": false,<br/>  "ssl_certificate_arn": null<br/>}</pre> | no |
 | <a name="input_on_demand_allocation_strategy"></a> [on\_demand\_allocation\_strategy](#input\_on\_demand\_allocation\_strategy) | Strategy for allocating on-demand instances (prioritized) | `string` | `"prioritized"` | no |
 | <a name="input_on_demand_base_capacity"></a> [on\_demand\_base\_capacity](#input\_on\_demand\_base\_capacity) | Minimum number of on-demand instances to maintain (useful for baseline capacity) | `number` | `1` | no |
 | <a name="input_project_name"></a> [project\_name](#input\_project\_name) | Project name for resource naming | `string` | `"hyperswitch"` | no |
@@ -148,6 +149,7 @@
 | <a name="output_logs_bucket_arn"></a> [logs\_bucket\_arn](#output\_logs\_bucket\_arn) | ARN of the S3 bucket for logs (created or existing) |
 | <a name="output_logs_bucket_created"></a> [logs\_bucket\_created](#output\_logs\_bucket\_created) | Whether logs bucket was created by this module (true) or using existing (false) |
 | <a name="output_logs_bucket_name"></a> [logs\_bucket\_name](#output\_logs\_bucket\_name) | Name of the S3 bucket for logs (created or existing) |
+| <a name="output_mtls_listener_arn"></a> [mtls\_listener\_arn](#output\_mtls\_listener\_arn) | ARN of the separate mTLS listener (null if not created) |
 | <a name="output_ssh_key_generated"></a> [ssh\_key\_generated](#output\_ssh\_key\_generated) | Whether SSH key was auto-generated (true) or using existing key (false) |
 | <a name="output_ssh_key_name"></a> [ssh\_key\_name](#output\_ssh\_key\_name) | Name of the SSH key pair |
 | <a name="output_ssh_key_pair_id"></a> [ssh\_key\_pair\_id](#output\_ssh\_key\_pair\_id) | EC2 Key Pair ID (only if auto-generated) |
