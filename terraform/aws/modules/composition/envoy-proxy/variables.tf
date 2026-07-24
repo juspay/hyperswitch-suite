@@ -137,28 +137,49 @@ variable "additional_certificate_arns" {
   default     = []
 }
 
-variable "mutual_authentication" {
+variable "mtls_listener" {
   description = <<-EOT
-    Mutual TLS (mTLS) configuration for the ALB HTTPS listener.
-    - mode: The mutual authentication mode. Valid values are "off", "passthrough", or "verify". Use "off" to disable mTLS.
+    Mutual TLS (mTLS) listener configuration. When enabled, creates a separate ALB HTTPS listener
+    on a dedicated port with mutual TLS authentication enabled. The main HTTPS listener does not use mTLS.
+    All settings for the mTLS listener are self-contained in this object.
+    - enabled: Whether to create the mTLS listener.
+    - port: Port for the mTLS listener.
+    - ssl_certificate_arn: ACM certificate ARN for the mTLS listener (required).
+    - ssl_policy: SSL policy for the mTLS listener. Defaults to the module's `ssl_policy` if not specified.
+    - mode: Mutual authentication mode. Valid values are "passthrough" or "verify".
     - trust_store_arn: The ARN of the trust store. Required when mode is "verify".
   EOT
   type = object({
-    mode            = optional(string, "off")
-    trust_store_arn = optional(string, null)
+    enabled             = optional(bool, false)
+    port                = optional(number, 8443)
+    ssl_certificate_arn = string
+    ssl_policy          = optional(string, null)
+    mode                = optional(string, "verify")
+    trust_store_arn     = optional(string, null)
   })
   default = {
-    mode = "off"
+    enabled             = false
+    ssl_certificate_arn = null
   }
 
   validation {
-    condition     = contains(["off", "passthrough", "verify"], var.mutual_authentication.mode)
-    error_message = "mutual_authentication.mode must be one of: off, passthrough, verify"
+    condition     = var.mtls_listener.port >= 1 && var.mtls_listener.port <= 65535
+    error_message = "mtls_listener.port must be between 1 and 65535"
   }
 
   validation {
-    condition     = var.mutual_authentication.mode != "verify" || var.mutual_authentication.trust_store_arn != null
-    error_message = "mutual_authentication.trust_store_arn is required when mode is 'verify'"
+    condition     = contains(["passthrough", "verify"], var.mtls_listener.mode)
+    error_message = "mtls_listener.mode must be one of: passthrough, verify"
+  }
+
+  validation {
+    condition     = !var.mtls_listener.enabled || var.mtls_listener.ssl_certificate_arn != null
+    error_message = "mtls_listener.ssl_certificate_arn is required when the separate mTLS listener is enabled"
+  }
+
+  validation {
+    condition     = !var.mtls_listener.enabled || var.mtls_listener.mode != "verify" || var.mtls_listener.trust_store_arn != null
+    error_message = "mtls_listener.trust_store_arn is required when mode is 'verify'"
   }
 }
 

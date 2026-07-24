@@ -13,6 +13,11 @@ output "lb_zone_id" {
   value       = var.create_lb ? module.alb[0].zone_id : null
 }
 
+output "mtls_listener_arn" {
+  description = "ARN of the separate mTLS listener (null if not created)"
+  value       = var.create_lb && var.mtls_listener.enabled ? aws_lb_listener.envoy_mtls[0].arn : null
+}
+
 output "target_group_arns" {
   description = "Map of deployment names to target group ARNs"
   value       = { for k, v in local.auto_scaling_groups : k => local.target_group_arns[k] }
