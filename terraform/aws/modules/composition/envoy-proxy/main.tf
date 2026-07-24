@@ -472,9 +472,39 @@ resource "aws_lb_listener" "envoy_https" {
   ssl_policy        = var.ssl_policy
   certificate_arn   = var.ssl_certificate_arn
 
+  default_action {
+    type = "forward"
+    forward {
+      dynamic "target_group" {
+        for_each = local.auto_scaling_groups
+        content {
+          arn    = local.target_group_arns[target_group.key]
+          weight = target_group.value.weight
+        }
+      }
+      stickiness {
+        enabled  = false
+        duration = 1
+      }
+    }
+  }
+
+  tags = local.common_tags
+}
+
+# Separate mTLS Listener - SSL/TLS termination with mutual authentication
+resource "aws_lb_listener" "envoy_mtls" {
+  count = var.create_lb && var.mtls_listener.enabled ? 1 : 0
+
+  load_balancer_arn = module.alb[0].arn
+  port              = var.mtls_listener.port
+  protocol          = "HTTPS"
+  ssl_policy        = coalesce(var.mtls_listener.ssl_policy, var.ssl_policy)
+  certificate_arn   = var.mtls_listener.ssl_certificate_arn
+
   mutual_authentication {
-    mode            = var.mutual_authentication.mode
-    trust_store_arn = var.mutual_authentication.trust_store_arn
+    mode            = var.mtls_listener.mode
+    trust_store_arn = var.mtls_listener.trust_store_arn
   }
 
   default_action {
