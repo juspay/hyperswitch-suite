@@ -63,5 +63,27 @@ module "s3_bucket" {
     }
   ] : []
 
+  # CloudFront OAC bucket policy
+  attach_policy = length(try(var.s3_bucket.cloudfront_distribution_arns, [])) > 0
+  policy = length(try(var.s3_bucket.cloudfront_distribution_arns, [])) > 0 ? jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowCloudFrontServicePrincipal"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudfront.amazonaws.com"
+        }
+        Action   = ["s3:GetObject"]
+        Resource = "arn:aws:s3:::${local.s3_bucket_name}/*"
+        Condition = {
+          StringEquals = {
+            "AWS:SourceArn" = var.s3_bucket.cloudfront_distribution_arns
+          }
+        }
+      }
+    ]
+  }) : null
+
   tags = local.common_tags
 }
