@@ -122,21 +122,22 @@ variable "inline_policies" {
 variable "s3_bucket" {
   description = "Configuration for the Decision Engine S3 bucket"
   type = object({
-    enabled                       = optional(bool, true)
-    bucket_name                   = optional(string, null)
-    force_destroy                 = optional(bool, false)
-    versioning_enabled            = optional(bool, true)
-    lifecycle_rules               = optional(list(object({
+    enabled            = optional(bool, true)
+    bucket_name        = optional(string, null)
+    force_destroy      = optional(bool, false)
+    versioning_enabled = optional(bool, true)
+    lifecycle_rules = optional(list(object({
       id                            = string
       enabled                       = bool
       prefix                        = optional(string, "")
       expiration_days               = optional(number, null)
       noncurrent_version_expiration = optional(number, null)
-      transition                    = optional(list(object({
+      transition = optional(list(object({
         days          = number
         storage_class = string
       })), [])
     })), [])
+    cloudfront_distribution_arns = optional(list(string), [])
   })
   default = {}
 }
