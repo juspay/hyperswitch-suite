@@ -23,6 +23,11 @@ output "target_group_arns" {
   value       = { for k, v in local.auto_scaling_groups : k => local.target_group_arns[k] }
 }
 
+output "path_routing_target_group_arns" {
+  description = "Nested map of path routing TG ARNs: { path_key = { deployment_key = arn } }. Use these for external listener rule configuration when create_lb = false."
+  value       = local.path_routing_tg_arns_nested
+}
+
 output "launch_template_id" {
   description = "ID of the module-managed launch template (null if not created)"
   value       = var.launch_template.create ? aws_launch_template.envoy[0].id : null
