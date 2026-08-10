@@ -134,6 +134,44 @@ resource "aws_iam_role_policy_attachment" "s3_file_uploads_policy_attachment" {
 }
 
 # =========================================================================
+# IAM - S3 POLICY - Card Data Migration
+# =========================================================================
+resource "aws_iam_policy" "s3_card_data_migration_policy" {
+  count = local.s3_card_data_migration_enabled ? 1 : 0
+
+  name = "${local.name_prefix}-s3-card-data-migration-policy"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowCardDataMigrationAccess"
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:ListBucket",
+          "s3:DeleteObject",
+          "s3:GetObjectVersion"
+        ]
+        Resource = [
+          "${local.s3_card_data_migration_bucket_arn}/*",
+          local.s3_card_data_migration_bucket_arn
+        ]
+      }
+    ]
+  })
+
+  tags = local.common_tags
+}
+
+resource "aws_iam_role_policy_attachment" "s3_card_data_migration_policy_attachment" {
+  count = local.s3_card_data_migration_enabled ? 1 : 0
+
+  role       = aws_iam_role.iam_role.name
+  policy_arn = aws_iam_policy.s3_card_data_migration_policy[0].arn
+}
+
+# =========================================================================
 # IAM - SES POLICY
 # =========================================================================
 resource "aws_iam_policy" "ses_policy" {
