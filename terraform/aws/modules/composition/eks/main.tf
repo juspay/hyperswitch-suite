@@ -58,7 +58,8 @@ locals {
       try(v.launch_template.additional_security_group_ids, null) != null ||
       try(v.launch_template.block_device_mappings, null) != null ||
       try(v.launch_template.metadata_options, null) != null
-    ))
+    )) ||
+    try(v.os_type, var.default_node_os) != var.default_node_os
   }
 
   # SSH Key logic
@@ -69,7 +70,9 @@ locals {
 
   # Resolved AMI ID for EKS nodes (provided or fetched from SSM)
   eks_node_ami_id = var.default_ami_id != null ? var.default_ami_id : (
-    local.create_node_groups ? data.aws_ssm_parameter.eks_ami[0].value : null
+    local.create_node_groups && var.default_node_os == "al2023" ? data.aws_ssm_parameter.eks_ami[0].value : (
+      local.create_node_groups && var.default_node_os == "bottlerocket" ? data.aws_ssm_parameter.bottlerocket_ami[0].value : null
+    )
   )
 
   # Default metadata options merged with user overrides
@@ -82,13 +85,19 @@ locals {
 }
 
 # -----------------------------------------------------------------------------
-# EKS-Optimized AMI Data Source
-# Fetches the latest AL2023 EKS-optimized AMI for the cluster version
+# EKS-Optimized AMI Data Sources
+# Fetches the latest AMI for the configured OS type
 # -----------------------------------------------------------------------------
 data "aws_ssm_parameter" "eks_ami" {
-  count = local.create_node_groups && var.default_ami_id == null ? 1 : 0
+  count = local.create_node_groups && var.default_ami_id == null && var.default_node_os == "al2023" ? 1 : 0
 
   name = "/aws/service/eks/optimized-ami/${var.cluster_version}/amazon-linux-2023/x86_64/standard/recommended/image_id"
+}
+
+data "aws_ssm_parameter" "bottlerocket_ami" {
+  count = local.create_node_groups && var.default_ami_id == null && var.default_node_os == "bottlerocket" ? 1 : 0
+
+  name = "/aws/service/bottlerocket/aws-k8s-${var.cluster_version}/x86_64/latest/image_id"
 }
 
 
@@ -142,9 +151,9 @@ resource "aws_iam_role_policy_attachment" "cluster_policies" {
 # EKS Cluster using terraform-aws-modules/eks
 # -----------------------------------------------------------------------------
 module "eks" {
-  source  = "../../base/eks"
+  source = "../../base/eks"
 
-  name    = "${var.environment}-${var.project_name}-cluster-${var.cluster_name_version}"
+  name               = "${var.environment}-${var.project_name}-cluster-${var.cluster_name_version}"
   kubernetes_version = var.cluster_version
 
   vpc_id                   = var.vpc_id
