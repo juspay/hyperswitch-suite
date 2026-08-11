@@ -1,0 +1,101 @@
+# ============================================================================
+# Bastion Host (GCP equivalent of composition/jump-host)
+# ============================================================================
+# IAP-tunneled bastion with no public IP, matching the AWS module's
+# SSM-Session-Manager-only jump host (no public IP, no bastion SSH key
+# distribution). Session activity is captured via Cloud Logging by default;
+# a dedicated GCS bucket + log sink give the same durable-audit-trail
+# behavior as the AWS module's S3 + CloudWatch log groups.
+#
+# Usage:
+#   module "bastion_host" {
+#     source = "../../modules/composition/bastion-host"
+#
+#     project_id  = "hyperswitch-dev"
+#     environment = "dev"
+#     region      = "europe-west1"
+#     zone        = "europe-west1-b"
+#     network     = module.vpc_network.network_self_link
+#     subnet      = module.vpc_network.subnets_by_tier["management"]
+#
+#     members = ["group:platform-team@example.com"]
+#   }
+# ============================================================================
+
+module "bastion_host" {
+  source  = "terraform-google-modules/bastion-host/google"
+  version = "9.0.0"
+
+  project = var.project_id
+  region  = var.region
+  zone    = var.zone
+
+  network = var.network
+  subnet  = var.subnet
+
+  name         = "${local.name_prefix}-vm"
+  machine_type = var.machine_type
+  disk_size_gb = var.disk_size_gb
+  disk_type    = var.disk_type
+
+  image         = var.image
+  image_family  = var.image == null ? var.image_family : null
+  image_project = var.image_project
+
+  members = var.members
+
+  service_account_roles = [
+    "roles/logging.logWriter",
+    "roles/monitoring.metricWriter",
+  ]
+
+  labels = local.common_labels
+  tags   = ["bastion-host", "iap-ssh"]
+
+  shielded_vm = true
+}
+
+# ==============================================================================
+# Session logging (equivalent of the AWS module's S3 + CloudWatch log groups)
+# ==============================================================================
+module "session_log_bucket" {
+  source  = "terraform-google-modules/cloud-storage/google//modules/simple_bucket"
+  version = "12.3.0"
+
+  count = var.enable_session_logging ? 1 : 0
+
+  project_id    = var.project_id
+  name          = "${local.name_prefix}-session-logs"
+  location      = var.log_bucket_location
+  force_destroy = false
+
+  versioning         = true
+  bucket_policy_only = true
+
+  lifecycle_rules = [{
+    action    = { type = "Delete" }
+    condition = { age = var.session_log_retention_days }
+  }]
+
+  labels = local.common_labels
+}
+
+resource "google_logging_project_sink" "session_logs" {
+  count = var.enable_session_logging ? 1 : 0
+
+  project     = var.project_id
+  name        = "${local.name_prefix}-session-log-sink"
+  destination = "storage.googleapis.com/${module.session_log_bucket[0].name}"
+
+  filter = "resource.type=\"gce_instance\" AND resource.labels.instance_id=\"${module.bastion_host.self_link}\" AND logName:\"cloudaudit.googleapis.com\""
+
+  unique_writer_identity = true
+}
+
+resource "google_storage_bucket_iam_member" "session_log_sink_writer" {
+  count = var.enable_session_logging ? 1 : 0
+
+  bucket = module.session_log_bucket[0].name
+  role   = "roles/storage.objectCreator"
+  member = google_logging_project_sink.session_logs[0].writer_identity
+}
