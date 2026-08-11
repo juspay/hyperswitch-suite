@@ -2,7 +2,7 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_google"></a> [google](#requirement\_google) | >= 6.0 |
 
@@ -13,7 +13,7 @@ No providers.
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_external_lb"></a> [external\_lb](#module\_external\_lb) | GoogleCloudPlatform/lb-http/google | 14.2.0 |
 | <a name="module_internal_lb"></a> [internal\_lb](#module\_internal\_lb) | terraform-google-modules/lb-internal/google | 7.1.0 |
 
@@ -24,7 +24,7 @@ No resources.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_backends"></a> [backends](#input\_backends) | Backend service configuration for the external load balancer, in the shape expected by GoogleCloudPlatform/lb-http/google | `any` | `{}` | no |
 | <a name="input_certificate_map"></a> [certificate\_map](#input\_certificate\_map) | Certificate Manager certificate map ID to attach instead of a classic managed SSL certificate (see composition/certificate-manager) | `string` | `null` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev, integ, prod, sandbox) | `string` | n/a | yes |
@@ -47,7 +47,7 @@ No resources.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_external_ip_address"></a> [external\_ip\_address](#output\_external\_ip\_address) | External IP address of the global HTTP(S) load balancer, if internal = false |
 | <a name="output_internal_ip_address"></a> [internal\_ip\_address](#output\_internal\_ip\_address) | IP address of the internal load balancer, if internal = true |
 <!-- END_TF_DOCS -->

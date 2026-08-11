@@ -2,20 +2,20 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_google"></a> [google](#requirement\_google) | >= 6.0 |
 
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_google"></a> [google](#provider\_google) | >= 6.0 |
 
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_node_instances"></a> [node\_instances](#module\_node\_instances) | terraform-google-modules/vm/google//modules/compute_instance | 15.2.1 |
 | <a name="module_node_template"></a> [node\_template](#module\_node\_template) | terraform-google-modules/vm/google//modules/instance_template | 15.2.1 |
 | <a name="module_seed_discovery"></a> [seed\_discovery](#module\_seed\_discovery) | GoogleCloudPlatform/cloud-functions/google | 0.9.0 |
@@ -24,13 +24,13 @@
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [google_compute_address.node](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_address) | resource |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_disk_size_gb"></a> [disk\_size\_gb](#input\_disk\_size\_gb) | Data disk size in GB per node | `number` | `500` | no |
 | <a name="input_disk_type"></a> [disk\_type](#input\_disk\_type) | Persistent disk type | `string` | `"pd-ssd"` | no |
 | <a name="input_enable_seed_discovery"></a> [enable\_seed\_discovery](#input\_enable\_seed\_discovery) | Whether to create the seed-discovery Cloud Function | `bool` | `true` | no |
@@ -53,7 +53,7 @@
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_node_instance_self_links"></a> [node\_instance\_self\_links](#output\_node\_instance\_self\_links) | Self-links of the Cassandra node instances |
 | <a name="output_node_internal_ips"></a> [node\_internal\_ips](#output\_node\_internal\_ips) | Static internal IP addresses assigned to Cassandra nodes |
 | <a name="output_seed_discovery_function_uri"></a> [seed\_discovery\_function\_uri](#output\_seed\_discovery\_function\_uri) | HTTPS URI of the seed-discovery function, if enabled |

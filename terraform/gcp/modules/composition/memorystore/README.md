@@ -2,7 +2,7 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_google"></a> [google](#requirement\_google) | >= 6.0 |
 
@@ -13,7 +13,7 @@ No providers.
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_memorystore"></a> [memorystore](#module\_memorystore) | terraform-google-modules/memorystore/google | 16.1.1 |
 
 ## Resources
@@ -23,7 +23,7 @@ No resources.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_auth_enabled"></a> [auth\_enabled](#input\_auth\_enabled) | Whether to enable Redis AUTH | `bool` | `true` | no |
 | <a name="input_authorized_network"></a> [authorized\_network](#input\_authorized\_network) | Self-link/ID of the VPC network the instance is peered to (requires Private Service Access, see composition/vpc-network) | `string` | n/a | yes |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev, integ, prod, sandbox) | `string` | n/a | yes |
@@ -44,7 +44,7 @@ No resources.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_auth_string"></a> [auth\_string](#output\_auth\_string) | AUTH string for the instance, if auth\_enabled is true |
 | <a name="output_host"></a> [host](#output\_host) | Primary endpoint hostname/IP of the instance |
 | <a name="output_instance_id"></a> [instance\_id](#output\_instance\_id) | Fully qualified ID of the Memorystore instance |

@@ -2,14 +2,14 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_google"></a> [google](#requirement\_google) | >= 6.0 |
 
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_google"></a> [google](#provider\_google) | >= 6.0 |
 
 ## Modules
@@ -19,14 +19,14 @@ No modules.
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [google_artifact_registry_repository.this](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/artifact_registry_repository) | resource |
 | [google_artifact_registry_repository_iam_member.this](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/artifact_registry_repository_iam_member) | resource |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev, integ, prod, sandbox) | `string` | n/a | yes |
 | <a name="input_labels"></a> [labels](#input\_labels) | Additional labels applied to every repository | `map(string)` | `{}` | no |
 | <a name="input_location"></a> [location](#input\_location) | Location for the repositories (region, e.g. europe-west1) | `string` | n/a | yes |
@@ -37,7 +37,7 @@ No modules.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_repository_ids"></a> [repository\_ids](#output\_repository\_ids) | Map of repository key to its fully qualified ID |
 | <a name="output_repository_names"></a> [repository\_names](#output\_repository\_names) | Map of repository key to its repository\_id |
 | <a name="output_repository_urls"></a> [repository\_urls](#output\_repository\_urls) | Map of repository key to its pull/push URL (<location>-docker.pkg.dev/<project>/<repo>) |

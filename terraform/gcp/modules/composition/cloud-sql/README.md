@@ -2,7 +2,7 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_google"></a> [google](#requirement\_google) | >= 6.0 |
 
@@ -13,7 +13,7 @@ No providers.
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_cloud_sql"></a> [cloud\_sql](#module\_cloud\_sql) | terraform-google-modules/sql-db/google//modules/postgresql | 28.1.0 |
 | <a name="module_kms"></a> [kms](#module\_kms) | terraform-google-modules/kms/google | 4.1.2 |
 
@@ -24,7 +24,7 @@ No resources.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_availability_type"></a> [availability\_type](#input\_availability\_type) | Availability type: ZONAL or REGIONAL (REGIONAL enables HA, the Multi-AZ equivalent) | `string` | `"REGIONAL"` | no |
 | <a name="input_backup_start_time"></a> [backup\_start\_time](#input\_backup\_start\_time) | HH:MM start time for the daily automated backup window (UTC) | `string` | `"02:00"` | no |
 | <a name="input_database_flags"></a> [database\_flags](#input\_database\_flags) | List of database flags to set on the instance | <pre>list(object({<br/>    name  = string<br/>    value = string<br/>  }))</pre> | `[]` | no |
@@ -57,7 +57,7 @@ No resources.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_database_name"></a> [database\_name](#output\_database\_name) | Name of the default database |
 | <a name="output_generated_user_password"></a> [generated\_user\_password](#output\_generated\_user\_password) | Auto-generated password for the default user, if master\_password was not set |
 | <a name="output_instance_connection_name"></a> [instance\_connection\_name](#output\_instance\_connection\_name) | Connection name for the Cloud SQL Auth Proxy (project:region:instance) |

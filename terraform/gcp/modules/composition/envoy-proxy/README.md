@@ -2,20 +2,20 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_google"></a> [google](#requirement\_google) | >= 6.0 |
 
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_google"></a> [google](#provider\_google) | >= 6.0 |
 
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_cloud_armor"></a> [cloud\_armor](#module\_cloud\_armor) | GoogleCloudPlatform/cloud-armor/google | 8.1.1 |
 | <a name="module_config_bucket"></a> [config\_bucket](#module\_config\_bucket) | terraform-google-modules/cloud-storage/google//modules/simple_bucket | 12.3.0 |
 | <a name="module_config_secret"></a> [config\_secret](#module\_config\_secret) | GoogleCloudPlatform/secret-manager/google | 0.9.0 |
@@ -28,14 +28,14 @@
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [google_network_security_server_tls_policy.mtls](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/network_security_server_tls_policy) | resource |
 | [google_storage_bucket_object.envoy_config](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_object) | resource |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_autoscaling_cpu_target"></a> [autoscaling\_cpu\_target](#input\_autoscaling\_cpu\_target) | Target CPU utilization (0-1) for the autoscaler | `number` | `0.6` | no |
 | <a name="input_bucket_location"></a> [bucket\_location](#input\_bucket\_location) | Location for the config/log buckets | `string` | `"US"` | no |
 | <a name="input_cloud_armor_preconfigured_rules"></a> [cloud\_armor\_preconfigured\_rules](#input\_cloud\_armor\_preconfigured\_rules) | Map of Cloud Armor pre-configured WAF rules to enable, in the shape expected by GoogleCloudPlatform/cloud-armor | `any` | `{}` | no |
@@ -67,7 +67,7 @@
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_cloud_armor_policy_id"></a> [cloud\_armor\_policy\_id](#output\_cloud\_armor\_policy\_id) | ID of the Cloud Armor policy, if enabled |
 | <a name="output_config_bucket_name"></a> [config\_bucket\_name](#output\_config\_bucket\_name) | Name of the config bucket |
 | <a name="output_instance_group"></a> [instance\_group](#output\_instance\_group) | Self-link of the proxy fleet's managed instance group |

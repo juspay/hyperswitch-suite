@@ -2,7 +2,7 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_google"></a> [google](#requirement\_google) | >= 6.0 |
 | <a name="requirement_google-beta"></a> [google-beta](#requirement\_google-beta) | >= 6.0 |
@@ -14,7 +14,7 @@ No providers.
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_cloud_nat"></a> [cloud\_nat](#module\_cloud\_nat) | terraform-google-modules/cloud-nat/google | 7.0.0 |
 | <a name="module_cloud_router"></a> [cloud\_router](#module\_cloud\_router) | terraform-google-modules/cloud-router/google | 9.0.0 |
 | <a name="module_private_service_access"></a> [private\_service\_access](#module\_private\_service\_access) | terraform-google-modules/network/google//modules/private-service-access | 18.1.2 |
@@ -27,7 +27,7 @@ No resources.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_custom_subnets"></a> [custom\_subnets](#input\_custom\_subnets) | Additional custom subnets keyed by tier name, merged alongside the named tiers | <pre>map(object({<br/>    cidr                     = string<br/>    private_ip_google_access = optional(bool, true)<br/>    purpose                  = optional(string)<br/>    description              = optional(string)<br/>    secondary_ranges = optional(list(object({<br/>      range_name    = string<br/>      ip_cidr_range = string<br/>    })), [])<br/>  }))</pre> | `{}` | no |
 | <a name="input_data_stack_subnet_cidr"></a> [data\_stack\_subnet\_cidr](#input\_data\_stack\_subnet\_cidr) | CIDR for the Kafka/Cassandra/ClickHouse/OpenSearch data-stack subnet | `string` | `null` | no |
 | <a name="input_database_subnet_cidr"></a> [database\_subnet\_cidr](#input\_database\_subnet\_cidr) | CIDR for the database-adjacent subnet (Cloud SQL proxies, private consumers) | `string` | `null` | no |
@@ -61,7 +61,7 @@ No resources.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_gke_nodes_subnet_self_link"></a> [gke\_nodes\_subnet\_self\_link](#output\_gke\_nodes\_subnet\_self\_link) | Self-link of the GKE node pool subnet |
 | <a name="output_gke_pods_secondary_range_name"></a> [gke\_pods\_secondary\_range\_name](#output\_gke\_pods\_secondary\_range\_name) | Name of the GKE pods secondary range, for wiring into composition/gke |
 | <a name="output_gke_services_secondary_range_name"></a> [gke\_services\_secondary\_range\_name](#output\_gke\_services\_secondary\_range\_name) | Name of the GKE services secondary range, for wiring into composition/gke |

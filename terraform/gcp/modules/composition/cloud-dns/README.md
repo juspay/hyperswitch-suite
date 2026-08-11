@@ -2,7 +2,7 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_google"></a> [google](#requirement\_google) | >= 6.0 |
 
@@ -13,7 +13,7 @@ No providers.
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_cloud_dns"></a> [cloud\_dns](#module\_cloud\_dns) | terraform-google-modules/cloud-dns/google | 7.1.0 |
 
 ## Resources
@@ -23,7 +23,7 @@ No resources.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_domain"></a> [domain](#input\_domain) | The DNS domain of this zone, e.g. 'dev.hyperswitch.example.com.' (trailing dot required) | `string` | n/a | yes |
 | <a name="input_enable_dnssec"></a> [enable\_dnssec](#input\_enable\_dnssec) | Whether to enable DNSSEC. Only applicable to public zones | `bool` | `false` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev, integ, prod, sandbox) | `string` | n/a | yes |
@@ -38,7 +38,7 @@ No resources.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_domain"></a> [domain](#output\_domain) | Domain of the zone |
 | <a name="output_name_servers"></a> [name\_servers](#output\_name\_servers) | Name servers assigned to the zone (only meaningful for public zones) |
 | <a name="output_type"></a> [type](#output\_type) | Type of the zone |

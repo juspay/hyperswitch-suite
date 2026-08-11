@@ -2,7 +2,7 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_google"></a> [google](#requirement\_google) | >= 6.0 |
 
@@ -13,7 +13,7 @@ No providers.
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_state_bucket"></a> [state\_bucket](#module\_state\_bucket) | terraform-google-modules/cloud-storage/google//modules/simple_bucket | 12.3.0 |
 
 ## Resources
@@ -23,7 +23,7 @@ No resources.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_allow_destroy"></a> [allow\_destroy](#input\_allow\_destroy) | Allow destruction of the bucket even if it contains objects (should be false for prod) | `bool` | `false` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev, integ, prod, sandbox) | `string` | n/a | yes |
 | <a name="input_kms_key_id"></a> [kms\_key\_id](#input\_kms\_key\_id) | Self link of the KMS CryptoKey used to encrypt the bucket (null uses Google-managed encryption) | `string` | `null` | no |
@@ -40,7 +40,7 @@ No resources.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_backend_config"></a> [backend\_config](#output\_backend\_config) | Backend configuration object for use in other Terraform deployments |
 | <a name="output_backend_config_formatted"></a> [backend\_config\_formatted](#output\_backend\_config\_formatted) | Formatted backend configuration for copy-paste into backend.tf files |
 | <a name="output_state_bucket_location"></a> [state\_bucket\_location](#output\_state\_bucket\_location) | The location of the state bucket |

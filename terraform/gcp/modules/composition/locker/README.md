@@ -2,7 +2,7 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_google"></a> [google](#requirement\_google) | >= 6.0 |
 
@@ -13,7 +13,7 @@ No providers.
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_database"></a> [database](#module\_database) | ../cloud-sql | n/a |
 | <a name="module_internal_lb"></a> [internal\_lb](#module\_internal\_lb) | terraform-google-modules/lb-internal/google | 7.1.0 |
 | <a name="module_kms"></a> [kms](#module\_kms) | terraform-google-modules/kms/google | 4.1.2 |
@@ -28,7 +28,7 @@ No resources.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_create_locker_database"></a> [create\_locker\_database](#input\_create\_locker\_database) | Whether to create a dedicated Cloud SQL database for the locker | `bool` | `true` | no |
 | <a name="input_database_config"></a> [database\_config](#input\_database\_config) | Configuration for the locker's dedicated Cloud SQL database (composition/cloud-sql) | <pre>object({<br/>    instance_name       = optional(string)<br/>    database_version    = optional(string, "POSTGRES_15")<br/>    tier                = optional(string, "db-custom-2-8192")<br/>    availability_type   = optional(string, "REGIONAL")<br/>    disk_size           = optional(number, 100)<br/>    deletion_protection = optional(bool, true)<br/>    database_name       = optional(string, "locker")<br/>    master_username     = optional(string, "locker_admin")<br/>    master_password     = optional(string)<br/>    encryption_key_name = optional(string)<br/>  })</pre> | `{}` | no |
 | <a name="input_disk_size_gb"></a> [disk\_size\_gb](#input\_disk\_size\_gb) | Boot disk size in GB | `number` | `50` | no |
@@ -54,7 +54,7 @@ No resources.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_database_instance_connection_name"></a> [database\_instance\_connection\_name](#output\_database\_instance\_connection\_name) | Cloud SQL Auth Proxy connection name for the locker database, if created |
 | <a name="output_internal_lb_ip_address"></a> [internal\_lb\_ip\_address](#output\_internal\_lb\_ip\_address) | IP address of the internal load balancer in front of the locker fleet |
 | <a name="output_kms_key_name"></a> [kms\_key\_name](#output\_kms\_key\_name) | Self-link of the KMS key used for the locker's disk and database encryption |

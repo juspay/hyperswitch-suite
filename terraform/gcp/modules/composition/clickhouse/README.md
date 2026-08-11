@@ -2,20 +2,20 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_google"></a> [google](#requirement\_google) | >= 6.0 |
 
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_google"></a> [google](#provider\_google) | >= 6.0 |
 
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_internal_lb"></a> [internal\_lb](#module\_internal\_lb) | terraform-google-modules/lb-internal/google | 7.1.0 |
 | <a name="module_keeper_instances"></a> [keeper\_instances](#module\_keeper\_instances) | terraform-google-modules/vm/google//modules/compute_instance | 15.2.1 |
 | <a name="module_keeper_template"></a> [keeper\_template](#module\_keeper\_template) | terraform-google-modules/vm/google//modules/instance_template | 15.2.1 |
@@ -26,7 +26,7 @@
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [google_compute_address.keeper](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_address) | resource |
 | [google_compute_attached_disk.keeper_data](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_attached_disk) | resource |
 | [google_compute_attached_disk.server_data](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_attached_disk) | resource |
@@ -36,7 +36,7 @@
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_disk_type"></a> [disk\_type](#input\_disk\_type) | Persistent disk type used for both boot and data disks | `string` | `"pd-ssd"` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev, integ, prod, sandbox) | `string` | n/a | yes |
 | <a name="input_keeper_boot_disk_size_gb"></a> [keeper\_boot\_disk\_size\_gb](#input\_keeper\_boot\_disk\_size\_gb) | Boot disk size in GB for keeper instances | `number` | `50` | no |
@@ -64,7 +64,7 @@
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_internal_lb_ip_address"></a> [internal\_lb\_ip\_address](#output\_internal\_lb\_ip\_address) | IP address of the internal load balancer in front of the server tier |
 | <a name="output_keeper_instance_self_links"></a> [keeper\_instance\_self\_links](#output\_keeper\_instance\_self\_links) | Self-links of the ClickHouse keeper instances |
 | <a name="output_keeper_internal_ips"></a> [keeper\_internal\_ips](#output\_keeper\_internal\_ips) | Static internal IP addresses assigned to keeper instances |

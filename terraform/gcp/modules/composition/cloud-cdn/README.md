@@ -2,26 +2,26 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_google"></a> [google](#requirement\_google) | >= 6.0 |
 
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_google"></a> [google](#provider\_google) | >= 6.0 |
 
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_log_bucket"></a> [log\_bucket](#module\_log\_bucket) | terraform-google-modules/cloud-storage/google//modules/simple_bucket | 12.3.0 |
 
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [google_compute_backend_bucket.this](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_backend_bucket) | resource |
 | [google_compute_global_address.this](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_global_address) | resource |
 | [google_compute_global_forwarding_rule.http](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_global_forwarding_rule) | resource |
@@ -35,7 +35,7 @@
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_backend_buckets"></a> [backend\_buckets](#input\_backend\_buckets) | Map of GCS-origin backends to create, keyed by logical name | <pre>map(object({<br/>    bucket_name       = string<br/>    enable_cdn        = optional(bool, true)<br/>    cache_mode        = optional(string, "CACHE_ALL_STATIC")<br/>    default_ttl       = optional(number, 3600)<br/>    client_ttl        = optional(number, 3600)<br/>    max_ttl           = optional(number, 86400)<br/>    negative_caching  = optional(bool, true)<br/>    serve_while_stale = optional(number, 86400)<br/>  }))</pre> | `{}` | no |
 | <a name="input_certificate_map"></a> [certificate\_map](#input\_certificate\_map) | Certificate Manager certificate map ID to attach instead of a classic managed SSL certificate (see composition/certificate-manager) | `string` | `null` | no |
 | <a name="input_enable_logging"></a> [enable\_logging](#input\_enable\_logging) | Whether to create a GCS bucket for CDN access logs | `bool` | `true` | no |
@@ -53,7 +53,7 @@
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_backend_bucket_ids"></a> [backend\_bucket\_ids](#output\_backend\_bucket\_ids) | Map of backend bucket key to its resource ID |
 | <a name="output_ip_address"></a> [ip\_address](#output\_ip\_address) | Anycast IP address serving this distribution |
 | <a name="output_log_bucket_name"></a> [log\_bucket\_name](#output\_log\_bucket\_name) | Name of the CDN log bucket, if enabled |

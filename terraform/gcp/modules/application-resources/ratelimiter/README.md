@@ -2,7 +2,7 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_google"></a> [google](#requirement\_google) | >= 6.0 |
 
@@ -13,7 +13,7 @@ No providers.
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_firewall_rules"></a> [firewall\_rules](#module\_firewall\_rules) | ../../composition/firewall-rules | n/a |
 | <a name="module_memorystore"></a> [memorystore](#module\_memorystore) | ../../composition/memorystore | n/a |
 | <a name="module_workload_identity"></a> [workload\_identity](#module\_workload\_identity) | ../gke-workload-identity | n/a |
@@ -25,7 +25,7 @@ No resources.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_additional_project_roles"></a> [additional\_project\_roles](#input\_additional\_project\_roles) | Additional project-level IAM roles to grant the ratelimiter's service account | `list(string)` | `[]` | no |
 | <a name="input_authorized_network"></a> [authorized\_network](#input\_authorized\_network) | Self-link/ID of the VPC network to peer the Memorystore instance to (requires Private Service Access) | `string` | `null` | no |
 | <a name="input_cluster_location"></a> [cluster\_location](#input\_cluster\_location) | Location (region or zone) of the GKE cluster | `string` | n/a | yes |
@@ -47,7 +47,7 @@ No resources.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_k8s_service_account_name"></a> [k8s\_service\_account\_name](#output\_k8s\_service\_account\_name) | Bound Kubernetes service account name |
 | <a name="output_redis_host"></a> [redis\_host](#output\_redis\_host) | Host/IP of the dedicated Memorystore instance, if created |
 | <a name="output_redis_port"></a> [redis\_port](#output\_redis\_port) | Port of the dedicated Memorystore instance, if created |

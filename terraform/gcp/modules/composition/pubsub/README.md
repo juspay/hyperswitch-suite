@@ -2,7 +2,7 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_google"></a> [google](#requirement\_google) | >= 6.0 |
 
@@ -13,7 +13,7 @@ No providers.
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_pubsub"></a> [pubsub](#module\_pubsub) | terraform-google-modules/pubsub/google | 8.8.0 |
 
 ## Resources
@@ -23,7 +23,7 @@ No resources.
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_allowed_persistence_regions"></a> [allowed\_persistence\_regions](#input\_allowed\_persistence\_regions) | List of regions messages may be persisted in. Null leaves the default (global) policy | `list(string)` | `null` | no |
 | <a name="input_bigquery_subscriptions"></a> [bigquery\_subscriptions](#input\_bigquery\_subscriptions) | List of BigQuery subscriptions to create, in the shape expected by terraform-google-modules/pubsub | `any` | `[]` | no |
 | <a name="input_cloud_storage_subscriptions"></a> [cloud\_storage\_subscriptions](#input\_cloud\_storage\_subscriptions) | List of Cloud Storage subscriptions to create, in the shape expected by terraform-google-modules/pubsub | `any` | `[]` | no |
@@ -40,7 +40,7 @@ No resources.
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_subscription_names"></a> [subscription\_names](#output\_subscription\_names) | Map of all created subscription names |
 | <a name="output_subscription_paths"></a> [subscription\_paths](#output\_subscription\_paths) | Map of all created subscription fully qualified paths |
 | <a name="output_topic"></a> [topic](#output\_topic) | Name of the created topic |

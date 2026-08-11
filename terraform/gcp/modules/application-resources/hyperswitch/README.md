@@ -2,20 +2,20 @@
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_google"></a> [google](#requirement\_google) | >= 6.0 |
 
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="provider_google"></a> [google](#provider\_google) | >= 6.0 |
 
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_dashboard_themes_bucket"></a> [dashboard\_themes\_bucket](#module\_dashboard\_themes\_bucket) | terraform-google-modules/cloud-storage/google//modules/simple_bucket | 12.3.0 |
 | <a name="module_file_uploads_bucket"></a> [file\_uploads\_bucket](#module\_file\_uploads\_bucket) | terraform-google-modules/cloud-storage/google//modules/simple_bucket | 12.3.0 |
 | <a name="module_kms"></a> [kms](#module\_kms) | terraform-google-modules/kms/google | 4.1.2 |
@@ -24,7 +24,7 @@
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [google_cloudfunctions2_function_iam_member.invoker](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloudfunctions2_function_iam_member) | resource |
 | [google_kms_crypto_key_iam_member.hyperswitch](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/kms_crypto_key_iam_member) | resource |
 | [google_project_iam_member.additional_custom_roles](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/project_iam_member) | resource |
@@ -37,7 +37,7 @@
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_additional_custom_role_ids"></a> [additional\_custom\_role\_ids](#input\_additional\_custom\_role\_ids) | List of project-level custom role IDs (e.g. from application-resources/shared-iam-roles) to grant the service account | `list(string)` | `[]` | no |
 | <a name="input_additional_project_roles"></a> [additional\_project\_roles](#input\_additional\_project\_roles) | Additional project-level IAM roles to grant Hyperswitch's service account | `list(string)` | `[]` | no |
 | <a name="input_cloud_functions"></a> [cloud\_functions](#input\_cloud\_functions) | Cloud Functions configuration. Set enabled=true and list function\_names to grant invoker access | <pre>object({<br/>    enabled        = optional(bool, false)<br/>    location       = optional(string)<br/>    function_names = optional(list(string), [])<br/>  })</pre> | `null` | no |
@@ -60,7 +60,7 @@
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_cross_project_assume_enabled"></a> [cross\_project\_assume\_enabled](#output\_cross\_project\_assume\_enabled) | Whether cross-project impersonation was granted |
 | <a name="output_dashboard_themes_bucket_enabled"></a> [dashboard\_themes\_bucket\_enabled](#output\_dashboard\_themes\_bucket\_enabled) | Whether the dashboard-themes feature is enabled |
 | <a name="output_dashboard_themes_bucket_name"></a> [dashboard\_themes\_bucket\_name](#output\_dashboard\_themes\_bucket\_name) | Name of the dashboard-themes bucket (created or existing), if enabled |
