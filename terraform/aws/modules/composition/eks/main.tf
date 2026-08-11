@@ -70,8 +70,8 @@ locals {
 
   # Resolved AMI ID for EKS nodes (provided or fetched from SSM)
   eks_node_ami_id = var.default_ami_id != null ? var.default_ami_id : (
-    local.create_node_groups && var.default_node_os == "al2023" ? data.aws_ssm_parameter.eks_ami[0].value : (
-      local.create_node_groups && var.default_node_os == "bottlerocket" ? data.aws_ssm_parameter.bottlerocket_ami[0].value : null
+    var.default_node_os == "al2023" ? data.aws_ssm_parameter.eks_ami[0].value : (
+      var.default_node_os == "bottlerocket" ? data.aws_ssm_parameter.bottlerocket_ami[0].value : null
     )
   )
 
