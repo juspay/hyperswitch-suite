@@ -376,6 +376,14 @@ module "alb" {
 # =========================================================================
 # Target Group (Conditional - Create only if needed)
 # =========================================================================
+
+# Ensures listeners finish detaching a target group before it is destroyed,
+# avoiding an AWS ResourceInUse error on canary/stable rollback.
+resource "time_sleep" "wait_before_target_group_destroy" {
+  depends_on       = [aws_lb_target_group.envoy]
+  destroy_duration = "30s"
+}
+
 # Target group for ALB → Envoy ASG
 # Targets Envoy traffic listener port
 resource "aws_lb_target_group" "envoy" {
@@ -461,7 +469,7 @@ resource "aws_lb_listener" "envoy_http" {
 
   tags = local.common_tags
 
-  depends_on = [aws_lb_target_group.envoy]
+  depends_on = [time_sleep.wait_before_target_group_destroy]
 }
 
 # HTTPS Listener - SSL/TLS termination at ALB
@@ -493,7 +501,7 @@ resource "aws_lb_listener" "envoy_https" {
 
   tags = local.common_tags
 
-  depends_on = [aws_lb_target_group.envoy]
+  depends_on = [time_sleep.wait_before_target_group_destroy]
 }
 
 # Separate mTLS Listener - SSL/TLS termination with mutual authentication
@@ -530,7 +538,7 @@ resource "aws_lb_listener" "envoy_mtls" {
 
   tags = local.common_tags
 
-  depends_on = [aws_lb_target_group.envoy]
+  depends_on = [time_sleep.wait_before_target_group_destroy]
 }
 
 # =========================================================================
