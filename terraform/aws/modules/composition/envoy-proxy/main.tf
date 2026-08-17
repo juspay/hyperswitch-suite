@@ -376,6 +376,30 @@ module "alb" {
 # =========================================================================
 # Target Group (Conditional - Create only if needed)
 # =========================================================================
+
+# Listeners must reference target group ARNs (local.target_group_arns) to
+# build their weighted forward action, so the listeners always implicitly
+# depend on aws_lb_target_group.envoy for creation — that edge can't be
+# reversed without introducing a cycle. On destroy, when a deployment key
+# is dropped from var.deployments, Terraform's default graph can still
+# race the target group deletion against AWS finishing propagation of
+# the listener's ModifyListener call, and AWS rejects the delete with
+# ResourceInUse even though the plan shows the listener losing its
+# reference to the target group in the same apply.
+#
+# This sleep depends_on the target group (so it plays time_sleep's
+# documented "previous" role: destroyed only after destroy_duration
+# elapses), while the listeners depends_on the sleep (the "next" role:
+# destroyed/updated immediately). Per the time_sleep resource's destroy
+# ordering, that makes the actual destroy sequence:
+#   listeners updated/destroyed (immediately) -> destroy_duration pause -> target group destroyed
+# giving the ALB control plane time to finish detaching the target group
+# from its listeners before its destroy is attempted.
+resource "time_sleep" "wait_before_target_group_destroy" {
+  depends_on       = [aws_lb_target_group.envoy]
+  destroy_duration = "30s"
+}
+
 # Target group for ALB → Envoy ASG
 # Targets Envoy traffic listener port
 resource "aws_lb_target_group" "envoy" {
@@ -461,7 +485,7 @@ resource "aws_lb_listener" "envoy_http" {
 
   tags = local.common_tags
 
-  depends_on = [aws_lb_target_group.envoy]
+  depends_on = [time_sleep.wait_before_target_group_destroy]
 }
 
 # HTTPS Listener - SSL/TLS termination at ALB
@@ -493,7 +517,7 @@ resource "aws_lb_listener" "envoy_https" {
 
   tags = local.common_tags
 
-  depends_on = [aws_lb_target_group.envoy]
+  depends_on = [time_sleep.wait_before_target_group_destroy]
 }
 
 # Separate mTLS Listener - SSL/TLS termination with mutual authentication
@@ -530,7 +554,7 @@ resource "aws_lb_listener" "envoy_mtls" {
 
   tags = local.common_tags
 
-  depends_on = [aws_lb_target_group.envoy]
+  depends_on = [time_sleep.wait_before_target_group_destroy]
 }
 
 # =========================================================================
