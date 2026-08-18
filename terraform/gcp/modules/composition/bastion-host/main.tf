@@ -38,7 +38,11 @@ module "bastion_host" {
   disk_size_gb = var.disk_size_gb
   disk_type    = var.disk_type
 
-  image         = var.image
+  # The upstream instance_template module checks `source_image != ""` to decide
+  # whether to use image_family. Passing null (our default) evaluates
+  # null != "" → true and then crashes on string interpolation. Coerce to ""
+  # so the module falls through to image_family correctly.
+  image         = coalesce(var.image, "")
   image_family  = var.image == null ? var.image_family : null
   image_project = var.image_project
 
