@@ -81,6 +81,18 @@ variable "composite_alarms" {
       expression  = optional(string)
       label       = optional(string)
       return_data = optional(bool, true)
+      # Raw metric reference. Set this INSTEAD of expression to pull a real
+      # CloudWatch metric into the math. Required for any alarm that combines
+      # or transforms metrics (e.g. a WAF heartbeat that sums allowed,
+      # blocked and counted requests) - without it a composite alarm can only
+      # reference other expressions, which have nothing to stand on.
+      metric = optional(object({
+        metric_name = string
+        namespace   = string
+        period      = number
+        stat        = string
+        dimensions  = optional(map(string), {})
+      }))
     }))
     alarm_actions             = optional(list(string), [])
     ok_actions                = optional(list(string), [])
