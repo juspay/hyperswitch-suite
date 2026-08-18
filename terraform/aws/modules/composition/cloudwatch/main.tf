@@ -51,6 +51,20 @@ resource "aws_cloudwatch_metric_alarm" "composite_alarms" {
       expression  = metric_query.value.expression
       label       = metric_query.value.label
       return_data = metric_query.value.return_data
+
+      # Raw metric reference, emitted only when the caller supplied one.
+      # An entry sets EITHER expression OR metric, never both - CloudWatch
+      # rejects a metric_query carrying both.
+      dynamic "metric" {
+        for_each = lookup(metric_query.value, "metric", null) != null ? [metric_query.value.metric] : []
+        content {
+          metric_name = metric.value.metric_name
+          namespace   = metric.value.namespace
+          period      = metric.value.period
+          stat        = metric.value.stat
+          dimensions  = metric.value.dimensions
+        }
+      }
     }
   }
 
