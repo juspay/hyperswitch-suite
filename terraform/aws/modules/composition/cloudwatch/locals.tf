@@ -41,6 +41,7 @@ locals {
         treat_missing_data  = sev_config.treat_missing_data
         datapoints_to_alarm = sev_config.datapoints_to_alarm
         skip_ok_action      = sev_config.skip_ok_action
+        actions_enabled     = sev_config.actions_enabled
         additional_tags = {
           Classification = alarm_config.classification
           Severity       = sev_key
