@@ -177,6 +177,7 @@ resource "aws_cloudwatch_metric_alarm" "classified_alarms" {
   dimensions          = each.value.dimensions
   treat_missing_data  = each.value.treat_missing_data
   datapoints_to_alarm = each.value.datapoints_to_alarm
+  actions_enabled     = each.value.actions_enabled
 
   alarm_actions = var.sns_topic_arns != {} ? [lookup(var.sns_topic_arns, each.value.additional_tags.Severity, "")] : []
   ok_actions    = each.value.skip_ok_action ? [] : (var.sns_topic_arns != {} ? [lookup(var.sns_topic_arns, each.value.additional_tags.Severity, "")] : [])

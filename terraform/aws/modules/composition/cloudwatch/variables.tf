@@ -174,6 +174,7 @@ variable "classified_metric_alarms" {
       datapoints_to_alarm = optional(number)
       treat_missing_data  = optional(string, "notBreaching")
       skip_ok_action      = optional(bool, true)
+      actions_enabled     = optional(bool, true)
     }))
   }))
   default = {}
