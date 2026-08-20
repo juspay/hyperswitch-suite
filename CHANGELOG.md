@@ -1017,7 +1017,7 @@ This version of the Hyperswitch Control Center is compatible with the following 
 
 **Full Changelog**: https://github.com/juspay/hyperswitch-control-center/compare/v1.38.6...v1.38.7
 
-### [Hyperswitch Web v0.133.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.133.0)
+### [Hyperswitch Web v0.133.0 (2026-08-18)](https://github.com/juspay/hyperswitch-web/releases/tag/v0.133.0)
 
 #### Features
 - feat: eligibility feature enhancement with surcharge calculation ([#1593](https://github.com/juspay/hyperswitch-web/pull/1593))
