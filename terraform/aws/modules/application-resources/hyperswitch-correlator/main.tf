@@ -1,75 +1,102 @@
-# Composition module — hyperswitch-correlator Valkey
+# Standalone hyperswitch-correlator Valkey module.
 #
-# Wraps the elasticache module with all correlator-specific defaults so that
-# the two production live-layer terragrunt.hcl files (eu-west-1 and us-east-1)
-# only need to supply the region-specific network inputs. Any future change to
-# the Valkey configuration (version bump, node type, backup policy, etc.) only
-# needs to happen here.
+# Self-contained — does NOT call the composition/elasticache module. Only the
+# subset of elasticache features the correlator workload actually uses is
+# implemented here:
+#   - Single-node Valkey replication group (cluster mode disabled)
+#   - Dedicated subnet group and security group (always created)
+#   - At-rest encryption, no transit encryption
+#   - IPV4 only
+#   - No global replication, no auth token, no log delivery, no cluster mode
+#
+# Anything beyond this (e.g. S3 buckets, KMS keys, additional data stores for
+# the correlator service) should be added directly to this module without
+# touching the shared composition/elasticache module.
 
-module "valkey" {
-  source = "../../composition/elasticache"
+locals {
+  name_prefix = "${var.environment}-event-correlator-elasticache"
 
-  # Identity
-  environment  = var.environment
-  project_name = "event-correlator"
-  region       = var.region
+  replication_group_id = "hyperswitch-correlator-valkey"
+  subnet_group_name    = "${local.name_prefix}-subnet-group"
+  security_group_name  = "${local.name_prefix}-sg"
 
-  # Network
-  vpc_id     = var.vpc_id
-  subnet_ids = var.subnet_ids
+  # Tag ordering matches the previous composition/elasticache module so the
+  # rendered plan is byte-identical: common_tags first, Name next, var.tags
+  # last (so caller-supplied tags win on conflicts like ManagedBy).
+  common_tags = merge(
+    {
+      "Environment" = var.environment
+      "Project"     = "hyperswitch"
+      "Component"   = "elasticache"
+      "ManagedBy"   = "terraform"
+      "Service"     = "hyperswitch-correlator"
+    },
+    var.tags,
+  )
+}
 
-  # Subnet group and security group — always created by this module
-  create_elasticache_subnet_group = true
-  create_security_group           = true
-  existing_security_group_ids     = []
+# ElastiCache Subnet Group
+resource "aws_elasticache_subnet_group" "this" {
+  name        = local.subnet_group_name
+  subnet_ids  = var.subnet_ids
+  description = "Event-Correlator ${title(var.environment)} Elasticache subnet group"
 
-  # Replication group identity
-  elasticache_replication_group_id = "hyperswitch-correlator-valkey"
+  tags = merge(local.common_tags, {
+    Name = local.subnet_group_name
+  })
+}
 
-  # Engine
+# Security Group for ElastiCache
+resource "aws_security_group" "this" {
+  name                   = local.security_group_name
+  description            = "Security group for event-correlator ${var.environment} ElastiCache"
+  vpc_id                 = var.vpc_id
+  revoke_rules_on_delete = true
+
+  tags = merge(local.common_tags, {
+    Name = local.security_group_name
+  })
+}
+
+# ElastiCache Valkey Replication Group
+resource "aws_elasticache_replication_group" "this" {
+  replication_group_id = local.replication_group_id
+  description          = "Event-Correlator ${title(var.environment)} Elasticache replication group"
+
   engine               = "valkey"
   engine_version       = var.engine_version
   parameter_group_name = "default.valkey${split(".", var.engine_version)[0]}"
   port                 = 6379
 
-  # Node — standalone single-node (1 primary, no replicas)
-  node_type            = var.node_type
-  cluster_mode         = "disabled"
-  num_cache_clusters   = var.num_cache_clusters
+  node_type           = var.node_type
+  num_cache_clusters  = var.num_cache_clusters
+  cluster_mode        = "disabled"
   data_tiering_enabled = false
 
-  # HA — disabled (standalone instance, no cross-AZ failover needed)
+  subnet_group_name  = aws_elasticache_subnet_group.this.name
+  security_group_ids = [aws_security_group.this.id]
+  ip_discovery       = "ipv4"
+  network_type       = "ipv4"
+
   automatic_failover_enabled = false
   multi_az_enabled           = false
 
-  # Network stack
-  ip_discovery = "ipv4"
-  network_type = "ipv4"
-
-  # Encryption
   at_rest_encryption_enabled = var.at_rest_encryption_enabled
   transit_encryption_enabled = false
 
-  # Maintenance & backups
   maintenance_window         = var.maintenance_window
   snapshot_window            = var.snapshot_window
   snapshot_retention_limit   = var.snapshot_retention_limit
   auto_minor_version_upgrade = true
   apply_immediately          = var.apply_immediately
 
-  # Global replication — disabled (independent instance per region)
-  create_global_replication_group = false
-  global_replication_group_id     = "hyperswitch-correlator-valkey-global"
-  global_deletion_protection      = true
-  is_secondary_region             = false
-  use_existing_as_global_primary  = false
-  source_replication_group_id     = null
+  tags = merge(local.common_tags, {
+    Name = local.replication_group_id
+  })
 
-  tags = merge(
-    {
-      Service   = "hyperswitch-correlator"
-      ManagedBy = "terraform-IaC"
-    },
-    var.tags,
-  )
+  lifecycle {
+    ignore_changes = [
+      engine_version, # Prevent unwanted version upgrades
+    ]
+  }
 }
