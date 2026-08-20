@@ -2,7 +2,7 @@
 
 All notable changes to Hyperswitch will be documented here.
 
-## Hyperswitch Suite v1.20
+## Hyperswitch Suite v1.21
 
 ### [Hyperswitch App Server v1.126.0 (2026-08-18)](https://github.com/juspay/hyperswitch/releases/tag/v1.126.0)
 
