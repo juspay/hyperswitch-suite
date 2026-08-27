@@ -199,14 +199,25 @@ jobs:
         with:
           terraform_version: "~1.5"
 
-      - name: Create CI provider override
+      - name: Create CI provider overrides
         run: |
-          cat > /tmp/ci_providers_override.tf << 'EOF'
+          cat > /tmp/ci_providers_override_aws.tf << 'EOF'
           provider "aws" {
             region                      = "eu-central-1"
             skip_credentials_validation = true
             skip_metadata_api_check     = true
             skip_requesting_account_id  = true
+          }
+          EOF
+
+          cat > /tmp/ci_providers_override_gcp.tf << 'EOF'
+          provider "google" {
+            project = "ci-validate"
+            region  = "europe-west1"
+          }
+          provider "google-beta" {
+            project = "ci-validate"
+            region  = "europe-west1"
           }
           EOF
 
@@ -228,12 +239,15 @@ jobs:
             echo "Validating: $dir"
             echo "=================================================="
             
-            cp /tmp/ci_providers_override.tf "$dir/" 2>/dev/null || true
-            
+            case "$dir" in
+              terraform/gcp/*) cp /tmp/ci_providers_override_gcp.tf "$dir/ci_providers_override.tf" 2>/dev/null || true ;;
+              *) cp /tmp/ci_providers_override_aws.tf "$dir/ci_providers_override.tf" 2>/dev/null || true ;;
+            esac
+
             echo "Running terraform init -backend=false..."
             INIT_OUTPUT=$(terraform init -backend=false -get=true -upgrade "$dir" 2>&1)
             INIT_EXIT=$?
-            
+
             rm -f "$dir/ci_providers_override.tf" 2>/dev/null || true
             
             if [ $INIT_EXIT -ne 0 ]; then

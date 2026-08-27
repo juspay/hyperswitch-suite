@@ -12,19 +12,26 @@ default:
 # Terraform Documentation
 # ============================================================================
 
-# Generate terraform-docs for all module layers (base, composition, application-resources)
+# Generate terraform-docs for all module layers (aws: base, composition, application-resources; gcp: composition, application-resources)
 gen-docs:
 	@echo "Generating terraform-docs for all module layers..."
 	@for dir in $$(find terraform/aws/modules/base terraform/aws/modules/composition terraform/aws/modules/application-resources -name "main.tf" -exec dirname {} \; | sort); do \
 		echo "  $$dir"; \
 		terraform-docs --config terraform/aws/modules/.terraform-docs.yml "$$dir" >/dev/null 2>&1 || true; \
 		done
+	@for dir in $$(find terraform/gcp/modules/composition terraform/gcp/modules/application-resources -name "main.tf" -exec dirname {} \; | sort); do \
+		echo "  $$dir"; \
+		terraform-docs --config terraform/gcp/modules/.terraform-docs.yml "$$dir" >/dev/null 2>&1 || true; \
+		done
 	@echo "Done."
 
-# Generate terraform-docs for a specific module directory
+# Generate terraform-docs for a specific module directory (config file auto-selected by path: terraform/gcp/* uses the gcp config, everything else uses the aws config)
 gen-docs-module MODULE_DIR:
 	@echo "Generating terraform-docs for {{MODULE_DIR}}..."
-	@terraform-docs --config terraform/aws/modules/.terraform-docs.yml {{MODULE_DIR}}
+	@case "{{MODULE_DIR}}" in \
+		terraform/gcp/*) terraform-docs --config terraform/gcp/modules/.terraform-docs.yml {{MODULE_DIR}} ;; \
+		*) terraform-docs --config terraform/aws/modules/.terraform-docs.yml {{MODULE_DIR}} ;; \
+	esac
 
 # Check if terraform-docs is installed
 check-docs:

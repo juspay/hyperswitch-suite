@@ -1,0 +1,53 @@
+# ============================================================================
+# ArgoCD (GCP equivalent of application-resources/argocd)
+# ============================================================================
+# GSA + Workload Identity binding for ArgoCD's controller/server/
+# applicationset service accounts, plus optional cross-project deployment
+# support. AWS's cross-account `sts:AssumeRole` has no single GCP
+# equivalent; the nearest is granting ArgoCD's service account
+# `roles/iam.serviceAccountTokenCreator` on target service accounts in
+# other projects, which it then impersonates - so `cross_project_target_sas`
+# plays the role of the AWS module's `cross_account_roles`.
+#
+# Usage:
+#   module "argocd" {
+#     source = "../../modules/application-resources/argocd"
+#
+#     project_id   = "hyperswitch-dev"
+#     environment  = "dev"
+#     project_name = "hyperswitch"
+#
+#     cluster_name     = module.gke.cluster_name
+#     cluster_location = module.gke.location
+#   }
+# ============================================================================
+
+module "workload_identity" {
+  source = "../gke-workload-identity"
+
+  project_id   = var.project_id
+  environment  = var.environment
+  project_name = var.project_name
+  app_name     = "argocd"
+
+  cluster_name             = var.cluster_name
+  cluster_location         = var.cluster_location
+  k8s_namespace            = var.argocd_namespace
+  k8s_service_account_name = var.argocd_service_accounts[0]
+
+  project_roles = var.additional_project_roles
+
+  labels = var.labels
+}
+
+# ==============================================================================
+# Cross-project deployment: grant ArgoCD's GSA impersonation rights on
+# target service accounts in other projects
+# ==============================================================================
+resource "google_service_account_iam_member" "cross_project_impersonation" {
+  for_each = toset(var.cross_project_target_service_accounts)
+
+  service_account_id = each.value
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "serviceAccount:${module.workload_identity.service_account_email}"
+}
