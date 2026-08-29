@@ -22,6 +22,14 @@ VPC, domains, sizing) and generates a complete bundle — a Terragrunt stack
 - **Into a separate config repo**: pass `--target-dir <path>`; the generator
   vendors the terragrunt catalog into the destination and git-initializes it,
   producing a fully self-contained repo.
+- **Without a local checkout at all**: pipe `scripts/self-host/bootstrap.sh`
+  from GitHub — it downloads a throwaway tarball snapshot (no git clone, no
+  fork), runs the generator from inside it into your `--target-dir`, then
+  deletes the snapshot:
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/juspay/hyperswitch-suite/main/scripts/self-host/bootstrap.sh \
+    | bash -s -- --target-dir ./my-hyperswitch-infra
+  ```
 
 ## Architecture Overview
 
