@@ -38,7 +38,7 @@ python-dotenv==1.0.1
 python-slugify==8.0.4
 pyzmq==26.3.0
 reportlab==4.3.1
-requests==2.32.3
+requests==2.32.4
 setuptools==78.1.0
 soupsieve==2.6
 text-unidecode==1.3
