@@ -24,10 +24,8 @@ jobs:
       - name: Render fixture bundle
         run: |
           SCRATCH="$(mktemp -d)"
-          git init -q "$SCRATCH"
-          # The generator renders into a copy of the repo layout
-          cp -R terraform "$SCRATCH/terraform"
-          cp -R helm "$SCRATCH/helm"
+          # Destination mode: the generator vendors the catalog + istio chart
+          # into the destination and git-initializes it.
           bash scripts/self-host/generate.sh \
             --non-interactive \
             --config scripts/self-host/templates/fixtures/ci.conf \
@@ -69,17 +67,9 @@ jobs:
             -f argocd/apps/infra/istio.yaml \
             -f argocd/apps/infra/external-secrets-operator.yaml \
             -f argocd/apps/hyperswitch/hyperswitch-stack.yaml \
-            -f argocd/apps/hyperswitch/superposition.yaml \
             -f argocd/apps/monitoring/loki.yaml \
             -f argocd/apps/monitoring/grafana.yaml \
             -f argocd/apps/monitoring/victoria-metrics.yaml \
             -f argocd/apps/monitoring/vector.yaml \
             >/dev/null
           echo "argocd-apps rendered OK"
-
-      - name: Helm template vendored istio chart
-        working-directory: ${{ env.SCRATCH }}
-        run: |
-          helm dependency build helm/charts/istio
-          helm template istio helm/charts/istio -f infra-configurations/istio/values.yaml >/dev/null
-          echo "istio chart rendered OK"

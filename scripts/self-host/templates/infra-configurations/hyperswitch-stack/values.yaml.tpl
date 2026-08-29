@@ -63,6 +63,11 @@ hyperswitch-app:
   initDB:
     enable: true
 
+  # Superposition (config management) is bundled in this subchart and enabled
+  # by default — no separate ArgoCD application needed.
+  superposition:
+    enabled: true
+
   server:
     ingress:
       enabled: true

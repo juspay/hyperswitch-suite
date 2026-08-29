@@ -118,5 +118,5 @@ if confirm "Install the root app-of-apps (argocd-apps)?"; then
 fi
 
 echo ""
-echo "Next: sync applications in order (istio -> monitoring -> superposition -> hyperswitch)."
+echo "Next: sync applications in order (istio -> monitoring -> hyperswitch)."
 echo "See SELF_HOST.md."

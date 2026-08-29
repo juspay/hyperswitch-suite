@@ -11,11 +11,17 @@ Modular Terraform infrastructure for Hyperswitch payment services - a complete A
 
 ## Self-hosting
 
-The fastest way to self-host Hyperswitch on AWS: fork this repo and run
-`scripts/self-host/generate.sh` from the repo root. It prompts for your
-environment (account, VPC, domains, sizing) and renders a complete bundle —
-a Terragrunt stack (`terraform/aws/catalog/stacks/standalone`) plus an ArgoCD
-app-of-apps (`argocd/`) — with a step-by-step runbook (`SELF_HOST.md`).
+The fastest way to self-host Hyperswitch on AWS: run
+`scripts/self-host/generate.sh`. It prompts for your environment (account,
+VPC, domains, sizing) and generates a complete bundle — a Terragrunt stack
+(from `terraform/aws/catalog/stacks/standalone`) plus an ArgoCD app-of-apps
+(`argocd/`) — with a step-by-step runbook (`SELF_HOST.md`). Two modes:
+
+- **In a fork** of this repo: run it from the repo root; the fork becomes your
+  config repo.
+- **Into a separate config repo**: pass `--target-dir <path>`; the generator
+  vendors the terragrunt catalog into the destination and git-initializes it,
+  producing a fully self-contained repo.
 
 ## Architecture Overview
 

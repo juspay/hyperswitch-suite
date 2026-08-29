@@ -11,12 +11,9 @@ projects:
     sourceRepos:
       - "__MERCHANT_REPO_URL__"
       - "https://github.com/juspay/hyperswitch-helm"
-      - "https://github.com/juspay/superposition"
 
     destinations:
       - namespace: "hyperswitch"
-        server: "https://kubernetes.default.svc"
-      - namespace: "superposition"
         server: "https://kubernetes.default.svc"
 
     clusterResourceWhitelist:

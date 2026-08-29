@@ -1,8 +1,15 @@
 # Self-host generator (maintainers)
 
 `generate.sh` renders the self-host bundle (terragrunt live stack + ArgoCD
-app-of-apps + values + runbook) into a fork of this repo. Merchants run it;
-this README is for maintaining it.
+app-of-apps + values + runbook). Two modes:
+
+- **in-repo** (default): renders into this checkout — for merchants working in
+  a fork of hyperswitch-suite;
+- **destination** (`--target-dir <path>`): renders into a separate directory,
+  vendoring `terraform/aws/catalog/{units,stacks/standalone}` and
+  git-initializing it, producing a self-contained config repo.
+
+Merchants run it; this README is for maintaining it.
 
 ## Layout
 

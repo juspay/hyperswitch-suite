@@ -1,4 +1,8 @@
-## ApplicationSet for Istio (in-repo chart at helm/charts/istio)
+## ApplicationSet for Istio (upstream charts: base CRDs + istiod control plane)
+## Sync order: istio-base first, then istiod.
+## The hyperswitch services expose their own ALB ingresses, so the istio
+## ingress gateway is not installed by default — to add it, append an element
+## with chart `gateway` (same repo/version) and a values file for it.
 applicationsets:
   istio:
     namespace: argocd
@@ -8,32 +12,34 @@ applicationsets:
     generators:
       - list:
           elements:
-            - cluster: __MERCHANT_NAME__
+            - component: base
+              chart: base
+              releaseName: istio-base
               server: https://kubernetes.default.svc
               namespace: istio-system
-              releaseName: istio
-              chartVersion: main
-              environment: __ENVIRONMENT__
-              s3Bucket: __STATE_BUCKET__
-              region: __AWS_REGION__
-              infraValues: values.yaml
+              chartVersion: "1.28.2"
+              infraValues: base-values.yaml
+            - component: istiod
+              chart: istiod
+              releaseName: istiod
+              server: https://kubernetes.default.svc
+              namespace: istio-system
+              chartVersion: "1.28.2"
+              infraValues: istiod-values.yaml
     template:
       metadata:
-        name: 'istio-{{cluster}}'
+        name: 'istio-{{component}}'
         labels:
-          app.kubernetes.io/name: istio
+          app.kubernetes.io/name: 'istio-{{component}}'
           app.kubernetes.io/part-of: infra
       spec:
         project: infra
         sources:
-          - repoURL: __MERCHANT_REPO_URL__
+          - repoURL: https://istio-release.storage.googleapis.com/charts
+            chart: '{{chart}}'
             targetRevision: '{{chartVersion}}'
-            path: helm/charts/istio
             helm:
               releaseName: '{{releaseName}}'
-              parameters:
-                - name: $tfstate.eks
-                  value: 's3://{{s3Bucket}}/{{environment}}/{{region}}/application-stack/eks-01/terraform.tfstate'
               valueFiles:
                 - '$values/infra-configurations/istio/{{infraValues}}'
           - repoURL: __MERCHANT_REPO_URL__

@@ -34,9 +34,8 @@ applications:
             # Infra applications
             - $values/argocd/apps/infra/alb-controller.yaml
             - $values/argocd/apps/infra/istio.yaml__OPTIONAL_APP_VALUEFILES__
-            # Hyperswitch applications
+            # Hyperswitch applications (superposition is bundled in the stack chart)
             - $values/argocd/apps/hyperswitch/hyperswitch-stack.yaml
-            - $values/argocd/apps/hyperswitch/superposition.yaml
             # Monitoring applications
             - $values/argocd/apps/monitoring/loki.yaml
             - $values/argocd/apps/monitoring/grafana.yaml

@@ -13,6 +13,7 @@ projects:
       - "https://argoproj.github.io/argo-helm"
       - "https://aws.github.io/eks-charts"
       - "https://charts.external-secrets.io"
+      - "https://istio-release.storage.googleapis.com/charts"
 
     destinations:
       - namespace: "argocd"

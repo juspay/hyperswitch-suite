@@ -49,10 +49,6 @@ kubectl create namespace hyperswitch --dry-run=client -o yaml | kubectl apply -f
 kubectl -n hyperswitch create secret generic hyperswitch-db-credentials \
   --from-literal=password='<database password for the hyperswitch user>'
 
-kubectl create namespace superposition --dry-run=client -o yaml | kubectl apply -f -
-kubectl -n superposition create secret generic hyperswitch-db-credentials \
-  --from-literal=password='<same database password>'
-
 kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
 kubectl -n monitoring create secret generic grafana-admin \
   --from-literal=admin-user=admin --from-literal=admin-password='<strong password>'
@@ -60,7 +56,8 @@ kubectl -n monitoring create secret generic grafana-admin \
 
 Database bootstrap (once, via a bastion or `kubectl run psql`): create the
 `hyperswitch` role/database on the Aurora cluster (writer endpoint is in the
-`database` unit outputs), and a `superposition` database on the same cluster.
+`database` unit outputs). Superposition ships inside the hyperswitch stack
+chart and bootstraps its own schema.
 
 ## 4. Bootstrap ArgoCD
 
@@ -68,22 +65,83 @@ Database bootstrap (once, via a bastion or `kubectl run psql`): create the
 ./install-argocd.sh
 ```
 
-This installs the ALB controller, ArgoCD (with the tfstate helm plugin image
-`__TFSTATE_PLUGIN_IMAGE__`), and the root app-of-apps. If the repo is private,
-add repo credentials when prompted by the script's final message.
+This installs the ALB controller, ArgoCD (with the tfstate helm plugin, see
+below), and the root app-of-apps. If the repo is private, add repo credentials
+when prompted by the script's final message.
 
-The tfstate plugin reads `s3://__STATE_BUCKET__/...` using the node role — the
-eks-01 unit already grants it read access to the state bucket.
+### The tfstate helm plugin — how it works
+
+The applications in `argocd/apps/**` reference infrastructure endpoints
+(database writer/reader, redis endpoint, EKS cluster name) **without hardcoding
+them**. Two pieces make that work:
+
+1. **Helm parameters named `$tfstate.<name>`** on each application, e.g.
+
+   ```yaml
+   parameters:
+     - name: $tfstate.rds
+       value: 's3://__STATE_BUCKET__/__ENVIRONMENT__/__AWS_REGION__/database/terraform.tfstate'
+   ```
+
+   Each one registers a terraform state file under an alias (`rds`, `redis`,
+   `eks`).
+
+2. **`$<alias.output>$` tokens inside values files**, e.g. in
+   `infra-configurations/hyperswitch-stack/values.yaml`:
+
+   ```yaml
+   externalPostgresql:
+     primary:
+       host: $<rds.endpoint>$
+   ```
+
+   At render time the plugin downloads the state file from S3, reads its
+   terraform **outputs**, and substitutes `$<rds.endpoint>$` with the actual
+   Aurora endpoint. Any output of the referenced unit can be used this way.
+
+This is why the terragrunt unit paths must not be renamed: the S3 keys follow
+`<env>/<region>/<unit-path>/terraform.tfstate`.
+
+### How the plugin is installed
+
+You don't install it by hand — it is baked into the ArgoCD deployment by
+`infra-configurations/argocd/values.yaml`:
+
+- an **initContainer** on the repo-server pod (image
+  `__TFSTATE_PLUGIN_IMAGE__`) copies a plugin-wrapped `helm` binary and the
+  downloader plugin into a shared volume;
+- a **volumeMount** overlays `/usr/local/sbin/helm` in the repo-server with
+  that wrapped binary, so every chart render ArgoCD performs goes through the
+  plugin.
+
+So the plugin is active as soon as `install-argocd.sh` installs the argo-cd
+chart. To verify:
+
+```bash
+kubectl -n argocd get pod -l app.kubernetes.io/name=argocd-repo-server \
+  -o jsonpath='{.items[0].spec.initContainers[*].name}'   # -> helm-terraform-states
+```
+
+**Credentials:** the plugin authenticates to S3 with the repo-server pod's AWS
+identity — by default the EKS node role, which the `eks-01` unit already
+grants `s3:GetObject`/`s3:ListBucket` on `__STATE_BUCKET__`. No keys to
+configure. (If you later move the repo-server to IRSA, grant the same bucket
+read to that role.)
+
+**Image note:** `__TFSTATE_PLUGIN_IMAGE__` must be pullable from the cluster.
+If you mirror it into your own registry, update the image in
+`infra-configurations/argocd/values.yaml` (or rerun the generator with the new
+value) and re-sync the `argocd` application.
 
 ## 5. Sync applications (in order)
 
 In the ArgoCD UI (or `argocd app sync ...`):
 
-1. `istio` — service mesh + gateway
+1. `istio-base` then `istiod` — service mesh (upstream istio charts)
 2. `victoria-metrics`, `loki`, `vector`, `grafana` — observability
-3. `superposition` — config service (runs its schema bootstrap)
-4. `hyperswitch-<name>` — the stack; its `initDB` job runs diesel migrations
-   against the Aurora endpoint resolved from terraform state.
+3. `hyperswitch-<name>` — the stack (includes superposition); its `initDB` job
+   runs diesel migrations against the Aurora endpoint resolved from terraform
+   state.
 
 ## 6. Point DNS
 

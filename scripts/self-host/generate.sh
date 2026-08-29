@@ -2,26 +2,35 @@
 #
 # Hyperswitch self-host generator.
 #
-# Run this from your fork/copy of hyperswitch-suite. It prompts for your
-# environment values (AWS account, VPC, domains, sizing, ...) and renders:
+# Prompts for your environment values (AWS account, VPC, domains, sizing, ...)
+# and generates a self-contained config repo:
 #
-#   terraform/aws/live/<env>/terragrunt.stack.hcl   (Terragrunt standalone stack)
+#   terraform/aws/catalog/                          (vendored units + standalone stack)
+#   terraform/aws/live/<env>/terragrunt.stack.hcl   (your Terragrunt stack)
 #   argocd/                                         (ArgoCD app-of-apps bundle)
+#   helm/charts/istio/                              (vendored istio chart)
 #   install-argocd.sh                               (cluster bootstrap script)
 #   SELF_HOST.md                                    (your runbook)
 #   hyperswitch-bootstrap.conf                      (saved answers for reruns)
 #
-# Your fork becomes the config repo that ArgoCD points at — commit and push
-# the rendered files.
+# Two ways to run it:
+#   - inside your fork of hyperswitch-suite (default target = this repo's root;
+#     the catalog and istio chart are already here, nothing extra is copied)
+#   - with --target-dir pointing at a separate destination directory, which
+#     becomes a standalone config repo (the catalog and istio chart are copied
+#     in, and the directory is git-initialized if needed)
+#
+# Either way, the resulting repo is what ArgoCD points at — commit and push
+# the generated files.
 #
 # Usage:
 #   scripts/self-host/generate.sh [--target-dir <path>] [--config <file>]
 #                                 [--non-interactive] [--force]
 #
-#   --target-dir       Render into this directory (default: this repo's root).
+#   --target-dir       Generate into this directory (default: this repo's root).
 #   --config           Answers file (default: <target>/hyperswitch-bootstrap.conf).
 #   --non-interactive  No prompts; the config file must be complete.
-#   --force            Overwrite previously rendered files.
+#   --force            Overwrite previously generated files.
 
 set -euo pipefail
 
@@ -60,7 +69,7 @@ while [[ $# -gt 0 ]]; do
         shift
         ;;
     -h | --help)
-        sed -n '2,25p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+        sed -n '2,33p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
         exit 0
         ;;
     *)
@@ -73,15 +82,28 @@ TARGET_DIR="${TARGET_DIR:-$REPO_ROOT}"
 mkdir -p "$TARGET_DIR"
 TARGET_DIR="$(cd "$TARGET_DIR" && pwd)"
 
+# In-repo mode: target is this checkout (catalog + istio chart already here).
+# Destination mode: target is a separate directory that becomes a standalone
+# config repo — the catalog and istio chart are copied in below.
+DESTINATION_MODE=0
+[[ "$TARGET_DIR" != "$REPO_ROOT" ]] && DESTINATION_MODE=1
+
 if [[ ! -d "${TARGET_DIR}/.git" ]]; then
-    warn "${TARGET_DIR} is not a git repository. ArgoCD reads values from the pushed repo, so this should be your fork of hyperswitch-suite."
+    if [[ "$DESTINATION_MODE" -eq 1 ]]; then
+        # The standalone stack resolves unit sources via get_repo_root(), and
+        # ArgoCD pulls values from a pushed repo — the destination must be one.
+        info "Initializing a git repository in ${TARGET_DIR}"
+        git init -q "$TARGET_DIR"
+    else
+        warn "${TARGET_DIR} is not a git repository. ArgoCD reads values from the pushed repo, so this should be your fork of hyperswitch-suite."
+    fi
 fi
 
 if [[ -e "${TARGET_DIR}/argocd" ]]; then
     if [[ "$FORCE" -ne 1 ]]; then
-        die "${TARGET_DIR}/argocd already exists. Rerun with --force to overwrite the rendered files."
+        die "${TARGET_DIR}/argocd already exists. Rerun with --force to overwrite the generated files."
     fi
-    warn "Overwriting previously rendered files in ${TARGET_DIR} (--force)."
+    warn "Overwriting previously generated files in ${TARGET_DIR} (--force)."
 fi
 
 CONFIG_PATH="${CONFIG_PATH:-${TARGET_DIR}/${CONFIG_FILE_NAME}}"
@@ -175,7 +197,18 @@ fi
 echo ""
 info "Rendering self-host bundle into ${TARGET_DIR}"
 
-# 1. Terragrunt: live stack file targeting the in-repo standalone catalog stack
+# 0. Destination mode: vendor the terragrunt catalog (units + standalone
+#    stack) into the destination config repo.
+if [[ "$DESTINATION_MODE" -eq 1 ]]; then
+    mkdir -p "${TARGET_DIR}/terraform/aws/catalog/stacks"
+    rm -rf "${TARGET_DIR}/terraform/aws/catalog/units" \
+        "${TARGET_DIR}/terraform/aws/catalog/stacks/standalone"
+    cp -R "${REPO_ROOT}/terraform/aws/catalog/units" "${TARGET_DIR}/terraform/aws/catalog/units"
+    cp -R "${REPO_ROOT}/terraform/aws/catalog/stacks/standalone" "${TARGET_DIR}/terraform/aws/catalog/stacks/standalone"
+    ok "Vendored terraform catalog"
+fi
+
+# 1. Terragrunt: live stack file targeting the vendored standalone catalog stack
 render_file "${TEMPLATES_DIR}/terraform/live/terragrunt.stack.hcl.tpl" \
     "${TARGET_DIR}/terraform/aws/live/${ENVIRONMENT}/terragrunt.stack.hcl"
 ok "terraform/aws/live/${ENVIRONMENT}/terragrunt.stack.hcl"
@@ -197,19 +230,24 @@ if [[ "$ENABLE_KARPENTER" == "y" ]]; then
     render_file "${TEMPLATES_DIR}/argocd/apps/infra/karpenter.yaml.tpl" \
         "${TARGET_DIR}/argocd/apps/infra/karpenter.yaml"
 fi
-for app in hyperswitch-stack superposition; do
-    render_file "${TEMPLATES_DIR}/argocd/apps/hyperswitch/${app}.yaml.tpl" "${TARGET_DIR}/argocd/apps/hyperswitch/${app}.yaml"
-done
+# superposition is bundled inside the hyperswitch-stack chart — no separate app
+render_file "${TEMPLATES_DIR}/argocd/apps/hyperswitch/hyperswitch-stack.yaml.tpl" \
+    "${TARGET_DIR}/argocd/apps/hyperswitch/hyperswitch-stack.yaml"
 for app in loki grafana victoria-metrics vector; do
     render_file "${TEMPLATES_DIR}/argocd/apps/monitoring/${app}.yaml.tpl" "${TARGET_DIR}/argocd/apps/monitoring/${app}.yaml"
 done
 ok "argocd/ app-of-apps, projects and applications"
 
 # 3. infra-configurations + deployment-configs
-for app in argocd alb-controller istio hyperswitch-stack superposition loki grafana victoria-metrics vector; do
+for app in argocd alb-controller hyperswitch-stack loki grafana victoria-metrics vector; do
     render_file "${TEMPLATES_DIR}/infra-configurations/${app}/values.yaml.tpl" \
         "${TARGET_DIR}/infra-configurations/${app}/values.yaml"
 done
+# istio uses the upstream base + istiod charts, one values file per component
+render_file "${TEMPLATES_DIR}/infra-configurations/istio/base-values.yaml.tpl" \
+    "${TARGET_DIR}/infra-configurations/istio/base-values.yaml"
+render_file "${TEMPLATES_DIR}/infra-configurations/istio/istiod-values.yaml.tpl" \
+    "${TARGET_DIR}/infra-configurations/istio/istiod-values.yaml"
 render_file "${TEMPLATES_DIR}/deployment-configs/hyperswitch-stack/values-dep.yaml.tpl" \
     "${TARGET_DIR}/deployment-configs/hyperswitch-stack/values-dep.yaml"
 ok "infra-configurations/ + deployment-configs/"
@@ -242,13 +280,16 @@ ok "Done. Self-host bundle rendered at: ${TARGET_DIR}"
 cat <<NEXT
 
 Next steps:
-  1. Review the rendered files, then commit and push:
-       git add -A && git commit -m 'hyperswitch self-host bootstrap' && git push
+  1. Review the generated files, then commit and push:
+       cd ${TARGET_DIR}
+       git add -A && git commit -m 'hyperswitch self-host bootstrap'
+       git remote add origin ${MERCHANT_REPO_URL}   # if not set yet
+       git push -u origin main
      (ArgoCD reads values from the pushed repo: ${MERCHANT_REPO_URL})
   2. Follow SELF_HOST.md:
        - cd terraform/aws/live/${ENVIRONMENT} && terragrunt stack generate
        - terragrunt run-all apply                  (infra, in dependency order)
        - create application secrets               (kubectl snippets in SELF_HOST.md)
        - ./install-argocd.sh                      (ArgoCD bootstrap)
-       - sync apps: istio -> monitoring -> superposition -> hyperswitch-stack
+       - sync apps: istio -> monitoring -> hyperswitch-stack
 NEXT
