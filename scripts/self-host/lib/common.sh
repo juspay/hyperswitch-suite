@@ -88,6 +88,16 @@ prompt_var() {
         return 0
     fi
 
+    # Read from the controlling terminal explicitly, not inherited stdin.
+    # When this runs at the end of `curl ... | bash`, stdin IS the pipe from
+    # curl — by the time execution reaches here, that pipe is already at EOF
+    # (bash consumed it all just reading the script), so a plain `read` here
+    # would silently return failure on every prompt and, under `set -e`,
+    # kill the whole run without printing anything.
+    if [[ ! -r /dev/tty ]]; then
+        die "No interactive terminal available to prompt for '${var_name}' (stdin isn't a TTY — e.g. running via 'curl | bash'). Re-run with --non-interactive --config <file>, or download the script first: curl -fsSL <url> -o generate.sh && bash generate.sh ..."
+    fi
+
     local answer
     while true; do
         if [[ -n "$default_value" ]]; then
@@ -95,7 +105,7 @@ prompt_var() {
         else
             echo -en "${CYAN}◆${NC} ${prompt_text}: "
         fi
-        read -r answer
+        read -r answer </dev/tty
         answer="${answer:-$default_value}"
         if "$validator" "$answer"; then
             printf -v "$var_name" '%s' "$answer"
