@@ -120,7 +120,17 @@ locals {
           Effect = "Allow"
           Action = [
             "lambda:InvokeFunction",
-            "lambda:*"
+            "lambda:GetFunction",
+            "lambda:UpdateFunctionCode",
+            "lambda:UpdateFunctionConfiguration",
+            "lambda:DeleteFunction",
+            "lambda:PublishVersion",
+            "lambda:CreateAlias",
+            "lambda:DeleteAlias",
+            "lambda:UpdateAlias",
+            "lambda:AddPermission",
+            "lambda:RemovePermission",
+            "lambda:GetPolicy"
           ]
           Resource = "*"
         }

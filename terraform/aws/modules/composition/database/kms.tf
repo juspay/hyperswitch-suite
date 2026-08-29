@@ -39,7 +39,7 @@ data "aws_iam_policy_document" "rds_kms_policy" {
     condition {
       test     = "StringEquals"
       variable = "kms:ViaService"
-      values   = ["rds.${data.aws_region.current.name}.amazonaws.com"]
+      values   = ["rds.${data.aws_region.current.region}.amazonaws.com"]
     }
   }
 }
@@ -75,10 +75,10 @@ module "kms" {
   deletion_window_in_days  = try(var.kms.deletion_window_in_days, 30)
 
   # Key State
-  is_enabled                          = try(var.kms.is_enabled, true)
-  enable_key_rotation                 = try(var.kms.enable_key_rotation, true)
-  rotation_period_in_days             = try(var.kms.rotation_period_in_days, null)
-  bypass_policy_lockout_safety_check  = try(var.kms.bypass_policy_lockout_safety_check, null)
+  is_enabled                         = try(var.kms.is_enabled, true)
+  enable_key_rotation                = try(var.kms.enable_key_rotation, true)
+  rotation_period_in_days            = try(var.kms.rotation_period_in_days, null)
+  bypass_policy_lockout_safety_check = try(var.kms.bypass_policy_lockout_safety_check, null)
 
   # Aliases
   aliases                 = try(var.kms.aliases, ["alias/${local.name_prefix}"])
