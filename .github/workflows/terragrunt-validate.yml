@@ -1,0 +1,27 @@
+name: Terragrunt Validate
+
+on:
+  pull_request:
+    paths:
+      - 'terraform/aws/catalog/**'
+      - '.github/workflows/terragrunt-validate.yml'
+
+jobs:
+  hcl-checks:
+    name: hclfmt + hclvalidate (catalog)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install terragrunt
+        run: |
+          TG_VERSION=1.1.1
+          curl -fsSL -o /usr/local/bin/terragrunt \
+            "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_amd64"
+          chmod +x /usr/local/bin/terragrunt
+          terragrunt --version
+
+      - name: hcl format check
+        working-directory: terraform/aws/catalog
+        run: terragrunt hcl format --check --diff

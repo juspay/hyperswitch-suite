@@ -1,0 +1,90 @@
+# Services to be deployed
+services:
+  istioBase:
+    enabled: true
+  istiod:
+    enabled: true
+  istioGateway:
+    enabled: true
+
+# Global Istio settings
+global:
+  hub: docker.io/istio
+  
+# Istio Base Chart Configurations
+istioBase:
+  defaultRevision: default
+  # Ensure CRDs are managed by this release
+  base:
+    enableCRDTemplates: true
+
+# Istiod Chart Configurations
+istiod:
+  affinity: {}
+
+# Istio Gateway Chart Configurations
+istioGateway:
+  name: istio-ingressgateway
+  affinity: {}
+  service:
+    type: ClusterIP
+    annotations: {}
+
+# Gateway Resource Configuration
+gateways: []
+# - name: hyperswitch-gateway
+#   annotations: {}
+#   servers:
+#     - hosts:
+#         - '*'
+#       port:
+#         name: http
+#         number: 80
+#         protocol: HTTP
+#     - hosts:
+#         - 'example.com'
+#       port:
+#         name: https
+#         number: 443
+#         protocol: HTTPS
+#       tls:
+#         mode: SIMPLE
+#         credentialName: example-tls-secret
+
+# ServiceEntry Resource Configuration
+# ServiceEntries allow services to be added to Istio's internal service registry
+# Useful for external services that need special routing (like proxies)
+# Note: For HTTPS proxies using HTTP CONNECT method, use TCP protocol
+serviceEntries: []
+# - name: squid-proxy
+#   annotations: {}
+#   hosts:
+#     - my-proxy.example.com
+#   addresses:
+#     - 10.0.0.1/32  # Optional: Use with resolution: NONE for IP-based routing
+#   ports:
+#     - number: 80
+#       name: tcp
+#       protocol: TCP  # Use TCP for HTTPS proxies (HTTP CONNECT method)
+#   location: MESH_EXTERNAL
+#   resolution: DNS  # Use NONE if specifying addresses instead of DNS
+
+# Ingress for Istio Gateway Resource enable Application Load Balancer creation
+ingress:
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: istio.local
+      paths:
+      - path: /
+        pathType: Prefix
+        port: 80
+      - path: /healthz/ready
+        pathType: Prefix
+        port: 15021
+  tls: []
+  #  - secretName: istio-tls
+  #    hosts:
+  #      - istio.local

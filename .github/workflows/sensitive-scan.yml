@@ -1,0 +1,17 @@
+name: Sensitive Data Scan
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  scan:
+    name: Scan for internal/sensitive data
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run sensitive-data gate
+        run: bash scripts/ci/check-sensitive.sh

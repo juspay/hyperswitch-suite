@@ -1,0 +1,85 @@
+name: Self-Host Bundle
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/self-host/**'
+      - 'helm/charts/**'
+      - 'terraform/aws/catalog/**'
+      - '.github/workflows/self-host-bundle.yml'
+
+jobs:
+  render-and-validate:
+    name: Render fixture + validate bundle
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Shellcheck
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+          shellcheck -x scripts/self-host/generate.sh scripts/self-host/lib/*.sh scripts/ci/check-sensitive.sh
+
+      - name: Render fixture bundle
+        run: |
+          SCRATCH="$(mktemp -d)"
+          git init -q "$SCRATCH"
+          # The generator renders into a copy of the repo layout
+          cp -R terraform "$SCRATCH/terraform"
+          cp -R helm "$SCRATCH/helm"
+          bash scripts/self-host/generate.sh \
+            --non-interactive \
+            --config scripts/self-host/templates/fixtures/ci.conf \
+            --target-dir "$SCRATCH" \
+            --force
+          echo "SCRATCH=$SCRATCH" >> "$GITHUB_ENV"
+
+      - name: Sensitive scan on rendered output
+        run: bash scripts/ci/check-sensitive.sh "$SCRATCH"
+
+      - name: Install terragrunt + tofu
+        run: |
+          TG_VERSION=1.1.1
+          curl -fsSL -o /usr/local/bin/terragrunt \
+            "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_amd64"
+          chmod +x /usr/local/bin/terragrunt
+          curl -fsSL https://get.opentofu.org/install-opentofu.sh | sh -s -- --install-method standalone
+
+      - name: Terragrunt stack generate (fixture)
+        working-directory: ${{ env.SCRATCH }}
+        env:
+          AWS_ACCESS_KEY_ID: mock
+          AWS_SECRET_ACCESS_KEY: mock
+        run: |
+          cd terraform/aws/live/sandbox
+          terragrunt stack generate
+
+      - name: Helm template argocd-apps with rendered values
+        working-directory: ${{ env.SCRATCH }}
+        run: |
+          helm repo add argo https://argoproj.github.io/argo-helm
+          helm template argoapps argo/argocd-apps --version 2.0.5 \
+            -f argocd/argo-apps.yaml \
+            -f argocd/bootstrap/argocd.yaml \
+            -f argocd/projects/infra.yaml \
+            -f argocd/projects/hyperswitch.yaml \
+            -f argocd/projects/monitoring.yaml \
+            -f argocd/apps/infra/alb-controller.yaml \
+            -f argocd/apps/infra/istio.yaml \
+            -f argocd/apps/infra/external-secrets-operator.yaml \
+            -f argocd/apps/hyperswitch/hyperswitch-stack.yaml \
+            -f argocd/apps/hyperswitch/superposition.yaml \
+            -f argocd/apps/monitoring/loki.yaml \
+            -f argocd/apps/monitoring/grafana.yaml \
+            -f argocd/apps/monitoring/victoria-metrics.yaml \
+            -f argocd/apps/monitoring/vector.yaml \
+            >/dev/null
+          echo "argocd-apps rendered OK"
+
+      - name: Helm template vendored istio chart
+        working-directory: ${{ env.SCRATCH }}
+        run: |
+          helm dependency build helm/charts/istio
+          helm template istio helm/charts/istio -f infra-configurations/istio/values.yaml >/dev/null
+          echo "istio chart rendered OK"
