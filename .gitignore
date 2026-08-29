@@ -85,3 +85,9 @@ load-test/test_env/
 load-test/output/
 
 load-test/__pycache__
+
+#terragrunt
+.terragrunt-cache/
+.terragrunt-stack-manifest
+*.tfstate
+*.tfstate.backup

@@ -9,9 +9,5 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.gr7.
 AWSReservedSSO_AWSAdministratorAccess_XXXXXXXXXXXXXXXX
 012345678903AB2BAE5D1E0BFE0E2B50.gr7.us-east-1
 
-# Pre-existing (already public) dev example squid egress whitelist / docs
-live/dev/eu-central-1/squid-proxy/config/whitelist.txt
-live/dev/eu-central-1/squid-proxy/terraform.tfvars
-
 # Public support email mentioned in the upstream changelog
 hyperswitch@juspay.in to support.global@juspay.io
