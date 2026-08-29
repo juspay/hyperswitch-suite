@@ -39,7 +39,7 @@ die() {
 
 REPO_OWNER="${HYPERSWITCH_SUITE_OWNER:-juspay}"
 REPO_NAME="${HYPERSWITCH_SUITE_REPO:-hyperswitch-suite}"
-REF="self-host-catalog"
+REF="self-host-catalog" # move to main once PR is merged
 TARGET_DIR=""
 PASSTHROUGH_ARGS=()
 
