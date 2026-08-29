@@ -163,6 +163,34 @@ module "log_bucket" {
   bucket = local.log_bucket_config.bucket_name
 }
 
+# ============================================================================
+# VPC Origins for ALB
+# ============================================================================
+
+resource "aws_cloudfront_vpc_origin" "this" {
+  for_each = local.vpc_origins_map
+
+  vpc_origin_endpoint_config {
+    name                   = each.value.name
+    arn                    = each.value.alb_arn
+    http_port              = each.value.http_port
+    https_port             = each.value.https_port
+    origin_protocol_policy = each.value.origin_protocol_policy
+
+    origin_ssl_protocols {
+      items    = each.value.origin_ssl_protocols.items
+      quantity = each.value.origin_ssl_protocols.quantity
+    }
+  }
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = each.value.name
+    }
+  )
+}
+
 # CloudFront Distributions
 module "cloudfront" {
   source  = "terraform-aws-modules/cloudfront/aws"
@@ -186,10 +214,10 @@ module "cloudfront" {
   }
 
   origin = {
-    for origin in each.value.origins :
+    for origin in local.processed_origins[each.key] :
     origin.origin_id => merge(
       {
-        domain_name = lookup(origin, "domain_name", lookup(origin, "s3_bucket_domain_name", null))
+        domain_name = origin.resolved_domain_name
         origin_path = lookup(origin, "origin_path", "")
       },
       origin.type == "s3" ? {
@@ -198,7 +226,10 @@ module "cloudfront" {
           origin_access_identity = origin.origin_id
         }
       } : {},
-      origin.type != "s3" ? {
+      origin.type == "vpc_origin" ? {
+        vpc_origin_id = origin.vpc_origin_id
+      } : {},
+      origin.type == "alb" || origin.type == "custom" ? {
         custom_origin_config = origin.custom_origin_config
       } : {}
     )
