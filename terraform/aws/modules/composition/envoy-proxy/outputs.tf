@@ -23,9 +23,9 @@ output "target_group_arns" {
   value       = { for k, v in local.auto_scaling_groups : k => local.target_group_arns[k] }
 }
 
-output "launch_template_id" {
-  description = "ID of the module-managed launch template (null if not created)"
-  value       = var.launch_template.create ? aws_launch_template.envoy[0].id : null
+output "launch_template_ids" {
+  description = "Map of deployment names to module-managed launch template IDs (empty if not created)"
+  value       = { for k, v in aws_launch_template.envoy : k => v.id }
 }
 
 output "launch_template_created" {
@@ -128,9 +128,9 @@ output "ssh_key_retrieval_command" {
   value       = var.generate_ssh_key ? "aws ssm get-parameter --name \"${aws_ssm_parameter.envoy_private_key[0].name}\" --with-decryption --query 'Parameter.Value' --output text > ${module.key_pair[0].key_pair_name}.pem && chmod 400 ${module.key_pair[0].key_pair_name}.pem" : null
 }
 
-output "config_version" {
-  description = "Current configuration version hash"
-  value       = substr(md5(local.envoy_config_content), 0, 8)
+output "config_versions" {
+  description = "Map of deployment names to configuration version hashes"
+  value       = { for k, f in local.deployment_config_files : k => substr(md5(local.envoy_config_contents[f]), 0, 8) }
 }
 
 output "deployment_weights" {

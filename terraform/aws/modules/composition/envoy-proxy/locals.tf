@@ -28,19 +28,28 @@ locals {
   # Supports: {{hyperswitch_cloudfront_dns}}, {{internal_loadbalancer_dns}}, {{eks_cluster_name}}, {{virtual_hosts_domains}}
   virtual_hosts_domains_json = jsonencode(var.virtual_hosts_domains)
 
-  envoy_config_content = replace(
-    replace(
+  # Each deployment's main config file, e.g. "envoy.yaml" or "stable/envoy.yaml"
+  deployment_config_files = {
+    for name, d in var.deployments :
+    name => d.config_path_prefix == null ? var.envoy_config_filename : "${d.config_path_prefix}/${var.envoy_config_filename}"
+  }
+
+  envoy_config_contents = {
+    for f in distinct(values(local.deployment_config_files)) :
+    f => replace(
       replace(
         replace(
-          var.envoy_config_template,
-          "{{hyperswitch_cloudfront_dns}}", var.hyperswitch_cloudfront_dns
+          replace(
+            f == var.envoy_config_filename ? var.envoy_config_template : file("${var.config_files_source_path}/${f}"),
+            "{{hyperswitch_cloudfront_dns}}", var.hyperswitch_cloudfront_dns
+          ),
+          "{{internal_loadbalancer_dns}}", var.internal_loadbalancer_dns
         ),
-        "{{internal_loadbalancer_dns}}", var.internal_loadbalancer_dns
+        "{{eks_cluster_name}}", local.eks_cluster_name
       ),
-      "{{eks_cluster_name}}", local.eks_cluster_name
-    ),
-    "{{virtual_hosts_domains}}", local.virtual_hosts_domains_json
-  )
+      "{{virtual_hosts_domains}}", local.virtual_hosts_domains_json
+    )
+  }
 
   # Logs bucket selection - use created or existing
   logs_bucket_name = var.create_logs_bucket ? module.logs_bucket[0].s3_bucket_id : var.logs_bucket_name
@@ -51,15 +60,20 @@ locals {
   config_bucket_name = var.create_config_bucket ? module.config_bucket[0].s3_bucket_id : var.config_bucket_name
   config_bucket_arn  = var.create_config_bucket ? module.config_bucket[0].s3_bucket_arn : var.config_bucket_arn
 
-  # Userdata templating - replace placeholders with actual values
-  # Supports: {{bucket-name}}, {{logs-bucket}}
-  userdata_content = replace(
-    replace(
-      var.custom_userdata,
-      "{{bucket-name}}", local.config_bucket_name
-    ),
-    "{{logs-bucket}}", local.logs_bucket_name
-  )
+  # Userdata templating - replace placeholders with actual values, per deployment
+  # Supports: {{bucket-name}}, {{logs-bucket}}, {{config-prefix}}
+  userdata_content = {
+    for name, d in var.deployments : name => replace(
+      replace(
+        replace(
+          var.custom_userdata,
+          "{{bucket-name}}", local.config_bucket_name
+        ),
+        "{{logs-bucket}}", local.logs_bucket_name
+      ),
+      "{{config-prefix}}", d.config_path_prefix == null ? "envoy" : "envoy/${d.config_path_prefix}"
+    )
+  }
 
   # IAM role selection - use created or existing
   # Priority: 1) Created role+profile, 2) Created profile for existing role, 3) Existing profile
@@ -76,7 +90,7 @@ locals {
       asg_name                = coalesce(d.asg_name, "${local.name_prefix}-${name}")
       weight                  = d.weight
       desired_capacity        = coalesce(d.desired_capacity, var.desired_capacity)
-      launch_template_id      = d.launch_template_id != null ? d.launch_template_id : aws_launch_template.envoy[0].id
+      launch_template_id      = d.launch_template_id != null ? d.launch_template_id : aws_launch_template.envoy[name].id
       launch_template_version = d.launch_template_version
       tg_available            = var.create_target_group || d.existing_target_group_arn != null
     }

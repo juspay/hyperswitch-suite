@@ -3,7 +3,7 @@ set -e
 set -x
 
 sudo mkdir -p /home/ubuntu/
-aws s3 cp s3://{{bucket-name}}/envoy/envoy.yaml /home/ubuntu/
+aws s3 cp s3://{{bucket-name}}/{{config-prefix}}/envoy.yaml /home/ubuntu/
 sudo sed -i 's/^|//g' /home/ubuntu/envoy.yaml
 sudo rm -rf /etc/envoy/envoy.yaml
 sudo rm /dev/shm/envoy_shared_memory_*

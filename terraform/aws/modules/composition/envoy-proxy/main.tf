@@ -123,9 +123,9 @@ resource "aws_s3_object" "envoy_config_files" {
   bucket = local.config_bucket_name
   key    = "envoy/${each.value}"
 
-  # Use templated content for the specified config file, raw content for other files
-  content = each.value == var.envoy_config_filename ? local.envoy_config_content : file("${var.config_files_source_path}/${each.value}")
-  etag    = each.value == var.envoy_config_filename ? md5(local.envoy_config_content) : filemd5("${var.config_files_source_path}/${each.value}")
+  # Use templated content for the deployments' main config files, raw content for other files
+  content = contains(keys(local.envoy_config_contents), each.value) ? local.envoy_config_contents[each.value] : file("${var.config_files_source_path}/${each.value}")
+  etag    = contains(keys(local.envoy_config_contents), each.value) ? md5(local.envoy_config_contents[each.value]) : filemd5("${var.config_files_source_path}/${each.value}")
 
   tags = local.common_tags
 }
@@ -658,17 +658,17 @@ resource "aws_wafv2_web_acl_association" "envoy_alb" {
 # Launch Template
 # =========================================================================
 resource "aws_launch_template" "envoy" {
-  count = var.launch_template.create ? 1 : 0
+  for_each = var.launch_template.create ? var.deployments : {}
 
-  name_prefix = "${local.name_prefix}-"
-  description = "Launch template for Envoy proxy instances - Config: ${substr(md5(local.envoy_config_content), 0, 8)}"
+  name_prefix = "${local.name_prefix}-${each.key}-"
+  description = "Launch template for Envoy proxy instances (${each.key}) - Config: ${substr(md5(local.envoy_config_contents[local.deployment_config_files[each.key]]), 0, 8)}"
 
   image_id               = var.launch_template.ami_id
   instance_type          = var.launch_template.instance_type
   key_name               = var.generate_ssh_key ? module.key_pair[0].key_pair_name : var.key_name
   vpc_security_group_ids = [module.asg_security_group.security_group_id]
   ebs_optimized          = var.launch_template.ebs_optimized
-  user_data              = base64encode(local.userdata_content)
+  user_data              = base64encode(local.userdata_content[each.key])
   update_default_version = var.launch_template.update_default_version
   default_version        = var.launch_template.default_version
 

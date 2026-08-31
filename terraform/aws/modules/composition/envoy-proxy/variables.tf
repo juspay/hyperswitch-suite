@@ -316,6 +316,10 @@ variable "deployments" {
     - launch_template_id:      Optional. Provide to use an external launch template.
     - launch_template_version: Optional. Defaults to "$Latest" for external LTs,
                                or the module-managed LT's latest_version.
+    - config_path_prefix:      Optional. Set to e.g. "stable" to read config files
+                               from <config_files_source_path>/stable/ (stored in S3
+                               under envoy/stable/). When unset, the root config
+                               folder and the envoy/ prefix are used.
   EOT
 
   type = map(object({
@@ -326,6 +330,7 @@ variable "deployments" {
     launch_template_version   = string
     target_group_name         = optional(string)
     existing_target_group_arn = optional(string)
+    config_path_prefix        = optional(string)
   }))
 
   default = {
@@ -415,7 +420,7 @@ variable "additional_policy_arns" {
 # =========================================================================
 
 variable "custom_userdata" {
-  description = "Custom userdata script for Envoy instances. This should be environment-specific and loaded from the live layer (e.g., file(\"$${path.module}/templates/userdata.sh\"))"
+  description = "Custom userdata script for Envoy instances. This should be environment-specific and loaded from the live layer (e.g., file(\"$${path.module}/templates/userdata.sh\")). Placeholders: {{bucket-name}}, {{logs-bucket}}, {{config-prefix}} (the deployment's S3 config folder, e.g. \"envoy\" or \"envoy/stable\")"
   type        = string
 }
 
