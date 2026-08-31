@@ -5,6 +5,8 @@
 
 <h1 align="center">The open-source payments switch</h1>
 
+<p align="center">Managed by agent-loop 3 as a smoke test.</p>
+
 <div align="center" >
 The single API to access payment ecosystems across 130+ countries</div>
 
