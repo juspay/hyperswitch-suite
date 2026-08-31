@@ -14,9 +14,14 @@ variable "aws_role_name" {
 }
 
 variable "pool_display_name" {
-  description = "Display name for the workload identity pool, shown in the GCP console - customize to identify which CI/CD worker/environment this federation belongs to"
+  description = "Display name for the workload identity pool, shown in the GCP console - customize to identify which CI/CD worker/environment this federation belongs to. GCP caps this at 32 characters."
   type        = string
-  default     = "AWS CI/CD apply worker federation"
+  default     = "infraswitch AWS federation"
+
+  validation {
+    condition     = length(var.pool_display_name) <= 32
+    error_message = "pool_display_name must be 32 characters or fewer (GCP WorkloadIdentityPool limit)."
+  }
 }
 
 variable "pool_description" {
