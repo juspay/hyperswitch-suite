@@ -1,0 +1,10 @@
+# Copy to dev.auto.pkrvars.hcl (gitignored) and fill in real values, or pass
+# equivalent -var flags on the command line.
+
+project_id   = "hyperswitch-dev"
+zone         = "asia-south1-a"
+network      = "hyps-dev-vpc"
+subnetwork   = "hyps-dev-management" # needs egress to the internet (Cloud NAT) for apt
+
+envoy_version = "1.31.0-1p101.0" # run `apt-cache madison getenvoy-envoy` on a Ubuntu 22.04 host to pick a version
+environment   = "dev"
