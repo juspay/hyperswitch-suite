@@ -25,17 +25,6 @@
 #   }
 # ============================================================================
 
-# ==============================================================================
-# Kubernetes provider - same requirement/reasoning as
-# ../hyperswitch/main.tf's identical block: the nested gke-workload-identity
-# module's own nested terraform-google-modules/kubernetes-engine//modules/
-# workload-identity call creates a kubernetes_service_account_v1 resource,
-# and nothing in that chain declares a provider - this module IS the root
-# Terraform module for this terragrunt unit, so it must configure the
-# default kubernetes provider every nested module call implicitly
-# inherits. Same working pattern as composition/gke-kubernetes-resources'
-# own provider "kubernetes" block, 2026-08-27.
-# ==============================================================================
 data "google_client_config" "current" {}
 
 provider "kubernetes" {

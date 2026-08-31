@@ -32,22 +32,6 @@
 #   }
 # ============================================================================
 
-# ==============================================================================
-# Kubernetes provider - required by the nested gke-workload-identity module's
-# own nested terraform-google-modules/kubernetes-engine//modules/
-# workload-identity call, which creates a kubernetes_service_account_v1
-# resource. Neither that module nor gke-workload-identity itself declares a
-# provider (confirmed by reading both - no `provider "kubernetes"` block in
-# either), so without one HERE (this module IS the root Terraform module for
-# this terragrunt unit, in the Pattern B sense - the provider default any
-# nested module call implicitly inherits), apply fails outright with "dial
-# tcp [::1]:80: connect: connection refused" (the provider's zero-config
-# default). Confirmed this exact gap is why ../../apps/hyperswitch has sat
-# with an empty Terraform state despite being wired up - real, unresolved,
-# not previously fixed despite an earlier terragrunt.hcl comment claiming
-# it was. Same working pattern as composition/gke-kubernetes-resources'
-# own provider "kubernetes" block, 2026-08-27.
-# ==============================================================================
 data "google_client_config" "current" {}
 
 provider "kubernetes" {
