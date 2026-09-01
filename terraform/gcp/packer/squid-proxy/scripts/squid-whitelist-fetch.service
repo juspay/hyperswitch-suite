@@ -1,0 +1,13 @@
+[Unit]
+Description=Fetch Squid whitelist from GCS before Squid starts
+Before=squid.service
+Wants=network-online.target
+After=network-online.target squid-config-fetch.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/update-squid-whitelist.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
