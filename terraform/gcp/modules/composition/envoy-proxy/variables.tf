@@ -83,10 +83,75 @@ variable "max_replicas" {
   default     = 10
 }
 
-variable "autoscaling_cpu_target" {
-  description = "Target CPU utilization (0-1) for the autoscaler"
-  type        = number
-  default     = 0.6
+variable "deployments" {
+  description = <<-EOT
+    Map of concurrent Envoy deployments for blue/green and canary rollouts.
+    Each key is an identifier (e.g. "stable", "canary"). Traffic is split
+    across them via the load balancer's weighted_backend_services - GCP
+    normalizes each deployment's share as weight / sum(all weights), so
+    weights don't need to sum to 100 the way AWS's ALB weighted-forward
+    percentages conventionally do (they still can, that's just not
+    required).
+
+    Fields left unset on a deployment fall back to the module-level
+    envoy_image/machine_type/min_replicas/max_replicas variables - same
+    override-or-inherit pattern as the AWS module's deployments map.
+  EOT
+  type = map(object({
+    weight       = number
+    envoy_image  = optional(string)
+    machine_type = optional(string)
+    min_replicas = optional(number)
+    max_replicas = optional(number)
+  }))
+  default = {
+    stable = { weight = 100 }
+  }
+
+  validation {
+    condition     = length(var.deployments) > 0
+    error_message = "At least one deployment must be defined."
+  }
+
+  validation {
+    condition     = alltrue([for d in values(var.deployments) : d.weight >= 0])
+    error_message = "All deployment weights must be >= 0."
+  }
+}
+
+variable "scaling_policies" {
+  description = <<-EOT
+    Autoscaling policy configuration, applied to every deployment's MIG.
+
+    cpu_target_tracking uses the MIG autoscaler's built-in CPU utilization
+    signal (target_value is a 0-1 fraction, e.g. 0.6 = 60%). Enabled by
+    default to preserve this module's previous always-on CPU autoscaling
+    behavior.
+
+    memory_target_tracking uses a custom Cloud Monitoring metric
+    (agent.googleapis.com/memory/percent_used, a 0-100 gauge - note the
+    different scale from cpu_target_tracking's 0-1 fraction). This
+    requires the Ops Agent to be installed and configured on the Envoy
+    image - enabling this without the agent present means the autoscaler
+    never receives the metric and this policy is a silent no-op, the same
+    precondition the AWS module documents for its CloudWatch-agent-backed
+    memory_target_tracking. Installing the Ops Agent is out of scope for
+    this module; see terraform/gcp/packer/envoy-proxy's README.
+
+    If both signals are disabled, the MIG's target_size (== min_replicas)
+    is used as a static instance count with no autoscaler attached.
+  EOT
+  type = object({
+    cpu_target_tracking = optional(object({
+      enabled      = optional(bool, true)
+      target_value = optional(number, 0.6)
+    }), {})
+    memory_target_tracking = optional(object({
+      enabled      = optional(bool, false)
+      target_value = optional(number, 70)
+    }), {})
+  })
+  default = {}
 }
 
 variable "http_port" {
@@ -160,6 +225,74 @@ variable "mtls_trust_config_id" {
   description = "ID of the Certificate Manager TrustConfig used for client certificate validation. Required when enable_mtls_listener = true"
   type        = string
   default     = null
+}
+
+variable "listener_rules" {
+  description = <<-EOT
+    Advanced load-balancer routing rules, evaluated before the default
+    weighted deployment split, for path/host/header-based routing or
+    redirects at the load balancer layer (before traffic reaches Envoy).
+
+    Rules are evaluated in ascending priority order (lower number = higher
+    precedence), matching the AWS ALB listener_rules priority convention.
+    A rule with host = null applies regardless of host; a rule with host
+    set only applies to hostnames in that list (GCP routes host-scoped
+    rules through a dedicated path_matcher selected by a host_rule - see
+    locals.path_matchers).
+
+    Only one of path_prefix / path_exact may be set per rule. headers
+    entries with more than one value are OR'd together via a regex
+    alternation (values are NOT regex-escaped - avoid regex metacharacters
+    in header values unless an alternation pattern is intended).
+
+    Source-IP-based routing is NOT supported: GCP's HTTP(S) load balancer
+    URL map has no source-IP match dimension at the routing layer (Cloud
+    Armor can allow/deny by source IP at the edge, but cannot route a
+    matched request to a different backend) - the AWS module's source_ip
+    listener_rules condition has no equivalent field here.
+
+    action.type = "forward" routes matching requests to a specific
+    deployment's backend service (action.target_deployment, required, must
+    be a key in var.deployments), bypassing the weighted split entirely.
+    action.type = "redirect" returns an HTTP redirect without forwarding
+    to any backend.
+  EOT
+  type = list(object({
+    priority    = number
+    host        = optional(list(string))
+    path_prefix = optional(string)
+    path_exact  = optional(string)
+    headers = optional(list(object({
+      name   = string
+      values = list(string)
+    })), [])
+    action = object({
+      type              = string
+      target_deployment = optional(string)
+      redirect = optional(object({
+        host          = optional(string)
+        path          = optional(string)
+        https         = optional(bool, true)
+        response_code = optional(string, "MOVED_PERMANENTLY_DEFAULT")
+      }))
+    })
+  }))
+  default = []
+
+  validation {
+    condition     = alltrue([for r in var.listener_rules : contains(["forward", "redirect"], r.action.type)])
+    error_message = "Each listener_rules[*].action.type must be \"forward\" or \"redirect\"."
+  }
+
+  validation {
+    condition     = alltrue([for r in var.listener_rules : r.path_prefix == null || r.path_exact == null])
+    error_message = "Each listener_rules[*] may set path_prefix or path_exact, not both."
+  }
+
+  validation {
+    condition     = alltrue([for r in var.listener_rules : r.action.type != "forward" || r.action.target_deployment != null])
+    error_message = "Each listener_rules[*] with action.type = \"forward\" must set action.target_deployment."
+  }
 }
 
 variable "metadata" {

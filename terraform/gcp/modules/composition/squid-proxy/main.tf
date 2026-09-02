@@ -95,6 +95,18 @@ resource "google_storage_bucket_object" "squid_config" {
   content = var.squid_config_content
 }
 
+# Optional dynamic override for the image's build-time-baked-in vector.toml -
+# see var.vector_config_content's own description for why this needs
+# custom_startup_script to actually take effect (nothing in the image fetches
+# this object on its own, unlike squid_config/squid_allowlist above).
+resource "google_storage_bucket_object" "vector_config" {
+  count = var.vector_config_content != null ? 1 : 0
+
+  bucket  = module.config_bucket.name
+  name    = "vector.toml"
+  content = var.vector_config_content
+}
+
 # Whitelisted-domains file, synced periodically onto the instance by a cron
 # job on the image (see ../../../packer/squid-proxy/scripts/
 # update-squid-whitelist.sh) and applied via `squid -k reconfigure` - no
@@ -121,9 +133,18 @@ module "proxy_template" {
   name_prefix  = local.name_prefix
   machine_type = var.machine_type
 
-  source_image = var.squid_image
-  disk_size_gb = var.disk_size_gb
-  disk_type    = var.disk_type
+  # Split, not a single full-path passthrough - see locals.tf's
+  # squid_image_* comment for why passing var.squid_image directly as
+  # source_image alone produces a malformed value with this module
+  # version. source_image is deliberately left unset (empty string,
+  # the module's own default) when squid_image is a family reference -
+  # the module's disk block only uses source_image_family at all when
+  # source_image is empty.
+  source_image         = local.squid_image_direct_name != null ? local.squid_image_direct_name : ""
+  source_image_family  = local.squid_image_family_name != null ? local.squid_image_family_name : ""
+  source_image_project = local.squid_image_project
+  disk_size_gb         = var.disk_size_gb
+  disk_type            = var.disk_type
 
   network    = var.network
   subnetwork = var.proxy_subnetwork
@@ -140,6 +161,12 @@ module "proxy_template" {
   tags     = ["squid-proxy", "iap-ssh"]
   labels   = local.common_labels
   metadata = merge(var.metadata, { "config-bucket" = module.config_bucket.name })
+
+  # See var.custom_startup_script's own description for why this is null
+  # by default here (unlike envoy-proxy) - this fleet's config/whitelist
+  # delivery is normally handled entirely by systemd units baked into the
+  # image, not by a Terraform-supplied startup script.
+  startup_script = var.custom_startup_script
 }
 
 module "proxy_mig" {

@@ -3,9 +3,19 @@ output "load_balancer_ip_address" {
   value       = module.load_balancer.external_ip
 }
 
-output "instance_group" {
-  description = "Self-link of the proxy fleet's managed instance group"
-  value       = module.proxy_mig.instance_group
+output "instance_groups" {
+  description = "Map of deployment name to that deployment's managed instance group self-link"
+  value       = { for name, mig in module.proxy_mig : name => mig.instance_group }
+}
+
+output "deployment_weights" {
+  description = "Map of deployment name to its configured load-balancer traffic weight"
+  value       = { for name, d in var.deployments : name => d.weight }
+}
+
+output "url_map_id" {
+  description = "ID of the module-managed URL map handling weighted deployment routing and listener_rules"
+  value       = google_compute_url_map.envoy.id
 }
 
 output "config_bucket_name" {

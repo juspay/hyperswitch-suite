@@ -51,6 +51,12 @@ variable "squid_allowlist_content" {
   default     = null
 }
 
+variable "vector_config_content" {
+  description = "Vector log-shipping config (vector.toml) content, written to the config bucket as vector.toml. Unlike squid_config_content/squid_allowlist_content, nothing in the image fetches this automatically - the Packer image (terraform/gcp/packer/squid-proxy) bakes its own vector.toml in at BUILD time via a template (scripts/vector.toml.pkrtpl.hcl), with no boot-time override path. Setting this variable only writes the object to the bucket; actually picking it up requires custom_startup_script to fetch and apply it (see that variable's own description, and envoy-proxy's templates/startup-script.sh in the live-layer for the pattern to mirror). Null skips writing the object entirely - the instance then just keeps whatever vector.toml the image baked in, same as before this variable existed."
+  type        = string
+  default     = null
+}
+
 variable "bucket_location" {
   description = "Location for the config/log buckets"
   type        = string
@@ -109,6 +115,12 @@ variable "metadata" {
   description = "Additional instance metadata applied to proxy instances (e.g. startup-script parameters)"
   type        = map(string)
   default     = {}
+}
+
+variable "custom_startup_script" {
+  description = "GCE startup-script content run on boot, the GCP equivalent of the AWS squid-proxy composition module's custom_userdata - same pattern as composition/envoy-proxy's variable of the same name. Unlike envoy, this fleet's config/whitelist delivery is NOT normally this module's job: the Packer image (terraform/gcp/packer/squid-proxy) already bakes in squid-config-fetch.service and squid-whitelist-fetch.service (both Before=squid.service), which read the config-bucket instance-metadata key this module already sets and pull squid.conf/allowedlist.txt from module.config_bucket before Squid ever starts - the whitelist also re-syncs on its own via a cron job baked into the same image (update-squid-whitelist.sh, every 15 min). Null (default) means no startup-script is set at all and the instance boots purely on the image's own baked-in units, which is correct for the common case. Only set this if a specific fleet needs boot-time behavior beyond what the image already bakes in (e.g. one-off debugging, a temporary override) - it does not replace or need to duplicate the two systemd units above."
+  type        = string
+  default     = null
 }
 
 variable "labels" {
