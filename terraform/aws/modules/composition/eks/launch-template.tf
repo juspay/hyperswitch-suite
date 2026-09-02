@@ -61,9 +61,14 @@ resource "aws_launch_template" "default" {
     instance_metadata_tags      = local.default_metadata.instance_metadata_tags
   }
 
-  # User data with cluster details for AL2023 nodeadm
+  # User data: AL2023 uses MIME multipart YAML (nodeadm), Bottlerocket uses TOML
   user_data = base64encode(templatefile(
-    coalesce(var.custom_userdata_template_path, "${path.module}/templates/bootstrap-userdata.tpl"),
+    coalesce(
+      var.custom_userdata_template_path,
+      var.default_node_os == "bottlerocket"
+      ? "${path.module}/templates/bootstrap-userdata-bottlerocket.tpl"
+      : "${path.module}/templates/bootstrap-userdata-al2023.tpl"
+    ),
     {
       cluster_name     = "${var.environment}-${var.project_name}-cluster-${var.cluster_name_version}"
       cluster_endpoint = module.eks.cluster_endpoint
@@ -169,9 +174,16 @@ resource "aws_launch_template" "custom_node_group" {
     instance_metadata_tags      = try(each.value.launch_template.metadata_options.instance_metadata_tags, local.default_metadata.instance_metadata_tags)
   }
 
-  # User data with cluster details for AL2023 nodeadm
+  # User data: per-node os_type takes precedence, then global default_node_os
+  # AL2023 uses MIME multipart YAML (nodeadm), Bottlerocket uses TOML
   user_data = base64encode(templatefile(
-    coalesce(var.custom_userdata_template_path, "${path.module}/templates/bootstrap-userdata.tpl"),
+    coalesce(
+      try(each.value.launch_template.userdata_template_path, null),
+      var.custom_userdata_template_path,
+      try(each.value.os_type, var.default_node_os) == "bottlerocket"
+      ? "${path.module}/templates/bootstrap-userdata-bottlerocket.tpl"
+      : "${path.module}/templates/bootstrap-userdata-al2023.tpl"
+    ),
     {
       cluster_name     = "${var.environment}-${var.project_name}-cluster-${var.cluster_name_version}"
       cluster_endpoint = module.eks.cluster_endpoint
