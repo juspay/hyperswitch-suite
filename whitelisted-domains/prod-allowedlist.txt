@@ -1,0 +1,16 @@
+# Squid egress allowlist — prod
+#
+# One domain per line; a leading dot allows all subdomains. Read by
+# terraform/aws/catalog/units/squid-proxy/terragrunt.hcl via
+# ${get_repo_root()}/whitelisted-domains/${environment.full}-allowedlist.txt.
+#
+# This is a minimal starter set (AWS + package registries). Add the payment
+# processor / connector domains your deployment needs to talk to.
+.amazonaws.com
+.amazon.com
+.docker.io
+.docker.com
+.github.com
+.githubusercontent.com
+.pypi.org
+.npmjs.org

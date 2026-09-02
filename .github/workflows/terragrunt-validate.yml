@@ -1,0 +1,37 @@
+name: Terragrunt Validate
+
+on:
+  pull_request:
+    paths:
+      - 'terraform/aws/catalog/**'
+      - 'terraform/aws/live/**'
+      - '.github/workflows/terragrunt-validate.yml'
+
+jobs:
+  hcl-checks:
+    name: hclfmt + hclvalidate (catalog + live)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install terragrunt
+        run: |
+          TG_VERSION=1.1.1
+          curl -fsSL -o /usr/local/bin/terragrunt \
+            "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_amd64"
+          chmod +x /usr/local/bin/terragrunt
+          terragrunt --version
+
+      - name: hcl format check
+        working-directory: terraform/aws
+        run: terragrunt hcl format --check --diff
+
+      - name: stack generate is up to date
+        working-directory: terraform/aws/live
+        run: |
+          terragrunt stack generate
+          git diff --exit-code -- . || {
+            echo "::error::terraform/aws/live/ is out of date — run 'terragrunt stack generate' in terraform/aws/live and commit the result."
+            exit 1
+          }

@@ -1,0 +1,15 @@
+[sources.squid_logs]
+  type = "file"
+  include = [ "/var/log/squid/access.log" ]
+  read_from = "end"
+
+[api]
+  enabled = true
+
+[sinks.sink_loki]
+type = "loki"
+inputs = ["squid_logs"]
+endpoint = "http://loki.hyperswitch.internal"
+encoding.codec = "json"
+labels.job = "vector/squid-sandbox"
+labels.service = "squid"

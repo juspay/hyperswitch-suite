@@ -21,7 +21,6 @@
 | <a name="module_common_local_nat_s3_rt"></a> [common\_local\_nat\_s3\_rt](#module\_common\_local\_nat\_s3\_rt) | ../../base/route-table | n/a |
 | <a name="module_common_local_route_rt"></a> [common\_local\_route\_rt](#module\_common\_local\_route\_rt) | ../../base/route-table | n/a |
 | <a name="module_common_local_s3_rt"></a> [common\_local\_s3\_rt](#module\_common\_local\_s3\_rt) | ../../base/route-table | n/a |
-| <a name="module_custom_interface_vpc_endpoints"></a> [custom\_interface\_vpc\_endpoints](#module\_custom\_interface\_vpc\_endpoints) | terraform-aws-modules/vpc/aws//modules/vpc-endpoints | 5.21.0 |
 | <a name="module_custom_subnets"></a> [custom\_subnets](#module\_custom\_subnets) | ../../base/subnet | n/a |
 | <a name="module_data_stack_subnets"></a> [data\_stack\_subnets](#module\_data\_stack\_subnets) | ../../base/subnet | n/a |
 | <a name="module_database_route_table"></a> [database\_route\_table](#module\_database\_route\_table) | ../../base/route-table | n/a |
@@ -32,9 +31,7 @@
 | <a name="module_eks_workers_subnets"></a> [eks\_workers\_subnets](#module\_eks\_workers\_subnets) | ../../base/subnet | n/a |
 | <a name="module_elasticache_subnets"></a> [elasticache\_subnets](#module\_elasticache\_subnets) | ../../base/subnet | n/a |
 | <a name="module_external_incoming_subnets"></a> [external\_incoming\_subnets](#module\_external\_incoming\_subnets) | ../../base/subnet | n/a |
-| <a name="module_gateway_vpc_endpoints"></a> [gateway\_vpc\_endpoints](#module\_gateway\_vpc\_endpoints) | ../../base/vpc-endpoint | n/a |
 | <a name="module_incoming_envoy_subnets"></a> [incoming\_envoy\_subnets](#module\_incoming\_envoy\_subnets) | ../../base/subnet | n/a |
-| <a name="module_interface_vpc_endpoints"></a> [interface\_vpc\_endpoints](#module\_interface\_vpc\_endpoints) | ../../base/vpc-endpoint | n/a |
 | <a name="module_lambda_subnets"></a> [lambda\_subnets](#module\_lambda\_subnets) | ../../base/subnet | n/a |
 | <a name="module_locker_database_subnets"></a> [locker\_database\_subnets](#module\_locker\_database\_subnets) | ../../base/subnet | n/a |
 | <a name="module_locker_server_s3_rt"></a> [locker\_server\_s3\_rt](#module\_locker\_server\_s3\_rt) | ../../base/route-table | n/a |
@@ -49,6 +46,7 @@
 | <a name="module_utils_subnets"></a> [utils\_subnets](#module\_utils\_subnets) | ../../base/subnet | n/a |
 | <a name="module_vpc"></a> [vpc](#module\_vpc) | ../../base/vpc | n/a |
 | <a name="module_vpc_endpoint_sg"></a> [vpc\_endpoint\_sg](#module\_vpc\_endpoint\_sg) | ../../base/security-group | n/a |
+| <a name="module_vpc_endpoints"></a> [vpc\_endpoints](#module\_vpc\_endpoints) | terraform-aws-modules/vpc/aws//modules/vpc-endpoints | 5.21.0 |
 
 ## Resources
 
