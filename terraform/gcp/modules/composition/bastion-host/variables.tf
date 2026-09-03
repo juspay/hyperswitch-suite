@@ -100,25 +100,17 @@ variable "labels" {
   default     = {}
 }
 
-# ==============================================================================
-# Data-store connectivity (tunnel targets)
-# ==============================================================================
-# The management subnet this bastion sits in has NO internet route - Cloud NAT
-# is restricted to the outgoing-proxy (Squid) tier only, and the VPC runs
-# default-deny egress. A stock Debian image therefore cannot apt-install
-# postgresql-client or valkey-tools at boot, and Squid's domain allowlist (shared
-# with the AWS sandbox/prod fleets) carries no Debian repo entries.
+# Data-store connectivity (tunnel targets).
 #
-# So this module deliberately installs NOTHING. The bastion is used purely as an
-# SSH local-port-forward jump host - which needs nothing on the VM beyond sshd -
-# and the client tooling stays on the operator's laptop. connection_targets is
-# what turns that from tribal knowledge into a runnable command: the live layer
-# feeds it the real endpoints from the alloydb/valkey units' outputs, and the
-# tunnel_commands output hands back a ready-to-paste `gcloud compute ssh ... -L`
-# line per target, so nobody has to go rediscover a private IP first.
+# The bastion installs no client tooling: its management subnet has no internet
+# route, so a stock image cannot apt-install one at boot. It is used purely as
+# an SSH local-port-forward jump host, with the client tooling on the operator's
+# laptop.
 #
-# This variable is purely informational - it creates no resources and grants no
-# access. Reachability comes from the VPC's firewall rules, not from here.
+# The live layer feeds this the real endpoints from the alloydb/valkey units'
+# outputs, and the tunnel_commands output turns them into a ready-to-paste
+# `gcloud compute ssh ... -L` line per target. Purely informational - it creates
+# no resources and grants no access; reachability comes from firewall rules.
 variable "connection_targets" {
   description = "Data stores reachable by port-forwarding through this bastion, keyed by a short name. Drives the tunnel_commands output only - it creates no resources and opens no firewall paths."
   type = map(object({

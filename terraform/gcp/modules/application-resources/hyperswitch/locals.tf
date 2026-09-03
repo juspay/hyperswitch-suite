@@ -1,4 +1,6 @@
 locals {
+  gcp_sa_name = "${var.project_name}-${var.environment}-hyperswitch-sa"
+
   name_prefix = "${var.environment}-${var.project_name}-hyperswitch"
 
   common_labels = merge(

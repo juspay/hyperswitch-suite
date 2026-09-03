@@ -24,9 +24,7 @@ variable "location" {
   type        = string
 }
 
-# ============================================================================
 # Bucket Configuration
-# ============================================================================
 
 variable "state_bucket_name" {
   description = "Name of the GCS bucket for Terraform state (must be globally unique)"
@@ -81,9 +79,7 @@ variable "lifecycle_rules" {
   default = [] # No lifecycle rules by default - keep all state history
 }
 
-# ============================================================================
 # Labeling
-# ============================================================================
 
 variable "labels" {
   description = "Additional labels to apply to all resources"

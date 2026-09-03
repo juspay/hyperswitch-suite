@@ -18,9 +18,7 @@ output "session_log_bucket_name" {
   value       = var.enable_session_logging ? module.session_log_bucket[0].name : null
 }
 
-# ==============================================================================
 # Tunnel targets
-# ==============================================================================
 output "connection_targets" {
   description = "Resolved host/port of every data store reachable through this bastion, keyed by short name - the machine-readable counterpart of tunnel_commands"
   value = {

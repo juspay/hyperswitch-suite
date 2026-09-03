@@ -1,26 +1,6 @@
-# ============================================================================
-# Bastion Host (GCP equivalent of composition/jump-host)
-# ============================================================================
-# IAP-tunneled bastion with no public IP, matching the AWS module's
-# SSM-Session-Manager-only jump host (no public IP, no bastion SSH key
-# distribution). Session activity is captured via Cloud Logging by default;
-# a dedicated GCS bucket + log sink give the same durable-audit-trail
-# behavior as the AWS module's S3 + CloudWatch log groups.
-#
-# Usage:
-#   module "bastion_host" {
-#     source = "../../modules/composition/bastion-host"
-#
-#     project_id  = "hyperswitch-dev"
-#     environment = "dev"
-#     region      = "europe-west1"
-#     zone        = "europe-west1-b"
-#     network     = module.vpc_network.network_self_link
-#     subnet      = module.vpc_network.subnets_by_tier["management"]
-#
-#     members = ["group:platform-team@example.com"]
-#   }
-# ============================================================================
+# IAP-tunneled bastion with no public IP and no SSH key distribution. Session
+# activity is captured via Cloud Logging; an optional GCS bucket + log sink give
+# a durable audit trail.
 
 module "bastion_host" {
   source  = "terraform-google-modules/bastion-host/google"
@@ -44,10 +24,9 @@ module "bastion_host" {
 
   members = var.members
 
-  # Baseline first, live-layer additions appended. The live dev unit uses this
-  # to add roles/secretmanager.secretAccessor so the AlloyDB master password
-  # (stored by the alloydb module) can be read from the box itself rather than
-  # copy-pasted onto it.
+  # Baseline roles first, live-layer additions appended (e.g.
+  # roles/secretmanager.secretAccessor, to read the AlloyDB master password
+  # from the box rather than copy-pasting it on).
   service_account_roles = concat(
     [
       "roles/logging.logWriter",
@@ -62,9 +41,7 @@ module "bastion_host" {
   shielded_vm = true
 }
 
-# ==============================================================================
-# Session logging (equivalent of the AWS module's S3 + CloudWatch log groups)
-# ==============================================================================
+# Session logging
 module "session_log_bucket" {
   source  = "terraform-google-modules/cloud-storage/google//modules/simple_bucket"
   version = "12.3.0"

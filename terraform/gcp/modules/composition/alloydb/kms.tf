@@ -1,6 +1,4 @@
-# ============================================================================
 # Optional CMEK key for AlloyDB cluster encryption
-# ============================================================================
 module "kms" {
   source  = "terraform-google-modules/kms/google"
   version = "4.1.2"

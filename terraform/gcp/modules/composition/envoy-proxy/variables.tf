@@ -30,7 +30,7 @@ variable "proxy_subnetwork" {
 }
 
 variable "envoy_image" {
-  description = "The custom image with Envoy pre-installed - either a full self-link (https://www.googleapis.com/compute/v1/projects/P/global/images/I or projects/P/global/images/I) or a bare image name living in var.project_id. Both forms are parsed correctly (see locals.tf) - do not pass an image *family* here, only a specific image name/self-link."
+  description = "Custom image with Envoy pre-installed - either a full self-link (projects/P/global/images/I) or a bare image name in var.project_id. Must be a specific image, not an image family"
   type        = string
 }
 
@@ -42,13 +42,13 @@ variable "envoy_config_content" {
 }
 
 variable "additional_config_files_path" {
-  description = "Optional local directory (e.g. \"$${get_terragrunt_dir()}/config\") whose files are uploaded as-is to the config bucket alongside envoy.yaml - mirrors the AWS module's config_files_source_path/fileset() pattern (terraform/aws/modules/composition/envoy-proxy). Solves two gaps envoy_config_content alone doesn't: (1) it only ever supports one file (envoy.yaml), while startup-script.sh's boot logic also optionally pulls a vector.toml override from the same bucket - that pull had no corresponding push anywhere, so it silently no-op'd; (2) any other future per-fleet config file (TLS material, extra Envoy include files) needed its own dedicated variable/resource pair, same as vector.toml did until now. Every file found in this directory is uploaded verbatim under its own name (subdirectories via fileset's \"**\" glob too) - this is a plain byte-for-byte upload, unlike AWS's version there is no {{placeholder}} template substitution here (GCP live-layer callers pre-render if needed, same as envoy_config_content already does). \"envoy.yaml\" is skipped if present, since envoy_config_content already owns that object (avoids two resources managing the same bucket key). Null skips this entirely - existing callers that only set envoy_config_content are unaffected."
+  description = "Optional local directory whose files are uploaded verbatim to the config bucket alongside envoy.yaml (e.g. a vector.toml override). No placeholder templating is applied. \"envoy.yaml\" is skipped, since envoy_config_content already owns that object. Null skips this entirely"
   type        = string
   default     = null
 }
 
 variable "force_destroy_buckets" {
-  description = "Whether the config/log buckets can be destroyed while non-empty (needed for `terraform destroy` to succeed at all, since versioning = true otherwise leaves noncurrent object versions behind that block deletion). Null (default) auto-derives from environment - true everywhere except \"prod\", matching the AWS module's identical var.environment != \"prod\" ? true : false gate on its own config/log S3 buckets, and composition/squid-proxy's identically-named/-behaved variable. Set explicitly to override the auto-derived value for either bucket."
+  description = "Whether the config/log buckets can be destroyed while non-empty - required for `terraform destroy` to succeed at all, since versioning leaves noncurrent object versions behind. Null (default) auto-derives: true everywhere except \"prod\""
   type        = bool
   default     = null
 }
@@ -210,7 +210,7 @@ variable "enable_https_redirect" {
 }
 
 variable "enable_cdn" {
-  description = "Whether to enable Cloud CDN on the load balancer's backend. GCP's Cloud CDN attaches directly to an existing HTTP(S) LB backend (unlike AWS CloudFront, it does not create a separate distribution/domain) - the LB's own IP/hostname becomes CDN-accelerated. Uses cache_mode = CACHE_ALL_STATIC (respects origin Cache-Control, only heuristically caches static content types) rather than FORCE_CACHE_ALL, since this backend also serves live, non-cacheable payment API traffic."
+  description = "Whether to enable Cloud CDN on the load balancer's backend. Cloud CDN attaches directly to the existing backend rather than creating a separate distribution, so the LB's own IP becomes CDN-accelerated. Uses cache_mode = CACHE_ALL_STATIC, since this backend also serves non-cacheable payment API traffic"
   type        = bool
   default     = false
 }
@@ -314,7 +314,7 @@ variable "metadata" {
 }
 
 variable "custom_startup_script" {
-  description = "GCE startup-script content run on boot, the GCP equivalent of the AWS envoy-proxy composition module's custom_userdata - pulls envoy.yaml/vector.toml from the config bucket (module.config_bucket.name, exposed to the script via the config-bucket instance-metadata key this module already sets) and (re)starts envoy.service/vector.service. Unlike AWS's custom_userdata, no {{bucket-name}}-style placeholder substitution happens here - the script is expected to read the config-bucket key itself from the instance metadata server at boot (http://metadata.google.internal/computeMetadata/v1/instance/attributes/config-bucket), since GCE's metadata server makes that trivial without needing Terraform-side templating. Null means no startup-script is set at all - the instance boots with whatever the image itself bakes in (see the envoy-proxy Packer image's own README for what that is by default)."
+  description = "GCE startup-script content run on boot - fetches envoy.yaml/vector.toml from the config bucket and (re)starts envoy.service/vector.service. No placeholder substitution happens here; the script reads the config-bucket key from the instance metadata server itself. Null sets no startup-script, leaving the instance to boot on whatever the image bakes in"
   type        = string
   default     = null
 }

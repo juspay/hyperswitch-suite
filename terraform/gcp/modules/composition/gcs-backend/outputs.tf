@@ -1,6 +1,4 @@
-# ============================================================================
 # GCS Bucket Outputs
-# ============================================================================
 
 output "state_bucket_name" {
   description = "The name of the state bucket"
@@ -17,9 +15,7 @@ output "state_bucket_location" {
   value       = var.location
 }
 
-# ============================================================================
 # Backend Configuration
-# ============================================================================
 
 output "backend_config" {
   description = "Backend configuration object for use in other Terraform deployments"

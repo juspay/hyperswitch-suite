@@ -2,33 +2,40 @@
 ## Requirements
 
 | Name | Version |
-|------|---------|
+| ---- | ------- |
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_google"></a> [google](#requirement\_google) | >= 6.0 |
 | <a name="requirement_google-beta"></a> [google-beta](#requirement\_google-beta) | >= 6.0 |
 
 ## Providers
 
-No providers.
+| Name | Version |
+| ---- | ------- |
+| <a name="provider_google"></a> [google](#provider\_google) | >= 6.0 |
 
 ## Modules
 
 | Name | Source | Version |
-|------|--------|---------|
+| ---- | ------ | ------- |
 | <a name="module_gke"></a> [gke](#module\_gke) | terraform-google-modules/kubernetes-engine/google//modules/private-cluster | 44.3.0 |
 
 ## Resources
 
-No resources.
+| Name | Type |
+| ---- | ---- |
+| [google_compute_firewall.allow_egress_to_master](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_firewall) | resource |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
-| <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name of the GKE cluster. Defaults to '<environment>-<project\_name>-gke' | `string` | `null` | no |
+| ---- | ----------- | ---- | ------- | :------: |
+| <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name of the GKE cluster. Defaults to '<environment>-<project\_name>-gke', or '<environment>-<project\_name>-gke-<cluster\_name\_version>' if that's set. Setting this always wins outright over both. | `string` | `null` | no |
+| <a name="input_cluster_name_version"></a> [cluster\_name\_version](#input\_cluster\_name\_version) | Optional identifier appended to the computed cluster name ("<environment>-<project\_name>-gke-<cluster\_name\_version>"), for running more than one cluster in the same environment. Null (default) appends nothing. The cluster name is ForceNew, so setting or changing this on a live cluster replaces it | `string` | `null` | no |
+| <a name="input_create_master_egress_firewall_rule"></a> [create\_master\_egress\_firewall\_rule](#input\_create\_master\_egress\_firewall\_rule) | Whether to create the EGRESS firewall rule letting nodes reach the private control-plane endpoint. GKE auto-creates only the ingress side, so this is required for a private cluster. Skipped regardless when master\_ipv4\_cidr\_block is null, or when node\_pools\_tags is empty (a rule with no target\_tags would apply network-wide) | `bool` | `true` | no |
 | <a name="input_create_service_account"></a> [create\_service\_account](#input\_create\_service\_account) | Whether to create a dedicated node service account | `bool` | `true` | no |
 | <a name="input_deletion_protection"></a> [deletion\_protection](#input\_deletion\_protection) | Whether to allow Terraform to destroy the cluster | `bool` | `true` | no |
 | <a name="input_enable_network_policy"></a> [enable\_network\_policy](#input\_enable\_network\_policy) | Enable the network policy addon (Calico) | `bool` | `false` | no |
+| <a name="input_enable_node_auto_upgrade"></a> [enable\_node\_auto\_upgrade](#input\_enable\_node\_auto\_upgrade) | Whether GKE may automatically upgrade node pool versions on its own schedule. Defaults to false, since auto-upgrades replace running nodes without an explicit apply. Applies uniformly to every entry in var.node\_pools, overriding their own auto\_upgrade key. Does not gate the control plane's own release\_channel upgrade cadence | `bool` | `false` | no |
 | <a name="input_enable_private_endpoint"></a> [enable\_private\_endpoint](#input\_enable\_private\_endpoint) | Whether the cluster's master is only accessible via its internal IP address | `bool` | `false` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev, integ, prod, sandbox) | `string` | n/a | yes |
 | <a name="input_gateway_api_channel"></a> [gateway\_api\_channel](#input\_gateway\_api\_channel) | Gateway API channel: CHANNEL\_DISABLED, CHANNEL\_EXPERIMENTAL, or CHANNEL\_STANDARD | `string` | `"CHANNEL_STANDARD"` | no |
@@ -61,12 +68,13 @@ No resources.
 ## Outputs
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | <a name="output_ca_certificate"></a> [ca\_certificate](#output\_ca\_certificate) | Base64-encoded cluster CA certificate |
 | <a name="output_cluster_id"></a> [cluster\_id](#output\_cluster\_id) | ID of the GKE cluster |
 | <a name="output_cluster_name"></a> [cluster\_name](#output\_cluster\_name) | Name of the GKE cluster |
 | <a name="output_endpoint"></a> [endpoint](#output\_endpoint) | Cluster master endpoint (internal or external depending on enable\_private\_endpoint) |
 | <a name="output_location"></a> [location](#output\_location) | Cluster location (region for regional clusters, zone for zonal) |
+| <a name="output_master_egress_firewall_rule_name"></a> [master\_egress\_firewall\_rule\_name](#output\_master\_egress\_firewall\_rule\_name) | Name of the node->control-plane egress firewall rule this module creates (null if create\_master\_egress\_firewall\_rule is false, master\_ipv4\_cidr\_block is unset, or node\_pools\_tags is empty) |
 | <a name="output_master_version"></a> [master\_version](#output\_master\_version) | Current master Kubernetes version |
 | <a name="output_node_pools_names"></a> [node\_pools\_names](#output\_node\_pools\_names) | Names of the created node pools |
 | <a name="output_service_account"></a> [service\_account](#output\_service\_account) | Email of the service account used by cluster nodes |

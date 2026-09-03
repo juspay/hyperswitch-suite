@@ -51,11 +51,9 @@ output "read_instance_ips" {
   value       = module.alloydb.read_instance_ips
 }
 
-# Upstream only exposes read pool ids/IPs as bare lists. It builds them by
-# iterating a for_each map keyed on instance_id, so both lists come back in
-# lexicographic instance_id order - which is what makes zipping them against
-# the same sorted key list safe, and gives the live layer a pool it can look
-# up by name instead of by list position.
+# Upstream exposes read pool ids/IPs only as bare lists, both in lexicographic
+# instance_id order - so zipping them against the same sorted key list is safe,
+# and gives the live layer a pool it can look up by name rather than position.
 output "read_instance_ids_by_name" {
   description = "Read pool instance IDs keyed by instance_id"
   value       = zipmap(local.read_pool_ids_sorted, module.alloydb.read_instance_ids)

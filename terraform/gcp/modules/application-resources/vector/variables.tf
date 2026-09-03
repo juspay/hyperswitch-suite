@@ -25,12 +25,12 @@ variable "cluster_location" {
 }
 
 variable "cluster_endpoint" {
-  description = "GKE cluster API server endpoint (bare host:port or IP, no scheme) - required to configure this module's own kubernetes provider (see main.tf header comment)"
+  description = "GKE cluster API server endpoint (bare host:port or IP, no scheme) - required to configure this module's kubernetes provider"
   type        = string
 }
 
 variable "cluster_ca_certificate" {
-  description = "GKE cluster CA certificate, base64-encoded - required to configure this module's own kubernetes provider (see main.tf header comment)"
+  description = "GKE cluster CA certificate, base64-encoded - required to configure this module's kubernetes provider"
   type        = string
   sensitive   = true
 }
@@ -114,7 +114,7 @@ variable "subscription_message_retention_duration" {
 }
 
 variable "cross_region_reader_members" {
-  description = "List of IAM members (e.g. 'serviceAccount:...') in other regions/projects granted subscriber access, the equivalent of the AWS module's cross-region SQS read policy"
+  description = "List of IAM members (e.g. 'serviceAccount:...') in other regions or projects granted subscriber access to the subscription"
   type        = list(string)
   default     = []
 }

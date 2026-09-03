@@ -42,9 +42,7 @@ variable "subnetwork" {
   default     = null
 }
 
-# ==============================================================================
 # External HTTP(S) Load Balancer
-# ==============================================================================
 
 variable "ssl" {
   description = "Whether to provision an HTTPS listener with a managed certificate and redirect HTTP to HTTPS"
@@ -70,9 +68,7 @@ variable "backends" {
   default     = {}
 }
 
-# ==============================================================================
 # Internal TCP/UDP Load Balancer
-# ==============================================================================
 
 variable "internal_backends" {
   description = "List of {group = <instance-group-self-link>} backends for the internal load balancer"

@@ -1,33 +1,11 @@
-# ============================================================================
-# Cloud CDN (GCP equivalent of composition/cloudfront)
-# ============================================================================
-# One global external HTTP(S) load balancer per distribution with Cloud CDN
-# enabled on its backends, plus a GCS log bucket, matching the AWS module's
-# CloudFront distribution + S3 log bucket shape. Origins can be Cloud
-# Storage buckets (via `backend_buckets`) or Compute/Serverless backends
-# (via `backend_services`, reusing the same backend map shape as
-# composition/load-balancer).
+# Cloud CDN: one global external HTTP(S) load balancer per distribution with
+# Cloud CDN enabled on its backends, plus a GCS log bucket. Origins can be Cloud
+# Storage buckets (`backend_buckets`) or Compute/Serverless backends
+# (`backend_services`, sharing composition/load-balancer's backend map shape).
 #
-# CloudFront Functions have no Cloud CDN equivalent (Cloud CDN has no
-# request/response edge-compute hook); the nearest GCP-native path for
-# request rewriting is a Cloud Run/Cloud Functions origin placed in front of
-# the real origin, which is out of scope for this module. See
-# terraform/gcp/modules/README.md.
-#
-# Usage:
-#   module "cloud_cdn" {
-#     source = "../../modules/composition/cloud-cdn"
-#
-#     project_id  = "hyperswitch-dev"
-#     environment = "dev"
-#     name_override = "assets"
-#
-#     backend_buckets = {
-#       assets = { bucket_name = module.assets_bucket.name, enable_cdn = true }
-#     }
-#     managed_ssl_certificate_domains = ["assets.dev.hyperswitch.example.com"]
-#   }
-# ============================================================================
+# Cloud CDN has no edge-compute hook, so there is no equivalent of CloudFront
+# Functions here; request rewriting would need a Cloud Run origin in front of
+# the real one, which is out of scope for this module.
 
 module "log_bucket" {
   source  = "terraform-google-modules/cloud-storage/google//modules/simple_bucket"

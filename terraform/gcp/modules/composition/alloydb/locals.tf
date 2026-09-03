@@ -19,9 +19,8 @@ locals {
 
   primary_instance_id = coalesce(var.primary_instance.instance_id, "${local.cluster_id}-primary")
 
-  # Read pools, normalised so the map key doubles as the default instance_id -
-  # this is what lets the live layer address a pool by name the way the AWS
-  # module's cluster_instances map does.
+  # Read pools, normalised so the map key doubles as the default instance_id,
+  # letting the live layer address a pool by name.
   read_pool_instances = {
     for k, r in var.read_pool_instances : k => merge(r, {
       instance_id = coalesce(r.instance_id, k)
@@ -42,11 +41,9 @@ locals {
     local.kms_create ? module.kms[0].keys[var.kms.key_name] : null
   )
 
-  # AlloyDB has no built-in "generate a password for me" path (unlike Cloud
-  # SQL's random_password.user-password[0] inside the sql-db registry
-  # module) - generate it ourselves when master_password is left unset.
-  # A secondary cluster inherits the primary's users - it has no initial user
-  # of its own, so there is nothing to generate or store.
+  # AlloyDB has no built-in password generation, so generate one when
+  # master_password is unset. A secondary cluster inherits the primary's users
+  # and has no initial user, so there is nothing to generate or store.
   generate_password = var.master_password == null && !local.is_secondary
   master_password   = local.generate_password ? random_password.master[0].result : var.master_password
 

@@ -60,9 +60,7 @@ variable "master_password" {
   sensitive   = true
 }
 
-# ============================================================================
 # Cross-region disaster recovery
-# ============================================================================
 
 variable "primary_cluster_name" {
   description = <<-EOT
@@ -91,16 +89,8 @@ variable "primary_cluster_name" {
   default     = null
 }
 
-# ============================================================================
-# Instances
-# ============================================================================
-# AlloyDB's instance model is not Aurora's. A cluster has exactly ONE primary
-# instance - there is no map of N writers/readers the way the AWS module's
-# cluster_instances works. Read scaling is done with read pools, where each
-# pool is a single instance resource fronting node_count identical nodes. So
-# the closest equivalent of cluster_instances is: one fully-configurable
-# primary, plus a map of fully-configurable read pools.
-# ============================================================================
+# Instances. A cluster has exactly one primary; read scaling is done with read
+# pools, each a single instance resource fronting node_count identical nodes.
 
 variable "primary_instance" {
   description = <<-EOT
@@ -216,9 +206,7 @@ variable "read_pool_instances" {
   }
 }
 
-# ============================================================================
 # Backups
-# ============================================================================
 
 variable "continuous_backup_enabled" {
   description = "Whether to enable continuous backup (AlloyDB's point-in-time recovery equivalent)"
@@ -250,9 +238,7 @@ variable "automated_backup_start_hour" {
   default     = 2
 }
 
-# ============================================================================
 # KMS / CMEK - same shape as composition/cloud-sql for consistency
-# ============================================================================
 
 variable "kms" {
   description = "CMEK configuration. Set create=true to have this module create a KMS keyring/key for cluster encryption"
@@ -271,9 +257,7 @@ variable "encryption_key_name" {
   default     = null
 }
 
-# ============================================================================
 # Secret Manager - same shape as composition/cloud-sql's secret_manager toggle
-# ============================================================================
 
 variable "secret_manager" {
   description = "Set create=true to have this module store the auto-generated master password in Secret Manager. Only takes effect when master_password is left unset."

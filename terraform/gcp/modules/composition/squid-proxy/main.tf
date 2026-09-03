@@ -1,26 +1,9 @@
-# ============================================================================
-# Squid Egress Proxy (GCP equivalent of composition/squid-proxy)
-# ============================================================================
-# Autoscaled Squid fleet on Compute Engine (instance template + MIG) fronted
-# by an internal TCP load balancer, with config/log GCS buckets - mirroring
-# the AWS module's ASG + NLB + S3-config/log shape. Unlike the AWS module,
-# this does not build its own NAT path: outbound internet access for
-# clients routing through Squid is provided by the Cloud Router + Cloud NAT
-# already created in composition/vpc-network.
+# Squid egress proxy.
 #
-# Usage:
-#   module "squid_proxy" {
-#     source = "../../modules/composition/squid-proxy"
-#
-#     project_id       = "hyperswitch-dev"
-#     environment      = "dev"
-#     region           = "europe-west1"
-#     network          = module.vpc_network.network_self_link
-#     proxy_subnetwork = module.vpc_network.subnets_by_tier["outgoing-proxy"]
-#     lb_subnetwork    = module.vpc_network.subnets_by_tier["outgoing-proxy"]
-#     squid_image      = "projects/hyperswitch-dev/global/images/squid-v1"
-#   }
-# ============================================================================
+# Autoscaled Squid fleet on Compute Engine (instance template + MIG) fronted by
+# an internal TCP load balancer, with config/log GCS buckets. This builds no NAT
+# path of its own - outbound internet access comes from the Cloud Router +
+# Cloud NAT in composition/vpc-network.
 
 module "service_account" {
   source  = "terraform-google-modules/service-accounts/google"
@@ -34,13 +17,8 @@ module "service_account" {
   ]
 }
 
-# force_destroy: see var.force_destroy_buckets' own description - env-gated
-# (true except in prod) rather than hardcoded, matching the AWS module's
-# equivalent gate on its own config/log S3 buckets. versioning = true means
-# old object versions persist even after "deletion" - without force_destroy,
-# `terraform destroy` fails outright ("Error trying to delete bucket ...
-# without force_destroy set to true"), same failure mode confirmed live on
-# ../envoy-proxy's equivalent buckets, 2026-08-20.
+# force_destroy is env-gated (true except in prod): with versioning on,
+# `terraform destroy` fails on the noncurrent object versions left behind.
 module "config_bucket" {
   source  = "terraform-google-modules/cloud-storage/google//modules/simple_bucket"
   version = "12.3.0"
@@ -53,16 +31,9 @@ module "config_bucket" {
   force_destroy      = local.force_destroy_buckets
   labels             = local.common_labels
 
-  # Without this, the proxy service account can resolve the config-bucket
-  # metadata key fine but squid-config-fetch.service's/the whitelist-cron
-  # script's `gsutil cp` fails with a 403 (storage.objects.list denied) -
-  # same real failure mode already confirmed on ../envoy-proxy's identical
-  # setup, 2026-08-20. squid.service never gets a rendered config as a
-  # result, since squid-config-fetch.service Before=squid.service but is
-  # not itself Requires=d - it fails silently rather than blocking startup,
-  # which is arguably worse (a stale/default squid.conf serving quietly
-  # instead of a loud failure) - all the more reason this grant is not
-  # optional.
+  # Required by squid-config-fetch.service and the whitelist cron job; without
+  # it their fetches 403 and Squid serves a stale/default config silently,
+  # since that unit is only Before= squid.service, not Requires=d by it.
   iam_members = [{
     role   = "roles/storage.objectViewer"
     member = "serviceAccount:${module.service_account.email}"
@@ -96,10 +67,9 @@ resource "google_storage_bucket_object" "squid_config" {
   content = var.squid_config_content
 }
 
-# Optional dynamic override for the image's build-time-baked-in vector.toml -
-# see var.vector_config_content's own description for why this needs
-# custom_startup_script to actually take effect (nothing in the image fetches
-# this object on its own, unlike squid_config/squid_allowlist above).
+# Optional override for the vector.toml baked into the image. Nothing in the
+# image fetches this object on its own, so applying it needs a
+# custom_startup_script.
 resource "google_storage_bucket_object" "vector_config" {
   count = var.vector_config_content != null ? 1 : 0
 
@@ -108,15 +78,10 @@ resource "google_storage_bucket_object" "vector_config" {
   content = var.vector_config_content
 }
 
-# Whitelisted-domains file, synced periodically onto the instance by a cron
-# job on the image (see ../../../packer/squid-proxy/scripts/
-# update-squid-whitelist.sh) and applied via `squid -k reconfigure` - no
-# instance replacement needed to roll out a whitelist change, matching the
-# AWS AMI's userdata.sh cron (`*/15 * * * * root /etc/squid/
-# update_whitelist.sh`, itself an `aws s3 cp` + `squid -k reconfigure`).
-# Separate object/variable from squid_config_content so the two can change
-# independently - a whitelist edit doesn't need to touch squid.conf, and
-# vice versa.
+# Whitelisted-domains file, synced onto the instance by a cron job on the image
+# and applied via `squid -k reconfigure`, so a whitelist change rolls out
+# without replacing instances. Kept separate from squid_config_content so the
+# two can change independently.
 resource "google_storage_bucket_object" "squid_allowlist" {
   count = var.squid_allowlist_content != null ? 1 : 0
 
@@ -125,9 +90,8 @@ resource "google_storage_bucket_object" "squid_allowlist" {
   content = var.squid_allowlist_content
 }
 
-# Generic multi-file config upload - see var.additional_config_files_path's
-# own description for why this exists alongside the three dedicated
-# *_content variables above (backward compat) rather than replacing them.
+# Generic multi-file config upload, alongside the three dedicated *_content
+# variables above (kept for backward compatibility).
 resource "google_storage_bucket_object" "additional_config_files" {
   for_each = var.additional_config_files_path != null ? setsubtract(
     fileset(var.additional_config_files_path, "**"),
@@ -162,18 +126,14 @@ module "proxy_template" {
     scopes = ["cloud-platform"]
   }
 
-  # iap-ssh matches the live VPC's already-existing, permanent
-  # hyperswitch-dev-allow-iap-ssh rule (targetTags=[iap-ssh], source
-  # 35.235.240.0/20) - same fix already applied to locker's and envoy's
-  # modules after hitting the identical gap there.
+  # iap-ssh matches the VPC's tag-scoped IAP-SSH firewall rule; without it no
+  # existing rule covers these instances.
   tags     = ["squid-proxy", "iap-ssh"]
   labels   = local.common_labels
   metadata = merge(var.metadata, { "config-bucket" = module.config_bucket.name })
 
-  # See var.custom_startup_script's own description for why this is null
-  # by default here (unlike envoy-proxy) - this fleet's config/whitelist
-  # delivery is normally handled entirely by systemd units baked into the
-  # image, not by a Terraform-supplied startup script.
+  # Null by default: this fleet's config/whitelist delivery is handled by
+  # systemd units baked into the image, not by a startup script.
   startup_script = var.custom_startup_script
 }
 
@@ -233,18 +193,10 @@ module "internal_lb" {
 
   backends = [{ group = module.proxy_mig.instance_group }]
 
-  # source_tags = [] plus leaving source_ip_ranges unset (both were true
-  # before var.ilb_source_ranges existed) makes this module's own
-  # google_compute_firewall.default-ilb-fw resource pass neither
-  # source_ranges nor source_tags/source_service_accounts to the GCP API -
-  # which defaults sourceRanges to 0.0.0.0/0 (confirmed live, 2026-09-02:
-  # `gcloud compute firewall-rules describe dev-hyperswitch-squid-ilb-ilb-fw
-  # --format="yaml(sourceRanges)"` -> ["0.0.0.0/0"]). var.ilb_source_ranges
-  # (see its own description) is what actually scopes this now - source_tags
-  # stays [] since Squid's clients are GKE pods, which carry no network tags
-  # of their own to source-tag-match against (same reasoning already
-  # documented on the sibling gke-to-squid-egress firewall rule in
-  # ../../../../../hyperswitch-infra/terraform/gcp/live/*/firewall-rules).
+  # var.ilb_source_ranges is what scopes the generated firewall rule: with
+  # neither source_ip_ranges nor source_tags set, the API defaults sourceRanges
+  # to 0.0.0.0/0. source_tags stays empty because Squid's clients are GKE pods,
+  # which carry no network tags to match on.
   source_ip_ranges = var.ilb_source_ranges
   source_tags      = []
   target_tags      = ["squid-proxy"]
@@ -257,13 +209,8 @@ module "internal_lb" {
     healthy_threshold   = 2
     unhealthy_threshold = 3
     proxy_header        = "NONE"
-    # terraform-google-modules/lb-internal has no default for enable_log -
-    # omitting it entirely coerces to null, and the module's own
-    # google_compute_health_check resource does a null-incompatible
-    # ternary on it ("Null condition" error). Same bug already found and
-    # fixed in the locker composition module's identical internal_lb call
-    # (see docs/superpowers/tracking/2026-08-19-gcp-dev-rollout-tracker.md,
-    # Task L6, hyperswitch-infra repo).
+    # lb-internal has no default for enable_log; omitting it coerces to null
+    # and its health check does a null-incompatible ternary on the value.
     enable_log = false
   }
 

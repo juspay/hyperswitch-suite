@@ -1,6 +1,4 @@
-# =========================================================================
 # FIREWALL RULES OUTPUTS
-# =========================================================================
 
 output "firewall_rules" {
   description = "Map of created firewall rule self-links, keyed by rule name"

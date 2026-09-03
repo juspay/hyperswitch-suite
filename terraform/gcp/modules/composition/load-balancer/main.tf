@@ -1,32 +1,9 @@
-# ============================================================================
-# Generic Load Balancer (GCP equivalent of composition/load-balancer)
-# ============================================================================
-# One `var.internal` toggle switches between:
-#   - external: Global external HTTP(S) Load Balancer (terraform-google-modules/lb-http)
-#   - internal: Regional internal TCP/UDP Load Balancer (terraform-google-modules/lb-internal)
-# mirroring the AWS module's single ALB module with an internal/external
-# toggle. DNS aliasing is handled by an optional composition/cloud-dns call
-# from the live layer, not by this module, to keep the zone/record lifecycle
-# independent of the load balancer's.
+# Generic load balancer. The `var.internal` toggle switches between:
+#   - external: global external HTTP(S) LB (terraform-google-modules/lb-http)
+#   - internal: regional internal TCP/UDP LB (terraform-google-modules/lb-internal)
 #
-# Usage (external):
-#   module "load_balancer" {
-#     source = "../../modules/composition/load-balancer"
-#
-#     project_id   = "hyperswitch-dev"
-#     environment  = "dev"
-#     name_override = "api"
-#     internal     = false
-#
-#     backends = {
-#       default = {
-#         groups = [{ group = module.some_umig.self_links[0] }]
-#         health_check = { request_path = "/health", port = 8080 }
-#         log_config   = { enable = true, sample_rate = 1.0 }
-#       }
-#     }
-#   }
-# ============================================================================
+# DNS aliasing is left to an optional composition/cloud-dns call from the live
+# layer, keeping the zone/record lifecycle independent of the load balancer's.
 
 module "external_lb" {
   source  = "GoogleCloudPlatform/lb-http/google"

@@ -1,27 +1,5 @@
-# ============================================================================
-# Artifact Registry (GCP equivalent of composition/ecr)
-# ============================================================================
-# Creates one Docker-format Artifact Registry repository per entry in
-# var.repositories, mirroring the AWS ecr module's for_each-over-repos shape.
-# Repository-level IAM is granted directly (repositories are the natural
-# permission boundary on Artifact Registry, unlike ECR's account-wide policy
-# style).
-#
-# Usage:
-#   module "artifact_registry" {
-#     source = "../../modules/composition/artifact-registry"
-#
-#     project_id  = "hyperswitch-dev"
-#     environment = "dev"
-#     location    = "europe-west1"
-#
-#     repositories = {
-#       hyperswitch = {
-#         cleanup_policies = { keep-recent = { action = "KEEP", most_recent_versions = 10 } }
-#       }
-#     }
-#   }
-# ============================================================================
+# One Docker-format Artifact Registry repository per entry in var.repositories.
+# IAM is granted per repository, the natural permission boundary here.
 
 resource "google_artifact_registry_repository" "this" {
   for_each = var.repositories
@@ -72,9 +50,7 @@ resource "google_artifact_registry_repository" "this" {
   labels = merge(local.common_labels, try(each.value.labels, {}))
 }
 
-# ==============================================================================
 # Repository IAM bindings
-# ==============================================================================
 resource "google_artifact_registry_repository_iam_member" "this" {
   for_each = local.repository_iam_flat
 

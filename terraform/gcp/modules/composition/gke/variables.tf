@@ -21,7 +21,7 @@ variable "cluster_name" {
 }
 
 variable "cluster_name_version" {
-  description = "Optional numeric/version identifier appended to the default computed cluster name (\"<environment>-<project_name>-gke-<cluster_name_version>\"), for running more than one GKE cluster in the same environment and telling them apart - mirrors the AWS EKS module's identically-named variable (terraform/aws/modules/composition/eks, default \"v1\", live layers set \"01\") and that module's live-layer directory convention of naming the unit itself \"eks-01\"/\"eks-02\". Unlike AWS's version, this defaults to null (no suffix at all, i.e. the exact pre-existing name) rather than always appending something - google_container_cluster's name is a ForceNew attribute, so retroactively adopting AWS's always-on default against an already-named live cluster would force a full destroy-and-recreate of it. Only set this for a brand-new cluster, or when deliberately planning a rename (which will replace the cluster - do not set this on a live cluster's terragrunt.hcl without accepting that cost)."
+  description = "Optional identifier appended to the computed cluster name (\"<environment>-<project_name>-gke-<cluster_name_version>\"), for running more than one cluster in the same environment. Null (default) appends nothing. The cluster name is ForceNew, so setting or changing this on a live cluster replaces it"
   type        = string
   default     = null
 }
@@ -94,7 +94,7 @@ variable "master_ipv4_cidr_block" {
 }
 
 variable "create_master_egress_firewall_rule" {
-  description = "Whether to create the EGRESS firewall rule allowing this cluster's nodes to reach its own private control-plane endpoint. GKE auto-creates the ingress side of node<->master traffic but never the egress side, so this is required for any private cluster (enable_private_nodes is always true in this module) once master_ipv4_cidr_block is set - true by default. Only skipped (regardless of this flag) when master_ipv4_cidr_block is null (nothing to allow egress to) or node_pools_tags is empty (would otherwise create a firewall rule with no target_tags, which GCP applies network-wide rather than to zero instances)."
+  description = "Whether to create the EGRESS firewall rule letting nodes reach the private control-plane endpoint. GKE auto-creates only the ingress side, so this is required for a private cluster. Skipped regardless when master_ipv4_cidr_block is null, or when node_pools_tags is empty (a rule with no target_tags would apply network-wide)"
   type        = bool
   default     = true
 }
@@ -174,7 +174,7 @@ variable "node_pools" {
 }
 
 variable "enable_node_auto_upgrade" {
-  description = "Whether GKE is allowed to automatically upgrade node pool versions on its own schedule (tracking the cluster's release_channel). Defaults to false - node auto-upgrades replace running nodes without an explicit apply, which can surprise a live workload's reliability with a rollout nobody planned for (this is specifically about NODE version auto-upgrade, not the control-plane's own release_channel-driven upgrade cadence, which this module does not separately gate). Overrides every entry in var.node_pools' own auto_upgrade key uniformly (see locals.tf) rather than requiring every pool to remember to set it individually. Set true to restore GKE's own default self-managed node-upgrade behavior."
+  description = "Whether GKE may automatically upgrade node pool versions on its own schedule. Defaults to false, since auto-upgrades replace running nodes without an explicit apply. Applies uniformly to every entry in var.node_pools, overriding their own auto_upgrade key. Does not gate the control plane's own release_channel upgrade cadence"
   type        = bool
   default     = false
 }

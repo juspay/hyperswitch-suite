@@ -10,14 +10,10 @@ locals {
     var.labels
   )
 
-  # ==========================================================================
-  # Named subnet tiers
-  # ==========================================================================
-  # GCP subnets are regional (span every zone in the region), so unlike the
-  # AWS vpc-network module there is no per-AZ subnet fan-out here: one CIDR
-  # per tier is enough. There is also no `eks-control-plane` tier - GKE's
-  # control plane lives outside the VPC and is configured via
-  # `master_ipv4_cidr_block` on the composition/gke module, not a subnet.
+  # Named subnet tiers. GCP subnets are regional, so one CIDR per tier is
+  # enough - there is no per-AZ fan-out. There is no control-plane tier either:
+  # GKE's control plane lives outside the VPC, configured via
+  # master_ipv4_cidr_block on composition/gke.
   named_subnets = {
     external-incoming = {
       cidr                     = var.external_incoming_subnet_cidr
@@ -141,14 +137,9 @@ locals {
 
   gke_nodes_subnet_name = "${local.name_prefix}-gke-nodes"
 
-  # ==========================================================================
-  # Cloud NAT subnet scoping
-  # ==========================================================================
-  # Only built/used when var.nat_subnetwork_tiers is set (LIST_OF_SUBNETWORKS
-  # mode) - see variables.tf. Silently drops any tier name that doesn't exist
-  # or has no CIDR configured, rather than erroring, so a typo'd tier name
-  # just means that tier gets no NAT route (fails closed, matching this
-  # variable's whole purpose) instead of a plan-time error.
+  # Cloud NAT subnet scoping, only used when var.nat_subnetwork_tiers is set
+  # (LIST_OF_SUBNETWORKS mode). Unknown or CIDR-less tier names are dropped
+  # rather than erroring, so a typo fails closed - that tier gets no NAT route.
   nat_subnetworks_list = var.nat_subnetwork_tiers == null ? [] : [
     for tier in var.nat_subnetwork_tiers : {
       name                     = "${local.name_prefix}-${tier}"
@@ -158,11 +149,8 @@ locals {
     if contains(keys(local.all_subnets), tier) && local.all_subnets[tier].cidr != null
   ]
 
-  # ==========================================================================
-  # Baseline network-wide firewall rules
-  # ==========================================================================
-  # Module-internal only - cross-module rules belong in
-  # composition/firewall-rules, applied last in the deployment order.
+  # Baseline network-wide firewall rules. Module-internal only - cross-module
+  # rules belong in composition/firewall-rules.
   ingress_rules = concat(
     [
       {
@@ -214,23 +202,15 @@ locals {
         allow              = [{ protocol = "all" }]
       },
     ],
-    # Both rules below are only needed once the deny-all-egress rule further
-    # down is active - otherwise the allow-all-egress rule above already
-    # covers this traffic. Both sit at priority 1000, ahead of the deny-all
-    # rule at 65534.
+    # The two rules below only matter once the deny-all-egress rule at
+    # priority 65534 is active; they sit at priority 1000, ahead of it.
     #
-    # NOT covered here, and REQUIRED in addition before enable_default_deny_
-    # egress is safe to turn on: an egress allow to the GKE master's
-    # master_ipv4_cidr_block (ports 443, 10250, 8132 - API server, kubelet/
-    # metrics, and the konnectivity-agent tunnel respectively). GKE
-    # auto-creates the *ingress* firewall rules for master<->node traffic
-    # but never the egress side, and this module has no visibility into
-    # master_ipv4_cidr_block (that's an output of composition/gke, a
-    # different unit) - that rule belongs in composition/firewall-rules,
-    # which already depends on both this module and composition/gke. Do not
-    # enable enable_default_deny_egress on any live unit until that rule
-    # exists there, or nodes will go NotReady once their kubelet lease
-    # expires (~40s) after apply.
+    # Not covered here, and required before enable_default_deny_egress is safe:
+    # an egress allow to the GKE master's master_ipv4_cidr_block (ports 443,
+    # 10250, 8132). GKE auto-creates only the ingress side of master<->node
+    # traffic, and this module cannot see master_ipv4_cidr_block, so that rule
+    # belongs in composition/firewall-rules. Without it, nodes go NotReady once
+    # their kubelet lease expires after apply.
     var.enable_default_deny_egress ? [
       {
         name               = "${local.name_prefix}-allow-egress-internal"
