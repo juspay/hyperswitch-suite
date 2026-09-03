@@ -33,6 +33,11 @@ module "alloydb" {
   source  = "GoogleCloudPlatform/alloy-db/google"
   version = "~> 8.0"
 
+  # The service-agent CMEK grant must land BEFORE the instance is created;
+  # nothing in the arguments below references it, so the ordering has to be
+  # stated explicitly or Terraform is free to create the instance first.
+  depends_on = [google_kms_crypto_key_iam_member.alloydb_service_agent]
+
   project_id = var.project_id
   cluster_id = local.cluster_id
   location   = var.region
