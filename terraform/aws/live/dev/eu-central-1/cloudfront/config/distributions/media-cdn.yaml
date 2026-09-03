@@ -7,7 +7,7 @@ origins:
   # Using API v1 as origin for during testing
   - origin_id: "api-v1"
     type: "alb"
-    domain_name: "dev-hyperswitch-envoy-alb-1381992561.eu-central-1.elb.amazonaws.com"
+    domain_name: "dev-hyperswitch-envoy-alb-XXXXXXXXXX.eu-central-1.elb.amazonaws.com"
     custom_origin_config:
       http_port: 80
       https_port: 443
@@ -16,9 +16,9 @@ origins:
   # S3 bucket - COMMENTED OUT FOR OAC TESTING
   # - origin_id: "media-s3"
   #   type: "s3"
-  #   s3_bucket_domain_name: "dev-hyperswitch-envoy-config-2xxxxxxxxxx7-eu-central-1.s3.eu-central-1.amazonaws.com"
-  #   s3_bucket_id: "dev-hyperswitch-envoy-config-2xxxxxxxxxx7-eu-central-1"
-  #   s3_bucket_arn: "arn:aws:s3:::dev-hyperswitch-envoy-config-2xxxxxxxxxx7-eu-central-1"
+  #   s3_bucket_domain_name: "dev-hyperswitch-envoy-config-XXXXXXXXXXXX-eu-central-1.s3.eu-central-1.amazonaws.com"
+  #   s3_bucket_id: "dev-hyperswitch-envoy-config-XXXXXXXXXXXX-eu-central-1"
+  #   s3_bucket_arn: "arn:aws:s3:::dev-hyperswitch-envoy-config-XXXXXXXXXXXX-eu-central-1"
   #   origin_access_control_id: "hyperswitch-media-s3-oac"
   #   apply_bucket_policy: true
 
