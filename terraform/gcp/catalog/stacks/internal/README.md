@@ -1,7 +1,7 @@
 # Internal GCP stack
 
-The GKE cluster, the workloads on it, and the two data services those
-workloads need — for the internal `sandbox`, `dev`, `pre-prod` and `prod`
+The GKE cluster, the workloads on it, the two data services those workloads
+need, and the edge proxies — for the internal `sandbox`, `dev`, `pre-prod` and `prod`
 environments. This stack creates its own VPC.
 
 Rendered by [`terraform/gcp/live/terragrunt.stack.hcl`](../../../live/terragrunt.stack.hcl)
@@ -11,7 +11,7 @@ Rendered by [`terraform/gcp/live/terragrunt.stack.hcl`](../../../live/terragrunt
 
 | File | Role |
 |---|---|
-| `terragrunt.stack.hcl` | the 13 `unit` blocks, their `path`s and the `values` each receives |
+| `terragrunt.stack.hcl` | the 15 `unit` blocks, their `path`s and the `values` each receives |
 | `root.hcl` | GCS backend, `google` + `google-beta` providers, and the five locals every unit reads |
 
 `root.hcl` is copied into the generated tree alongside the units, which is how
@@ -25,6 +25,11 @@ each unit's `find_in_parent_folders("root.hcl")` resolves.
 | 1. Data + cluster | `alloydb`, `memorystore-valkey`, `gke` | `alloydb`, `memorystore-valkey`, `application-stack/gke` |
 | 2. Platform apps | `gateway-controller`, `istio`, `argocd`, `external-secrets-operator` | `application-stack/apps/<name>` |
 | 3. Workload apps | `loki`, `vector`, `grafana`, `superposition`, `hyperswitch` | `application-stack/apps/<name>` |
+| 4. Edge proxies | `envoy-proxy`, `squid-proxy` | `envoy-proxy`, `squid-proxy` |
+
+The edge proxies depend only on `vpc-network`, so Terragrunt will run them
+alongside phases 1–3 rather than after — that is fine, nothing in the app tier
+depends on them at apply time.
 
 **The dependency graph is complete for this unit set** — every unit that needs
 the network or the cluster declares it, so `terragrunt run-all apply` orders
@@ -60,6 +65,7 @@ Consumed by units:
 | `machine_types` (`gke_system_pool`, `gke_generic_compute`) | `gke` |
 | `domains` (`api`, `grafana`) | `istio`, `grafana`, `hyperswitch` |
 | `smtp_secret_id` | `hyperswitch` |
+| `custom_images` (`envoy`, `squid`) | `envoy-proxy`, `squid-proxy` — image names, expanded to a full image path against `project_id` |
 | `alloydb` (optional map) | `alloydb` — `availability_type`, `cpu_count`, `database_version`, `master_username`, `read_pool_instances`, `deletion_protection` |
 | `valkey` (optional map) | `memorystore-valkey` — `shard_count`, `replica_count`, `node_type`, `zone_distribution_config_mode`, `deletion_protection_enabled` |
 

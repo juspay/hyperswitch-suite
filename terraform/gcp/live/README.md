@@ -31,7 +31,7 @@ That needs no cloud credentials and no module downloads.
 
 ## Before anything can run
 
-All 13 module tags exist, so `init` will resolve. What is left is replacing
+All 15 module tags exist, so `init` will resolve. What is left is replacing
 every `REPLACE_ME` in `terragrunt.stack.hcl`:
 
 | Placeholder | What it needs |
@@ -40,6 +40,7 @@ every `REPLACE_ME` in `terragrunt.stack.hcl`:
 | `state_bucket` | a globally unique GCS bucket name; Terragrunt creates it on first `init` |
 | `vpn_cidr_blocks` | real office / VPN CIDRs. **Left empty, `gke` falls back to an allow-all `master_authorized_networks` entry that must not be applied.** |
 | `domains.api`, `domains.grafana` | real hostnames |
+| `custom_images.envoy`, `custom_images.squid` | names of images built from `terraform/gcp/packer/{envoy-proxy,squid-proxy}`. These two units will not `apply` without them |
 
 ## Deployment order
 
@@ -60,6 +61,7 @@ The order it derives:
 | 1 | `application-stack/gke`, `alloydb`, `memorystore-valkey` | independent of each other; `gke` is the long pole (~15–20 min) |
 | 2 | `apps/gateway-controller`, `apps/istio`, `apps/argocd`, `apps/external-secrets-operator` | ingress and platform services the workloads attach to |
 | 3 | `apps/loki`, `apps/vector`, `apps/grafana`, `apps/superposition`, `apps/hyperswitch` | |
+| — | `envoy-proxy`, `squid-proxy` | depend only on `vpc-network`, so they run alongside phases 1–3 |
 
 `gateway-controller` has no dependency and may run in phase 0 — that is
 correct, it only creates a project-level SSL policy.
@@ -103,9 +105,11 @@ the acceptance criterion for each.
 
 ## Known gaps
 
-- This stack covers the application tier only. The edge tier (envoy, squid,
-  load-balancer, CDN), DNS/TLS, firewall rules and the analytics data layer are
-  not in the catalog — see [`../catalog/README.md`](../catalog/README.md#scope).
+- The edge proxies are here, but `load-balancer`, `cloud-cdn`, DNS/TLS,
+  `firewall-rules` and the analytics data layer are not — see
+  [`../catalog/README.md`](../catalog/README.md#scope). In particular
+  `firewall-rules` carries the GKE→squid egress rule, so squid is not reachable
+  from the cluster on this stack alone.
 - No BYO-VPC stack for GCP, so no self-host path (the AWS
   `catalog/stacks/standalone` is the model).
 - Nothing in this tree has been `plan`ned against a real GCP project yet.

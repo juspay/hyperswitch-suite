@@ -5,6 +5,10 @@ alloydb = {
   deletion_protection = true
   read_pool_instances = {}
 }
+custom_images = {
+  envoy = "REPLACE_ME-envoy"
+  squid = "REPLACE_ME-squid"
+}
 domains = {
   api     = "api.sandbox.example.com"
   grafana = "grafana.sandbox.example.com"

@@ -6,10 +6,11 @@
 # module is published on `main`.
 #
 # Not in this stack (and why):
-#   - Edge tier (envoy-proxy, squid-proxy, load-balancer, cloud-cdn) and the
-#     supporting composition units (artifact-registry, bastion-host, cloud-dns,
-#     certificate-manager, firewall-rules, pubsub, locker) — published, but out
-#     of scope for the application stack.
+#   - load-balancer, cloud-cdn and the supporting composition units
+#     (artifact-registry, bastion-host, cloud-dns, certificate-manager,
+#     firewall-rules, pubsub, locker) — published, but out of scope.
+#     NOTE: firewall-rules is what opens GKE -> squid egress; without it the
+#     squid ILB is reachable only if the environment's rules already exist.
 #   - Data-layer VM units (kafka, cassandra, clickhouse, opensearch, filestore)
 #     and cloud-monitoring, gke-kubernetes-resources — no module on `main`.
 #   - apps/decision-engine, apps/otel-collector, apps/ratelimiter — no module
@@ -160,5 +161,39 @@ unit "hyperswitch" {
   values = {
     domains        = values.domains
     smtp_secret_id = values.smtp_secret_id
+  }
+}
+
+# -----------------------------------------------------------------------------
+# Phase 4 — Edge proxies
+# -----------------------------------------------------------------------------
+# Both depend only on vpc-network, so they can run alongside phases 1-3. Both
+# need a pre-baked custom GCE image; terraform/gcp/packer/ has the definitions.
+
+unit "envoy-proxy" {
+  source = "${get_repo_root()}/terraform/gcp/catalog/units/envoy-proxy"
+  path   = "envoy-proxy"
+
+  no_dot_terragrunt_stack = true
+
+  values = {
+    custom_images = values.custom_images
+    domains       = values.domains
+  }
+}
+
+unit "squid-proxy" {
+  source = "${get_repo_root()}/terraform/gcp/catalog/units/squid-proxy"
+  path   = "squid-proxy"
+
+  no_dot_terragrunt_stack = true
+
+  values = {
+    custom_images = values.custom_images
+
+    # squid's ilb_source_ranges is derived from these two, exactly as
+    # vpc-network derives the ranges themselves.
+    vpc_cidr_prefix               = values.vpc_cidr_prefix
+    gke_pods_secondary_range_cidr = values.gke_pods_secondary_range_cidr
   }
 }

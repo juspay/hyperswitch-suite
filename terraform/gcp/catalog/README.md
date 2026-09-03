@@ -9,6 +9,8 @@ terraform/gcp/catalog/
 │   ├── vpc-network/            # foundation — everything depends on it
 │   ├── alloydb/                # Postgres
 │   ├── memorystore-valkey/     # cache
+│   ├── envoy-proxy/            # ingress proxy (custom GCE image)
+│   ├── squid-proxy/            # egress proxy (custom GCE image)
 │   └── application-stack/
 │       ├── gke/
 │       └── apps/               # 9 workloads on the cluster
@@ -16,20 +18,20 @@ terraform/gcp/catalog/
     └── internal/               # sandbox / dev / pre-prod / prod
 ```
 
-13 units. This mirrors the AWS catalog proposed in
+15 units. This mirrors the AWS catalog proposed in
 [PR #302](https://github.com/juspay/hyperswitch-suite/pull/302) — same unit
 skeleton, same tag-pinning discipline, same CI shape.
 
 ## Scope
 
 **A unit exists here only if its module is published on `main`.** Every one of
-the 13 pins resolves to a real tag; `scripts/ci/check-gcp-pins.sh` enforces it.
+the 15 pins resolves to a real tag; `scripts/ci/check-gcp-pins.sh` enforces it.
 
 Not in the catalog:
 
 | Excluded | Why |
 |---|---|
-| `envoy-proxy`, `squid-proxy`, `load-balancer`, `cloud-cdn`, `cloud-dns`, `certificate-manager`, `firewall-rules`, `artifact-registry`, `bastion-host`, `locker`, `pubsub` | published on `main`, but outside the application stack |
+| `load-balancer`, `cloud-cdn`, `cloud-dns`, `certificate-manager`, `firewall-rules`, `artifact-registry`, `bastion-host`, `locker`, `pubsub` | published on `main`, but outside this stack's scope |
 | `kafka`, `cassandra`, `clickhouse`, `opensearch`, `filestore`, `cloud-monitoring`, `gke-kubernetes-resources` | no module on `main` |
 | `apps/decision-engine`, `apps/otel-collector`, `apps/ratelimiter` | no module on `main` — add back when they land |
 | `gke-workload-identity` | needs no unit; every app module calls it as a nested Terraform module |
@@ -37,6 +39,19 @@ Not in the catalog:
 
 `vpc-network` stays despite being a network unit: every other unit depends on
 it directly or through `gke`, so dropping it would leave the graph dangling.
+
+### Edge proxies
+
+`envoy-proxy` (ingress) and `squid-proxy` (egress) each need a pre-baked custom
+GCE image. `terraform/gcp/packer/{envoy-proxy,squid-proxy}` has the Packer
+definitions — these are the only two units in the catalog with an image
+prerequisite, which is why the other image-dependent units (kafka, cassandra,
+clickhouse, opensearch, locker) are also the ones with no published module.
+
+`squid-proxy` restricts its internal LB to `ilb_source_ranges`, derived from
+the same stack values `vpc-network` builds the GKE ranges from. Note that
+*reaching* squid from the cluster also needs the `gke-to-squid-egress` rule
+from the `firewall-rules` unit, which is not in this stack.
 
 ### Database and cache
 
@@ -80,6 +95,8 @@ arrives through Terragrunt Stacks `values`.
 | `vpc-network` | `composition/vpc-network` | `gcp-vpc-network-v0.1.0` |
 | `alloydb` | `composition/alloydb` | `gcp-alloydb-v0.1.0` |
 | `memorystore-valkey` | `composition/memorystore-valkey` | `gcp-memorystore-valkey-v0.1.0` |
+| `envoy-proxy` | `composition/envoy-proxy` | `gcp-envoy-proxy-v0.1.0` |
+| `squid-proxy` | `composition/squid-proxy` | `gcp-squid-proxy-v0.1.0` |
 | `application-stack/gke` | `composition/gke` | `gcp-gke-v0.1.0` |
 | `…/apps/argocd` | `application-resources/argocd` | `gcp-apps-argocd-v0.1.0` |
 | `…/apps/external-secrets-operator` | `application-resources/external-secrets-operator` | `gcp-apps-eso-v0.1.0` |
@@ -124,7 +141,7 @@ Adopt the AWS grammar when a consumer outside this repo needs to pin a unit.
 - `terragrunt hcl format --check` on the catalog and the live tree
 - `terragrunt stack generate` must produce no diff against the committed tree
 - `terragrunt hcl validate` over the generated tree — resolves every local,
-  `values` and `dependency` reference in all 13 units
+  `values` and `dependency` reference in all 15 units
 - `scripts/ci/check-sensitive.sh terraform/gcp`
 - `scripts/ci/check-gcp-pins.sh` — every `?ref=` is a tag of the right shape
   and that tag exists

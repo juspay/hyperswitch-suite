@@ -60,6 +60,17 @@ stack "sandbox" {
     }
 
     # ---------------------------------------------------------------------
+    # Custom GCE images — edge proxies
+    # ---------------------------------------------------------------------
+    # Pre-baked images built from terraform/gcp/packer/{envoy-proxy,squid-proxy}.
+    # Image names only; the units expand them to a full projects/<id>/global/
+    # images/<name> path against project_id above.
+    custom_images = {
+      envoy = "REPLACE_ME-envoy"
+      squid = "REPLACE_ME-squid"
+    }
+
+    # ---------------------------------------------------------------------
     # Cluster sizing
     # ---------------------------------------------------------------------
     machine_types = {
@@ -133,6 +144,11 @@ stack "sandbox" {
 #     domains = {
 #       api     = "api.dev.example.com"     # REPLACE_ME
 #       grafana = "grafana.dev.example.com" # REPLACE_ME
+#     }
+#
+#     custom_images = {
+#       envoy = "REPLACE_ME-envoy"
+#       squid = "REPLACE_ME-squid"
 #     }
 #
 #     machine_types = {
