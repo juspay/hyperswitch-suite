@@ -32,7 +32,7 @@ This directory contains the **optimized VPC network configuration** based on the
 - `backend.tf` - Unchanged
 
 ### New Files
-- `variables.optimized.tf` - **NEW** optimized configuration with all CIDR allocations
+- `terragrunt.hcl` - **NEW** optimized configuration with all CIDR allocations
 - `README.optimized.md` - This file
 
 ## Migration Steps
@@ -47,17 +47,17 @@ cp variables.tf variables.tf.backup
 cp main.tf main.tf.backup
 
 # 2. Replace with optimized configuration
-mv variables.optimized.tf variables.tf
+mv terragrunt.hcl variables.tf
 
 # 3. Review the configuration
 cat variables.tf
 
 # 4. Initialize and plan
-terraform init
-terraform plan
+terragrunt init
+terragrunt plan
 
 # 5. Deploy
-terraform apply
+terragrunt apply
 ```
 
 ### Option 2: In-Place Migration (For Existing VPCs)
@@ -68,13 +68,13 @@ If you have an **existing VPC** with resources:
 
 ```bash
 # 1. Create state migration plan
-terraform state list | grep subnet
+terragrunt state list | grep subnet
 
 # 2. Backup Terraform state
-terraform state pull > terraform.tfstate.backup
+terragrunt state pull > terraform.tfstate.backup
 
 # 3. Plan the migration (review carefully!)
-terraform plan -out=migration.tfplan
+terragrunt plan -out=migration.tfplan
 
 # 4. Review what will be destroyed/created
 # Look for:
@@ -86,7 +86,7 @@ terraform plan -out=migration.tfplan
 # DO NOT PROCEED if you have active resources in subnets
 
 # 6. Apply migration
-terraform apply migration.tfplan
+terragrunt apply migration.tfplan
 ```
 
 ### Option 3: Gradual Migration (Safest for Production)
@@ -97,8 +97,8 @@ For **production environments** with active workloads:
    ```bash
    # Create new VPC with optimized config
    cd ../vpc-network-new
-   terraform init
-   terraform apply
+   terragrunt init
+   terragrunt apply
    ```
 
 2. **Migrate workloads**
@@ -114,7 +114,7 @@ For **production environments** with active workloads:
 
 ## Subnet Allocation
 
-See the complete breakdown in [variables.optimized.tf](variables.optimized.tf):
+See the complete breakdown in [terragrunt.hcl](terragrunt.hcl):
 
 | Subnet Type | CIDR Blocks | IPs per AZ | Total IPs | Purpose |
 |-------------|-------------|------------|-----------|---------|
@@ -156,10 +156,10 @@ See the complete breakdown in [variables.optimized.tf](variables.optimized.tf):
 ## Configuration Variables
 
 ### Required Variables
-All variables have defaults in `variables.optimized.tf`. You can override in `terraform.tfvars`:
+All variables have defaults in `terragrunt.hcl`. You can override in `terragrunt.hcl`:
 
 ```hcl
-# terraform.tfvars
+# terragrunt.hcl
 aws_region = "eu-central-1"
 vpc_cidr   = "10.0.0.0/16"
 
@@ -202,19 +202,19 @@ variable "eks_workers_subnet_cidrs" {
 ### 1. Verify VPC and Subnets
 ```bash
 # Check VPC
-terraform output vpc_id
-terraform output vpc_cidr
+terragrunt output vpc_id
+terragrunt output vpc_cidr
 
 # Check subnet counts
-terraform output eks_workers_subnet_ids
-terraform output external_incoming_subnet_ids
-terraform output database_subnet_ids
+terragrunt output eks_workers_subnet_ids
+terragrunt output external_incoming_subnet_ids
+terragrunt output database_subnet_ids
 ```
 
 ### 2. Verify NAT Gateway
 ```bash
 # Should show 1 or 3 NAT Gateways depending on single_nat_gateway
-terraform output nat_gateway_public_ips
+terragrunt output nat_gateway_public_ips
 ```
 
 ### 3. Test Bastion Connectivity
@@ -242,8 +242,8 @@ curl https://google.com  # Should fail - no internet
 ### 5. Verify VPC Endpoints
 ```bash
 # Check VPC endpoints created
-terraform output gateway_vpc_endpoint_ids
-terraform output interface_vpc_endpoint_ids
+terragrunt output gateway_vpc_endpoint_ids
+terragrunt output interface_vpc_endpoint_ids
 
 # Test S3 access via VPC endpoint (not NAT Gateway)
 aws s3 ls --region eu-central-1
@@ -296,7 +296,7 @@ module.vpc_network.interface_vpc_endpoint_ids
 
 **Cause**: You may have old variable references.
 
-**Solution**: Ensure you're using the new `variables.optimized.tf` which sets this to `false` by default.
+**Solution**: Ensure you're using the new `terragrunt.hcl` which sets this to `false` by default.
 
 ### Issue: EKS workers can't pull images
 
@@ -305,15 +305,15 @@ module.vpc_network.interface_vpc_endpoint_ids
 **Solution**:
 1. Verify VPC endpoints for ECR are created:
    ```bash
-   terraform output interface_vpc_endpoint_ids | grep ecr
+   terragrunt output interface_vpc_endpoint_ids | grep ecr
    ```
 2. Check NAT Gateway is working:
    ```bash
-   terraform output nat_gateway_public_ips
+   terragrunt output nat_gateway_public_ips
    ```
 3. Verify route tables have NAT routes:
    ```bash
-   terraform output eks_workers_route_table_ids
+   terragrunt output eks_workers_route_table_ids
    ```
 
 ### Issue: Database can't connect

@@ -35,24 +35,24 @@ inputs = {
 
       # Define thresholds for each severity
       thresholds = {
-        warning   = { threshold = 60, evaluation_periods = 5, treat_missing_data = "notBreaching" }
-        high      = { threshold = 70, evaluation_periods = 5, treat_missing_data = "notBreaching" }
-        critical  = { threshold = 80, evaluation_periods = 5, treat_missing_data = "breaching" }
+        warning  = { threshold = 60, evaluation_periods = 5, treat_missing_data = "notBreaching" }
+        high     = { threshold = 70, evaluation_periods = 5, treat_missing_data = "notBreaching" }
+        critical = { threshold = 80, evaluation_periods = 5, treat_missing_data = "breaching" }
       }
 
       # Map each threshold to severity configuration
       severity_config = {
         warning = {
-          severity         = "sev3"
-          description      = "SEV3: RDS CPU is above 60%. Monitor closely for scaling needs."
-          alarm_actions    = [dependency.sns.outputs.topic_arns["sev3"]]
-          ok_actions       = [dependency.sns.outputs.topic_arns["sev3"]]
+          severity      = "sev3"
+          description   = "SEV3: RDS CPU is above 60%. Monitor closely for scaling needs."
+          alarm_actions = [dependency.sns.outputs.topic_arns["sev3"]]
+          ok_actions    = [dependency.sns.outputs.topic_arns["sev3"]]
         }
         high = {
-          severity         = "sev2"
-          description      = "SEV2: RDS CPU is above 70%. Consider scaling or query optimization."
-          alarm_actions    = [dependency.sns.outputs.topic_arns["sev2"]]
-          ok_actions       = [dependency.sns.outputs.topic_arns["sev2"]]
+          severity      = "sev2"
+          description   = "SEV2: RDS CPU is above 70%. Consider scaling or query optimization."
+          alarm_actions = [dependency.sns.outputs.topic_arns["sev2"]]
+          ok_actions    = [dependency.sns.outputs.topic_arns["sev2"]]
         }
         critical = {
           severity            = "sev1"
@@ -84,16 +84,16 @@ inputs = {
 
       severity_config = {
         warning = {
-          severity         = "sev3"
-          description      = "SEV3: RDS has > 150 connections. Consider connection pooling."
-          alarm_actions    = [dependency.sns.outputs.topic_arns["sev3"]]
-          ok_actions       = [dependency.sns.outputs.topic_arns["sev3"]]
+          severity      = "sev3"
+          description   = "SEV3: RDS has > 150 connections. Consider connection pooling."
+          alarm_actions = [dependency.sns.outputs.topic_arns["sev3"]]
+          ok_actions    = [dependency.sns.outputs.topic_arns["sev3"]]
         }
         critical = {
-          severity         = "sev2"
-          description      = "SEV2: RDS has > 190 connections (near limit). Scale immediately."
-          alarm_actions    = [dependency.sns.outputs.topic_arns["sev2"]]
-          ok_actions       = [dependency.sns.outputs.topic_arns["sev2"]]
+          severity      = "sev2"
+          description   = "SEV2: RDS has > 190 connections (near limit). Scale immediately."
+          alarm_actions = [dependency.sns.outputs.topic_arns["sev2"]]
+          ok_actions    = [dependency.sns.outputs.topic_arns["sev2"]]
         }
       }
     }
@@ -112,7 +112,7 @@ inputs = {
       statistic = "Average"
 
       thresholds = {
-        critical = { threshold = 10737418240, evaluation_periods = 3, treat_missing_data = "breaching" }  # 10GB
+        critical = { threshold = 10737418240, evaluation_periods = 3, treat_missing_data = "breaching" } # 10GB
       }
 
       severity_config = {
@@ -147,22 +147,22 @@ inputs = {
 
       severity_config = {
         sev3 = {
-          severity         = "sev3"
-          description      = "SEV3: ElastiCache CPU above 60% for 25 min. Monitor capacity."
-          alarm_actions    = [dependency.sns.outputs.topic_arns["sev3"]]
-          ok_actions       = [dependency.sns.outputs.topic_arns["sev3"]]
+          severity      = "sev3"
+          description   = "SEV3: ElastiCache CPU above 60% for 25 min. Monitor capacity."
+          alarm_actions = [dependency.sns.outputs.topic_arns["sev3"]]
+          ok_actions    = [dependency.sns.outputs.topic_arns["sev3"]]
         }
         sev2 = {
-          severity         = "sev2"
-          description      = "SEV2: ElastiCache CPU above 70% for 25 min. Consider scaling."
-          alarm_actions    = [dependency.sns.outputs.topic_arns["sev2"]]
-          ok_actions       = [dependency.sns.outputs.topic_arns["sev2"]]
+          severity      = "sev2"
+          description   = "SEV2: ElastiCache CPU above 70% for 25 min. Consider scaling."
+          alarm_actions = [dependency.sns.outputs.topic_arns["sev2"]]
+          ok_actions    = [dependency.sns.outputs.topic_arns["sev2"]]
         }
         sev1 = {
-          severity         = "sev1"
-          description      = "SEV1: ElastiCache CPU above 80% for 25 min. Immediate action required."
-          alarm_actions    = [dependency.sns.outputs.topic_arns["sev1"]]
-          ok_actions       = [dependency.sns.outputs.topic_arns["sev1"]]
+          severity      = "sev1"
+          description   = "SEV1: ElastiCache CPU above 80% for 25 min. Immediate action required."
+          alarm_actions = [dependency.sns.outputs.topic_arns["sev1"]]
+          ok_actions    = [dependency.sns.outputs.topic_arns["sev1"]]
         }
       }
     }
@@ -186,10 +186,10 @@ inputs = {
 
       severity_config = {
         high = {
-          severity         = "sev2"
-          description      = "SEV2: ElastiCache memory above 85%. Consider scaling or TTL policies."
-          alarm_actions    = [dependency.sns.outputs.topic_arns["sev2"]]
-          ok_actions       = [dependency.sns.outputs.topic_arns["sev2"]]
+          severity      = "sev2"
+          description   = "SEV2: ElastiCache memory above 85%. Consider scaling or TTL policies."
+          alarm_actions = [dependency.sns.outputs.topic_arns["sev2"]]
+          ok_actions    = [dependency.sns.outputs.topic_arns["sev2"]]
         }
       }
     }

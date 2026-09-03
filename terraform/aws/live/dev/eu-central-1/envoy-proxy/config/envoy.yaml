@@ -22,7 +22,7 @@ static_resources:
                 codec_type: AUTO
                 http_protocol_options:
                   accept_http_10: true
-                  default_host_for_http_10: "api.juspay.io"
+                  default_host_for_http_10: "api.example.com"
                 stat_prefix: ingress_http
                 server_name: "***"
                 common_http_protocol_options:

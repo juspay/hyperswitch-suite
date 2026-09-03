@@ -42,9 +42,9 @@ distributions:
 ### 2. Deploy
 
 ```bash
-terraform init
-terraform plan
-terraform apply
+terragrunt init
+terragrunt plan
+terragrunt apply
 ```
 
 ### 3. Invalidate Cache
@@ -55,7 +55,7 @@ invalidation:
   version: "v1.0.1"  # Increment version
   paths: ["/*"]
 
-terraform apply
+terragrunt apply
 ```
 
 ## Configuration Reference

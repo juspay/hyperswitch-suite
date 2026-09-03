@@ -49,7 +49,7 @@ Internet
 
 ## Configuration
 
-Edit `terraform.tfvars` and replace the placeholder values:
+Edit `terragrunt.hcl` and replace the placeholder values:
 
 ```hcl
 vpc_id            = "vpc-XXXXXXXXXXXXXXXXX"  # Your VPC ID
@@ -62,16 +62,16 @@ private_subnet_id = "subnet-XXXXXXXXXXXXXXXXX"  # Private subnet
 
 ```bash
 # Initialize Terraform
-terraform init
+terragrunt init
 
 # Review the plan
-terraform plan
+terragrunt plan
 
 # Deploy
-terraform apply
+terragrunt apply
 
 # View outputs
-terraform output
+terragrunt output
 ```
 
 ## Connecting to Jump Hosts
@@ -80,7 +80,7 @@ terraform output
 
 ```bash
 # Get the command from outputs
-terraform output external_jump_ssm_command
+terragrunt output external_jump_ssm_command
 
 # Or directly
 aws ssm start-session --target <external-instance-id>
@@ -90,7 +90,7 @@ aws ssm start-session --target <external-instance-id>
 
 ```bash
 # Get the command from outputs
-terraform output internal_jump_ssm_command
+terragrunt output internal_jump_ssm_command
 
 # Or directly
 aws ssm start-session --target <internal-instance-id>
@@ -203,7 +203,7 @@ aws cloudwatch put-metric-alarm \
 
 ```bash
 # Destroy all resources
-terraform destroy
+terragrunt destroy
 ```
 
 ## Troubleshooting
