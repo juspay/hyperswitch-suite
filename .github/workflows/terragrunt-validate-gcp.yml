@@ -24,6 +24,9 @@ on:
       - 'scripts/ci/check-gcp-pins.sh'
       - '.github/workflows/terragrunt-validate-gcp.yml'
 
+permissions:
+  contents: read
+
 env:
   TG_VERSION: 1.1.1
 
