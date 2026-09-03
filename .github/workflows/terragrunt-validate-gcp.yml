@@ -1,0 +1,83 @@
+name: Terragrunt Validate (GCP)
+
+# Scoped to terraform/gcp on purpose.
+#
+# PR #302 adds a repo-wide sensitive-scan workflow and an AWS-scoped
+# terragrunt-validate workflow. Neither can pass on `main` today: the
+# repo-wide scan trips on the hand-written terraform/aws/live tree that #302
+# deletes. When #302 lands, fold this into a single workflow with a cloud
+# matrix and drop the scoped scan step below in favour of the repo-wide one.
+#
+# `hcl format` is run per-directory rather than across terraform/gcp because
+# terraform/gcp/packer/squid-proxy/scripts/vector.toml.pkrtpl.hcl is a Vector
+# TOML template that happens to carry an .hcl extension, and the HCL parser
+# cannot read it.
+
+on:
+  pull_request:
+    paths:
+      - 'terraform/gcp/catalog/**'
+      - 'terraform/gcp/live/**'
+      - 'scripts/ci/check-gcp-pins.sh'
+      - '.github/workflows/terragrunt-validate-gcp.yml'
+
+env:
+  TG_VERSION: 1.1.1
+
+jobs:
+  hcl-checks:
+    name: hclfmt + stack generate + hcl validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install terragrunt
+        run: |
+          curl -fsSL -o /usr/local/bin/terragrunt \
+            "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_amd64"
+          chmod +x /usr/local/bin/terragrunt
+          terragrunt --version
+
+      - name: hcl format check
+        run: |
+          terragrunt hcl format --check --diff --working-dir terraform/gcp/catalog
+          terragrunt hcl format --check --diff --working-dir terraform/gcp/live
+
+      - name: stack generate is up to date
+        working-directory: terraform/gcp/live
+        run: |
+          terragrunt stack generate
+          git diff --exit-code -- . || {
+            echo "::error::terraform/gcp/live/ is out of date — run 'terragrunt stack generate' in terraform/gcp/live and commit the result."
+            exit 1
+          }
+
+      # Stronger than `stack generate` alone: generate only renders files, it
+      # never evaluates a unit's locals, values or inputs. `hcl validate` walks
+      # the generated tree and resolves every reference, so a unit that reads a
+      # values key the stack does not pass — or a root.hcl local that does not
+      # exist — fails here rather than at apply time.
+      - name: hcl validate (generated tree)
+        working-directory: terraform/gcp/live/sandbox/asia-south1
+        run: terragrunt hcl validate
+
+      - name: Sensitive-data gate (terraform/gcp)
+        run: bash scripts/ci/check-sensitive.sh terraform/gcp
+
+  pins:
+    name: Catalog pins resolve to real tags
+    runs-on: ubuntu-latest
+    # TODO: flip to `false` (or drop this line) once every GCP module tag
+    # listed in terraform/gcp/catalog/README.md has been cut. Until then this
+    # job reports the missing tags without blocking the catalog from landing.
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Check GCP catalog pins
+        run: bash scripts/ci/check-gcp-pins.sh
