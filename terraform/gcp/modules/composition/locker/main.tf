@@ -30,7 +30,8 @@ provider "kubernetes" {
 # "-locker" so ../alloydb derives its cluster/keyring/secret names in the
 # locker's own namespace rather than colliding with the shared cluster.
 module "database" {
-  source = "../alloydb"
+
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/composition/alloydb?ref=gcp-alloydb-v0.1.0"
 
   count = var.create_database ? 1 : 0
 
