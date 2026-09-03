@@ -1,0 +1,62 @@
+name: Terragrunt Validate (GCP)
+
+# Scoped to the GCP catalog. This workflow deliberately does NOT run
+# `terragrunt stack generate` or `terragrunt hcl validate` yet: those need a
+# stack and a live layer to render into, which arrive in the follow-up PR.
+# Until then a unit's `include "root"` has no root.hcl to resolve against, so
+# only formatting, pins and the sensitive-data gate are checkable here.
+#
+# PR #302 adds a repo-wide sensitive-scan workflow and an AWS-scoped
+# terragrunt-validate workflow. Neither can pass on `main` today: the repo-wide
+# scan trips on the hand-written terraform/aws/live tree that #302 deletes.
+# When #302 lands, fold this into a single workflow with a cloud matrix and
+# drop the scoped scan step in favour of the repo-wide one.
+#
+# `hcl format` targets the catalog directory rather than terraform/gcp because
+# terraform/gcp/packer/squid-proxy/scripts/vector.toml.pkrtpl.hcl is a Vector
+# TOML template that happens to carry an .hcl extension, and the HCL parser
+# cannot read it.
+
+on:
+  pull_request:
+    paths:
+      - 'terraform/gcp/catalog/**'
+      - 'scripts/ci/check-gcp-pins.sh'
+      - '.github/workflows/terragrunt-validate-gcp.yml'
+
+env:
+  TG_VERSION: 1.1.1
+
+jobs:
+  hcl-checks:
+    name: hclfmt + sensitive-data gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install terragrunt
+        run: |
+          curl -fsSL -o /usr/local/bin/terragrunt \
+            "https://github.com/gruntwork-io/terragrunt/releases/download/v${TG_VERSION}/terragrunt_linux_amd64"
+          chmod +x /usr/local/bin/terragrunt
+          terragrunt --version
+
+      - name: hcl format check
+        run: terragrunt hcl format --check --diff --working-dir terraform/gcp/catalog
+
+      - name: Sensitive-data gate (terraform/gcp)
+        run: bash scripts/ci/check-sensitive.sh terraform/gcp
+
+  pins:
+    name: Catalog pins resolve to real tags
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Check GCP catalog pins
+        run: bash scripts/ci/check-gcp-pins.sh
