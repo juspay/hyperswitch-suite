@@ -1,0 +1,8 @@
+.google.com
+.googleapis.com
+.adyen.com
+.checkout.com
+.cybersource.com
+.paypal.com
+.stripe.com
+.worldpay.com
