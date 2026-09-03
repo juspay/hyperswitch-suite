@@ -1,5 +1,8 @@
 name: Terragrunt Validate (GCP)
 
+permissions:
+  contents: read
+
 # Scoped to the GCP catalog. This workflow deliberately does NOT run
 # `terragrunt stack generate` or `terragrunt hcl validate` yet: those need a
 # stack and a live layer to render into, which arrive in the follow-up PR.
