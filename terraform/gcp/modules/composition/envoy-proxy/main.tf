@@ -45,11 +45,13 @@ module "service_account" {
 # ==============================================================================
 # Config / log buckets
 # ==============================================================================
-# force_destroy = true on both: these buckets' lifecycle is tied to this
-# fleet's, and versioning = true means old object versions persist even
-# after "deletion" - without force_destroy, `terraform destroy` fails
-# outright ("Error trying to delete bucket ... without force_destroy set
-# to true"), confirmed via a live destroy, 2026-08-20.
+# force_destroy: see var.force_destroy_buckets' own description - env-gated
+# (true except in prod) rather than hardcoded, matching the AWS module's
+# equivalent gate on its own config/log S3 buckets. versioning = true means
+# old object versions persist even after "deletion" - without force_destroy,
+# `terraform destroy` fails outright ("Error trying to delete bucket ...
+# without force_destroy set to true"), confirmed via a live destroy,
+# 2026-08-20.
 module "config_bucket" {
   source  = "terraform-google-modules/cloud-storage/google//modules/simple_bucket"
   version = "12.3.0"
@@ -59,7 +61,7 @@ module "config_bucket" {
   location           = var.bucket_location
   versioning         = true
   bucket_policy_only = true
-  force_destroy      = true
+  force_destroy      = local.force_destroy_buckets
   labels             = local.common_labels
 
   # Without this, the proxy service account can resolve the config-bucket
@@ -82,7 +84,7 @@ module "log_bucket" {
   location           = var.bucket_location
   versioning         = true
   bucket_policy_only = true
-  force_destroy      = true
+  force_destroy      = local.force_destroy_buckets
 
   lifecycle_rules = [{
     action    = { type = "Delete" }
@@ -98,6 +100,19 @@ resource "google_storage_bucket_object" "envoy_config" {
   bucket  = module.config_bucket.name
   name    = "envoy.yaml"
   content = var.envoy_config_content
+}
+
+# Generic multi-file config upload - see var.additional_config_files_path's own
+# description for why this exists alongside envoy_config_content rather than
+# replacing it (backward compat) and for the vector.toml gap it closes.
+resource "google_storage_bucket_object" "additional_config_files" {
+  for_each = var.additional_config_files_path != null ? setsubtract(
+    fileset(var.additional_config_files_path, "**"), ["envoy.yaml"]
+  ) : toset([])
+
+  bucket  = module.config_bucket.name
+  name    = each.value
+  content = file("${var.additional_config_files_path}/${each.value}")
 }
 
 module "config_secret" {
@@ -239,20 +254,45 @@ module "load_balancer" {
   managed_ssl_certificate_domains = var.managed_ssl_certificate_domains
   https_redirect                  = var.enable_https_redirect
 
-  # TEMPORARY (2026-09-02): reverted to true during a live cutover to avoid
-  # Terraform's target_https_proxy update racing the old url_map's destroy
-  # (GCP rejects deleting a url_map still attached to a proxy, and
-  # Terraform doesn't order "update proxy away from X" before "destroy X"
-  # here). Flip back to false + restore url_map below once the proxy has
-  # been manually repointed to google_compute_url_map.envoy via gcloud.
+  # 2026-09-02: EXTERNAL_MANAGED (Global external Application Load Balancer)
+  # is required for google_compute_url_map.envoy's weighted_backend_services/
+  # route_rules below - the classic EXTERNAL scheme rejects advanced routing
+  # actions outright ("Advanced routing rules are not supported for scheme
+  # EXTERNAL", confirmed live 2026-09-02). Verified via `terragrunt plan`
+  # that switching schemes here is an in-place update on the backend service
+  # + both forwarding rules (0 to destroy) - load_balancing_scheme is not a
+  # ForceNew attribute on either resource in this provider version, and the
+  # reserved static IP/managed cert are scheme-independent so 34.111.119.59
+  # is unaffected either way.
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+
+  # 2026-09-02: cutover complete. target_https_proxy was manually repointed
+  # to google_compute_url_map.envoy via `gcloud compute target-https-proxies
+  # update --url-map=...` (bypassing the ordering bug described below for
+  # just that one step), verified live (curl 200 throughout). Flipping this
+  # to false now makes the module stop creating its own auto-generated
+  # url_map/http-proxy/https-proxy at all - the ones that already exist in
+  # state become genuinely orphaned (nothing references them anymore) and
+  # this apply cleanly destroys them.
   #
   # This module's own auto-generated url_map only ever sends 100% of
   # traffic to a single backend - it has no support for
   # weighted_backend_services or route_rules. create_url_map = false plus
   # google_compute_url_map.envoy (below) is what implements weighted
   # blue/green & canary deployments and listener_rules.
-  create_url_map = true
-  # url_map        = google_compute_url_map.envoy.self_link
+  #
+  # Note for future edits to this LB: Terraform does not reliably order
+  # "update a resource to stop referencing X" before "destroy X" when X is
+  # a different resource address than the new one being created - changing
+  # create_url_map straight from true to false in the same apply as this
+  # url_map not existing yet would race target_https_proxy's update against
+  # the old url_map's destroy and fail with resourceInUseByAnotherResource.
+  # The safe order (used for this cutover): (1) keep create_url_map = true,
+  # create google_compute_url_map.envoy additively; (2) manually repoint
+  # the proxy via gcloud; (3) only then flip this to false and apply, once
+  # nothing live references the old resources anymore.
+  create_url_map = false
+  url_map         = google_compute_url_map.envoy.self_link
 
   backends = {
     for name, d in local.resolved_deployments : name => {

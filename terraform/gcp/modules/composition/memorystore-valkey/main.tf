@@ -53,6 +53,39 @@ module "valkey_cluster" {
   node_type      = var.node_type
   engine_version = var.engine_version
 
+  # MULTI_ZONE is the analogue of AWS's multi_az_enabled=true. It is also
+  # upstream's default, so forwarding it explicitly does not change any
+  # already-applied instance - it just makes the setting visible and pinnable
+  # from the live layer instead of being inherited silently. Immutable.
+  zone_distribution_config_mode = var.zone_distribution_config_mode
+  zone_distribution_config_zone = var.zone_distribution_config_zone
+
+  # Engine parameters, inline rather than a separate parameter-group resource
+  # (the AWS analogue is parameter_group_name).
+  engine_configs = var.engine_configs
+
+  # Durability. ElastiCache folds these two into one concept (snapshots);
+  # Memorystore splits them - persistence_config is the in-instance RDB/AOF
+  # behaviour, automated_backup_config is the scheduled off-instance backup
+  # that actually corresponds to snapshot_window + snapshot_retention_limit.
+  persistence_config      = var.persistence_config
+  automated_backup_config = var.automated_backup_config
+
+  # Analogue of AWS's maintenance_window / auto_minor_version_upgrade pair.
+  weekly_maintenance_window = var.weekly_maintenance_window
+  maintenance_version       = var.maintenance_version
+
+  # Cross-region replication - the GCP analogue of an ElastiCache global
+  # replication group. See the is_passive pattern on the AWS elasticache
+  # catalog unit for the shape the live layer will want to mirror.
+  instance_role      = var.instance_role
+  primary_instance   = var.primary_instance
+  secondary_instance = var.secondary_instance
+
+  # Create-time restore sources (AWS: snapshot_name / snapshot_arns).
+  managed_backup_source = var.managed_backup_source
+  gcs_source            = var.gcs_source
+
   authorization_mode      = var.authorization_mode
   transit_encryption_mode = var.transit_encryption_mode
 

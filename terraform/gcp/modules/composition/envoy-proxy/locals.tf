@@ -1,6 +1,11 @@
 locals {
   name_prefix = "${var.environment}-${var.project_name}-envoy"
 
+  # See var.force_destroy_buckets' own description for the auto-derivation
+  # rule and why null falls back to it - same pattern as composition/
+  # squid-proxy's identically-named variable/local.
+  force_destroy_buckets = var.force_destroy_buckets != null ? var.force_destroy_buckets : var.environment != "prod"
+
   common_labels = merge(
     {
       "environment" = var.environment

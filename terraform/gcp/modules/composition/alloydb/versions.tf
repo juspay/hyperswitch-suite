@@ -8,5 +8,11 @@ terraform {
       # stricter than composition/cloud-sql's >= 6.0.
       version = ">= 7.23, < 8.0"
     }
+    # random_password.master is a core resource of this module, so the provider
+    # gets pinned rather than implicitly installed.
+    random = {
+      source  = "hashicorp/random"
+      version = ">= 3.0"
+    }
   }
 }

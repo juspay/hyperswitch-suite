@@ -57,6 +57,23 @@ variable "vector_config_content" {
   default     = null
 }
 
+variable "additional_config_files_path" {
+  description = "Optional local directory (e.g. \"$${get_terragrunt_dir()}/config\") whose files are uploaded as-is to the config bucket alongside squid.conf/allowedlist.txt/vector.toml - same mechanism as composition/envoy-proxy's identically-named variable, mirroring the AWS module's config_files_source_path/fileset() pattern (terraform/aws/modules/composition/squid-proxy). Every file found in this directory is uploaded verbatim under its own name (subdirectories via fileset's \"**\" glob too) - a plain byte-for-byte upload, no {{placeholder}} templating. \"squid.conf\", \"allowedlist.txt\", and \"vector.toml\" are all skipped if present, since squid_config_content/squid_allowlist_content/vector_config_content already own those three object names (avoids two resources managing the same bucket key). Null skips this entirely - existing callers that only set the three dedicated *_content variables are unaffected."
+  type        = string
+  default     = null
+}
+
+variable "ilb_source_ranges" {
+  description = "CIDR ranges allowed to reach the internal LB's forwarding rule (squid_port). Required - there is no safe default: the underlying terraform-google-modules/lb-internal module's firewall resource falls back to GCP's own API default of 0.0.0.0/0 whenever both source_ip_ranges and source_tags/source_service_accounts are left unset (confirmed live, 2026-09-02 - the exact gap this variable closes). Squid's actual clients are GKE pods, which carry no network tags of their own to source-tag-match against instead, so this must be IP-range-based - set it to the same GKE node-subnet + pod-secondary-range CIDRs already used by the sibling gke-to-squid-egress ingress firewall rule in this environment's firewall-rules unit, to avoid the two rules drifting out of sync."
+  type        = list(string)
+}
+
+variable "force_destroy_buckets" {
+  description = "Whether the config/log buckets can be destroyed while non-empty (needed for `terraform destroy` to succeed at all, since versioning = true otherwise leaves noncurrent object versions behind that block deletion). Null (default) auto-derives from environment - true everywhere except \"prod\", matching the AWS module's identical var.environment != \"prod\" ? true : false gate on its own config/log S3 buckets (terraform/aws/modules/composition/squid-proxy/main.tf). Set explicitly to override the auto-derived value for either bucket."
+  type        = bool
+  default     = null
+}
+
 variable "bucket_location" {
   description = "Location for the config/log buckets"
   type        = string

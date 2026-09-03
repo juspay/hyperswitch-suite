@@ -41,6 +41,18 @@ variable "envoy_config_content" {
   sensitive   = true
 }
 
+variable "additional_config_files_path" {
+  description = "Optional local directory (e.g. \"$${get_terragrunt_dir()}/config\") whose files are uploaded as-is to the config bucket alongside envoy.yaml - mirrors the AWS module's config_files_source_path/fileset() pattern (terraform/aws/modules/composition/envoy-proxy). Solves two gaps envoy_config_content alone doesn't: (1) it only ever supports one file (envoy.yaml), while startup-script.sh's boot logic also optionally pulls a vector.toml override from the same bucket - that pull had no corresponding push anywhere, so it silently no-op'd; (2) any other future per-fleet config file (TLS material, extra Envoy include files) needed its own dedicated variable/resource pair, same as vector.toml did until now. Every file found in this directory is uploaded verbatim under its own name (subdirectories via fileset's \"**\" glob too) - this is a plain byte-for-byte upload, unlike AWS's version there is no {{placeholder}} template substitution here (GCP live-layer callers pre-render if needed, same as envoy_config_content already does). \"envoy.yaml\" is skipped if present, since envoy_config_content already owns that object (avoids two resources managing the same bucket key). Null skips this entirely - existing callers that only set envoy_config_content are unaffected."
+  type        = string
+  default     = null
+}
+
+variable "force_destroy_buckets" {
+  description = "Whether the config/log buckets can be destroyed while non-empty (needed for `terraform destroy` to succeed at all, since versioning = true otherwise leaves noncurrent object versions behind that block deletion). Null (default) auto-derives from environment - true everywhere except \"prod\", matching the AWS module's identical var.environment != \"prod\" ? true : false gate on its own config/log S3 buckets, and composition/squid-proxy's identically-named/-behaved variable. Set explicitly to override the auto-derived value for either bucket."
+  type        = bool
+  default     = null
+}
+
 variable "bucket_location" {
   description = "Location for the config/log buckets"
   type        = string

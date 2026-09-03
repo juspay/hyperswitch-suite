@@ -34,12 +34,13 @@ module "service_account" {
   ]
 }
 
-# force_destroy = true on both: these buckets' lifecycle is tied to this
-# fleet's, and versioning = true means old object versions persist even
-# after "deletion" - without force_destroy, `terraform destroy` fails
-# outright ("Error trying to delete bucket ... without force_destroy set
-# to true"), same failure mode confirmed live on ../envoy-proxy's
-# equivalent buckets, 2026-08-20.
+# force_destroy: see var.force_destroy_buckets' own description - env-gated
+# (true except in prod) rather than hardcoded, matching the AWS module's
+# equivalent gate on its own config/log S3 buckets. versioning = true means
+# old object versions persist even after "deletion" - without force_destroy,
+# `terraform destroy` fails outright ("Error trying to delete bucket ...
+# without force_destroy set to true"), same failure mode confirmed live on
+# ../envoy-proxy's equivalent buckets, 2026-08-20.
 module "config_bucket" {
   source  = "terraform-google-modules/cloud-storage/google//modules/simple_bucket"
   version = "12.3.0"
@@ -49,7 +50,7 @@ module "config_bucket" {
   location           = var.bucket_location
   versioning         = true
   bucket_policy_only = true
-  force_destroy      = true
+  force_destroy      = local.force_destroy_buckets
   labels             = local.common_labels
 
   # Without this, the proxy service account can resolve the config-bucket
@@ -77,7 +78,7 @@ module "log_bucket" {
   location           = var.bucket_location
   versioning         = true
   bucket_policy_only = true
-  force_destroy      = true
+  force_destroy      = local.force_destroy_buckets
 
   lifecycle_rules = [{
     action    = { type = "Delete" }
@@ -124,6 +125,20 @@ resource "google_storage_bucket_object" "squid_allowlist" {
   content = var.squid_allowlist_content
 }
 
+# Generic multi-file config upload - see var.additional_config_files_path's
+# own description for why this exists alongside the three dedicated
+# *_content variables above (backward compat) rather than replacing them.
+resource "google_storage_bucket_object" "additional_config_files" {
+  for_each = var.additional_config_files_path != null ? setsubtract(
+    fileset(var.additional_config_files_path, "**"),
+    ["squid.conf", "allowedlist.txt", "vector.toml"]
+  ) : toset([])
+
+  bucket  = module.config_bucket.name
+  name    = each.value
+  content = file("${var.additional_config_files_path}/${each.value}")
+}
+
 module "proxy_template" {
   source  = "terraform-google-modules/vm/google//modules/instance_template"
   version = "15.2.1"
@@ -133,13 +148,6 @@ module "proxy_template" {
   name_prefix  = local.name_prefix
   machine_type = var.machine_type
 
-  # Split, not a single full-path passthrough - see locals.tf's
-  # squid_image_* comment for why passing var.squid_image directly as
-  # source_image alone produces a malformed value with this module
-  # version. source_image is deliberately left unset (empty string,
-  # the module's own default) when squid_image is a family reference -
-  # the module's disk block only uses source_image_family at all when
-  # source_image is empty.
   source_image         = local.squid_image_direct_name != null ? local.squid_image_direct_name : ""
   source_image_family  = local.squid_image_family_name != null ? local.squid_image_family_name : ""
   source_image_project = local.squid_image_project
@@ -225,8 +233,21 @@ module "internal_lb" {
 
   backends = [{ group = module.proxy_mig.instance_group }]
 
-  source_tags = []
-  target_tags = ["squid-proxy"]
+  # source_tags = [] plus leaving source_ip_ranges unset (both were true
+  # before var.ilb_source_ranges existed) makes this module's own
+  # google_compute_firewall.default-ilb-fw resource pass neither
+  # source_ranges nor source_tags/source_service_accounts to the GCP API -
+  # which defaults sourceRanges to 0.0.0.0/0 (confirmed live, 2026-09-02:
+  # `gcloud compute firewall-rules describe dev-hyperswitch-squid-ilb-ilb-fw
+  # --format="yaml(sourceRanges)"` -> ["0.0.0.0/0"]). var.ilb_source_ranges
+  # (see its own description) is what actually scopes this now - source_tags
+  # stays [] since Squid's clients are GKE pods, which carry no network tags
+  # of their own to source-tag-match against (same reasoning already
+  # documented on the sibling gke-to-squid-egress firewall rule in
+  # ../../../../../hyperswitch-infra/terraform/gcp/live/*/firewall-rules).
+  source_ip_ranges = var.ilb_source_ranges
+  source_tags      = []
+  target_tags      = ["squid-proxy"]
 
   health_check = {
     type                = "tcp"

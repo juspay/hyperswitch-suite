@@ -15,7 +15,13 @@ variable "environment" {
 }
 
 variable "cluster_name" {
-  description = "Name of the GKE cluster. Defaults to '<environment>-<project_name>-gke'"
+  description = "Name of the GKE cluster. Defaults to '<environment>-<project_name>-gke', or '<environment>-<project_name>-gke-<cluster_name_version>' if that's set. Setting this always wins outright over both."
+  type        = string
+  default     = null
+}
+
+variable "cluster_name_version" {
+  description = "Optional numeric/version identifier appended to the default computed cluster name (\"<environment>-<project_name>-gke-<cluster_name_version>\"), for running more than one GKE cluster in the same environment and telling them apart - mirrors the AWS EKS module's identically-named variable (terraform/aws/modules/composition/eks, default \"v1\", live layers set \"01\") and that module's live-layer directory convention of naming the unit itself \"eks-01\"/\"eks-02\". Unlike AWS's version, this defaults to null (no suffix at all, i.e. the exact pre-existing name) rather than always appending something - google_container_cluster's name is a ForceNew attribute, so retroactively adopting AWS's always-on default against an already-named live cluster would force a full destroy-and-recreate of it. Only set this for a brand-new cluster, or when deliberately planning a rename (which will replace the cluster - do not set this on a live cluster's terragrunt.hcl without accepting that cost)."
   type        = string
   default     = null
 }
@@ -165,6 +171,12 @@ variable "node_pools" {
       auto_upgrade = true
     },
   ]
+}
+
+variable "enable_node_auto_upgrade" {
+  description = "Whether GKE is allowed to automatically upgrade node pool versions on its own schedule (tracking the cluster's release_channel). Defaults to false - node auto-upgrades replace running nodes without an explicit apply, which can surprise a live workload's reliability with a rollout nobody planned for (this is specifically about NODE version auto-upgrade, not the control-plane's own release_channel-driven upgrade cadence, which this module does not separately gate). Overrides every entry in var.node_pools' own auto_upgrade key uniformly (see locals.tf) rather than requiring every pool to remember to set it individually. Set true to restore GKE's own default self-managed node-upgrade behavior."
+  type        = bool
+  default     = false
 }
 
 variable "node_pools_labels" {
