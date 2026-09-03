@@ -6,7 +6,7 @@ comment: "API CDN with Lambda@Edge authentication"
 origins:
   - origin_id: "api-v1"
     type: "alb"
-    domain_name: "dev-hyperswitch-envoy-alb-1078419686.eu-central-1.elb.amazonaws.com"
+    domain_name: "dev-hyperswitch-envoy-alb-XXXXXXXXXX.eu-central-1.elb.amazonaws.com"
     custom_origin_config:
       http_port: 80
       https_port: 443

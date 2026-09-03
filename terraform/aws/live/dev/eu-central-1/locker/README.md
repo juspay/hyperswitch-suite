@@ -60,7 +60,7 @@ This directory contains the Terraform configuration to deploy the Hyperswitch Lo
 
 ## Configuration
 
-Edit `terraform.tfvars` and replace the placeholder values:
+Edit `terragrunt.hcl` and replace the placeholder values:
 
 ```hcl
 # Network Configuration
@@ -136,7 +136,7 @@ The module uses a flexible security group rule configuration:
 Each rule supports:
 - `cidr` - IPv4 CIDR blocks (e.g., `["10.0.0.0/16"]`)
 - `sg_id` - Security Group IDs (e.g., `["sg-xxxxx"]`)
-- `prefix_list_ids` - VPC Endpoint Prefix Lists (e.g., `["pl-6ea54007"]`)
+- `prefix_list_ids` - VPC Endpoint Prefix Lists (e.g., `["pl-xxxxxxxx"]`)
 - `ipv6_cidr` - IPv6 CIDR blocks
 
 ### NLB Listeners Configuration
@@ -182,16 +182,16 @@ nlb_listeners = {
 
 ```bash
 # Initialize Terraform
-terraform init
+terragrunt init
 
 # Review the plan
-terraform plan
+terragrunt plan
 
 # Deploy
-terraform apply
+terragrunt apply
 
 # View outputs
-terraform output
+terragrunt output
 ```
 
 ## Accessing Locker
@@ -200,7 +200,7 @@ terraform output
 
 ```bash
 # Get the NLB DNS name
-terraform output locker_nlb_dns
+terragrunt output locker_nlb_dns
 
 # Access the service (from within VPC or via jump host)
 curl https://<nlb-dns-name>
@@ -254,7 +254,7 @@ ssh -i /path/to/key.pem ec2-user@<locker-private-ip>
 
 ```bash
 # Destroy all resources
-terraform destroy
+terragrunt destroy
 ```
 
 ⚠️ **Warning:** This will permanently delete the locker instance and all associated resources.

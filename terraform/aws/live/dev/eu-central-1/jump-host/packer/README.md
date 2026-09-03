@@ -32,7 +32,7 @@ packer/
 └── README.md                   # This file
 ```
 
-**Note**: Files with `.auto.pkrvars.hcl` suffix are automatically loaded by Packer (similar to Terraform's `terraform.tfvars`), so you don't need to specify `-var-file` when running `packer build`.
+**Note**: Files with `.auto.pkrvars.hcl` suffix are automatically loaded by Packer (similar to Terraform's `terragrunt.hcl`), so you don't need to specify `-var-file` when running `packer build`.
 
 ## Quick Start
 
