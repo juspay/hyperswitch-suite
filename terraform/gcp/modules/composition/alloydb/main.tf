@@ -19,8 +19,42 @@
 #     network_id          = module.vpc_network.network_id
 #     allocated_ip_range  = module.vpc_network.private_service_access_range_name
 #
+#     primary_instance = {
+#       availability_type = "REGIONAL"
+#       cpu_count         = 8
+#       database_flags    = { "alloydb.iam_authentication" = "on" }
+#     }
+#
+#     read_pool_instances = {
+#       read-1 = { node_count = 2, cpu_count = 4 }
+#     }
+#
 #     depends_on = [module.vpc_network] # for Private Service Access
 #   }
+#
+# Cross-region DR: leave primary_cluster_name unset and this is a standalone
+# PRIMARY. Point a second instantiation of this module - in another region,
+# same VPC - at this one's `cluster_name` output and that becomes a SECONDARY:
+#
+#   module "alloydb_dr" {
+#     source = "../../modules/composition/alloydb"
+#     region = "asia-south2"
+#     primary_cluster_name = module.alloydb.cluster_name
+#     ...same project_id / network_id / allocated_ip_range...
+#   }
+#
+# The PSA allocated range is a global address and the peering is per-network,
+# so a second region reuses the same network_id/allocated_ip_range with no
+# extra networking. A secondary inherits the primary's users (no initial user,
+# no generated password, no Secret Manager entry) and cannot host read pools;
+# backups are configured per-cluster and stay active on both. Promotion and
+# switchover are manual gcloud operations - see README.
+#
+# Instance model: AlloyDB gives you exactly ONE primary per cluster, so there
+# is no direct analogue of the AWS composition/database module's
+# cluster_instances map of N writers/readers. Read scaling is read pools, each
+# a single instance fronting node_count nodes - primary_instance plus the
+# read_pool_instances map is as close as the platform gets.
 # ============================================================================
 
 resource "random_password" "master" {
@@ -45,7 +79,10 @@ module "alloydb" {
   cluster_id = local.cluster_id
   location   = var.region
 
-  cluster_type         = "PRIMARY"
+  # Upstream derives SECONDARY from primary_cluster_name on its own; setting
+  # cluster_type alongside it keeps the intent readable at this level.
+  cluster_type         = local.is_secondary ? "SECONDARY" : "PRIMARY"
+  primary_cluster_name = var.primary_cluster_name
   database_version     = var.database_version
   cluster_labels       = local.common_labels
   cluster_display_name = local.cluster_id
@@ -53,7 +90,10 @@ module "alloydb" {
   network_self_link  = var.network_id
   allocated_ip_range = var.allocated_ip_range
 
-  cluster_initial_user = {
+  # Secondary clusters replicate the primary's users; passing an initial user
+  # here is rejected. Backups below are NOT in the same category - they are
+  # configured per-cluster and stay in effect on a secondary.
+  cluster_initial_user = local.is_secondary ? null : {
     user     = var.master_username
     password = local.master_password
   }
@@ -76,22 +116,45 @@ module "alloydb" {
     labels                         = local.common_labels
   } : null
 
+  # NB: upstream takes machine_cpu_count/machine_type as flat attributes on
+  # these objects - there is no nested machine_config block. Terraform drops
+  # unrecognised attributes when converting to an object type constraint
+  # instead of erroring, so getting this wrong sizes every instance at the
+  # upstream default of 2 vCPU without any warning.
   primary_instance = {
-    instance_id       = "${local.cluster_id}-primary"
-    availability_type = var.primary_availability_type
-    machine_config = {
-      cpu_count    = var.primary_machine_type == null ? var.primary_cpu_count : null
-      machine_type = var.primary_machine_type
-    }
+    instance_id               = local.primary_instance_id
+    display_name              = coalesce(var.primary_instance.display_name, local.primary_instance_id)
+    availability_type         = var.primary_instance.availability_type
+    machine_cpu_count         = var.primary_instance.cpu_count
+    machine_type              = var.primary_instance.machine_type
+    gce_zone                  = var.primary_instance.gce_zone
+    database_flags            = var.primary_instance.database_flags
+    labels                    = local.instance_labels
+    annotations               = var.primary_instance.annotations
+    ssl_mode                  = var.primary_instance.ssl_mode
+    require_connectors        = var.primary_instance.require_connectors
+    enable_public_ip          = var.primary_instance.enable_public_ip
+    enable_outbound_public_ip = var.primary_instance.enable_outbound_public_ip
+    cidr_range                = var.primary_instance.cidr_range
+    query_insights_config     = var.primary_instance.query_insights_config
   }
 
-  read_pool_instance = [
-    for r in var.read_pool_instances : {
-      instance_id = r.instance_id
-      node_count  = r.node_count
-      machine_config = {
-        cpu_count = r.cpu_count
-      }
+  # display_name is a REQUIRED attribute on upstream's read_pool_instance
+  # objects (unlike on primary_instance, where it is optional), so it has to be
+  # populated for every entry or the whole plan fails.
+  read_pool_instance = local.is_secondary ? [] : [
+    for r in local.read_pool_instances : {
+      instance_id           = r.instance_id
+      display_name          = coalesce(r.display_name, r.instance_id)
+      node_count            = r.node_count
+      machine_cpu_count     = r.cpu_count
+      machine_type          = r.machine_type
+      database_flags        = r.database_flags
+      ssl_mode              = r.ssl_mode
+      require_connectors    = r.require_connectors
+      enable_public_ip      = r.enable_public_ip
+      cidr_range            = r.cidr_range
+      query_insights_config = r.query_insights_config
     }
   ]
 }

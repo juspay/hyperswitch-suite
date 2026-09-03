@@ -74,7 +74,7 @@ module "gke" {
   remove_default_node_pool = true
   initial_node_count       = 1
 
-  node_pools              = var.node_pools
+  node_pools              = local.node_pools
   node_pools_labels       = var.node_pools_labels
   node_pools_taints       = var.node_pools_taints
   node_pools_tags         = var.node_pools_tags

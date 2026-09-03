@@ -51,6 +51,29 @@ variable "squid_allowlist_content" {
   default     = null
 }
 
+variable "vector_config_content" {
+  description = "Vector log-shipping config (vector.toml) content, written to the config bucket as vector.toml. Unlike squid_config_content/squid_allowlist_content, nothing in the image fetches this automatically - the Packer image (terraform/gcp/packer/squid-proxy) bakes its own vector.toml in at BUILD time via a template (scripts/vector.toml.pkrtpl.hcl), with no boot-time override path. Setting this variable only writes the object to the bucket; actually picking it up requires custom_startup_script to fetch and apply it (see that variable's own description, and envoy-proxy's templates/startup-script.sh in the live-layer for the pattern to mirror). Null skips writing the object entirely - the instance then just keeps whatever vector.toml the image baked in, same as before this variable existed."
+  type        = string
+  default     = null
+}
+
+variable "additional_config_files_path" {
+  description = "Optional local directory (e.g. \"$${get_terragrunt_dir()}/config\") whose files are uploaded as-is to the config bucket alongside squid.conf/allowedlist.txt/vector.toml - same mechanism as composition/envoy-proxy's identically-named variable, mirroring the AWS module's config_files_source_path/fileset() pattern (terraform/aws/modules/composition/squid-proxy). Every file found in this directory is uploaded verbatim under its own name (subdirectories via fileset's \"**\" glob too) - a plain byte-for-byte upload, no {{placeholder}} templating. \"squid.conf\", \"allowedlist.txt\", and \"vector.toml\" are all skipped if present, since squid_config_content/squid_allowlist_content/vector_config_content already own those three object names (avoids two resources managing the same bucket key). Null skips this entirely - existing callers that only set the three dedicated *_content variables are unaffected."
+  type        = string
+  default     = null
+}
+
+variable "ilb_source_ranges" {
+  description = "CIDR ranges allowed to reach the internal LB's forwarding rule (squid_port). Required - there is no safe default: the underlying terraform-google-modules/lb-internal module's firewall resource falls back to GCP's own API default of 0.0.0.0/0 whenever both source_ip_ranges and source_tags/source_service_accounts are left unset (confirmed live, 2026-09-02 - the exact gap this variable closes). Squid's actual clients are GKE pods, which carry no network tags of their own to source-tag-match against instead, so this must be IP-range-based - set it to the same GKE node-subnet + pod-secondary-range CIDRs already used by the sibling gke-to-squid-egress ingress firewall rule in this environment's firewall-rules unit, to avoid the two rules drifting out of sync."
+  type        = list(string)
+}
+
+variable "force_destroy_buckets" {
+  description = "Whether the config/log buckets can be destroyed while non-empty (needed for `terraform destroy` to succeed at all, since versioning = true otherwise leaves noncurrent object versions behind that block deletion). Null (default) auto-derives from environment - true everywhere except \"prod\", matching the AWS module's identical var.environment != \"prod\" ? true : false gate on its own config/log S3 buckets (terraform/aws/modules/composition/squid-proxy/main.tf). Set explicitly to override the auto-derived value for either bucket."
+  type        = bool
+  default     = null
+}
+
 variable "bucket_location" {
   description = "Location for the config/log buckets"
   type        = string
@@ -109,6 +132,12 @@ variable "metadata" {
   description = "Additional instance metadata applied to proxy instances (e.g. startup-script parameters)"
   type        = map(string)
   default     = {}
+}
+
+variable "custom_startup_script" {
+  description = "GCE startup-script content run on boot, the GCP equivalent of the AWS squid-proxy composition module's custom_userdata - same pattern as composition/envoy-proxy's variable of the same name. Unlike envoy, this fleet's config/whitelist delivery is NOT normally this module's job: the Packer image (terraform/gcp/packer/squid-proxy) already bakes in squid-config-fetch.service and squid-whitelist-fetch.service (both Before=squid.service), which read the config-bucket instance-metadata key this module already sets and pull squid.conf/allowedlist.txt from module.config_bucket before Squid ever starts - the whitelist also re-syncs on its own via a cron job baked into the same image (update-squid-whitelist.sh, every 15 min). Null (default) means no startup-script is set at all and the instance boots purely on the image's own baked-in units, which is correct for the common case. Only set this if a specific fleet needs boot-time behavior beyond what the image already bakes in (e.g. one-off debugging, a temporary override) - it does not replace or need to duplicate the two systemd units above."
+  type        = string
+  default     = null
 }
 
 variable "labels" {
