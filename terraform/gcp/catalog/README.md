@@ -11,6 +11,10 @@ terraform/gcp/catalog/
 │   ├── memorystore-valkey/     # cache
 │   ├── envoy-proxy/            # ingress proxy (custom GCE image)
 │   ├── squid-proxy/            # egress proxy (custom GCE image)
+│   ├── artifact-registry/      # container images
+│   ├── bastion-host/           # IAP SSH entry point
+│   ├── locker/                 # card vault: database + identity + CMEK
+│   ├── firewall-rules/         # cross-unit connectivity (apply last)
 │   └── application-stack/
 │       ├── gke/
 │       └── apps/               # 9 workloads on the cluster
@@ -18,20 +22,20 @@ terraform/gcp/catalog/
     └── internal/               # sandbox / dev / pre-prod / prod
 ```
 
-15 units. This mirrors the AWS catalog proposed in
+19 units. This mirrors the AWS catalog proposed in
 [PR #302](https://github.com/juspay/hyperswitch-suite/pull/302) — same unit
 skeleton, same tag-pinning discipline, same CI shape.
 
 ## Scope
 
 **A unit exists here only if its module is published on `main`.** Every one of
-the 15 pins resolves to a real tag; `scripts/ci/check-gcp-pins.sh` enforces it.
+the 19 pins resolves to a real tag; `scripts/ci/check-gcp-pins.sh` enforces it.
 
 Not in the catalog:
 
 | Excluded | Why |
 |---|---|
-| `load-balancer`, `cloud-cdn`, `cloud-dns`, `certificate-manager`, `firewall-rules`, `artifact-registry`, `bastion-host`, `locker`, `pubsub` | published on `main`, but outside this stack's scope |
+| `load-balancer`, `cloud-cdn`, `cloud-dns`, `certificate-manager`, `pubsub` | published on `main`, but outside this stack's scope |
 | `kafka`, `cassandra`, `clickhouse`, `opensearch`, `filestore`, `cloud-monitoring`, `gke-kubernetes-resources` | no module on `main` |
 | `apps/decision-engine`, `apps/otel-collector`, `apps/ratelimiter` | no module on `main` — add back when they land |
 | `gke-workload-identity` | needs no unit; every app module calls it as a nested Terraform module |
@@ -48,10 +52,25 @@ definitions — these are the only two units in the catalog with an image
 prerequisite, which is why the other image-dependent units (kafka, cassandra,
 clickhouse, opensearch, locker) are also the ones with no published module.
 
-`squid-proxy` restricts its internal LB to `ilb_source_ranges`, derived from
-the same stack values `vpc-network` builds the GKE ranges from. Note that
-*reaching* squid from the cluster also needs the `gke-to-squid-egress` rule
-from the `firewall-rules` unit, which is not in this stack.
+`squid-proxy` restricts its internal LB to `ilb_source_ranges`, and the
+`firewall-rules` unit carries the matching `gke-to-squid-egress` rule. Both
+derive from the same two stack values `vpc-network` builds the GKE ranges
+from, so all three cannot drift apart.
+
+### The card vault
+
+`composition/locker` was rewritten upstream and no longer provisions a VM
+fleet from a baked image. The vault runs on GKE through the same Helm flow as
+every other app; the unit creates only what Kubernetes cannot create for
+itself — a dedicated AlloyDB cluster (separate from the shared one, so card
+data keeps its own PCI-DSS scope), the Workload Identity binding, and the CMEK
+key.
+
+Two things it deliberately does not do, both documented in the unit: it does
+not annotate the Kubernetes ServiceAccount (that would shell out to `kubectl`
+at apply time and fail against a private cluster), and it does not create the
+`locker` database inside the AlloyDB cluster (no such Terraform resource
+exists). Both are one-line manual steps.
 
 ### Database and cache
 
@@ -95,6 +114,10 @@ arrives through Terragrunt Stacks `values`.
 | `vpc-network` | `composition/vpc-network` | `gcp-vpc-network-v0.1.0` |
 | `alloydb` | `composition/alloydb` | `gcp-alloydb-v0.1.0` |
 | `memorystore-valkey` | `composition/memorystore-valkey` | `gcp-memorystore-valkey-v0.1.0` |
+| `artifact-registry` | `composition/artifact-registry` | `gcp-artifact-registry-v0.1.0` |
+| `bastion-host` | `composition/bastion-host` | `gcp-bastion-host-v0.1.0` |
+| `locker` | `composition/locker` | `gcp-locker-v0.1.0` |
+| `firewall-rules` | `composition/firewall-rules` | `gcp-firewall-rules-v0.1.0` |
 | `envoy-proxy` | `composition/envoy-proxy` | `gcp-envoy-proxy-v0.1.0` |
 | `squid-proxy` | `composition/squid-proxy` | `gcp-squid-proxy-v0.1.0` |
 | `application-stack/gke` | `composition/gke` | `gcp-gke-v0.1.0` |
@@ -141,7 +164,7 @@ Adopt the AWS grammar when a consumer outside this repo needs to pin a unit.
 - `terragrunt hcl format --check` on the catalog and the live tree
 - `terragrunt stack generate` must produce no diff against the committed tree
 - `terragrunt hcl validate` over the generated tree — resolves every local,
-  `values` and `dependency` reference in all 15 units
+  `values` and `dependency` reference in all 19 units
 - `scripts/ci/check-sensitive.sh terraform/gcp`
 - `scripts/ci/check-gcp-pins.sh` — every `?ref=` is a tag of the right shape
   and that tag exists

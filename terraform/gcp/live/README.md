@@ -31,7 +31,7 @@ That needs no cloud credentials and no module downloads.
 
 ## Before anything can run
 
-All 15 module tags exist, so `init` will resolve. What is left is replacing
+All 19 module tags exist, so `init` will resolve. What is left is replacing
 every `REPLACE_ME` in `terragrunt.stack.hcl`:
 
 | Placeholder | What it needs |
@@ -41,6 +41,7 @@ every `REPLACE_ME` in `terragrunt.stack.hcl`:
 | `vpn_cidr_blocks` | real office / VPN CIDRs. **Left empty, `gke` falls back to an allow-all `master_authorized_networks` entry that must not be applied.** |
 | `domains.api`, `domains.grafana` | real hostnames |
 | `custom_images.envoy`, `custom_images.squid` | names of images built from `terraform/gcp/packer/{envoy-proxy,squid-proxy}`. These two units will not `apply` without them |
+| `bastion_iap_members` | the group(s) or user(s) granted IAP SSH to the bastion |
 
 ## Deployment order
 
@@ -61,7 +62,14 @@ The order it derives:
 | 1 | `application-stack/gke`, `alloydb`, `memorystore-valkey` | independent of each other; `gke` is the long pole (~15–20 min) |
 | 2 | `apps/gateway-controller`, `apps/istio`, `apps/argocd`, `apps/external-secrets-operator` | ingress and platform services the workloads attach to |
 | 3 | `apps/loki`, `apps/vector`, `apps/grafana`, `apps/superposition`, `apps/hyperswitch` | |
-| — | `envoy-proxy`, `squid-proxy` | depend only on `vpc-network`, so they run alongside phases 1–3 |
+| — | `envoy-proxy`, `squid-proxy`, `artifact-registry`, `bastion-host` | depend only on `vpc-network`, so they run alongside phases 1–3 |
+| — | `locker` | depends on `vpc-network` + `gke`; lands with phase 2 |
+| last | `firewall-rules` | see the note below |
+
+`firewall-rules` declares only a `vpc-network` dependency, so Terragrunt may
+run it early. That is accepted by GCP (a rule may name a tag no instance
+carries yet) but means the rules only bite once the proxies and cluster exist.
+On a green-field build, re-apply it at the end.
 
 `gateway-controller` has no dependency and may run in phase 0 — that is
 correct, it only creates a project-level SSL policy.
@@ -79,6 +87,20 @@ terragrunt apply --working-dir application-stack/gke
 - **AlloyDB creates no application databases.** There is no
   `google_alloydb_database` resource — only cluster, instance and user. The
   per-service databases need a psql step against the instance once it is up.
+  This applies to both `alloydb` and the vault's own cluster in `locker`.
+- **`locker` leaves one manual step.** It creates the Google service account
+  and the Workload Identity binding, but does not annotate the Kubernetes
+  ServiceAccount — the upstream module does that by shelling out to `kubectl`
+  at apply time, which fails against a private cluster and would fail the
+  whole apply with it. Run it yourself afterwards:
+
+  ```bash
+  kubectl annotate --overwrite sa -n hyperswitch hyperswitch-vault-role \
+    iam.gke.io/gcp-service-account=$(terragrunt output -raw service_account_email)
+  ```
+
+  Without it Workload Identity does not engage and the pod silently falls back
+  to the node's default service account — it does not error.
 - **`memorystore-valkey` needs the `memorystore` subnet to be otherwise
   unused.** It uses Private Service Connect, not the PSA peering AlloyDB uses,
   and PSC reserves addresses directly out of that subnet.
@@ -105,11 +127,9 @@ the acceptance criterion for each.
 
 ## Known gaps
 
-- The edge proxies are here, but `load-balancer`, `cloud-cdn`, DNS/TLS,
-  `firewall-rules` and the analytics data layer are not — see
-  [`../catalog/README.md`](../catalog/README.md#scope). In particular
-  `firewall-rules` carries the GKE→squid egress rule, so squid is not reachable
-  from the cluster on this stack alone.
+- `load-balancer`, `cloud-cdn`, DNS/TLS and the analytics data layer
+  (kafka, cassandra, clickhouse, opensearch) are not in the catalog — see
+  [`../catalog/README.md`](../catalog/README.md#scope).
 - No BYO-VPC stack for GCP, so no self-host path (the AWS
   `catalog/stacks/standalone` is the model).
 - Nothing in this tree has been `plan`ned against a real GCP project yet.

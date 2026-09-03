@@ -6,11 +6,8 @@
 # module is published on `main`.
 #
 # Not in this stack (and why):
-#   - load-balancer, cloud-cdn and the supporting composition units
-#     (artifact-registry, bastion-host, cloud-dns, certificate-manager,
-#     firewall-rules, pubsub, locker) — published, but out of scope.
-#     NOTE: firewall-rules is what opens GKE -> squid egress; without it the
-#     squid ILB is reachable only if the environment's rules already exist.
+#   - load-balancer, cloud-cdn, cloud-dns, certificate-manager, pubsub —
+#     published, but out of scope for this stack.
 #   - Data-layer VM units (kafka, cassandra, clickhouse, opensearch, filestore)
 #     and cloud-monitoring, gke-kubernetes-resources — no module on `main`.
 #   - apps/decision-engine, apps/otel-collector, apps/ratelimiter — no module
@@ -193,6 +190,59 @@ unit "squid-proxy" {
 
     # squid's ilb_source_ranges is derived from these two, exactly as
     # vpc-network derives the ranges themselves.
+    vpc_cidr_prefix               = values.vpc_cidr_prefix
+    gke_pods_secondary_range_cidr = values.gke_pods_secondary_range_cidr
+  }
+}
+
+# -----------------------------------------------------------------------------
+# Phase 5 — Supporting infrastructure
+# -----------------------------------------------------------------------------
+unit "artifact-registry" {
+  source                  = "${get_repo_root()}/terraform/gcp/catalog/units/artifact-registry"
+  path                    = "artifact-registry"
+  no_dot_terragrunt_stack = true
+}
+
+unit "bastion-host" {
+  source = "${get_repo_root()}/terraform/gcp/catalog/units/bastion-host"
+  path   = "bastion-host"
+
+  no_dot_terragrunt_stack = true
+
+  values = {
+    bastion_iap_members = values.bastion_iap_members
+    machine_types       = values.machine_types
+  }
+}
+
+# Data tier and identity for the card vault. The vault itself runs on GKE via
+# Helm, so this depends on both vpc-network and gke.
+unit "locker" {
+  source = "${get_repo_root()}/terraform/gcp/catalog/units/locker"
+  path   = "locker"
+
+  no_dot_terragrunt_stack = true
+
+  values = try(values.locker, null) != null ? { locker = values.locker } : {}
+}
+
+# -----------------------------------------------------------------------------
+# Phase 6 — Firewall rules (apply last)
+# -----------------------------------------------------------------------------
+# Cross-unit connectivity assembled from the other units' instance tags. It
+# depends only on vpc-network, so Terragrunt may schedule it early — harmless,
+# but the rules only bite once the units they describe exist.
+unit "firewall-rules" {
+  source = "${get_repo_root()}/terraform/gcp/catalog/units/firewall-rules"
+  path   = "firewall-rules"
+
+  no_dot_terragrunt_stack = true
+
+  values = {
+    # gke-to-squid-egress derives its source ranges from these, exactly as
+    # squid-proxy derives ilb_source_ranges and vpc-network derives the ranges
+    # themselves. All three must agree.
     vpc_cidr_prefix               = values.vpc_cidr_prefix
     gke_pods_secondary_range_cidr = values.gke_pods_secondary_range_cidr
   }

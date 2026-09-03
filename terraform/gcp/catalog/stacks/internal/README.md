@@ -1,7 +1,7 @@
 # Internal GCP stack
 
 The GKE cluster, the workloads on it, the two data services those workloads
-need, and the edge proxies — for the internal `sandbox`, `dev`, `pre-prod` and `prod`
+need, the edge proxies and the card vault's data tier — for the internal `sandbox`, `dev`, `pre-prod` and `prod`
 environments. This stack creates its own VPC.
 
 Rendered by [`terraform/gcp/live/terragrunt.stack.hcl`](../../../live/terragrunt.stack.hcl)
@@ -11,7 +11,7 @@ Rendered by [`terraform/gcp/live/terragrunt.stack.hcl`](../../../live/terragrunt
 
 | File | Role |
 |---|---|
-| `terragrunt.stack.hcl` | the 15 `unit` blocks, their `path`s and the `values` each receives |
+| `terragrunt.stack.hcl` | the 19 `unit` blocks, their `path`s and the `values` each receives |
 | `root.hcl` | GCS backend, `google` + `google-beta` providers, and the five locals every unit reads |
 
 `root.hcl` is copied into the generated tree alongside the units, which is how
@@ -26,10 +26,17 @@ each unit's `find_in_parent_folders("root.hcl")` resolves.
 | 2. Platform apps | `gateway-controller`, `istio`, `argocd`, `external-secrets-operator` | `application-stack/apps/<name>` |
 | 3. Workload apps | `loki`, `vector`, `grafana`, `superposition`, `hyperswitch` | `application-stack/apps/<name>` |
 | 4. Edge proxies | `envoy-proxy`, `squid-proxy` | `envoy-proxy`, `squid-proxy` |
+| 5. Supporting | `artifact-registry`, `bastion-host`, `locker` | same |
+| 6. Firewall rules | `firewall-rules` (apply last) | `firewall-rules` |
 
-The edge proxies depend only on `vpc-network`, so Terragrunt will run them
-alongside phases 1–3 rather than after — that is fine, nothing in the app tier
-depends on them at apply time.
+Phases 4–5 depend only on `vpc-network` (plus `gke` for `locker`), so
+Terragrunt runs them alongside phases 1–3 rather than after. That is fine —
+nothing in the app tier depends on them at apply time.
+
+`firewall-rules` is the exception worth knowing about: it is meant to apply
+last, but declares only a `vpc-network` dependency, so Terragrunt may schedule
+it early. Harmless — GCP accepts a rule referencing a tag no instance carries
+yet — but the rules only take effect once the units they describe exist.
 
 **The dependency graph is complete for this unit set** — every unit that needs
 the network or the cluster declares it, so `terragrunt run-all apply` orders
@@ -66,6 +73,10 @@ Consumed by units:
 | `domains` (`api`, `grafana`) | `istio`, `grafana`, `hyperswitch` |
 | `smtp_secret_id` | `hyperswitch` |
 | `custom_images` (`envoy`, `squid`) | `envoy-proxy`, `squid-proxy` — image names, expanded to a full image path against `project_id` |
+| `machine_types.bastion` | `bastion-host` |
+| `bastion_iap_members` | `bastion-host` — group(s)/user(s) granted IAP SSH |
+| `locker` (optional map) | `locker` — `availability_type`, `cpu_count`, `deletion_protection`, `kms_protection_level` |
+| `vpc_cidr_prefix`, `gke_pods_secondary_range_cidr` | also passed to `squid-proxy` and `firewall-rules`, which derive the GKE→squid allowlist from them |
 | `alloydb` (optional map) | `alloydb` — `availability_type`, `cpu_count`, `database_version`, `master_username`, `read_pool_instances`, `deletion_protection` |
 | `valkey` (optional map) | `memorystore-valkey` — `shard_count`, `replica_count`, `node_type`, `zone_distribution_config_mode`, `deletion_protection_enabled` |
 

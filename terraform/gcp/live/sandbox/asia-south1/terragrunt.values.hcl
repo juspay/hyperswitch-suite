@@ -5,6 +5,7 @@ alloydb = {
   deletion_protection = true
   read_pool_instances = {}
 }
+bastion_iap_members = ["group:REPLACE_ME@example.com"]
 custom_images = {
   envoy = "REPLACE_ME-envoy"
   squid = "REPLACE_ME-squid"
@@ -16,7 +17,14 @@ domains = {
 env                               = "sandbox"
 gke_pods_secondary_range_cidr     = "10.68.0.0/14"
 gke_services_secondary_range_cidr = "10.72.0.0/20"
+locker = {
+  availability_type    = "ZONAL"
+  cpu_count            = 2
+  deletion_protection  = true
+  kms_protection_level = "SOFTWARE"
+}
 machine_types = {
+  bastion             = "e2-small"
   gke_generic_compute = "e2-standard-4"
   gke_system_pool     = "e2-standard-4"
 }

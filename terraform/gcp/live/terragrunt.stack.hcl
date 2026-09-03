@@ -76,7 +76,11 @@ stack "sandbox" {
     machine_types = {
       gke_system_pool     = "e2-standard-4"
       gke_generic_compute = "e2-standard-4"
+      bastion             = "e2-small"
     }
+
+    # Group(s) or user(s) granted IAP SSH to the bastion host.
+    bastion_iap_members = ["group:REPLACE_ME@example.com"]
 
     # ---------------------------------------------------------------------
     # Data services — every key optional; omit the block for unit defaults
@@ -95,6 +99,16 @@ stack "sandbox" {
       replica_count               = 1
       node_type                   = "SHARED_CORE_NANO"
       deletion_protection_enabled = true
+    }
+
+    # The card vault's own AlloyDB cluster, separate from the shared one above
+    # so card data stays in its own PCI-DSS scope. Production wants
+    # availability_type = "REGIONAL" and deletion_protection left true.
+    locker = {
+      availability_type    = "ZONAL"
+      cpu_count            = 2
+      deletion_protection  = true
+      kms_protection_level = "SOFTWARE"
     }
 
     # ---------------------------------------------------------------------
