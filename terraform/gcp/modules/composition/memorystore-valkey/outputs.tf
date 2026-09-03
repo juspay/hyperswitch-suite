@@ -4,7 +4,7 @@ output "instance_id" {
 }
 
 output "discovery_host" {
-  description = "Discovery endpoint IP address clients connect to for cluster topology discovery (analogous to classic Memorystore's host output). Derived from local.discovery_connection, not the submodule's own psc_auto_connection output - see locals.tf for why."
+  description = "Discovery endpoint IP address clients connect to for cluster topology discovery. Derived from local.discovery_connection rather than the submodule's psc_auto_connection output - see locals.tf"
   value       = try(local.discovery_connection.ip_address, null)
 }
 

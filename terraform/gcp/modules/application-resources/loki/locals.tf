@@ -1,4 +1,6 @@
 locals {
+  gcp_sa_name = "${var.project_name}-${var.environment}-loki-sa"
+
   name_prefix = "${var.environment}-${var.project_name}-loki"
 
   common_labels = merge(

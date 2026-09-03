@@ -1,24 +1,13 @@
-# =========================================================================
-# FIREWALL RULES MODULE
-# =========================================================================
-# GCP equivalent of composition/security-rules. Manages cross-module VPC
-# firewall rules.
+# Cross-module VPC firewall rules, applied last in the deployment order.
 #
-# Design Pattern (same as the AWS security-rules module):
-#   - Per-service firewall rules that are entirely internal to one
-#     composition module (e.g. an internal LB -> its own instances) stay in
-#     that composition module.
-#   - Cross-module connectivity rules (e.g. bastion-host -> locker SSH) are
-#     assembled by the live layer and passed into this module, which is
-#     applied last in the deployment order.
+# Rules entirely internal to one composition module (e.g. an internal LB to its
+# own instances) stay in that module; cross-module connectivity rules (e.g.
+# bastion-host to locker SSH) are assembled by the live layer and passed here.
 #
-# Unlike AWS security groups, GCP firewall rules are not scoped to a
-# resource - they are network-wide and matched via direction, target/source
-# tags, or target/source service accounts. So there is no per-"sg_id"
-# grouping on GCP; instead rules are grouped by logical component name
-# purely for input organization, then flattened into the list the
-# `firewall-rules` submodule expects.
-# =========================================================================
+# GCP firewall rules are network-wide rather than resource-scoped, matched by
+# direction and target/source tags or service accounts. Rules are grouped by
+# logical component name purely for input organization, then flattened into the
+# list the upstream submodule expects.
 
 locals {
   rules_flat = merge([

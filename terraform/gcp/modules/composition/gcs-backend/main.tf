@@ -1,25 +1,8 @@
-# ============================================================================
-# Terraform Backend Infrastructure (GCS)
-# ============================================================================
-# This module creates the backend infrastructure for Terraform on GCP:
-#   - GCS bucket for state storage (versioned, uniform bucket-level access,
-#     optional CMEK, optional retention policy)
+# Terraform state backend: a versioned GCS bucket with uniform bucket-level
+# access, optional CMEK and optional retention policy.
 #
-# Unlike the AWS equivalent (composition/terraform-backend), no lock table is
-# created: the GCS backend uses native object-generation locking, so a
-# DynamoDB-style companion resource has no GCP equivalent and is intentionally
-# omitted. See terraform/gcp/modules/README.md for the full mapping notes.
-#
-# Usage:
-#   module "terraform_backend" {
-#     source = "../../modules/composition/gcs-backend"
-#
-#     environment       = "dev"
-#     project_name      = "hyperswitch"
-#     project_id        = "hyperswitch-dev"
-#     state_bucket_name = "hyperswitch-dev-terraform-state"
-#   }
-# ============================================================================
+# No lock table is created - the GCS backend uses native object-generation
+# locking, so there is no DynamoDB-style companion resource to provision.
 
 module "state_bucket" {
   source  = "terraform-google-modules/cloud-storage/google//modules/simple_bucket"

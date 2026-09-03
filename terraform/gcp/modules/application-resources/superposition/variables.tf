@@ -30,12 +30,12 @@ variable "cluster_location" {
 }
 
 variable "cluster_endpoint" {
-  description = "GKE cluster API server endpoint (bare host:port or IP, no scheme) - required to configure this module's own kubernetes provider (see main.tf header comment)"
+  description = "GKE cluster API server endpoint (bare host:port or IP, no scheme) - required to configure this module's kubernetes provider"
   type        = string
 }
 
 variable "cluster_ca_certificate" {
-  description = "GKE cluster CA certificate, base64-encoded - required to configure this module's own kubernetes provider (see main.tf header comment)"
+  description = "GKE cluster CA certificate, base64-encoded - required to configure this module's kubernetes provider"
   type        = string
   sensitive   = true
 }
@@ -59,25 +59,49 @@ variable "additional_project_roles" {
 }
 
 variable "create_database" {
-  description = "Whether to create a dedicated Cloud SQL database for Superposition"
+  description = "Whether to create a dedicated AlloyDB cluster for Superposition"
   type        = bool
   default     = true
 }
 
 variable "database_config" {
-  description = "Configuration for Superposition's dedicated Cloud SQL database (composition/cloud-sql)"
+  description = <<-EOT
+    Configuration for Superposition's dedicated AlloyDB cluster (composition/alloydb).
+
+    allocated_ip_range is REQUIRED whenever create_database is true - AlloyDB
+    attaches over Private Service Access and composition/alloydb takes the
+    reserved range by name, not by CIDR (composition/vpc-network exposes it as
+    private_service_access_range_name). It is typed optional purely so callers
+    that set create_database = false need not supply it: Terraform validates
+    full object conformance regardless of the count-gated branch that reads it.
+
+    There is deliberately no database_name attribute, unlike the Cloud SQL
+    shape this replaced. The google provider ships no resource for an
+    individual AlloyDB database (only alloydb_cluster / _instance / _user /
+    _backup), so the cluster's bootstrap `postgres` database is what exists
+    after apply and any additional logical database is a SQL-level concern.
+
+    Cloud SQL's tier and disk_size have no AlloyDB counterpart either - size
+    the primary with cpu_count (or machine_type), and storage is managed by
+    the service.
+  EOT
   type = object({
     network_id          = string
-    instance_name       = optional(string)
+    allocated_ip_range  = optional(string)
+    cluster_id          = optional(string)
     database_version    = optional(string)
-    tier                = optional(string)
     availability_type   = optional(string)
-    disk_size           = optional(number)
+    cpu_count           = optional(number)
+    machine_type        = optional(string)
+    database_flags      = optional(map(string))
     deletion_protection = optional(bool)
-    database_name       = optional(string)
     master_username     = optional(string)
     master_password     = optional(string)
     encryption_key_name = optional(string)
+    secret_manager = optional(object({
+      create    = optional(bool, false)
+      secret_id = optional(string)
+    }))
   })
 }
 

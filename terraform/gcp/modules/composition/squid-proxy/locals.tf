@@ -1,8 +1,7 @@
 locals {
   name_prefix = "${var.environment}-${var.project_name}-squid"
 
-  # See var.force_destroy_buckets' own description for the auto-derivation
-  # rule and why null falls back to it.
+  # Null auto-derives: destroyable everywhere except prod.
   force_destroy_buckets = var.force_destroy_buckets != null ? var.force_destroy_buckets : var.environment != "prod"
 
   common_labels = merge(
@@ -15,10 +14,8 @@ locals {
     var.labels
   )
 
-  # terraform-google-modules/lb-internal requires bare network/subnetwork
-  # NAMES, not self-links - passing var.network/var.lb_subnetwork straight
-  # through fails with "Invalid value for field 'network'" (confirmed via a
-  # live apply, 2026-08-24). Strip both down to their last path segment.
+  # lb-internal requires bare network/subnetwork names, not self-links, so strip
+  # both down to their last path segment.
   internal_lb_network_name = element(split("/", var.network), length(split("/", var.network)) - 1)
   internal_lb_subnet_name  = element(split("/", var.lb_subnetwork), length(split("/", var.lb_subnetwork)) - 1)
 

@@ -1,9 +1,5 @@
-# ============================================================================
-# Optional Secret Manager auto-storage for the generated master password
-# ============================================================================
-# Same pattern as composition/cloud-sql's secret_manager toggle - see that
-# module's secretmanager.tf for the rationale (no native AlloyDB/Cloud SQL
-# equivalent of RDS's manage_master_user_password).
+# Optional Secret Manager auto-storage for the generated master password.
+# AlloyDB has no native equivalent of RDS's manage_master_user_password.
 resource "google_secret_manager_secret" "master_password" {
   count = local.secret_manager_create ? 1 : 0
 

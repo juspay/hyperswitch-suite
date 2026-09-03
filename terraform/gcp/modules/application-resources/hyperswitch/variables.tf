@@ -31,12 +31,12 @@ variable "cluster_location" {
 }
 
 variable "cluster_endpoint" {
-  description = "GKE cluster API server endpoint (bare host:port or IP, no scheme) - required to configure this module's own kubernetes provider (see main.tf header comment)"
+  description = "GKE cluster API server endpoint (bare host:port or IP, no scheme) - required to configure this module's kubernetes provider"
   type        = string
 }
 
 variable "cluster_ca_certificate" {
-  description = "GKE cluster CA certificate, base64-encoded - required to configure this module's own kubernetes provider (see main.tf header comment)"
+  description = "GKE cluster CA certificate, base64-encoded - required to configure this module's kubernetes provider"
   type        = string
   sensitive   = true
 }
@@ -59,9 +59,7 @@ variable "additional_project_roles" {
   default     = []
 }
 
-# ============================================================================
 # Feature: KMS Key
-# ============================================================================
 
 variable "kms" {
   description = "KMS configuration. Set create=true to create a keyring/key and grant the service account encrypt/decrypt access"
@@ -75,9 +73,7 @@ variable "kms" {
   default = null
 }
 
-# ============================================================================
 # Feature: GCS Buckets
-# ============================================================================
 
 variable "gcs_dashboard_themes" {
   description = "GCS bucket configuration for dashboard themes. Set create=true to create a new bucket, or create=false with bucket_name set to an existing bucket to grant access to it"
@@ -103,10 +99,7 @@ variable "gcs_file_uploads" {
   default = null
 }
 
-# ============================================================================
-# Feature: SMTP credentials (replaces AWS SES; GCP has no first-party
-# transactional email service)
-# ============================================================================
+# Feature: SMTP credentials
 
 variable "smtp_secret_id" {
   description = "Secret Manager secret ID holding SMTP credentials. Null disables granting access"
@@ -114,9 +107,7 @@ variable "smtp_secret_id" {
   default     = null
 }
 
-# ============================================================================
-# Feature: Secrets Manager
-# ============================================================================
+# Feature: Secret Manager
 
 variable "secret_ids" {
   description = "List of Secret Manager secret IDs to grant the service account access to"
@@ -124,9 +115,7 @@ variable "secret_ids" {
   default     = []
 }
 
-# ============================================================================
-# Feature: Cloud Functions (replaces AWS Lambda)
-# ============================================================================
+# Feature: Cloud Functions
 
 variable "cloud_functions" {
   description = "Cloud Functions configuration. Set enabled=true and list function_names to grant invoker access"
@@ -138,9 +127,7 @@ variable "cloud_functions" {
   default = null
 }
 
-# ============================================================================
 # Feature: Cross-Project Impersonation (replaces AWS cross-account assume role)
-# ============================================================================
 
 variable "cross_project_assume" {
   description = "Cross-project impersonation configuration. Set enabled=true and list target_service_accounts to grant roles/iam.serviceAccountTokenCreator on them"
@@ -151,9 +138,7 @@ variable "cross_project_assume" {
   default = null
 }
 
-# ============================================================================
 # Feature: Additional Custom Roles (replaces AWS additional_iam_policies)
-# ============================================================================
 
 variable "additional_custom_role_ids" {
   description = "List of project-level custom role IDs (e.g. from application-resources/shared-iam-roles) to grant the service account"

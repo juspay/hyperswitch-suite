@@ -1,4 +1,6 @@
 locals {
+  gcp_sa_name = "${var.project_name}-${var.environment}-vector-sa"
+
   name_prefix = "${var.environment}-${var.project_name}-vector"
 
   common_labels = merge(

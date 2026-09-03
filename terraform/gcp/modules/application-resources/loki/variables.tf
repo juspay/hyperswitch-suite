@@ -25,12 +25,12 @@ variable "cluster_location" {
 }
 
 variable "cluster_endpoint" {
-  description = "GKE cluster API server endpoint (bare host:port or IP, no scheme) - required to configure this module's own kubernetes provider (see main.tf header comment)"
+  description = "GKE cluster API server endpoint (bare host:port or IP, no scheme) - required to configure this module's kubernetes provider"
   type        = string
 }
 
 variable "cluster_ca_certificate" {
-  description = "GKE cluster CA certificate, base64-encoded - required to configure this module's own kubernetes provider (see main.tf header comment)"
+  description = "GKE cluster CA certificate, base64-encoded - required to configure this module's kubernetes provider"
   type        = string
   sensitive   = true
 }

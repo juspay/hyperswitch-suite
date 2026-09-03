@@ -1,6 +1,4 @@
-# ==============================================================================
 # Network Outputs
-# ==============================================================================
 
 output "network_id" {
   description = "The ID of the VPC network"
@@ -17,9 +15,7 @@ output "network_self_link" {
   value       = module.vpc_network.network_self_link
 }
 
-# ==============================================================================
 # Subnet Outputs
-# ==============================================================================
 
 output "subnets" {
   description = "Map of created subnets, keyed by region/name, as returned by the network module"
@@ -50,9 +46,7 @@ output "gke_services_secondary_range_name" {
   value       = "${local.name_prefix}-gke-services"
 }
 
-# ==============================================================================
 # Cloud Router / Cloud NAT Outputs
-# ==============================================================================
 
 output "router_name" {
   description = "Name of the Cloud Router"
@@ -69,9 +63,7 @@ output "nat_ips" {
   value       = google_compute_address.nat[*].address
 }
 
-# ==============================================================================
 # Private Service Access Outputs
-# ==============================================================================
 
 output "private_service_access_enabled" {
   description = "Whether the Private Service Access peering range/connection was created; downstream Cloud SQL/Memorystore modules should depend_on this module before using it"
@@ -83,9 +75,7 @@ output "private_service_access_range_name" {
   value       = "${local.name_prefix}-psa-range"
 }
 
-# ==============================================================================
 # Private Service Connect for Google APIs Outputs
-# ==============================================================================
 
 output "psc_google_apis_ip" {
   description = "Internal IP of the Private Service Connect Google APIs endpoint (null unless enable_psc_google_apis = true)"

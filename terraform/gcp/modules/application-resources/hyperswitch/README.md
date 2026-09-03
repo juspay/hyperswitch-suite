@@ -2,29 +2,30 @@
 ## Requirements
 
 | Name | Version |
-|------|---------|
+| ---- | ------- |
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_google"></a> [google](#requirement\_google) | >= 6.0 |
+| <a name="requirement_kubernetes"></a> [kubernetes](#requirement\_kubernetes) | >= 2.0 |
 
 ## Providers
 
 | Name | Version |
-|------|---------|
-| <a name="provider_google"></a> [google](#provider\_google) | >= 6.0 |
+| ---- | ------- |
+| <a name="provider_google"></a> [google](#provider\_google) | 7.46.0 |
 
 ## Modules
 
 | Name | Source | Version |
-|------|--------|---------|
+| ---- | ------ | ------- |
 | <a name="module_dashboard_themes_bucket"></a> [dashboard\_themes\_bucket](#module\_dashboard\_themes\_bucket) | terraform-google-modules/cloud-storage/google//modules/simple_bucket | 12.3.0 |
 | <a name="module_file_uploads_bucket"></a> [file\_uploads\_bucket](#module\_file\_uploads\_bucket) | terraform-google-modules/cloud-storage/google//modules/simple_bucket | 12.3.0 |
 | <a name="module_kms"></a> [kms](#module\_kms) | terraform-google-modules/kms/google | 4.1.2 |
-| <a name="module_workload_identity"></a> [workload\_identity](#module\_workload\_identity) | ../gke-workload-identity | n/a |
+| <a name="module_workload_identity"></a> [workload\_identity](#module\_workload\_identity) | terraform-google-modules/kubernetes-engine/google//modules/workload-identity | 44.3.0 |
 
 ## Resources
 
 | Name | Type |
-|------|------|
+| ---- | ---- |
 | [google_cloudfunctions2_function_iam_member.invoker](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/cloudfunctions2_function_iam_member) | resource |
 | [google_kms_crypto_key_iam_member.hyperswitch](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/kms_crypto_key_iam_member) | resource |
 | [google_project_iam_member.additional_custom_roles](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/project_iam_member) | resource |
@@ -33,14 +34,17 @@
 | [google_service_account_iam_member.cross_project_impersonation](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/service_account_iam_member) | resource |
 | [google_storage_bucket_iam_member.existing_dashboard_themes](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_iam_member) | resource |
 | [google_storage_bucket_iam_member.existing_file_uploads](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_iam_member) | resource |
+| [google_client_config.current](https://registry.terraform.io/providers/hashicorp/google/latest/docs/data-sources/client_config) | data source |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
+| ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_additional_custom_role_ids"></a> [additional\_custom\_role\_ids](#input\_additional\_custom\_role\_ids) | List of project-level custom role IDs (e.g. from application-resources/shared-iam-roles) to grant the service account | `list(string)` | `[]` | no |
 | <a name="input_additional_project_roles"></a> [additional\_project\_roles](#input\_additional\_project\_roles) | Additional project-level IAM roles to grant Hyperswitch's service account | `list(string)` | `[]` | no |
 | <a name="input_cloud_functions"></a> [cloud\_functions](#input\_cloud\_functions) | Cloud Functions configuration. Set enabled=true and list function\_names to grant invoker access | <pre>object({<br/>    enabled        = optional(bool, false)<br/>    location       = optional(string)<br/>    function_names = optional(list(string), [])<br/>  })</pre> | `null` | no |
+| <a name="input_cluster_ca_certificate"></a> [cluster\_ca\_certificate](#input\_cluster\_ca\_certificate) | GKE cluster CA certificate, base64-encoded - required to configure this module's kubernetes provider | `string` | n/a | yes |
+| <a name="input_cluster_endpoint"></a> [cluster\_endpoint](#input\_cluster\_endpoint) | GKE cluster API server endpoint (bare host:port or IP, no scheme) - required to configure this module's kubernetes provider | `string` | n/a | yes |
 | <a name="input_cluster_location"></a> [cluster\_location](#input\_cluster\_location) | Location (region or zone) of the GKE cluster | `string` | n/a | yes |
 | <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name of the GKE cluster hosting Hyperswitch | `string` | n/a | yes |
 | <a name="input_cross_project_assume"></a> [cross\_project\_assume](#input\_cross\_project\_assume) | Cross-project impersonation configuration. Set enabled=true and list target\_service\_accounts to grant roles/iam.serviceAccountTokenCreator on them | <pre>object({<br/>    enabled                 = optional(bool, false)<br/>    target_service_accounts = optional(list(string), [])<br/>  })</pre> | `null` | no |
@@ -60,7 +64,7 @@
 ## Outputs
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | <a name="output_cross_project_assume_enabled"></a> [cross\_project\_assume\_enabled](#output\_cross\_project\_assume\_enabled) | Whether cross-project impersonation was granted |
 | <a name="output_dashboard_themes_bucket_enabled"></a> [dashboard\_themes\_bucket\_enabled](#output\_dashboard\_themes\_bucket\_enabled) | Whether the dashboard-themes feature is enabled |
 | <a name="output_dashboard_themes_bucket_name"></a> [dashboard\_themes\_bucket\_name](#output\_dashboard\_themes\_bucket\_name) | Name of the dashboard-themes bucket (created or existing), if enabled |

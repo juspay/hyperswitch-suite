@@ -14,15 +14,10 @@ locals {
 
   instance_id = var.instance_id != null ? var.instance_id : "${local.name_prefix}-${var.region}"
 
-  # module.valkey_cluster.psc_auto_connection (the submodule's own output)
-  # is confusingly shaped - it's endpoints[0].connections[0], a wrapper
-  # object that ITSELF has a field also named psc_auto_connection (a
-  # 1-element list) - not the connection details directly. Derive straight
-  # from the raw `endpoints` output instead, filtering for the actual
-  # discovery-type connection rather than assuming index [0] is always it
-  # (confirmed against a real applied instance 2026-08-28: index [0] here
-  # happened to be correct, but connection_type is the real signal, not
-  # position).
+  # Derived from the raw `endpoints` output rather than the submodule's
+  # psc_auto_connection, which returns a wrapper object rather than the
+  # connection details. Filter on connection_type instead of assuming a
+  # position in the list.
   discovery_connections = flatten([
     for e in module.valkey_cluster.endpoints : [
       for c in e.connections : c.psc_auto_connection[0]

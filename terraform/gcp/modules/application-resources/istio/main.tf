@@ -1,34 +1,9 @@
-# ============================================================================
-# Istio (GCP equivalent of application-resources/istio)
-# ============================================================================
-# Same istio-release Helm charts (base/istiod/gateway) as the AWS module,
-# installed via the kubernetes/helm providers authenticated against GKE
-# instead of EKS. The istio-gateway Service is exposed as a GCP-native L4
-# LoadBalancer with a reserved static IP, rather than the AWS module's
-# ALB Ingress: GKE's Gateway API resources (the closer analogue to an ALB
-# Ingress) are Kubernetes custom resources with no first-class
-# hashicorp/kubernetes provider type, so wiring a Gateway/HTTPRoute is left
-# to your GitOps/kubectl flow - out of scope for this Terraform module, same
-# boundary the rest of this tree draws between infrastructure and
-# Kubernetes-native config.
+# Istio: the istio-release Helm charts (base/istiod/gateway) installed against
+# GKE, with the istio-gateway Service exposed as a GCP-native L4 LoadBalancer
+# on a reserved static IP.
 #
-# Usage:
-#   module "istio" {
-#     source = "../../modules/application-resources/istio"
-#
-#     project_id   = "hyperswitch-dev"
-#     environment  = "dev"
-#     project_name = "hyperswitch"
-#     region       = "europe-west1"
-#
-#     cluster_name     = module.gke.cluster_name
-#     cluster_endpoint = module.gke.endpoint
-#     cluster_ca_certificate = module.gke.ca_certificate
-#
-#     network      = module.vpc_network.network_self_link
-#     network_name = module.vpc_network.network_name
-#   }
-# ============================================================================
+# Gateway and HTTPRoute objects are Kubernetes custom resources with no
+# first-class provider type, so wiring them is left to the GitOps/kubectl flow.
 
 provider "kubernetes" {
   host                   = "https://${var.cluster_endpoint}"
@@ -44,9 +19,7 @@ provider "helm" {
   }
 }
 
-# ==============================================================================
 # Static IP for the Istio ingress gateway LoadBalancer
-# ==============================================================================
 resource "google_compute_address" "gateway" {
   count = var.create_gateway_static_ip ? 1 : 0
 
@@ -55,9 +28,7 @@ resource "google_compute_address" "gateway" {
   region  = var.region
 }
 
-# ==============================================================================
-# Helm Releases
-# ==============================================================================
+# Helm releases
 resource "helm_release" "istio_base" {
   count = local.istio_base.enabled ? 1 : 0
 
@@ -127,9 +98,7 @@ resource "helm_release" "istio_gateway" {
   depends_on = [helm_release.istiod]
 }
 
-# ==============================================================================
 # Firewall rule allowing health checks / ingress traffic to the gateway
-# ==============================================================================
 module "firewall_rules" {
   source = "../../composition/firewall-rules"
 

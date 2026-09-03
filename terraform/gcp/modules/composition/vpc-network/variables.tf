@@ -1,6 +1,4 @@
-# ==============================================================================
 # General
-# ==============================================================================
 
 variable "project_id" {
   description = "GCP project ID where the network is created"
@@ -46,9 +44,7 @@ variable "labels" {
   default     = {}
 }
 
-# ==============================================================================
 # Subnet CIDRs (one regional subnet per tier - see locals.tf for the full list)
-# ==============================================================================
 
 variable "external_incoming_subnet_cidr" {
   description = "CIDR for the internet-facing (external load balancer) subnet"
@@ -150,9 +146,7 @@ variable "enable_flow_logs" {
   default     = false
 }
 
-# ==============================================================================
 # Cloud Router / Cloud NAT
-# ==============================================================================
 
 variable "router_asn" {
   description = "BGP ASN for the Cloud Router"
@@ -167,13 +161,13 @@ variable "nat_min_ports_per_vm" {
 }
 
 variable "nat_log_filter" {
-  description = "Cloud NAT log_config_filter: ERRORS_ONLY (default, unchanged behavior), TRANSLATIONS_ONLY, or ALL. Set to ALL when pairing with nat_subnetwork_tiers to get a full audit trail of everything actually leaving via NAT (e.g. Squid's own egress) - safe to do once NAT is scoped down to a small subnet, since log volume is naturally bounded."
+  description = "Cloud NAT log_config_filter: ERRORS_ONLY (default), TRANSLATIONS_ONLY, or ALL. Use ALL for a full audit trail of everything leaving via NAT - practical once nat_subnetwork_tiers has scoped NAT down to a small subnet"
   type        = string
   default     = "ERRORS_ONLY"
 }
 
 variable "nat_static_ip_count" {
-  description = "Number of static external IPs to reserve and assign to Cloud NAT for a stable, allowlistable egress IP (e.g. PSP/bank IP allowlisting for connector traffic). 0 (default) leaves Cloud NAT on GCP's auto-allocated ephemeral IPs (AUTO_ONLY); a nonzero value reserves that many google_compute_address resources and switches Cloud NAT to MANUAL_ONLY."
+  description = "Number of static external IPs to reserve for Cloud NAT, giving a stable allowlistable egress IP (e.g. for PSP/bank IP allowlisting). 0 (default) keeps Cloud NAT on auto-allocated ephemeral IPs (AUTO_ONLY); a nonzero value reserves that many addresses and switches NAT to MANUAL_ONLY"
   type        = number
   default     = 0
 }
@@ -218,9 +212,7 @@ variable "enable_default_deny_egress" {
   default     = false
 }
 
-# ==============================================================================
 # Private Service Connect for Google APIs
-# ==============================================================================
 
 variable "enable_psc_google_apis" {
   description = <<-EOT
@@ -250,9 +242,7 @@ variable "psc_google_apis_ip" {
   default     = "10.255.255.254"
 }
 
-# ==============================================================================
 # Private Service Access (Cloud SQL / Memorystore)
-# ==============================================================================
 
 variable "private_service_access_prefix_length" {
   description = "Prefix length of the reserved IP range for Private Service Access peering"
@@ -260,9 +250,7 @@ variable "private_service_access_prefix_length" {
   default     = 16
 }
 
-# ==============================================================================
 # Baseline Firewall Rules
-# ==============================================================================
 
 variable "vpc_internal_ranges" {
   description = "Map of CIDR ranges considered internal to the VPC, allowed to talk to each other on the allow-internal rule"

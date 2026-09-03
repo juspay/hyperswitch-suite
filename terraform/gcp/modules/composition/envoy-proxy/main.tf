@@ -1,33 +1,13 @@
-# ============================================================================
-# Envoy Ingress Proxy Fleet (GCP equivalent of composition/envoy-proxy)
-# ============================================================================
-# A self-managed, autoscaled Envoy fleet on Compute Engine (instance
-# template + MIG) fronted by a global external HTTP(S) load balancer, with
-# Cloud Armor for WAF, Secret Manager for the Envoy config, and GCS buckets
-# for config/log archival - mirroring the AWS module's ASG + ALB + WAF +
-# S3-config/log shape.
+# Envoy ingress proxy fleet.
 #
-# A separate regional external HTTPS listener with a Server TLS Policy
-# provides the mTLS listener (mirrors PR #289's dedicated mTLS listener on
-# the AWS side); Cloud Load Balancing has no single-LB-multi-listener-with-
-# different-TLS-modes primitive the way an ALB does, so mTLS traffic is
-# split onto its own regional proxy the same way the AWS module split it
-# onto a separate ALB listener/target group.
+# A self-managed, autoscaled Envoy fleet on Compute Engine (instance template +
+# MIG) fronted by a global external HTTP(S) load balancer, with Cloud Armor for
+# WAF, Secret Manager for the Envoy config, and GCS buckets for config/log
+# archival.
 #
-# Usage:
-#   module "envoy_proxy" {
-#     source = "../../modules/composition/envoy-proxy"
-#
-#     project_id        = "hyperswitch-dev"
-#     environment       = "dev"
-#     region            = "europe-west1"
-#     network           = module.vpc_network.network_self_link
-#     proxy_subnetwork  = module.vpc_network.subnets_by_tier["incoming-envoy"]
-#     envoy_image       = "projects/hyperswitch-dev/global/images/envoy-v1"
-#
-#     managed_ssl_certificate_domains = ["api.dev.hyperswitch.example.com"]
-#   }
-# ============================================================================
+# mTLS is served by a separate regional external proxy with its own Server TLS
+# Policy: Cloud Load Balancing cannot mix TLS modes across listeners on a single
+# LB the way an ALB can.
 
 module "service_account" {
   source  = "terraform-google-modules/service-accounts/google"
@@ -42,16 +22,10 @@ module "service_account" {
   ]
 }
 
-# ==============================================================================
-# Config / log buckets
-# ==============================================================================
-# force_destroy: see var.force_destroy_buckets' own description - env-gated
-# (true except in prod) rather than hardcoded, matching the AWS module's
-# equivalent gate on its own config/log S3 buckets. versioning = true means
-# old object versions persist even after "deletion" - without force_destroy,
-# `terraform destroy` fails outright ("Error trying to delete bucket ...
-# without force_destroy set to true"), confirmed via a live destroy,
-# 2026-08-20.
+# Config / log buckets.
+#
+# force_destroy is env-gated (true except in prod): with versioning on,
+# `terraform destroy` fails on the noncurrent object versions left behind.
 module "config_bucket" {
   source  = "terraform-google-modules/cloud-storage/google//modules/simple_bucket"
   version = "12.3.0"
@@ -64,11 +38,8 @@ module "config_bucket" {
   force_destroy      = local.force_destroy_buckets
   labels             = local.common_labels
 
-  # Without this, the proxy service account can resolve the config-bucket
-  # metadata key fine but envoy-config-fetch.service's `gsutil cp` fails
-  # with a 403 (storage.objects.list denied) - confirmed via a live
-  # instance, 2026-08-20: envoy.service never starts as a result, since it
-  # Requires= the config-fetch unit.
+  # envoy-config-fetch.service needs this to read the bucket; without it the
+  # fetch 403s and envoy.service (which Requires= it) never starts.
   iam_members = [{
     role   = "roles/storage.objectViewer"
     member = "serviceAccount:${module.service_account.email}"
@@ -102,9 +73,8 @@ resource "google_storage_bucket_object" "envoy_config" {
   content = var.envoy_config_content
 }
 
-# Generic multi-file config upload - see var.additional_config_files_path's own
-# description for why this exists alongside envoy_config_content rather than
-# replacing it (backward compat) and for the vector.toml gap it closes.
+# Generic multi-file config upload, alongside the single-file
+# envoy_config_content (kept for backward compatibility).
 resource "google_storage_bucket_object" "additional_config_files" {
   for_each = var.additional_config_files_path != null ? setsubtract(
     fileset(var.additional_config_files_path, "**"), ["envoy.yaml"]
@@ -129,9 +99,7 @@ module "config_secret" {
   secret_accessors_list = ["serviceAccount:${module.service_account.email}"]
 }
 
-# ==============================================================================
 # Proxy fleet
-# ==============================================================================
 module "proxy_template" {
   source   = "terraform-google-modules/vm/google//modules/instance_template"
   version  = "15.2.1"
@@ -155,12 +123,8 @@ module "proxy_template" {
     scopes = ["cloud-platform"]
   }
 
-  # iap-ssh matches the live VPC's already-existing, permanent
-  # hyperswitch-dev-allow-iap-ssh rule (targetTags=[iap-ssh], source
-  # 35.235.240.0/20) - same fix already applied to the locker module
-  # (main.tf) after hitting the identical gap there. Without it, neither
-  # pre-existing IAP-SSH firewall rule covers this instance
-  # (allow-ssh-from-iap-to-tunnel is bastion-SA-scoped, not tag-scoped).
+  # iap-ssh matches the VPC's tag-scoped IAP-SSH firewall rule; without it no
+  # existing rule covers these instances.
   tags           = ["envoy-proxy", "iap-ssh"]
   labels         = merge(local.common_labels, { "deployment" = each.key })
   metadata       = merge(var.metadata, { "config-bucket" = module.config_bucket.name })
@@ -219,9 +183,7 @@ module "proxy_mig" {
   labels = merge(local.common_labels, { "deployment" = each.key })
 }
 
-# ==============================================================================
 # Cloud Armor (WAF)
-# ==============================================================================
 module "cloud_armor" {
   source  = "GoogleCloudPlatform/cloud-armor/google"
   version = "8.1.1"
@@ -238,9 +200,7 @@ module "cloud_armor" {
   labels = local.common_labels
 }
 
-# ==============================================================================
-# HTTP(S) Load Balancer (external, global)
-# ==============================================================================
+# HTTP(S) load balancer (external, global)
 module "load_balancer" {
   source  = "GoogleCloudPlatform/lb-http/google"
   version = "14.2.0"
@@ -254,45 +214,15 @@ module "load_balancer" {
   managed_ssl_certificate_domains = var.managed_ssl_certificate_domains
   https_redirect                  = var.enable_https_redirect
 
-  # 2026-09-02: EXTERNAL_MANAGED (Global external Application Load Balancer)
-  # is required for google_compute_url_map.envoy's weighted_backend_services/
-  # route_rules below - the classic EXTERNAL scheme rejects advanced routing
-  # actions outright ("Advanced routing rules are not supported for scheme
-  # EXTERNAL", confirmed live 2026-09-02). Verified via `terragrunt plan`
-  # that switching schemes here is an in-place update on the backend service
-  # + both forwarding rules (0 to destroy) - load_balancing_scheme is not a
-  # ForceNew attribute on either resource in this provider version, and the
-  # reserved static IP/managed cert are scheme-independent so 34.111.119.59
-  # is unaffected either way.
+  # Required by google_compute_url_map.envoy's route_rules below: the classic
+  # EXTERNAL scheme rejects advanced routing actions.
   load_balancing_scheme = "EXTERNAL_MANAGED"
 
-  # 2026-09-02: cutover complete. target_https_proxy was manually repointed
-  # to google_compute_url_map.envoy via `gcloud compute target-https-proxies
-  # update --url-map=...` (bypassing the ordering bug described below for
-  # just that one step), verified live (curl 200 throughout). Flipping this
-  # to false now makes the module stop creating its own auto-generated
-  # url_map/http-proxy/https-proxy at all - the ones that already exist in
-  # state become genuinely orphaned (nothing references them anymore) and
-  # this apply cleanly destroys them.
-  #
-  # This module's own auto-generated url_map only ever sends 100% of
-  # traffic to a single backend - it has no support for
-  # weighted_backend_services or route_rules. create_url_map = false plus
-  # google_compute_url_map.envoy (below) is what implements weighted
-  # blue/green & canary deployments and listener_rules.
-  #
-  # Note for future edits to this LB: Terraform does not reliably order
-  # "update a resource to stop referencing X" before "destroy X" when X is
-  # a different resource address than the new one being created - changing
-  # create_url_map straight from true to false in the same apply as this
-  # url_map not existing yet would race target_https_proxy's update against
-  # the old url_map's destroy and fail with resourceInUseByAnotherResource.
-  # The safe order (used for this cutover): (1) keep create_url_map = true,
-  # create google_compute_url_map.envoy additively; (2) manually repoint
-  # the proxy via gcloud; (3) only then flip this to false and apply, once
-  # nothing live references the old resources anymore.
+  # This module's auto-generated url_map only ever sends 100% of traffic to a
+  # single backend. google_compute_url_map.envoy replaces it to implement
+  # weighted blue/green & canary deployments and listener_rules.
   create_url_map = false
-  url_map         = google_compute_url_map.envoy.self_link
+  url_map        = google_compute_url_map.envoy.self_link
 
   backends = {
     for name, d in local.resolved_deployments : name => {
@@ -306,11 +236,8 @@ module "load_balancer" {
       custom_response_headers = null
       compression_mode        = null
 
-      # CACHE_ALL_STATIC (not FORCE_CACHE_ALL): this one backend also
-      # carries live, non-cacheable payment API traffic (POST /payments
-      # etc.) - CACHE_ALL_STATIC only heuristically caches static content
-      # types and otherwise respects origin Cache-Control, so dynamic API
-      # responses aren't force-cached just because CDN is on.
+      # CACHE_ALL_STATIC, not FORCE_CACHE_ALL: this backend also carries
+      # non-cacheable payment API traffic, whose Cache-Control must be honored.
       cdn_policy = var.enable_cdn ? {
         cache_mode        = "CACHE_ALL_STATIC"
         client_ttl        = 3600
@@ -318,13 +245,8 @@ module "load_balancer" {
         max_ttl           = 86400
         negative_caching  = false
         serve_while_stale = 86400
-        # google_compute_backend_service requires exactly one of
-        # cdn_policy.cache_key_policy / cdn_policy.signed_url_cache_max_age_sec
-        # to be set explicitly (confirmed via a real apply failure, "one of
-        # ... must be specified", 2026-08-27) - the provider has no default
-        # for this despite cache_key_policy itself being all-optional
-        # fields. include_host/include_protocol/include_query_string=true
-        # is the standard safe default (varies the cache by full URL).
+        # Exactly one of cache_key_policy / signed_url_cache_max_age_sec must
+        # be set explicitly; this varies the cache by full URL.
         cache_key_policy = {
           include_host         = true
           include_protocol     = true
@@ -353,14 +275,8 @@ module "load_balancer" {
   labels = local.common_labels
 }
 
-# ==============================================================================
-# Listener rule validation
-# ==============================================================================
-# Terraform variable `validation` blocks can only reference the variable
-# being validated (cross-variable references require Terraform >= 1.9;
-# this module targets >= 1.5.0), so the "target_deployment must be a real
-# deployment key" check lives here instead, as a `check` block (available
-# since Terraform 1.5).
+# A `check` block rather than a variable `validation`: cross-variable
+# references in validations need Terraform >= 1.9, this module targets >= 1.5.
 check "listener_rules_target_deployment_valid" {
   assert {
     condition = alltrue([
@@ -371,23 +287,14 @@ check "listener_rules_target_deployment_valid" {
   }
 }
 
-# ==============================================================================
-# URL map: weighted traffic split across deployments (blue/green & canary)
-# plus host/path/header listener_rules, evaluated ahead of the weighted
-# default. Built here instead of relying on lb-http's auto-generated
-# url_map (create_url_map = false above) because that module has no
-# support for weighted_backend_services or route_rules.
-# ==============================================================================
+# URL map: weighted traffic split across deployments (blue/green & canary),
+# plus host/path/header listener_rules evaluated ahead of the weighted default.
 resource "google_compute_url_map" "envoy" {
   project = var.project_id
   name    = "${local.name_prefix}-url-map"
 
-  # Required at the top level (ExactlyOneOf: default_service /
-  # default_route_action.weighted_backend_services / default_url_redirect)
-  # as a fallback for requests matching no host_rule at all. In practice
-  # this is unreachable - the "default" path_matcher's host_rule always
-  # matches (hosts = ["*"]) - but the provider schema requires one of the
-  # three to be set regardless.
+  # Required by the schema as a fallback for requests matching no host_rule.
+  # Unreachable in practice - the "default" path_matcher matches hosts = ["*"].
   default_route_action {
     dynamic "weighted_backend_services" {
       for_each = local.resolved_deployments
@@ -466,9 +373,7 @@ resource "google_compute_url_map" "envoy" {
   }
 }
 
-# ==============================================================================
-# mTLS listener (separate regional external proxy, mirrors PR #289)
-# ==============================================================================
+# mTLS listener (separate regional external proxy)
 resource "google_network_security_server_tls_policy" "mtls" {
   count = var.enable_mtls_listener ? 1 : 0
 

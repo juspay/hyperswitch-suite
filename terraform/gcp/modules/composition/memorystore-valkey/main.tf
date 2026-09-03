@@ -1,34 +1,11 @@
-# ============================================================================
-# Memorystore for Valkey (GCP equivalent of AWS ElastiCache with
-# engine="valkey"/cluster_mode="enabled") - genuinely different product and
-# API from composition/memorystore (classic Memorystore for Redis,
-# google_redis_instance). This wraps google_memorystore_instance via the
-# SAME registry module already vendored elsewhere in this repo
-# (terraform-google-modules/memorystore/google v16.1.1), just its other
-# submodule (//modules/valkey).
+# Memorystore for Valkey - a different product and API from
+# composition/memorystore (classic Memorystore for Redis).
 #
-# Networking is structurally different too: classic Memorystore-for-Redis
-# connects over Private Service Access (a VPC peering, see
-# composition/vpc-network's private_service_access_prefix_length). This
-# product requires Private Service Connect instead - a
-# google_network_connectivity_service_connection_policy authorizing the
-# gcp-memorystore service class on a DEDICATED subnet, which the submodule
-# creates for us from `subnet_names`. That subnet must already exist and be
-# unused by anything else - PSC reserves addresses out of it directly.
-#
-# Usage:
-#   module "memorystore_valkey" {
-#     source = "../../modules/composition/memorystore-valkey"
-#
-#     project_id   = "hyperswitch-dev"
-#     environment  = "dev"
-#     region       = "asia-south1"
-#     network      = module.vpc_network.network_name  # bare name
-#     subnet_names = ["hyperswitch-dev-memorystore"]   # bare name(s)
-#
-#     depends_on = [module.vpc_network]
-#   }
-# ============================================================================
+# Connectivity is over Private Service Connect, not the Private Service Access
+# peering the classic product uses: the submodule creates a service connection
+# policy authorizing the gcp-memorystore service class on a dedicated subnet
+# from `subnet_names`. That subnet must already exist and be otherwise unused,
+# since PSC reserves addresses directly out of it.
 
 module "valkey_cluster" {
   source  = "terraform-google-modules/memorystore/google//modules/valkey"
@@ -53,36 +30,29 @@ module "valkey_cluster" {
   node_type      = var.node_type
   engine_version = var.engine_version
 
-  # MULTI_ZONE is the analogue of AWS's multi_az_enabled=true. It is also
-  # upstream's default, so forwarding it explicitly does not change any
-  # already-applied instance - it just makes the setting visible and pinnable
-  # from the live layer instead of being inherited silently. Immutable.
+  # Forwarded explicitly (it is also upstream's default) so the live layer can
+  # see and pin it. Immutable after creation.
   zone_distribution_config_mode = var.zone_distribution_config_mode
   zone_distribution_config_zone = var.zone_distribution_config_zone
 
-  # Engine parameters, inline rather than a separate parameter-group resource
-  # (the AWS analogue is parameter_group_name).
+  # Engine parameters, inline rather than a separate parameter-group resource.
   engine_configs = var.engine_configs
 
-  # Durability. ElastiCache folds these two into one concept (snapshots);
-  # Memorystore splits them - persistence_config is the in-instance RDB/AOF
-  # behaviour, automated_backup_config is the scheduled off-instance backup
-  # that actually corresponds to snapshot_window + snapshot_retention_limit.
+  # Durability, split in two: persistence_config is the in-instance RDB/AOF
+  # behaviour, automated_backup_config the scheduled off-instance backup.
   persistence_config      = var.persistence_config
   automated_backup_config = var.automated_backup_config
 
-  # Analogue of AWS's maintenance_window / auto_minor_version_upgrade pair.
+  # Maintenance window and version upgrade policy.
   weekly_maintenance_window = var.weekly_maintenance_window
   maintenance_version       = var.maintenance_version
 
-  # Cross-region replication - the GCP analogue of an ElastiCache global
-  # replication group. See the is_passive pattern on the AWS elasticache
-  # catalog unit for the shape the live layer will want to mirror.
+  # Cross-region replication.
   instance_role      = var.instance_role
   primary_instance   = var.primary_instance
   secondary_instance = var.secondary_instance
 
-  # Create-time restore sources (AWS: snapshot_name / snapshot_arns).
+  # Create-time restore sources.
   managed_backup_source = var.managed_backup_source
   gcs_source            = var.gcs_source
 

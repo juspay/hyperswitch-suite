@@ -1,10 +1,8 @@
-# ============================================================================
 # Service Account Outputs
-# ============================================================================
 
 output "service_account_email" {
   description = "Email of Hyperswitch's Google service account"
-  value       = module.workload_identity.service_account_email
+  value       = module.workload_identity.gcp_service_account_email
 }
 
 output "k8s_service_account_name" {
@@ -17,9 +15,7 @@ output "public_domain" {
   value       = var.public_domain
 }
 
-# ============================================================================
 # KMS Outputs
-# ============================================================================
 
 output "kms_enabled" {
   description = "Whether a KMS key was created for this application"
@@ -31,9 +27,7 @@ output "kms_key_name" {
   value       = local.kms_enabled ? module.kms[0].keys[coalesce(var.kms.key_name, "hyperswitch")] : null
 }
 
-# ============================================================================
 # GCS Bucket Outputs
-# ============================================================================
 
 output "dashboard_themes_bucket_enabled" {
   description = "Whether the dashboard-themes feature is enabled"
@@ -55,9 +49,7 @@ output "file_uploads_bucket_name" {
   value       = local.gcs_file_uploads_enabled ? (var.gcs_file_uploads.create ? module.file_uploads_bucket[0].name : var.gcs_file_uploads.bucket_name) : null
 }
 
-# ============================================================================
 # Other Feature Outputs
-# ============================================================================
 
 output "smtp_enabled" {
   description = "Whether SMTP secret access was granted"

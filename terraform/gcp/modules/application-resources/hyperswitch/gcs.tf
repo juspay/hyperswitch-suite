@@ -1,6 +1,4 @@
-# ============================================================================
 # GCS Buckets (dashboard themes, file uploads)
-# ============================================================================
 module "dashboard_themes_bucket" {
   source  = "terraform-google-modules/cloud-storage/google//modules/simple_bucket"
   version = "12.3.0"
@@ -17,7 +15,7 @@ module "dashboard_themes_bucket" {
 
   iam_members = [{
     role   = "roles/storage.objectViewer"
-    member = "serviceAccount:${module.workload_identity.service_account_email}"
+    member = "serviceAccount:${module.workload_identity.gcp_service_account_email}"
   }]
 
   labels = local.common_labels
@@ -39,7 +37,7 @@ module "file_uploads_bucket" {
 
   iam_members = [{
     role   = "roles/storage.objectAdmin"
-    member = "serviceAccount:${module.workload_identity.service_account_email}"
+    member = "serviceAccount:${module.workload_identity.gcp_service_account_email}"
   }]
 
   labels = local.common_labels
@@ -51,7 +49,7 @@ resource "google_storage_bucket_iam_member" "existing_dashboard_themes" {
 
   bucket = var.gcs_dashboard_themes.bucket_name
   role   = "roles/storage.objectViewer"
-  member = "serviceAccount:${module.workload_identity.service_account_email}"
+  member = "serviceAccount:${module.workload_identity.gcp_service_account_email}"
 }
 
 resource "google_storage_bucket_iam_member" "existing_file_uploads" {
@@ -59,5 +57,5 @@ resource "google_storage_bucket_iam_member" "existing_file_uploads" {
 
   bucket = var.gcs_file_uploads.bucket_name
   role   = "roles/storage.objectAdmin"
-  member = "serviceAccount:${module.workload_identity.service_account_email}"
+  member = "serviceAccount:${module.workload_identity.gcp_service_account_email}"
 }

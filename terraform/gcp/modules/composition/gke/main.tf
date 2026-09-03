@@ -1,28 +1,10 @@
-# ============================================================================
-# GKE Cluster (GCP equivalent of composition/eks)
-# ============================================================================
-# Standard (non-Autopilot) private-cluster GKE, matching the AWS EKS module's
-# shape: private nodes, explicit node pools, and IRSA-equivalent Workload
-# Identity enabled cluster-wide (application-resources modules bind
-# individual KSA<->GSA pairs on top of this).
+# Standard (non-Autopilot) private GKE cluster: private nodes, explicit node
+# pools, and Workload Identity enabled cluster-wide - application-resources
+# modules bind individual KSA<->GSA pairs on top of this.
 #
-# Autopilot was intentionally not used here: it does not allow per-node-pool
-# taints/labels/DaemonSets, which vector, otel-collector, and the istio
-# gateways rely on (see terraform/gcp/modules/README.md).
-#
-# Usage:
-#   module "gke" {
-#     source = "../../modules/composition/gke"
-#
-#     project_id   = "hyperswitch-dev"
-#     environment  = "dev"
-#     region       = "europe-west1"
-#     network      = module.vpc_network.network_self_link
-#     subnetwork   = module.vpc_network.gke_nodes_subnet_self_link
-#     ip_range_pods     = module.vpc_network.gke_pods_secondary_range_name
-#     ip_range_services = module.vpc_network.gke_services_secondary_range_name
-#   }
-# ============================================================================
+# Autopilot is deliberately not used: it does not allow the per-node-pool
+# taints/labels/DaemonSets that vector, otel-collector and the istio gateways
+# rely on.
 
 module "gke" {
   source  = "terraform-google-modules/kubernetes-engine/google//modules/private-cluster"
@@ -84,28 +66,14 @@ module "gke" {
   cluster_resource_labels = local.common_labels
 }
 
-# ==============================================================================
-# Node -> Control Plane Egress Firewall Rule
-# ==============================================================================
-# Required for any private GKE cluster (enable_private_nodes is always true
-# above): GKE auto-creates the ingress side of node<->master traffic but
-# never the egress side. Without this, nodes can never reach their own
-# control plane to register - not an edge case, a hard requirement whenever
-# master_ipv4_cidr_block is set. Lives here rather than in a separate
-# cross-cutting firewall-rules unit because both source (this cluster's own
-# nodes) and destination (this cluster's own master) are wholly owned by
-# this module - same reasoning as Envoy/Squid creating their own
-# internal-LB health-check rules instead of relying on a shared unit for
-# something that's entirely their own concern. This is what lets a plain
-# `vpc-network -> gke` flow produce a cluster whose nodes can actually
-# register, with firewall-rules only needed for genuinely cross-component
-# paths (e.g. GKE -> Squid), not as a hard prerequisite for gke itself.
+# Node -> control plane egress. Required for any private cluster: GKE
+# auto-creates the ingress side of node<->master traffic but never the egress
+# side, so without this nodes cannot reach their own control plane to register.
 #
-# 2026-08-31: this exact name matches a rule that previously lived in
-# composition/firewall-rules (component "gke-egress-to-master", rule name
-# "allow-gke-to-master") - kept identical so the live layer's migration
-# could `terraform import` the already-live GCP resource into this
-# module's state instead of destroying and recreating it.
+# Lives here rather than in composition/firewall-rules because both source and
+# destination are owned entirely by this module. The name is kept exactly as it
+# was when the rule lived in that unit, so the live layer could import the
+# existing GCP resource rather than recreate it.
 resource "google_compute_firewall" "allow_egress_to_master" {
   count = (
     var.master_ipv4_cidr_block != null &&

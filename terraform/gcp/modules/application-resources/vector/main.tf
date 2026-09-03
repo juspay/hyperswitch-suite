@@ -1,40 +1,15 @@
-# ============================================================================
-# Vector (GCP equivalent of application-resources/vector)
-# ============================================================================
-# GSA + Workload Identity binding, a GCS log bucket, and a Pub/Sub
-# topic + pull subscription wired to object-create events on that bucket -
-# the GCS+Pub/Sub equivalent of the AWS module's S3 + SQS + cross-region SQS
-# read shape. A Pub/Sub subscription can itself be read from another region
-# without any special "cross-region" resource (Pub/Sub is a global service),
-# so cross-region reads are just IAM grants to a remote reader identity
-# rather than a second queue.
+# Vector: a GSA plus a Workload Identity binding, a GCS log bucket, and a
+# Pub/Sub topic + pull subscription wired to object-create events on it.
 #
-# Usage:
-#   module "vector" {
-#     source = "../../modules/application-resources/vector"
-#
-#     project_id   = "hyperswitch-dev"
-#     environment  = "dev"
-#     project_name = "hyperswitch"
-#
-#     cluster_name     = module.gke.cluster_name
-#     cluster_location = module.gke.location
-#   }
-# ============================================================================
+# Pub/Sub is a global service, so a subscription can be read from another region
+# with no second queue - a cross-region read is just an IAM grant to the remote
+# reader identity.
 
-# ==============================================================================
-# This module's own kubernetes provider.
-#
-# `../gke-workload-identity` (below) wraps terraform-google-modules/
-# kubernetes-engine//modules/workload-identity, which creates a real
-# `kubernetes_service_account_v1`. With no configured kubernetes provider
-# that resource falls back to the provider's zero-config default and apply
-# fails with `dial tcp [::1]:80: connect: connection refused`. Declaring the
-# provider here (rather than in the live layer via a Terragrunt `generate`
-# block) keeps the live-layer files free of embedded Terraform - default-
-# provider inheritance makes this config available to the child module.
-# Same pattern as ../hyperswitch, ../superposition and ../istio.
-# ==============================================================================
+# The workload_identity module below creates a real kubernetes_service_account_v1;
+# without a configured provider it falls back to the zero-config default and
+# apply fails with `dial tcp [::1]:80: connect: connection refused`. Declaring
+# the provider here rather than in the live layer keeps the live-layer files
+# free of embedded Terraform.
 provider "kubernetes" {
   host                   = "https://${var.cluster_endpoint}"
   cluster_ca_certificate = base64decode(var.cluster_ca_certificate)
@@ -42,24 +17,21 @@ provider "kubernetes" {
 }
 
 module "workload_identity" {
-  source = "../gke-workload-identity"
+  source  = "terraform-google-modules/kubernetes-engine/google//modules/workload-identity"
+  version = "44.3.0"
 
-  project_id   = var.project_id
-  environment  = var.environment
-  project_name = var.project_name
-  app_name     = "vector"
+  project_id = var.project_id
+  name       = local.gcp_sa_name
 
-  cluster_name             = var.cluster_name
-  cluster_location         = var.cluster_location
-  k8s_namespace            = var.k8s_namespace
-  k8s_service_account_name = var.k8s_service_account_name
+  cluster_name = var.cluster_name
+  location     = var.cluster_location
+  namespace    = var.k8s_namespace
+  k8s_sa_name  = var.k8s_service_account_name
 
   use_existing_k8s_sa = var.use_existing_k8s_sa
   annotate_k8s_sa     = var.annotate_k8s_sa
 
-  project_roles = var.additional_project_roles
-
-  labels = local.common_labels
+  roles = var.additional_project_roles
 }
 
 module "logs_bucket" {
@@ -80,15 +52,13 @@ module "logs_bucket" {
 
   iam_members = [{
     role   = "roles/storage.objectAdmin"
-    member = "serviceAccount:${module.workload_identity.service_account_email}"
+    member = "serviceAccount:${module.workload_identity.gcp_service_account_email}"
   }]
 
   labels = local.common_labels
 }
 
-# ==============================================================================
-# Pub/Sub (replaces the AWS module's SQS queue + policy + S3 notification)
-# ==============================================================================
+# Pub/Sub topic and subscription for bucket object-create events
 resource "google_pubsub_topic" "log_events" {
   count = var.create_queue ? 1 : 0
 
@@ -140,13 +110,10 @@ resource "google_pubsub_subscription_iam_member" "subscriber" {
   project      = var.project_id
   subscription = google_pubsub_subscription.log_events[0].name
   role         = "roles/pubsub.subscriber"
-  member       = "serviceAccount:${module.workload_identity.service_account_email}"
+  member       = "serviceAccount:${module.workload_identity.gcp_service_account_email}"
 }
 
-# ==============================================================================
-# Cross-region read: grant a remote reader identity subscriber access, the
-# GCP equivalent of the AWS module's cross-region SQS read policy
-# ==============================================================================
+# Cross-region read: grant a remote reader identity subscriber access
 resource "google_pubsub_subscription_iam_member" "cross_region_reader" {
   for_each = var.create_queue ? toset(var.cross_region_reader_members) : []
 

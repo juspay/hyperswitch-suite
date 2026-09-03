@@ -1,6 +1,4 @@
-# ============================================================================
 # KMS (CMEK for Hyperswitch application-level encryption)
-# ============================================================================
 module "kms" {
   source  = "terraform-google-modules/kms/google"
   version = "4.1.2"
@@ -23,5 +21,5 @@ resource "google_kms_crypto_key_iam_member" "hyperswitch" {
 
   crypto_key_id = module.kms[0].keys[coalesce(var.kms.key_name, "hyperswitch")]
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
-  member        = "serviceAccount:${module.workload_identity.service_account_email}"
+  member        = "serviceAccount:${module.workload_identity.gcp_service_account_email}"
 }
