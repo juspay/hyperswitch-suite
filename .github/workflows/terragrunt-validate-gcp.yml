@@ -68,10 +68,6 @@ jobs:
   pins:
     name: Catalog pins resolve to real tags
     runs-on: ubuntu-latest
-    # TODO: flip to `false` (or drop this line) once every GCP module tag
-    # listed in terraform/gcp/catalog/README.md has been cut. Until then this
-    # job reports the missing tags without blocking the catalog from landing.
-    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
