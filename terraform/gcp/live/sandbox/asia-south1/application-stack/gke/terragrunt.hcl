@@ -15,6 +15,12 @@ dependency "vpc" {
   mock_outputs_merge_strategy_with_state = "shallow"
 }
 
+locals {
+  # Per-environment overrides, passed by the stack as this unit's `cfg` value.
+  # Defaults below are what the live dev environment runs.
+  cfg = try(values.cfg, {})
+}
+
 terraform {
   source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/composition/gke?ref=gcp-gke-v0.1.0"
 }
@@ -77,6 +83,23 @@ inputs = {
       auto_upgrade = true
     },
   ]
+
+  # "01" keeps room for a blue/green cluster rebuild without renaming.
+  cluster_name_version = try(local.cfg.cluster_name_version, "01")
+
+  # false where the node service account is managed outside this unit.
+  create_service_account = try(local.cfg.create_service_account, true)
+
+  # Auto-upgrade off pins the control plane/node version to a deliberate
+  # rollout rather than Google's schedule.
+  enable_node_auto_upgrade = try(local.cfg.enable_node_auto_upgrade, true)
+
+  # Keyed by node-pool name. node_pools_tags feed the firewall-rules unit's
+  # target_tags, so the two must agree.
+  node_pools_labels = try(local.cfg.node_pools_labels, {})
+  node_pools_taints = try(local.cfg.node_pools_taints, {})
+  node_pools_tags   = try(local.cfg.node_pools_tags, {})
+
 
   labels = {
     environment = include.root.locals.environment.short

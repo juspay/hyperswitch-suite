@@ -15,6 +15,12 @@ dependency "gke" {
   mock_outputs_merge_strategy_with_state = "shallow"
 }
 
+locals {
+  # Per-environment overrides, passed by the stack as this unit's `cfg` value.
+  # Defaults below are what the live dev environment runs.
+  cfg = try(values.cfg, {})
+}
+
 terraform {
   source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/application-resources/argocd?ref=gcp-apps-argocd-v0.1.0"
 }
@@ -37,6 +43,16 @@ inputs = {
 
   # No cross-project deployments configured yet.
   cross_project_target_service_accounts = []
+
+  argocd_namespace = try(local.cfg.argocd_namespace, "argocd")
+  argocd_service_accounts = try(local.cfg.argocd_service_accounts, [
+    "argocd-application-controller",
+    "argocd-applicationset-controller",
+    "argocd-server",
+  ])
+  use_existing_k8s_sa      = try(local.cfg.use_existing_k8s_sa, false)
+  additional_project_roles = try(local.cfg.additional_project_roles, [])
+
 
   labels = {
     environment = include.root.locals.environment.short

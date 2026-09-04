@@ -15,6 +15,31 @@ dependency "vpc" {
   mock_outputs_merge_strategy_with_state = "shallow"
 }
 
+dependency "alloydb" {
+  config_path = "../alloydb"
+
+  mock_outputs = {
+    primary_instance_ip = "10.0.0.1"
+  }
+  mock_outputs_merge_strategy_with_state = "shallow"
+}
+
+dependency "valkey" {
+  config_path = "../memorystore-valkey"
+
+  mock_outputs = {
+    discovery_host = "10.0.0.2"
+    discovery_port = 6379
+  }
+  mock_outputs_merge_strategy_with_state = "shallow"
+}
+
+locals {
+  # Per-environment overrides, passed by the stack as this unit's `cfg` value.
+  # Defaults below are what the live dev environment runs.
+  cfg = try(values.cfg, {})
+}
+
 terraform {
   source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/composition/bastion-host?ref=gcp-bastion-host-v0.1.0"
 }
@@ -43,6 +68,27 @@ inputs = {
   members = values.bastion_iap_members
 
   enable_session_logging = true
+
+  disk_size_gb = try(local.cfg.disk_size_gb, 20)
+  disk_type    = try(local.cfg.disk_type, "pd-balanced")
+
+  additional_service_account_roles = try(local.cfg.additional_service_account_roles, [])
+
+  # IAP TCP-forward targets, so an operator can reach the private data
+  # services over the bastion without them being publicly routable.
+  connection_targets = try(local.cfg.connection_targets, {
+    alloydb = {
+      host        = dependency.alloydb.outputs.primary_instance_ip
+      port        = 5432
+      description = "AlloyDB primary — psql 'host=127.0.0.1 port=5432 sslmode=require'"
+    }
+    valkey = {
+      host        = dependency.valkey.outputs.discovery_host
+      port        = dependency.valkey.outputs.discovery_port
+      description = "Memorystore Valkey discovery endpoint — valkey-cli -h 127.0.0.1 -p 6379"
+    }
+  })
+
 
   labels = {
     environment = include.root.locals.environment.short

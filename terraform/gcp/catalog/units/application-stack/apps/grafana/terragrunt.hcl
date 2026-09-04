@@ -24,6 +24,12 @@ dependency "gke" {
   mock_outputs_merge_strategy_with_state = "shallow"
 }
 
+locals {
+  # Per-environment overrides, passed by the stack as this unit's `cfg` value.
+  # Defaults below are what the live dev environment runs.
+  cfg = try(values.cfg, {})
+}
+
 terraform {
   source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/application-resources/grafana?ref=gcp-apps-grafana-v0.1.0"
 }
@@ -54,6 +60,16 @@ inputs = {
   host_domains = {
     grafana = values.domains.grafana
   }
+
+  k8s_namespace            = try(local.cfg.k8s_namespace, "monitoring")
+  k8s_service_account_name = try(local.cfg.k8s_service_account_name, "grafana")
+  use_existing_k8s_sa      = try(local.cfg.use_existing_k8s_sa, false)
+
+  additional_project_roles = try(local.cfg.additional_project_roles, [
+    "roles/monitoring.viewer",
+    "roles/logging.viewer",
+  ])
+
 
   labels = {
     environment = include.root.locals.environment.short

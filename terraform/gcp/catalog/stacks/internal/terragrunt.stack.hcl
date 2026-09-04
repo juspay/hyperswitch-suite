@@ -89,6 +89,7 @@ unit "gke" {
     { machine_types = values.machine_types },
     try(values.gke_master_ipv4_cidr_block, null) != null ? { gke_master_ipv4_cidr_block = values.gke_master_ipv4_cidr_block } : {},
     try(values.gke_deletion_protection, null) != null ? { gke_deletion_protection = values.gke_deletion_protection } : {},
+    try(values.unit_config.gke, null) != null ? { cfg = values.unit_config.gke } : {},
   )
 }
 
@@ -109,21 +110,28 @@ unit "istio" {
 
   no_dot_terragrunt_stack = true
 
-  values = {
-    domains = values.domains
-  }
+  values = merge(
+    {
+      domains = values.domains
+    },
+    try(values.unit_config.istio, null) != null ? { cfg = values.unit_config.istio } : {},
+  )
 }
 
 unit "argocd" {
   source                  = "${get_repo_root()}/terraform/gcp/catalog/units/application-stack/apps/argocd"
   path                    = "application-stack/apps/argocd"
   no_dot_terragrunt_stack = true
+
+  values = try(values.unit_config.argocd, null) != null ? { cfg = values.unit_config.argocd } : {}
 }
 
 unit "external-secrets-operator" {
   source                  = "${get_repo_root()}/terraform/gcp/catalog/units/application-stack/apps/external-secrets-operator"
   path                    = "application-stack/apps/external-secrets-operator"
   no_dot_terragrunt_stack = true
+
+  values = try(values.unit_config.external_secrets_operator, null) != null ? { cfg = values.unit_config.external_secrets_operator } : {}
 }
 
 # -----------------------------------------------------------------------------
@@ -133,12 +141,16 @@ unit "loki" {
   source                  = "${get_repo_root()}/terraform/gcp/catalog/units/application-stack/apps/loki"
   path                    = "application-stack/apps/loki"
   no_dot_terragrunt_stack = true
+
+  values = try(values.unit_config.loki, null) != null ? { cfg = values.unit_config.loki } : {}
 }
 
 unit "vector" {
   source                  = "${get_repo_root()}/terraform/gcp/catalog/units/application-stack/apps/vector"
   path                    = "application-stack/apps/vector"
   no_dot_terragrunt_stack = true
+
+  values = try(values.unit_config.vector, null) != null ? { cfg = values.unit_config.vector } : {}
 }
 
 unit "grafana" {
@@ -147,15 +159,20 @@ unit "grafana" {
 
   no_dot_terragrunt_stack = true
 
-  values = {
-    domains = values.domains
-  }
+  values = merge(
+    {
+      domains = values.domains
+    },
+    try(values.unit_config.grafana, null) != null ? { cfg = values.unit_config.grafana } : {},
+  )
 }
 
 unit "superposition" {
   source                  = "${get_repo_root()}/terraform/gcp/catalog/units/application-stack/apps/superposition"
   path                    = "application-stack/apps/superposition"
   no_dot_terragrunt_stack = true
+
+  values = try(values.unit_config.superposition, null) != null ? { cfg = values.unit_config.superposition } : {}
 }
 
 unit "hyperswitch" {
@@ -219,10 +236,13 @@ unit "bastion-host" {
 
   no_dot_terragrunt_stack = true
 
-  values = {
-    bastion_iap_members = values.bastion_iap_members
-    machine_types       = values.machine_types
-  }
+  values = merge(
+    {
+      bastion_iap_members = values.bastion_iap_members
+      machine_types       = values.machine_types
+    },
+    try(values.unit_config.bastion_host, null) != null ? { cfg = values.unit_config.bastion_host } : {},
+  )
 }
 
 # Data tier and identity for the card vault. The vault itself runs on GKE via

@@ -24,6 +24,12 @@ dependency "gke" {
   mock_outputs_merge_strategy_with_state = "shallow"
 }
 
+locals {
+  # Per-environment overrides, passed by the stack as this unit's `cfg` value.
+  # Defaults below are what the live dev environment runs.
+  cfg = try(values.cfg, {})
+}
+
 terraform {
   source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/application-resources/superposition?ref=gcp-apps-superposition-v0.1.0"
 }
@@ -50,6 +56,11 @@ inputs = {
     network_id = dependency.vpc.outputs.network_id
     tier       = "db-custom-2-8192"
   }
+
+  k8s_namespace            = try(local.cfg.k8s_namespace, "hyperswitch")
+  k8s_service_account_name = try(local.cfg.k8s_service_account_name, "superposition")
+  additional_project_roles = try(local.cfg.additional_project_roles, [])
+
 
   labels = {
     environment = include.root.locals.environment.short

@@ -24,6 +24,12 @@ dependency "gke" {
   mock_outputs_merge_strategy_with_state = "shallow"
 }
 
+locals {
+  # Per-environment overrides, passed by the stack as this unit's `cfg` value.
+  # Defaults below are what the live dev environment runs.
+  cfg = try(values.cfg, {})
+}
+
 terraform {
   source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/application-resources/istio?ref=gcp-apps-istio-v0.1.0"
 }
@@ -47,6 +53,18 @@ inputs = {
   host_domains = {
     sandbox = [values.domains.api]
   }
+
+  istio_namespace = try(local.cfg.istio_namespace, "istio-system")
+
+  # Charts default to disabled: istio is installed through GitOps/Helm, and
+  # this unit's job is the supporting GCP resources. Flip any of these to
+  # { enabled = true } to let Terraform own that chart instead.
+  istio_base    = try(local.cfg.istio_base, { enabled = false })
+  istiod        = try(local.cfg.istiod, { enabled = false })
+  istio_gateway = try(local.cfg.istio_gateway, { enabled = false })
+
+  gateway_service_annotations = try(local.cfg.gateway_service_annotations, {})
+
 
   labels = {
     environment = include.root.locals.environment.short
