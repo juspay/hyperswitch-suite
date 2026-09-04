@@ -122,57 +122,149 @@ stack "sandbox" {
 }
 
 # =============================================================================
-# Adopting an already-applied environment
+# dev / asia-south1 — the already-applied environment
 # =============================================================================
-# The block below is the shape a `dev` environment would take. It is commented
-# out because adopting an environment applied outside this catalog is not a
-# generate-and-apply operation — see terraform/gcp/live/README.md.
+# Values below reproduce the LIVE dev environment, not a greenfield default.
+# Three things make it different from the sandbox block above, and all three
+# are load-bearing:
 #
-# Note `project_name`: the catalog defaults to the shortened "hyps" to stay
-# under GCP's 30-character service-account ID limit. An environment whose
-# resources were already created with a different prefix MUST override it here,
-# or the first apply renames or recreates essentially everything.
+#   1. project_name = "hyperswitch", not the catalog default "hyps". Every
+#      live dev resource carries the long prefix. Changing it renames or
+#      recreates essentially the whole environment.
+#   2. subnet_cidrs pins all 12 tiers. dev's addressing was hand-allocated and
+#      does NOT follow the vpc_cidr_prefix formula — the formula would put
+#      external-incoming at 10.2.0.0/24 where it actually lives at
+#      10.2.64.0/24, and so on for every tier.
+#   3. network_options pins the NAT / PSC / default-deny settings dev already
+#      runs, which differ from the unit's greenfield defaults.
+#
+# vpn_cidr_blocks and bastion_iap_members are documentation-range and
+# example.com placeholders here, matching the sanitised dev tree already in
+# this repo (#312) — scripts/ci/check-sensitive.sh blocks the real values.
+# Substitute the real ones out-of-band before planning against dev.
+#
+# NOT SAFE TO APPLY YET. This generates a tree; it does not reconcile with
+# dev's existing state. See terraform/gcp/live/README.md.
 # =============================================================================
 
-# stack "dev" {
-#   source = "../catalog/stacks/internal"
-#   path   = "dev/asia-south1"
-#
-#   no_dot_terragrunt_stack = true
-#
-#   values = {
-#     env          = "dev"
-#     region       = "asia-south1"
-#     project_id   = "REPLACE_ME-gcp-project"
-#     project_name = "REPLACE_ME" # must match what is already applied
-#     state_bucket = "REPLACE_ME-dev-asia-south1-tfstate"
-#
-#     skip_bucket_creation = true # bucket already exists
-#
-#     vpc_cidr_prefix                   = "10.0"
-#     gke_pods_secondary_range_cidr     = "10.4.0.0/14"
-#     gke_services_secondary_range_cidr = "10.8.0.0/20"
-#
-#     vpn_cidr_blocks = [] # REPLACE_ME
-#
-#     domains = {
-#       api     = "api.dev.example.com"     # REPLACE_ME
-#       grafana = "grafana.dev.example.com" # REPLACE_ME
-#     }
-#
-#     custom_images = {
-#       envoy = "REPLACE_ME-envoy"
-#       squid = "REPLACE_ME-squid"
-#     }
-#
-#     machine_types = {
-#       gke_system_pool     = "e2-standard-4"
-#       gke_generic_compute = "e2-standard-4"
-#     }
-#
-#     alloydb = { availability_type = "ZONAL", cpu_count = 2 }
-#     valkey  = { shard_count = 1, replica_count = 1 }
-#
-#     smtp_secret_id = null
-#   }
-# }
+stack "dev" {
+  source = "../catalog/stacks/internal"
+  path   = "dev/asia-south1"
+
+  no_dot_terragrunt_stack = true
+
+  values = {
+    env          = "dev"
+    region       = "asia-south1"
+    project_id   = "hyperswitch-dev"
+    project_name = "hyperswitch" # MUST match what is already applied
+
+    state_bucket         = "hyperswitch-dev-asia-south1-terraform-state"
+    skip_bucket_creation = false
+
+    # -----------------------------------------------------------------------
+    # Networking — pinned to what is live, not derived
+    # -----------------------------------------------------------------------
+    vpc_cidr_prefix                   = "10.2"
+    gke_pods_secondary_range_cidr     = "10.100.0.0/16"
+    gke_services_secondary_range_cidr = "10.101.0.0/20"
+
+    subnet_cidrs = {
+      external_incoming    = "10.2.64.0/24"
+      management           = "10.2.67.0/24"
+      gke_nodes            = "10.2.32.0/20"
+      database             = "10.2.73.0/24"
+      memorystore          = "10.2.74.0/24"
+      locker_database      = "10.2.75.0/24"
+      locker_server        = "10.2.76.0/24"
+      outgoing_proxy       = "10.2.77.0/24"
+      data_stack           = "10.2.80.0/24"
+      serverless_connector = "10.2.90.0/28"
+    }
+
+    network_options = {
+      network_name = "hyperswitch-dev-vpc"
+
+      # Egress leaves through the squid proxy tier only.
+      nat_subnetwork_tiers = ["outgoing-proxy"]
+      nat_log_filter       = "ALL"
+
+      enable_psc_google_apis      = true
+      enable_default_deny_ingress = true
+      enable_default_deny_egress  = true
+
+      # `psa` is what permits egress to the AlloyDB clusters.
+      vpc_internal_ranges = {
+        primary  = "10.2.0.0/16"
+        gke_pods = "10.100.0.0/16"
+        gke_svcs = "10.101.0.0/20"
+        psa      = "10.214.0.0/16"
+      }
+    }
+
+    # Paired { cidr_block, display_name } — do not flatten. PLACEHOLDERS.
+    vpn_cidr_blocks = [
+      { cidr_block = "198.51.100.0/30", display_name = "office" }, # REPLACE_ME
+      { cidr_block = "203.0.113.10/32", display_name = "vpn" },    # REPLACE_ME
+      { cidr_block = "10.2.67.0/24", display_name = "management-subnet-bastion" },
+    ]
+
+    # -----------------------------------------------------------------------
+    # Cluster
+    # -----------------------------------------------------------------------
+    gke_master_ipv4_cidr_block = "172.16.0.0/28"
+    gke_deletion_protection    = false
+
+    machine_types = {
+      gke_system_pool     = "e2-standard-2"
+      gke_generic_compute = "e2-standard-2"
+      bastion             = "e2-small"
+    }
+
+    bastion_iap_members = ["group:platform-team@example.com"] # REPLACE_ME
+
+    # -----------------------------------------------------------------------
+    # DNS
+    # -----------------------------------------------------------------------
+    domains = {
+      api     = "dev.hyperswitch.internal"
+      grafana = "dev.hyperswitch.internal"
+    }
+
+    # -----------------------------------------------------------------------
+    # Edge proxy images
+    # -----------------------------------------------------------------------
+    # Expanded by the units to projects/<project_id>/global/images/<value>, so
+    # an image family is expressed as "family/<name>".
+    custom_images = {
+      envoy = "hyperswitch-envoy-dev-20260820032919"
+      squid = "family/hyperswitch-squid-dev"
+    }
+
+    # -----------------------------------------------------------------------
+    # Data services
+    # -----------------------------------------------------------------------
+    alloydb = {
+      availability_type   = "ZONAL"
+      cpu_count           = 2
+      read_pool_instances = {}
+      deletion_protection = false
+    }
+
+    valkey = {
+      shard_count                 = 1
+      replica_count               = 1
+      node_type                   = "SHARED_CORE_NANO"
+      deletion_protection_enabled = false
+    }
+
+    locker = {
+      availability_type    = "ZONAL"
+      cpu_count            = 2
+      deletion_protection  = false
+      kms_protection_level = "SOFTWARE"
+    }
+
+    smtp_secret_id = null
+  }
+}

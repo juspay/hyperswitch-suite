@@ -38,11 +38,18 @@ unit "vpc-network" {
 
   no_dot_terragrunt_stack = true
 
-  values = {
-    vpc_cidr_prefix                   = values.vpc_cidr_prefix
-    gke_pods_secondary_range_cidr     = values.gke_pods_secondary_range_cidr
-    gke_services_secondary_range_cidr = values.gke_services_secondary_range_cidr
-  }
+  # subnet_cidrs / network_options are omitted rather than passed as null: a
+  # key present-but-null defeats the unit's own try(values.X, <default>)
+  # fallback, because try() rescues evaluation errors, not a resolved null.
+  values = merge(
+    {
+      vpc_cidr_prefix                   = values.vpc_cidr_prefix
+      gke_pods_secondary_range_cidr     = values.gke_pods_secondary_range_cidr
+      gke_services_secondary_range_cidr = values.gke_services_secondary_range_cidr
+    },
+    try(values.subnet_cidrs, null) != null ? { subnet_cidrs = values.subnet_cidrs } : {},
+    try(values.network_options, null) != null ? { network_options = values.network_options } : {},
+  )
 }
 
 # -----------------------------------------------------------------------------
@@ -78,9 +85,11 @@ unit "gke" {
 
   no_dot_terragrunt_stack = true
 
-  values = {
-    machine_types = values.machine_types
-  }
+  values = merge(
+    { machine_types = values.machine_types },
+    try(values.gke_master_ipv4_cidr_block, null) != null ? { gke_master_ipv4_cidr_block = values.gke_master_ipv4_cidr_block } : {},
+    try(values.gke_deletion_protection, null) != null ? { gke_deletion_protection = values.gke_deletion_protection } : {},
+  )
 }
 
 # -----------------------------------------------------------------------------

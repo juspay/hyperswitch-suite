@@ -43,10 +43,16 @@ locals {
   # essentially every resource in it.
   project_name = try(values.project_name, "hyps")
 
-  # Office / VPN CIDRs allowed to reach the GKE control plane, as a plain
-  # list of CIDR strings. Left empty, the gke unit falls back to an
-  # allow-all placeholder that is NOT safe to apply — see
-  # units/gke/terragrunt.hcl.
+  # Office / VPN CIDRs allowed to reach the GKE control plane, as a list of
+  # { cidr_block, display_name } objects — the exact shape GKE's
+  # master_authorized_networks takes, passed straight through.
+  #
+  # Keep the display_name paired with its cidr_block. The GKE API does not
+  # guarantee cidr_blocks ordering, so anything that synthesizes names from
+  # a flat list renames every entry on the next apply.
+  #
+  # Left empty, the gke unit falls back to an allow-all placeholder that is
+  # NOT safe to apply — see units/application-stack/gke/terragrunt.hcl.
   vpn_cidr_blocks = try(values.vpn_cidr_blocks, [])
 }
 

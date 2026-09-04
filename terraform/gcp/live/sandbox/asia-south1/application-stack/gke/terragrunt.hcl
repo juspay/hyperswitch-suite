@@ -37,17 +37,23 @@ inputs = {
   release_channel    = "REGULAR"
 
   enable_private_endpoint = false
-  master_ipv4_cidr_block  = "172.16.0.0/28"
+  master_ipv4_cidr_block  = try(values.gke_master_ipv4_cidr_block, "172.16.0.0/28")
 
-  # Falls back to an allow-all placeholder until include.root.locals.vpn_cidr_blocks
-  # is populated with real office/VPN CIDRs - not safe to apply as-is.
+  # Passed straight through as { cidr_block, display_name } pairs — NOT
+  # synthesized from a flat CIDR list. The GKE API does not guarantee
+  # cidr_blocks ordering, so zipping a flat list against generated "vpn-N"
+  # names silently renames every entry away from its real office/vpn grouping
+  # on the next apply (same CIDRs, no access-control change, but a misleading
+  # remove+re-add on all of them).
+  #
+  # Empty means allow-all, which is NOT safe to apply — populate it.
   master_authorized_networks = (
     length(include.root.locals.vpn_cidr_blocks) > 0
-    ? [for idx, cidr in include.root.locals.vpn_cidr_blocks : { cidr_block = cidr, display_name = "vpn-${idx}" }]
+    ? include.root.locals.vpn_cidr_blocks
     : [{ cidr_block = "0.0.0.0/0", display_name = "placeholder-allow-all-REPLACE-ME" }]
   )
 
-  deletion_protection = true
+  deletion_protection = try(values.gke_deletion_protection, true)
 
   node_pools = [
     {
