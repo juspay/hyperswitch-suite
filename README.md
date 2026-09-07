@@ -47,14 +47,16 @@ Using Hyperswitch, you can:
 
 ### Supported Payment Processors and Methods
 
-As of March 2024, we support 50+ payment processors and multiple global payment
-methods.
-In addition, we are continuously integrating new processors based on their reach
-and community requests.
-You can find the latest list of payment processors, supported methods, and
-features [here][supported-connectors-and-features].
+Hyperswitch integrates with **100+ payment processors** out of the box —
+including Stripe, Adyen, Braintree, Worldpay, Checkout.com, Cybersource and
+many others — exposing smart routing and retry logic across multiple global
+payment methods. We continuously add new processors based on their reach and
+community requests.
 
-[supported-connectors-and-features]: https://hyperswitch.io/pm-list
+You can browse the full list of supported processors, payment methods and
+capabilities [here][supported-connectors-and-features].
+
+[supported-connectors-and-features]: https://docs.hyperswitch.io/integrations/connectors-integrations/payment-processor-capabilities/available-connectors
 
 ### Hosted Version
 
@@ -121,12 +123,12 @@ components, each housed in separate repositories and open-sourced.
 
 This repository contains the Infrastructure-as-Code (Terraform / Terragrunt) used to deploy Hyperswitch on multiple clouds.
 
-| Cloud | Maturity | Live layer | Modules | Notes |
-|---|---|---|---|---|
-| **AWS** | Production-capable | Terragrunt live environments | Base, composition, application-resources, CloudFront resources | Bootstrap for `dev/integ/prod/sandbox` |
-| **GCP** | Dev live + catalog migration | `terraform/gcp/live/dev/asia-south1/` | Composition, application-resources, packer | Tag-pinned catalog units in `terraform/gcp/catalog/units/` |
-| **OCI** | Modules + bootstrap only | None in this repo | 22 composition + 13 application-resources + packer | Live layer planned in the `hyperswitch-infra` companion repo |
-| **Azure** | Early modules only | None | 2 composition modules (`vpc-network`, `storage-account-backend`) | Bootstrap and live layer planned in `hyperswitch-infra` |
+| Cloud | Maturity | Live layer | Catalog/Units | Modules | Notes |
+|---|---|---|---|---|---|
+| **AWS** | Production-capable | `terraform/aws/live/` (Terragrunt Stacks) | `terraform/aws/catalog/units/` + `stacks/internal`, `stacks/standalone` | Base, composition, application-resources, CloudFront resources | Bootstrap for `dev/integ/prod/sandbox` |
+| **GCP** | Dev live + catalog migration | `terraform/gcp/live/dev/asia-south1/` | `terraform/gcp/catalog/units/` (19 pinned units) | Composition, application-resources, packer | Catalog units are the target pattern |
+| **OCI** | Modules + bootstrap only | None in this repo | None | Composition, application-resources, packer | Live layer is not yet part of this repo |
+| **Azure** | Early modules only | None in this repo | None | 2 composition modules (`vpc-network`, `storage-account-backend`) | Live layer is not yet part of this repo |
 
 Key deployment docs:
 

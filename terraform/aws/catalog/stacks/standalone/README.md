@@ -1,5 +1,8 @@
 # Standalone (self-host) stack
 
+> Part of the [AWS catalog stacks](../README.md). See that README for an
+> overview of the available stacks and how to choose between them.
+
 Single-region Terragrunt Stack for self-hosting Hyperswitch in your own AWS
 account. It composes six catalog units:
 

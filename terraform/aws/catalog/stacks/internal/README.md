@@ -1,5 +1,8 @@
 # Internal stack
 
+> Part of the [AWS catalog stacks](../README.md). See that README for an
+> overview of the available stacks and how to choose between them.
+
 Full single-region composition of the catalog for the internal `dev`,
 `pre-prod` and `prod` environments. Unlike [`stacks/standalone`](../standalone/README.md)
 (BYO-VPC, used by the self-host generator), this stack creates its own VPC and
