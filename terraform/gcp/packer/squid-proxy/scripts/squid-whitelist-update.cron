@@ -1,0 +1,6 @@
+# Periodic whitelist refresh - matches the AWS AMI's userdata.sh cron
+# (*/15 * * * * root /etc/squid/update_whitelist.sh). Baked into the
+# image by Packer - editing this on a running instance won't survive an
+# image rebuild/instance replacement; change squid_allowlist_content on
+# the live-layer unit instead.
+*/15 * * * * root /usr/local/bin/update-squid-whitelist.sh >> /var/log/squid/whitelist-update.log 2>&1

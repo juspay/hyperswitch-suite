@@ -1,0 +1,57 @@
+admin:
+  address:
+    socket_address: { address: 127.0.0.1, port_value: 9901 }
+
+static_resources:
+  listeners:
+  - name: listener_http
+    address:
+      socket_address: { address: 0.0.0.0, port_value: 8080 }
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          stat_prefix: ingress_http
+          route_config:
+            name: local_route
+            virtual_hosts:
+            - name: local_service
+              domains: ["*"]
+              routes:
+              - match: { path: "/health" }
+                direct_response:
+                  status: 200
+                  body: { inline_string: "ok\n" }
+              - match: { prefix: "/api/" }
+                route:
+                  cluster: istio_ingressgateway
+                  prefix_rewrite: "/"
+                  timeout: 30s
+              - match: { prefix: "/sdk/" }
+                route:
+                  cluster: istio_ingressgateway
+                  prefix_rewrite: "/"
+                  host_rewrite_literal: "sdk.dev.hyperswitch.local"
+                  timeout: 30s
+              - match: { prefix: "/" }
+                route:
+                  cluster: istio_ingressgateway
+                  host_rewrite_literal: "dashboard.dev.hyperswitch.local"
+                  timeout: 30s
+          http_filters:
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+  clusters:
+  - name: istio_ingressgateway
+    type: STRICT_DNS
+    connect_timeout: 5s
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: istio_ingressgateway
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address: { address: 10.2.32.23, port_value: 80 }

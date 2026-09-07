@@ -1,0 +1,34 @@
+formatter: "markdown table"
+version: ">= 0.20.0"
+
+header-from: "main.tf"
+
+recursive:
+  enabled: false
+  path: modules
+  include-main: true
+
+output:
+  file: README.md
+  mode: inject
+  template: |-
+    <!-- BEGIN_TF_DOCS -->
+    {{ .Content }}
+    <!-- END_TF_DOCS -->
+
+sort:
+  enabled: true
+  by: name
+
+settings:
+  anchor: true
+  default: true
+  escape: true
+  hide-empty: false
+  html: true
+  indent: 2
+  lockfile: true
+  read-comments: true
+  required: true
+  sensitive: true
+  type: true

@@ -1,0 +1,12 @@
+locals {
+  common_labels = merge(
+    {
+      "environment" = var.environment
+      "project"     = var.project_name
+      "managed_by"  = "terraform"
+    },
+    var.labels
+  )
+
+  topic_name = "${var.environment}-${var.project_name}-${var.topic}"
+}
