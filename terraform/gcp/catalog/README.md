@@ -143,30 +143,30 @@ git push origin gcp-<name>-vX.Y.Z
 
 ### Unit tags
 
-Unit tags follow the AWS grammar:
-`unit/<path>-v<module-version>-v<unit-revision>`. The wrapped module's tag is
-pinned inside the unit, and the trailing revision bumps whenever the unit file
-changes.
+Unit tags follow the AWS grammar: `unit/<name>-v<module-version>-v<unit-revision>`.
+`<name>` is the leaf unit name (e.g. `vpc-network`, `gateway-controller`), and
+`<module-version>` is just the version suffix from the pinned module tag
+(e.g. `v0.1.0`). The wrapped module tag is pinned inside the unit, and the
+trailing revision bumps whenever the unit file changes.
 
 For a unit at `terraform/gcp/catalog/units/<unit-path>/terragrunt.hcl` that
 pins module tag `gcp-<name>-vX.Y.Z`, create the unit tag with:
 
 ```bash
-git tag -a unit/<unit-path>-vgcp-<name>-vX.Y.Z-v<rev> -m "unit/<unit-path>-vgcp-<name>-vX.Y.Z-v<rev>"
-git push origin unit/<unit-path>-vgcp-<name>-vX.Y.Z-v<rev>
+git tag -a unit/<leaf-name>-vX.Y.Z-v<rev> -m "unit/<leaf-name>-vX.Y.Z-v<rev>"
+git push origin unit/<leaf-name>-vX.Y.Z-v<rev>
 ```
 
 Examples:
 
 ```bash
 # vpc-network unit, first revision against module tag gcp-vpc-network-v0.1.0
-git tag -a unit/vpc-network-vgcp-vpc-network-v0.1.0-v1 -m "unit/vpc-network-vgcp-vpc-network-v0.1.0-v1"
-git push origin unit/vpc-network-vgcp-vpc-network-v0.1.0-v1
+git tag -a unit/vpc-network-v0.1.0-v1 -m "unit/vpc-network-v0.1.0-v1"
+git push origin unit/vpc-network-v0.1.0-v1
 
 # hyperswitch app unit, second revision against module tag gcp-apps-hyperswitch-v0.1.0
-git tag -a unit/application-stack/apps/hyperswitch-vgcp-apps-hyperswitch-v0.1.0-v2 \
-  -m "unit/application-stack/apps/hyperswitch-vgcp-apps-hyperswitch-v0.1.0-v2"
-git push origin unit/application-stack/apps/hyperswitch-vgcp-apps-hyperswitch-v0.1.0-v2
+git tag -a unit/hyperswitch-v0.1.0-v2 -m "unit/hyperswitch-v0.1.0-v2"
+git push origin unit/hyperswitch-v0.1.0-v2
 ```
 
 After tagging, update the unit's `terraform { source = "...?ref=<unit-tag>" }`
