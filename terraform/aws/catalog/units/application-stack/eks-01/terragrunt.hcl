@@ -84,7 +84,7 @@ dependency "atlantis-management" {
 terraform {
   # TODO(release): cut an `eks-v0.1.6` module tag from the
   # `chore/add-node-os-support` branch and pin it here before tagging this unit.
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/eks?ref=chore/add-node-os-support"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/eks?ref=eks-v0.1.5"
 }
 
 # -----------------------------------------------------------------------------

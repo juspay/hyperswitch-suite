@@ -4,7 +4,7 @@ include "root" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/vpc-network?ref=vpc-v0.1.11"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/vpc-network?ref=vpc-v0.1.10"
 }
 
 inputs = {

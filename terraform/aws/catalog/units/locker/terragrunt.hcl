@@ -4,7 +4,7 @@ include "root" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/locker?ref=locker-v0.2.8"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/locker?ref=locker-v0.2.9"
 }
 
 locals {

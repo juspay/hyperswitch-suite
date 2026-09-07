@@ -38,7 +38,7 @@ dependency "acm" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/envoy-proxy?ref=envoy-v0.3.2"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/envoy-proxy?ref=envoy-v0.3.8"
 }
 
 # ---------------------------------------------------------------------------

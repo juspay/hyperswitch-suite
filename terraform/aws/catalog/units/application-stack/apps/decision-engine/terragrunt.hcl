@@ -4,7 +4,7 @@ include "root" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/application-resources/decision-engine?ref=apps-decision-engine-v0.1.2"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/application-resources/decision-engine?ref=apps-decision-engine-v0.1.3"
 }
 
 dependency "eks" {

@@ -21,7 +21,7 @@ dependency "vpc_network" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/squid-proxy?ref=squid-proxy-v0.1.4"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/squid-proxy?ref=squid-proxy-v0.1.6"
 }
 
 inputs = {
