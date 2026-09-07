@@ -40,10 +40,12 @@ Units are parameterized through Terragrunt Stacks `values`:
 
 ## Versioning
 
-Unit tags follow `unit/<name>-v<module-version>-v<unit-revision>` (e.g.
-`unit/database-v0.1.6-v8`); the wrapped module tag (`database-v0.1.6`) is
-pinned inside the unit. Bump the unit revision whenever the unit file changes;
-bump the module version pin deliberately and test with the dev stack.
+Unit tags follow `unit/aws/<name>-v<module-version>-v<unit-revision>` (e.g.
+`unit/aws/database-v0.1.6-v8`); the wrapped module tag (`database-v0.1.6`) is
+pinned inside the unit. The `aws/` prefix avoids collisions with the GCP
+catalog, which uses `unit/gcp/...`. Bump the unit revision whenever the unit
+file changes; bump the module version pin deliberately and test with the dev
+stack.
 
 ## CI
 
