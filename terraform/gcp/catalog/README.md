@@ -1,28 +1,24 @@
-# GCP Terragrunt Catalog — units
+# GCP Terragrunt Catalog
 
-Reusable Terragrunt **units** for deploying Hyperswitch on GCP. Each unit is a
-parameterized `terragrunt.hcl` wrapping exactly one module from
-`terraform/gcp/modules` at a pinned release tag.
+Reusable Terragrunt **units** and a single **`stacks/dev`** for deploying
+Hyperswitch on GCP. Each unit is a parameterized `terragrunt.hcl` wrapping
+exactly one module from `terraform/gcp/modules` at a pinned release tag. The
+stack composes those units into a full single-region deployment.
 
 ```
-terraform/gcp/catalog/units/
-├── vpc-network/          ├── envoy-proxy/        ├── artifact-registry/
-├── alloydb/              ├── squid-proxy/        ├── bastion-host/
-├── memorystore-valkey/   ├── locker/             ├── firewall-rules/
-└── application-stack/
-    ├── gke/
-    └── apps/{argocd, external-secrets-operator, gateway-controller, grafana,
-               hyperswitch, istio, loki, superposition, vector}
+terraform/gcp/catalog/
+├── units/        # one directory per unit — a parameterized terragrunt.hcl
+│                 # wrapping a composition/application-resources module by tag
+└── stacks/dev/   # sandbox / dev / pre-prod / prod — creates its own VPC,
+                  # full unit set
 ```
 
-19 units. This mirrors the AWS catalog proposed in
+19 units. This mirrors the AWS catalog in
 [PR #302](https://github.com/juspay/hyperswitch-suite/pull/302) — same unit
 skeleton, same tag-pinning discipline.
 
-> **This PR ships units only.** The stack that composes them
-> (`catalog/stacks/dev`, including the `root.hcl` every unit includes) and
-> the generated live layer follow in a separate PR, once these units are
-> tagged.
+The stack is rendered by `terraform/gcp/live/terragrunt.stack.hcl` into
+`terraform/gcp/live/<env>/<region>/`.
 
 ## Unit skeleton
 
@@ -137,16 +133,48 @@ follows the `gcp-apps-<module>-vX.Y.Z` grammar the other eight use:
 
 ## Versioning
 
-Module tags:
+### Module tags
 
 - composition module `<name>` → `gcp-<name>-vX.Y.Z`
 - application-resources module `<name>` → `gcp-apps-<name>-vX.Y.Z`
 
-Unit tags follow the AWS grammar,
-`unit/<name>-v<module-version>-v<unit-revision>` — the wrapped module's tag is
+Create or move a module tag from the current commit:
+
+```bash
+git tag -a gcp-<name>-vX.Y.Z -m "gcp-<name>-vX.Y.Z"
+git push origin gcp-<name>-vX.Y.Z
+```
+
+### Unit tags
+
+Unit tags follow the AWS grammar:
+`unit/<path>-v<module-version>-v<unit-revision>`. The wrapped module's tag is
 pinned inside the unit, and the trailing revision bumps whenever the unit file
-changes. Tagging these units is the step between this PR and the stack PR that
-consumes them by ref.
+changes.
+
+For a unit at `terraform/gcp/catalog/units/<unit-path>/terragrunt.hcl` that
+pins module tag `gcp-<name>-vX.Y.Z`, create the unit tag with:
+
+```bash
+git tag -a unit/<unit-path>-vgcp-<name>-vX.Y.Z-v<rev> -m "unit/<unit-path>-vgcp-<name>-vX.Y.Z-v<rev>"
+git push origin unit/<unit-path>-vgcp-<name>-vX.Y.Z-v<rev>
+```
+
+Examples:
+
+```bash
+# vpc-network unit, first revision against module tag gcp-vpc-network-v0.1.0
+git tag -a unit/vpc-network-vgcp-vpc-network-v0.1.0-v1 -m "unit/vpc-network-vgcp-vpc-network-v0.1.0-v1"
+git push origin unit/vpc-network-vgcp-vpc-network-v0.1.0-v1
+
+# hyperswitch app unit, second revision against module tag gcp-apps-hyperswitch-v0.1.0
+git tag -a unit/application-stack/apps/hyperswitch-vgcp-apps-hyperswitch-v0.1.0-v2 \
+  -m "unit/application-stack/apps/hyperswitch-vgcp-apps-hyperswitch-v0.1.0-v2"
+git push origin unit/application-stack/apps/hyperswitch-vgcp-apps-hyperswitch-v0.1.0-v2
+```
+
+After tagging, update the unit's `terraform { source = "...?ref=<unit-tag>" }`
+pin so the stack consumes the immutable unit release.
 
 ## CI
 
