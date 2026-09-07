@@ -75,10 +75,13 @@ unit "database" {
 
   no_dot_terragrunt_stack = true
 
-  values = {
-    db_instance_class = try(values.db_instance_class, null)
-    engine_version    = try(values.db_engine_version, null)
-  }
+  values = merge(
+    {
+      db_instance_class = try(values.db_instance_class, null)
+      engine_version    = try(values.db_engine_version, null)
+    },
+    try(values.db_backup_retention_period, null) != null ? { backup_retention_period = values.db_backup_retention_period } : {},
+  )
 }
 
 unit "elasticache" {
@@ -87,9 +90,14 @@ unit "elasticache" {
 
   no_dot_terragrunt_stack = true
 
-  values = {
-    cache_node_type = try(values.cache_node_type, null)
-  }
+  values = merge(
+    {
+      cache_node_type = try(values.cache_node_type, null)
+    },
+    try(values.cache_num_node_groups, null) != null ? { cache_num_node_groups = values.cache_num_node_groups } : {},
+    try(values.cache_replicas_per_node_group, null) != null ? { cache_replicas_per_node_group = values.cache_replicas_per_node_group } : {},
+    try(values.cache_node_group_configuration, null) != null ? { cache_node_group_configuration = values.cache_node_group_configuration } : {},
+  )
 }
 
 unit "efs" {
@@ -122,6 +130,9 @@ unit "locker" {
   values = merge(
     { ami_id = values.ami_id },
     try(values.db_engine_version, null) != null ? { engine_version = values.db_engine_version } : {},
+    try(values.locker_instance_type, null) != null ? { instance_type = values.locker_instance_type } : {},
+    try(values.locker_backup_retention_period, null) != null ? { backup_retention_period = values.locker_backup_retention_period } : {},
+    try(values.locker_db_instance_class, null) != null ? { db_instance_class = values.locker_db_instance_class } : {},
     try(values.wazuh_manager_addr, null) != null ? { wazuh_manager_addr = values.wazuh_manager_addr } : {},
     try(values.wazuh_worker_addr, null) != null ? { wazuh_worker_addr = values.wazuh_worker_addr } : {},
     try(values.wazuh_group, null) != null ? { wazuh_group = values.wazuh_group } : {},
@@ -141,6 +152,11 @@ unit "squid-proxy" {
 
   values = merge(
     { ami_id = values.ami_id },
+    try(values.squid_instance_type, null) != null ? { instance_type = values.squid_instance_type } : {},
+    try(values.squid_min_size, null) != null ? { min_size = values.squid_min_size } : {},
+    try(values.squid_max_size, null) != null ? { max_size = values.squid_max_size } : {},
+    try(values.squid_desired_capacity, null) != null ? { desired_capacity = values.squid_desired_capacity } : {},
+    try(values.squid_root_volume_size, null) != null ? { root_volume_size = values.squid_root_volume_size } : {},
     try(values.wazuh_manager_addr, null) != null ? { wazuh_manager_addr = values.wazuh_manager_addr } : {},
     try(values.wazuh_worker_addr, null) != null ? { wazuh_worker_addr = values.wazuh_worker_addr } : {},
     try(values.wazuh_group, null) != null ? { wazuh_group = values.wazuh_group } : {},
@@ -160,6 +176,11 @@ unit "envoy-proxy" {
       ami_id                = values.ami_id
       virtual_hosts_domains = values.virtual_hosts_domains
     },
+    try(values.envoy_instance_type, null) != null ? { instance_type = values.envoy_instance_type } : {},
+    try(values.envoy_root_volume_size, null) != null ? { root_volume_size = values.envoy_root_volume_size } : {},
+    try(values.envoy_min_size, null) != null ? { min_size = values.envoy_min_size } : {},
+    try(values.envoy_max_size, null) != null ? { max_size = values.envoy_max_size } : {},
+    try(values.envoy_desired_capacity, null) != null ? { desired_capacity = values.envoy_desired_capacity } : {},
     try(values.base_domain, null) != null ? { base_domain = values.base_domain } : {},
     try(values.cn_base_domain, null) != null ? { cn_base_domain = values.cn_base_domain } : {},
     try(values.opensearch_endpoint, null) != null ? { opensearch_endpoint = values.opensearch_endpoint } : {},
@@ -181,6 +202,8 @@ unit "jump-host" {
 
   values = merge(
     { ami_id = values.ami_id },
+    try(values.jump_host_instance_type, null) != null ? { instance_type = values.jump_host_instance_type } : {},
+    try(values.jump_host_root_volume_size, null) != null ? { root_volume_size = values.jump_host_root_volume_size } : {},
     try(values.wazuh_manager_addr, null) != null ? { wazuh_manager_addr = values.wazuh_manager_addr } : {},
     try(values.wazuh_worker_addr, null) != null ? { wazuh_worker_addr = values.wazuh_worker_addr } : {},
     try(values.wazuh_group, null) != null ? { wazuh_group = values.wazuh_group } : {},
@@ -198,23 +221,31 @@ unit "eks-01" {
 
   no_dot_terragrunt_stack = true
 
-  values = {
-    cluster_version    = try(values.eks_version, null)
-    admin_sso_role_arn = values.admin_role_arn
-    admin_access_cidrs = values.admin_access_cidrs
-    default_ami_id     = try(values.eks_ami_id, null)
+  values = merge(
+    {
+      cluster_version    = try(values.eks_version, null)
+      admin_sso_role_arn = values.admin_role_arn
+      admin_access_cidrs = values.admin_access_cidrs
+      default_ami_id     = try(values.eks_ami_id, null)
 
-    system_nodes = {
-      desired_size   = try(values.system_nodes_desired_size, 1)
-      instance_types = values.eks_instance_types
-    }
+      system_nodes = {
+        desired_size   = try(values.system_nodes_desired_size, 1)
+        min_size       = try(values.system_nodes_min_size, 1)
+        max_size       = try(values.system_nodes_max_size, 50)
+        instance_types = values.eks_instance_types
+      }
 
-    generic_compute = {
-      desired_size   = try(values.generic_compute_desired_size, 2)
-      min_size       = try(values.generic_compute_min_size, 1)
-      instance_types = values.eks_instance_types
-    }
-  }
+      generic_compute = {
+        desired_size   = try(values.generic_compute_desired_size, 2)
+        min_size       = try(values.generic_compute_min_size, 1)
+        max_size       = try(values.generic_compute_max_size, 50)
+        instance_types = values.eks_instance_types
+      }
+    },
+    try(values.monitoring, null) != null ? { monitoring = values.monitoring } : {},
+    try(values.keymanager, null) != null ? { keymanager = values.keymanager } : {},
+    try(values.auxillary, null) != null ? { auxillary = values.auxillary } : {},
+  )
 }
 
 # -----------------------------------------------------------------------------
@@ -303,9 +334,10 @@ unit "grafana" {
 
   no_dot_terragrunt_stack = true
 
-  values = {
-    base_domain = values.base_domain
-  }
+  values = merge(
+    { base_domain = values.base_domain },
+    try(values.grafana_db_instance_class, null) != null ? { grafana_db_instance_class = values.grafana_db_instance_class } : {},
+  )
 }
 
 unit "ratelimiter" {
@@ -314,7 +346,10 @@ unit "ratelimiter" {
 
   no_dot_terragrunt_stack = true
 
-  values = {}
+  values = merge(
+    {},
+    try(values.ratelimiter_cache_node_type, null) != null ? { cache_node_type = values.ratelimiter_cache_node_type } : {},
+  )
 }
 
 unit "hyperswitch" {
@@ -345,9 +380,11 @@ unit "superposition" {
 
   no_dot_terragrunt_stack = true
 
-  values = {
-    base_domain = values.base_domain
-  }
+  values = merge(
+    { base_domain = values.base_domain },
+    try(values.superposition_backup_retention_period, null) != null ? { backup_retention_period = values.superposition_backup_retention_period } : {},
+    try(values.superposition_db_instance_class, null) != null ? { db_instance_class = values.superposition_db_instance_class } : {},
+  )
 }
 
 # -----------------------------------------------------------------------------

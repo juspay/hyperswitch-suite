@@ -60,7 +60,7 @@ inputs = {
     "{{sudo-user-list}}", try(values.sudo_user_list, "ubuntu")),
   "{{region}}", include.root.locals.region)
 
-  instance_type   = "t3.medium"
+  instance_type   = try(values.instance_type, "t3.medium")
   create_key_pair = true
   key_name        = "${include.root.locals.environment.full}-locker-key"
 
@@ -129,7 +129,7 @@ inputs = {
         apply_method = "immediate"
       }
     ]
-    backup_retention_period               = 7
+    backup_retention_period               = try(values.backup_retention_period, 7)
     preferred_backup_window               = "02:03-02:33"
     preferred_maintenance_window          = "tue:00:25-tue:00:55"
     skip_final_snapshot                   = true
@@ -151,7 +151,7 @@ inputs = {
 
     cluster_instances = {
       instance-1 = {
-        instance_class                        = "db.r6g.large"
+        instance_class                        = try(values.db_instance_class, "db.r6g.large")
         promotion_tier                        = 1
         availability_zone                     = "${include.root.locals.region}a"
         db_parameter_group_name               = "default.aurora-postgresql17"

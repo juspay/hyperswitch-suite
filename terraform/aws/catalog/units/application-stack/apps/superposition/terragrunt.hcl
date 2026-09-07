@@ -121,7 +121,7 @@ inputs = {
     port                                  = 5432
     create_db_subnet_group                = true
     db_cluster_parameter_group_name       = "default.aurora-postgresql17"
-    backup_retention_period               = 7
+    backup_retention_period               = try(values.backup_retention_period, 7)
     preferred_backup_window               = "02:03-02:33"
     preferred_maintenance_window          = "tue:00:25-tue:00:55"
     skip_final_snapshot                   = true
@@ -149,7 +149,7 @@ inputs = {
 
     cluster_instances = {
       failover = {
-        instance_class                        = "db.r6g.large"
+        instance_class                        = try(values.db_instance_class, "db.r6g.large")
         promotion_tier                        = 1
         availability_zone                     = "${include.root.locals.region}a"
         db_parameter_group_name               = "default.aurora-postgresql17"

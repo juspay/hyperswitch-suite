@@ -37,9 +37,9 @@ inputs = {
   ami_id = values.ami_id
 
   # Instance Configuration
-  instance_type    = "t3.medium"
-  root_volume_size = 30
-  root_volume_type = "gp3"
+  instance_type    = try(values.instance_type, "t3.medium")
+  root_volume_size = try(values.root_volume_size, 30)
+  root_volume_type = try(values.root_volume_type, "gp3")
 
   # Logging Configuration
   log_retention_days = 30

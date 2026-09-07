@@ -403,8 +403,8 @@ inputs = {
   default_block_device_mappings = [
     {
       device_name           = "/dev/xvda"
-      volume_size           = 20
-      volume_type           = "gp3"
+      volume_size           = try(values.root_volume_size, 20)
+      volume_type           = try(values.root_volume_type, "gp3")
       delete_on_termination = true
       encrypted             = true
     }
@@ -435,8 +435,8 @@ inputs = {
         instance_types = values.system_nodes.instance_types
         subnet_ids     = try(values.eks_workers_subnet_ids, null) != null ? values.eks_workers_subnet_ids : dependency.vpc.outputs.eks_workers_subnet_ids
         desired_size   = values.system_nodes.desired_size
-        min_size       = 1
-        max_size       = 50
+        min_size       = try(values.system_nodes.min_size, 1)
+        max_size       = try(values.system_nodes.max_size, 50)
         launch_template = {
           ami_id = try(values.system_nodes.ami_id, null)
         }
@@ -448,7 +448,7 @@ inputs = {
       generic_compute = {
         capacity_type  = "ON_DEMAND"
         min_size       = try(values.generic_compute.min_size, 3)
-        max_size       = 50
+        max_size       = try(values.generic_compute.max_size, 50)
         desired_size   = values.generic_compute.desired_size
         instance_types = values.generic_compute.instance_types
         subnet_ids     = try(values.eks_workers_subnet_ids, null) != null ? values.eks_workers_subnet_ids : dependency.vpc.outputs.eks_workers_subnet_ids
@@ -463,12 +463,12 @@ inputs = {
     try(values.monitoring, null) != null ? {
       monitoring = {
         capacity_type              = "ON_DEMAND"
-        min_size                   = 1
-        max_size                   = 50
+        min_size                   = try(values.monitoring.min_size, 1)
+        max_size                   = try(values.monitoring.max_size, 50)
         desired_size               = values.monitoring.desired_size
         instance_types             = values.monitoring.instance_types
         subnet_ids                 = try(values.eks_workers_subnet_ids, null) != null ? values.eks_workers_subnet_ids : dependency.vpc.outputs.eks_workers_subnet_ids
-        max_unavailable_percentage = 1
+        max_unavailable_percentage = try(values.monitoring.max_unavailable_percentage, 1)
         launch_template = {
           ami_id = try(values.monitoring.ami_id, null)
         }
@@ -480,12 +480,12 @@ inputs = {
     try(values.keymanager, null) != null ? {
       keymanager = {
         capacity_type              = "ON_DEMAND"
-        min_size                   = 1
-        max_size                   = 50
+        min_size                   = try(values.keymanager.min_size, 1)
+        max_size                   = try(values.keymanager.max_size, 50)
         desired_size               = values.keymanager.desired_size
         instance_types             = values.keymanager.instance_types
         subnet_ids                 = try(values.eks_workers_subnet_ids, null) != null ? values.eks_workers_subnet_ids : dependency.vpc.outputs.eks_workers_subnet_ids
-        max_unavailable_percentage = 1
+        max_unavailable_percentage = try(values.keymanager.max_unavailable_percentage, 1)
         launch_template = {
           ami_id = try(values.keymanager.ami_id, null)
         }
@@ -497,12 +497,12 @@ inputs = {
     try(values.auxillary, null) != null ? {
       auxillary = {
         capacity_type              = "ON_DEMAND"
-        min_size                   = 0
-        max_size                   = 50
+        min_size                   = try(values.auxillary.min_size, 0)
+        max_size                   = try(values.auxillary.max_size, 50)
         desired_size               = values.auxillary.desired_size
         instance_types             = values.auxillary.instance_types
         subnet_ids                 = try(values.eks_workers_subnet_ids, null) != null ? values.eks_workers_subnet_ids : dependency.vpc.outputs.eks_workers_subnet_ids
-        max_unavailable_percentage = 1
+        max_unavailable_percentage = try(values.auxillary.max_unavailable_percentage, 1)
         launch_template = {
           ami_id = try(values.auxillary.ami_id, null)
         }

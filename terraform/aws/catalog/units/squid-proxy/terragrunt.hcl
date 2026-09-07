@@ -35,9 +35,9 @@ inputs = {
   proxy_subnet_ids = dependency.vpc_network.outputs.outgoing_proxy_subnet_ids
   lb_subnet_ids    = dependency.vpc_network.outputs.outgoing_proxy_subnet_ids
 
-  squid_port    = 3128
+  squid_port    = try(values.squid_port, 3128)
   ami_id        = values.ami_id
-  instance_type = "t3.medium"
+  instance_type = try(values.instance_type, "t3.medium")
 
   generate_ssh_key = true
 
@@ -62,14 +62,14 @@ inputs = {
     "vector.toml"     = "${get_terragrunt_dir()}/config/vector.toml"
   }
 
-  min_size         = 1
-  max_size         = 6
-  desired_capacity = 1
+  min_size         = try(values.min_size, 1)
+  max_size         = try(values.max_size, 6)
+  desired_capacity = try(values.desired_capacity, 1)
 
-  enable_detailed_monitoring = true
+  enable_detailed_monitoring = try(values.enable_detailed_monitoring, true)
   configure_root_volume      = true
-  root_volume_size           = 30
-  root_volume_type           = "gp3"
+  root_volume_size           = try(values.root_volume_size, 30)
+  root_volume_type           = try(values.root_volume_type, "gp3")
 
   create_nlb = true
 

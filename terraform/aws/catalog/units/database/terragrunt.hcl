@@ -89,7 +89,7 @@ inputs = {
     }
   ]
 
-  backup_retention_period      = 7
+  backup_retention_period      = try(values.backup_retention_period, 7)
   preferred_backup_window      = "00:51-01:21"
   preferred_maintenance_window = "thu:00:12-thu:00:42"
   skip_final_snapshot          = true

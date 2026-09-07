@@ -103,13 +103,13 @@ inputs = {
     create = true
 
     ami_id        = values.ami_id
-    instance_type = "t3.medium"
+    instance_type = try(values.instance_type, "t3.medium")
 
     ebs_optimized           = false
     ebs_encrypted           = false
     enable_ebs_block_device = false
-    root_volume_size        = 20
-    root_volume_type        = "gp3"
+    root_volume_size        = try(values.root_volume_size, 20)
+    root_volume_type        = try(values.root_volume_type, "gp3")
 
     imds_http_tokens                 = "required"
     imds_http_endpoint               = "enabled"
@@ -126,9 +126,9 @@ inputs = {
   # =========================================================================
   # ASG Configuration
   # =========================================================================
-  min_size         = 1
-  max_size         = 10
-  desired_capacity = 1
+  min_size         = try(values.min_size, 1)
+  max_size         = try(values.max_size, 10)
+  desired_capacity = try(values.desired_capacity, 1)
 
   enable_autoscaling = true
 

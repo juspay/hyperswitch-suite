@@ -59,7 +59,7 @@ inputs = {
 
   # Cluster Mode (enabled with 1 shard and 1 replica = 2 total nodes for 1 AZ)
   cluster_mode         = "enabled"
-  num_node_groups      = 2
+  num_node_groups      = try(values.cache_num_node_groups, 2)
   data_tiering_enabled = false
 
   # High Availability
@@ -93,22 +93,22 @@ inputs = {
   source_replication_group_id     = null
 
   # Node Group Configuration (1 shard with 1 replica, 1 AZ deployment)
-  node_group_configuration = [
+  node_group_configuration = try(values.cache_node_group_configuration, [
     {
       node_group_id              = "0001"
       primary_availability_zone  = "${include.root.locals.region}a"
       replica_availability_zones = ["${include.root.locals.region}b"]
-      replica_count              = 1
+      replica_count              = try(values.cache_replicas_per_node_group, 1)
       slots                      = "0-8191"
     },
     {
       node_group_id              = "0002"
       primary_availability_zone  = "${include.root.locals.region}a"
       replica_availability_zones = ["${include.root.locals.region}b"]
-      replica_count              = 1
+      replica_count              = try(values.cache_replicas_per_node_group, 1)
       slots                      = "8192-16383"
     }
-  ]
+  ])
 
   # Tags
   tags = {

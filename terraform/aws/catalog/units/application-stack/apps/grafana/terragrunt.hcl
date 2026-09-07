@@ -92,7 +92,7 @@ inputs = {
 
   database_cluster_instances = {
     primary = {
-      instance_class               = "db.t4g.medium"
+      instance_class               = try(values.grafana_db_instance_class, "db.t4g.medium")
       publicly_accessible          = false
       auto_minor_version_upgrade   = true
       performance_insights_enabled = true

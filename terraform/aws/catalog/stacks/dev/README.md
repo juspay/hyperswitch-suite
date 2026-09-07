@@ -54,8 +54,48 @@ are optional):
 | `admin_access_cidrs` | `eks-01` (public endpoint access list; pass `[]` if unused) |
 | `eks_instance_types` | `eks-01` (`system_nodes` and `generic_compute` node groups) |
 
-`terraform/aws/live/terragrunt.stack.hcl` currently fills these with
-`REPLACE_ME`-style placeholders per environment — `terragrunt stack generate`
+## Optional sizing values
+
+All of these fall back to sensible defaults if omitted from
+`terraform/aws/live/terragrunt.stack.hcl`:
+
+| Value | Default | Consumed by |
+|---|---|---|
+| `system_nodes_desired_size` | `1` | `eks-01` |
+| `system_nodes_min_size` | `1` | `eks-01` |
+| `system_nodes_max_size` | `50` | `eks-01` |
+| `generic_compute_desired_size` | `2` | `eks-01` |
+| `generic_compute_min_size` | `1` | `eks-01` |
+| `generic_compute_max_size` | `50` | `eks-01` |
+| `monitoring` | *(omitted — node group not created)* | `eks-01` — full object `{ desired_size, min_size, max_size, instance_types, ami_id, max_unavailable_percentage }` |
+| `keymanager` | *(omitted — node group not created)* | `eks-01` — full object as above |
+| `auxillary` | *(omitted — node group not created)* | `eks-01` — full object as above |
+| `root_volume_size` / `root_volume_type` | `20` / `"gp3"` | `eks-01` |
+| `db_instance_class` | `"db.r5.large"` | `database` |
+| `db_engine_version` | `"17.9"` | `database`, `locker`, `superposition` |
+| `db_backup_retention_period` | `7` | `database` |
+| `cache_node_type` | `"cache.m6g.large"` | `elasticache` |
+| `cache_num_node_groups` | `2` | `elasticache` |
+| `cache_replicas_per_node_group` | `1` | `elasticache` |
+| `cache_node_group_configuration` | 2 shards | `elasticache` |
+| `locker_instance_type` | `"t3.medium"` | `locker` |
+| `locker_backup_retention_period` | `7` | `locker` |
+| `locker_db_instance_class` | `"db.r6g.large"` | `locker` |
+| `envoy_instance_type` | `"t3.medium"` | `envoy-proxy` |
+| `envoy_root_volume_size` | `20` | `envoy-proxy` |
+| `envoy_min_size` / `envoy_max_size` / `envoy_desired_capacity` | `1` / `10` / `1` | `envoy-proxy` |
+| `jump_host_instance_type` | `"t3.medium"` | `jump-host` |
+| `jump_host_root_volume_size` | `30` | `jump-host` |
+| `squid_instance_type` | `"t3.medium"` | `squid-proxy` |
+| `squid_min_size` / `squid_max_size` / `squid_desired_capacity` | `1` / `6` / `1` | `squid-proxy` |
+| `squid_root_volume_size` | `30` | `squid-proxy` |
+| `grafana_db_instance_class` | `"db.t4g.medium"` | `grafana` |
+| `ratelimiter_cache_node_type` | `"cache.t3.small"` | `ratelimiter` |
+| `superposition_backup_retention_period` | `7` | `superposition` |
+| `superposition_db_instance_class` | `"db.r6g.large"` | `superposition` |
+
+`terraform/aws/live/terragrunt.stack.hcl` currently fills the required values
+with `REPLACE_ME`-style placeholders per environment — `terragrunt stack generate`
 succeeds, but `terragrunt run-all plan` will not until real values are filled
 in.
 
