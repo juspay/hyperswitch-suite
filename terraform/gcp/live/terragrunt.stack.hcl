@@ -66,8 +66,9 @@ stack "sandbox" {
     # Image names only; the units expand them to a full projects/<id>/global/
     # images/<name> path against project_id above.
     custom_images = {
-      envoy = "REPLACE_ME-envoy"
-      squid = "REPLACE_ME-squid"
+      envoy  = "REPLACE_ME-envoy"
+      squid  = "REPLACE_ME-squid"
+      socks5 = "REPLACE_ME-socks5"
     }
 
     # ---------------------------------------------------------------------
@@ -237,8 +238,9 @@ stack "dev" {
     # Expanded by the units to projects/<project_id>/global/images/<value>, so
     # an image family is expressed as "family/<name>".
     custom_images = {
-      envoy = "hyperswitch-envoy-dev-20260820032919"
-      squid = "family/hyperswitch-squid-dev"
+      envoy  = "hyperswitch-envoy-dev-20260820032919"
+      squid  = "family/hyperswitch-squid-dev"
+      socks5 = "REPLACE_ME-socks5"
     }
 
     # -----------------------------------------------------------------------

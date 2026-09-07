@@ -7,8 +7,9 @@ alloydb = {
 }
 bastion_iap_members = ["group:REPLACE_ME@example.com"]
 custom_images = {
-  envoy = "REPLACE_ME-envoy"
-  squid = "REPLACE_ME-squid"
+  envoy  = "REPLACE_ME-envoy"
+  socks5 = "REPLACE_ME-socks5"
+  squid  = "REPLACE_ME-squid"
 }
 domains = {
   api     = "api.sandbox.example.com"

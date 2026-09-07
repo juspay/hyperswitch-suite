@@ -1,0 +1,13 @@
+[Unit]
+Description=Fetch Dante SOCKS5 config from GCS before starting the proxy
+After=network-online.target google-guest-agent.service
+Wants=network-online.target
+Before=danted.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/fetch-socks5-config.sh
+
+[Install]
+WantedBy=multi-user.target

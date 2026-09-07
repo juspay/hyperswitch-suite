@@ -52,8 +52,26 @@ inputs = {
           # one rule (source_service_accounts conflicts with target_tags), so
           # source by the bastion's instance tag rather than its SA.
           source_tags = ["bastion-host"]
-          target_tags = ["envoy-proxy", "squid-proxy"]
+          target_tags = ["envoy-proxy", "squid-proxy", "socks5-proxy"]
           allow       = [{ protocol = "tcp", ports = ["22"] }]
+        },
+      ]
+    }
+
+    gke-to-socks5-egress = {
+      rules = [
+        {
+          name        = "allow-gke-to-socks5"
+          description = "GKE nodes and pods to the Dante SOCKS5 proxy (SMTP egress)"
+          direction   = "INGRESS"
+          # Range-based for the same reason as squid: the clients are GKE
+          # pods, which carry no network tags.
+          source_ranges = [
+            "${values.vpc_cidr_prefix}.16.0/20",
+            values.gke_pods_secondary_range_cidr,
+          ]
+          target_tags = ["socks5-proxy"]
+          allow       = [{ protocol = "tcp", ports = ["1080"] }]
         },
       ]
     }

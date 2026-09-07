@@ -221,6 +221,28 @@ unit "squid-proxy" {
   }
 }
 
+# SOCKS5 egress for the SMTP path. Squid cannot serve it - it is an HTTP
+# forward proxy and speaks no SOCKS - so this is protocol-distinct, not a
+# duplicate of squid-proxy.
+unit "socks5-proxy" {
+  source = "${get_repo_root()}/terraform/gcp/catalog/units/socks5-proxy"
+  path   = "socks5-proxy"
+
+  no_dot_terragrunt_stack = true
+
+  values = merge(
+    {
+      custom_images = values.custom_images
+
+      # socks5's ilb_source_ranges derives from these two, exactly as
+      # squid-proxy and firewall-rules do.
+      vpc_cidr_prefix               = values.vpc_cidr_prefix
+      gke_pods_secondary_range_cidr = values.gke_pods_secondary_range_cidr
+    },
+    try(values.unit_config.socks5_proxy, null) != null ? { cfg = values.unit_config.socks5_proxy } : {},
+  )
+}
+
 # -----------------------------------------------------------------------------
 # Phase 5 — Supporting infrastructure
 # -----------------------------------------------------------------------------

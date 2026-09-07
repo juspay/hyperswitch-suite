@@ -7,8 +7,9 @@ alloydb = {
 }
 bastion_iap_members = ["group:platform-team@example.com"]
 custom_images = {
-  envoy = "hyperswitch-envoy-dev-20260820032919"
-  squid = "family/hyperswitch-squid-dev"
+  envoy  = "hyperswitch-envoy-dev-20260820032919"
+  socks5 = "REPLACE_ME-socks5"
+  squid  = "family/hyperswitch-squid-dev"
 }
 domains = {
   api     = "dev.hyperswitch.internal"

@@ -1,0 +1,11 @@
+# Copy to dev.auto.pkrvars.hcl and fill in. That filename is gitignored.
+project_id = "REPLACE_ME-gcp-project"
+zone       = "asia-south1-b"
+
+environment = "dev"
+
+network    = "REPLACE_ME-vpc"
+subnetwork = "REPLACE_ME-management"
+
+# Leave false until hashicorp/packer#12169 is fixed for Ubuntu images.
+use_iap = false
