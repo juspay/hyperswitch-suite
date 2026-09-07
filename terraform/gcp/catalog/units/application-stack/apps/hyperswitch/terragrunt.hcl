@@ -19,6 +19,11 @@ dependency "gke" {
   mock_outputs_merge_strategy_with_state = "shallow"
 }
 
+locals {
+  # Per-environment overrides, passed by the stack as this unit's `cfg` value.
+  cfg = try(values.cfg, {})
+}
+
 terraform {
   source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/application-resources/hyperswitch?ref=gcp-apps-hyperswitch-v0.1.0"
 }
@@ -42,8 +47,12 @@ inputs = {
   cluster_location       = dependency.gke.outputs.location
 
   kms = {
-    create          = true
-    location        = include.root.locals.region
+    create = true
+    # Defaults to the region, but overridable per environment: an existing
+    # keyring's location is baked into its resource ID and cannot be changed
+    # in place, so pointing this at anything other than what is already live
+    # would silently create a second, orphaned keyring rather than erroring.
+    location        = try(local.cfg.kms_location, include.root.locals.region)
     rotation_period = "7776000s" # 90 days
   }
 

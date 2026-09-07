@@ -181,10 +181,13 @@ unit "hyperswitch" {
 
   no_dot_terragrunt_stack = true
 
-  values = {
-    domains        = values.domains
-    smtp_secret_id = values.smtp_secret_id
-  }
+  values = merge(
+    {
+      domains        = values.domains
+      smtp_secret_id = values.smtp_secret_id
+    },
+    try(values.unit_config.hyperswitch, null) != null ? { cfg = values.unit_config.hyperswitch } : {},
+  )
 }
 
 # -----------------------------------------------------------------------------
