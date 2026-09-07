@@ -1,0 +1,14 @@
+{
+  "builds": [
+    {
+      "name": "jump_host_migration",
+      "builder_type": "amazon-ebs",
+      "build_time": 1764588422,
+      "files": null,
+      "artifact_id": "eu-central-1:ami-036745cb029e3728b",
+      "packer_run_uuid": "af9090c5-60d2-e300-d075-ea5ffcec5b5e",
+      "custom_data": null
+    }
+  ],
+  "last_run_uuid": "af9090c5-60d2-e300-d075-ea5ffcec5b5e"
+}

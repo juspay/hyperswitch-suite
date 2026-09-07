@@ -1,12 +1,11 @@
 # GCP live layer
 
-This directory holds the GCP environments, generated from
+This directory holds the GCP `dev` environment, generated from
 [`terraform/gcp/catalog/stacks/dev`](../catalog/stacks/dev/README.md)
 by [`terragrunt.stack.hcl`](./terragrunt.stack.hcl).
 
 There is no hand-maintained Terraform here. `terragrunt.stack.hcl` is the only
-file to edit; everything else under `sandbox/` and `dev/` is generated and then
-committed.
+file to edit; everything else under `dev/` is generated and then committed.
 
 ## Regenerating
 
@@ -24,7 +23,7 @@ inputs, so a clean generate does not mean `plan` will succeed. The cheap next
 check is:
 
 ```bash
-cd terraform/gcp/live/sandbox/asia-south1
+cd terraform/gcp/live/dev/asia-south1
 terragrunt hcl validate     # resolves every local, values and dependency reference
 ```
 
@@ -32,7 +31,7 @@ That needs no cloud credentials and no module downloads.
 
 ## Before anything can run
 
-All 18 module tags exist, so `init` will resolve. What is left is replacing
+All module tags exist, so `init` will resolve. What is left is replacing
 every `REPLACE_ME` in `terragrunt.stack.hcl`:
 
 | Placeholder | What it needs |
@@ -46,9 +45,9 @@ every `REPLACE_ME` in `terragrunt.stack.hcl`:
 
 ## Values
 
-Every value is supplied in the `values = { ... }` block of each `stack` in
-`terragrunt.stack.hcl`. Required values are enforced by the stack's `root.hcl;
-optional values fall back to unit defaults.
+Every value is supplied in the `values = { ... }` block of the `stack "dev"`
+block in `terragrunt.stack.hcl`. Required values are enforced by the stack's
+`root.hcl`; optional values fall back to unit defaults.
 
 ### Required values
 
@@ -58,7 +57,7 @@ optional values fall back to unit defaults.
 | `region` | `root.hcl` | also the GCS state bucket location |
 | `project_id` | `root.hcl` | the GCP project |
 | `state_bucket` | `root.hcl` | globally unique; created on first `init` unless `skip_bucket_creation` |
-| `vpc_cidr_prefix` | `vpc-network`, `squid-proxy`, `firewall-rules` | e.g. `"10.64"` |
+| `vpc_cidr_prefix` | `vpc-network`, `squid-proxy`, `firewall-rules` | e.g. `"10.2"` |
 | `gke_pods_secondary_range_cidr` | `vpc-network`, `squid-proxy`, `firewall-rules` | pod range |
 | `gke_services_secondary_range_cidr` | `vpc-network` | service range |
 | `machine_types.gke_system_pool` | `gke` | node pool machine type |
@@ -91,7 +90,7 @@ optional values fall back to unit defaults.
 
 Every unit that needs the network or the cluster declares a `dependency`, so
 **`terragrunt run-all apply` orders this stack correctly**. From
-`terraform/gcp/live/sandbox/asia-south1`:
+`terraform/gcp/live/dev/asia-south1`:
 
 ```bash
 terragrunt run-all plan     # review first
@@ -118,18 +117,9 @@ On a green-field build, re-apply it at the end.
 `gateway-controller` has no dependency and may run in phase 0 — that is
 correct, it only creates a project-level SSL policy.
 
-To step through by hand instead:
-
-```bash
-terragrunt apply --working-dir vpc-network
-terragrunt apply --working-dir application-stack/gke
-# ...
-```
-
 ## Adopting an environment that already exists
 
-The `dev` block in `terragrunt.stack.hcl` is commented out because adopting an
-already-applied environment is not a generate-and-apply operation:
+Adopting an already-applied environment is not a generate-and-apply operation:
 
 - **`project_name` must match what was applied.** The catalog defaults to
   `hyps`; an environment built with a different prefix must override it, or the

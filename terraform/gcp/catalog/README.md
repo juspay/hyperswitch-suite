@@ -13,7 +13,7 @@ terraform/gcp/catalog/
                   # full unit set
 ```
 
-19 units. This mirrors the AWS catalog in
+18 units. This mirrors the AWS catalog in
 [PR #302](https://github.com/juspay/hyperswitch-suite/pull/302) — same unit
 skeleton, same tag-pinning discipline.
 
@@ -86,7 +86,7 @@ application-stack/apps/<name>    -> ../../gke, ../../../vpc-network
 
 ## Scope
 
-A unit exists here only if its module is published on `main`. All 19 pins
+A unit exists here only if its module is published on `main`. All 18 pins
 resolve to existing tags — `scripts/ci/check-gcp-pins.sh` enforces it.
 
 | Excluded | Why |
@@ -113,7 +113,7 @@ resolve to existing tags — `scripts/ci/check-gcp-pins.sh` enforces it.
 | `application-stack/gke` | `composition/gke` | `gcp-gke-v0.1.0` |
 | `…/apps/argocd` | `application-resources/argocd` | `gcp-apps-argocd-v0.1.0` |
 | `…/apps/external-secrets-operator` | `application-resources/external-secrets-operator` | `gcp-apps-eso-v0.1.0` |
-| `…/apps/gateway-controller` | `application-resources/gateway-controller` | `gcp-apps-gcp-v0.1.0` |
+| `…/apps/gateway-controller` | `application-resources/gateway-controller` | `gcp-apps-gateway-controller-v0.1.0` |
 | `…/apps/grafana` | `application-resources/grafana` | `gcp-apps-grafana-v0.1.0` |
 | `…/apps/hyperswitch` | `application-resources/hyperswitch` | `gcp-apps-hyperswitch-v0.1.0` |
 | `…/apps/istio` | `application-resources/istio` | `gcp-apps-istio-v0.1.0` |
@@ -121,15 +121,11 @@ resolve to existing tags — `scripts/ci/check-gcp-pins.sh` enforces it.
 | `…/apps/superposition` | `application-resources/superposition` | `gcp-apps-superposition-v0.1.0` |
 | `…/apps/vector` | `application-resources/vector` | `gcp-apps-vector-v0.1.0` |
 
-### Two tag names to clean up
+### One tag name to clean up
 
-Both are published and pinned as-is so the catalog works today, but neither
-follows the `gcp-apps-<module>-vX.Y.Z` grammar the other eight use:
-
-- `gcp-apps-eso-v0.1.0` abbreviates `external-secrets-operator`.
-- **`gcp-apps-gcp-v0.1.0` is the gateway-controller module** — that reads like
-  a mis-typed tag name. Re-tag as `gcp-apps-gateway-controller-vX.Y.Z` and
-  repoint the unit.
+`gcp-apps-eso-v0.1.0` abbreviates `external-secrets-operator`. It is published
+and pinned as-is so the catalog works today, but does not follow the
+`gcp-apps-<module>-vX.Y.Z` grammar the other app modules use.
 
 ## Versioning
 

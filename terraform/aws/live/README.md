@@ -1,12 +1,11 @@
 # Live layer
 
-This directory holds the `dev`, `pre-prod` and `prod` environments,
-generated from [`terraform/aws/catalog/stacks/dev`](../catalog/stacks/dev/README.md)
+This directory holds the `dev` environment, generated from
+[`terraform/aws/catalog/stacks/dev`](../catalog/stacks/dev/README.md)
 by [`terragrunt.stack.hcl`](./terragrunt.stack.hcl).
 
 There is no hand-maintained Terraform here. `terragrunt.stack.hcl` is the only
-file to edit; everything else under `dev/`, `pre-prod/` and `prod/` is
-generated and then committed.
+file to edit; everything else under `dev/` is generated and then committed.
 
 ## Regenerating
 
