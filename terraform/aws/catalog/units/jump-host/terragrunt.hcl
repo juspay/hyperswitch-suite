@@ -20,7 +20,7 @@ dependency "vpc_network" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/jump-host?ref=jump-host-v0.1.2"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/jump-host?ref=jump-host-v0.2.1"
 }
 
 inputs = {
