@@ -126,7 +126,7 @@ This repository contains the Infrastructure-as-Code (Terraform / Terragrunt) use
 | Cloud | Maturity | Live layer | Catalog/Units | Modules | Notes |
 |---|---|---|---|---|---|
 | **AWS** | Production-capable | `terraform/aws/live/` (Terragrunt Stacks) | `terraform/aws/catalog/units/` + `stacks/dev` | Base, composition, application-resources, CloudFront resources | Bootstrap for `dev/integ/prod/sandbox` |
-| **GCP** | Dev live + catalog migration | `terraform/gcp/live/dev/asia-south1/` | `terraform/gcp/catalog/units/` + `stacks/dev` (19 pinned units) | Composition, application-resources, packer | Catalog units + dev stack are the target pattern |
+| **GCP** | Dev live + catalog migration | `terraform/gcp/live/sandbox/asia-south1/` | `terraform/gcp/catalog/units/` + `stacks/dev` (18 pinned units) | Composition, application-resources, packer | Live rendered from catalog; `dev` block in `terraform/gcp/live/terragrunt.stack.hcl` is a commented template |
 
 Key deployment docs:
 
