@@ -18,7 +18,7 @@ global:
 
 hyperswitch-app:
   # ---------------------------------------------------------------------------
-  # External data stores (provisioned by the terragrunt standalone stack).
+  # External data stores (provisioned by the terragrunt dev stack).
   # The chart validates that exactly one of bundled/external is enabled.
   # ---------------------------------------------------------------------------
   postgresql:

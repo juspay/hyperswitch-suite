@@ -1,17 +1,28 @@
 # =============================================================================
-# Standalone (self-host) stack — root configuration
+# Dev stack — root configuration
 # =============================================================================
-# Values-driven root for a single-region, self-hosted Hyperswitch deployment.
+# Values-driven root for the internal dev / pre-prod / prod deployments.
 # All environment-specific settings come from the stack `values` supplied by
-# the live terragrunt.stack.hcl (rendered by scripts/self-host/generate.sh).
+# terraform/aws/live/terragrunt.stack.hcl.
 #
-# Differences from the internal stacks:
-#   - no Atlantis / management-cluster assume-role wiring
-#   - state bucket name is explicit (values.state_bucket), no naming convention
+# Differences from [self-host path removed]:
+#   - three named environments (dev, pre-prod, prod) instead of prod/sandbox
+#   - the VPC is created by this stack (catalog/units/vpc-network), not
+#     merchant-provided — units pick this up automatically because `values`
+#     never sets vpc_id (see units/database/terragrunt.hcl:11-13,41 for the
+#     BYO-VPC-vs-created-VPC pattern every VPC-consuming unit implements)
 # =============================================================================
 
 locals {
-  environment     = values.env == "prod" ? { full = "prod", short = "prd" } : { full = "sandbox", short = "sbx" }
+  # values.env must be one of the keys below; anything else is a hard error
+  # rather than silently collapsing into another environment's state prefix.
+  env_map = {
+    "dev"      = { full = "dev", short = "dev" }
+    "pre-prod" = { full = "pre-prod", short = "prep" }
+    "prod"     = { full = "prod", short = "prd" }
+  }
+
+  environment     = local.env_map[values.env]
   region          = values.region
   project_name    = values.project_name
   account_id      = values.account_id
@@ -47,7 +58,7 @@ provider "aws" {
   default_tags {
     tags = {
       Project   = "${local.project_name}"
-      ManagedBy = "hyperswitch-self-host"
+      ManagedBy = "hyperswitch-terragrunt"
     }
   }
 }

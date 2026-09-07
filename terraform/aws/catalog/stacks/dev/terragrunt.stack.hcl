@@ -1,8 +1,8 @@
 # =============================================================================
-# Internal Hyperswitch stack
+# Dev Hyperswitch stack
 # =============================================================================
 # Full-parity single-region composition for internal dev / pre-prod / prod
-# environments. Unlike stacks/standalone (BYO-VPC, self-host), this stack
+# environments. Unlike [self-host path removed] (BYO-VPC, self-host), this stack
 # creates its own VPC: no unit below is passed `vpc_id` / `*_subnet_ids`, so
 # every VPC-consuming unit's `dependency.vpc { enabled = ... }` toggle falls
 # through to the `vpc-network` unit created here (see e.g.

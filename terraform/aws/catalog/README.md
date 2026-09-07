@@ -7,8 +7,7 @@ catalog/
 ├── units/     # one directory per unit — a parameterized terragrunt.hcl
 │              # wrapping a composition/application-resources module by git tag
 └── stacks/
-    ├── internal/     # dev/pre-prod/prod — creates its own VPC, full unit set
-    └── standalone/   # single-region self-host composition, BYO-VPC (see its README)
+    └── dev/     # dev/pre-prod/prod — creates its own VPC, full unit set
 ```
 
 ## Units
@@ -32,10 +31,10 @@ Units are parameterized through Terragrunt Stacks `values`:
 
 ## Consuming
 
-- **Internal environments**: `terraform/aws/live/terragrunt.stack.hcl` targets
-  `stacks/internal` — see [`live/README.md`](../live/README.md).
+- **Environments**: `terraform/aws/live/terragrunt.stack.hcl` targets
+  `stacks/dev` — see [`live/README.md`](../live/README.md).
 - **Self-hosting**: use `scripts/self-host/generate.sh` (repo root), which
-  renders a live stack file targeting `stacks/standalone`.
+  renders a live stack file targeting `stacks/dev`.
 - **By git ref**: a stack file elsewhere can pin units with
   `source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/<unit>?ref=<unit tag>"`.
 
@@ -44,8 +43,7 @@ Units are parameterized through Terragrunt Stacks `values`:
 Unit tags follow `unit/<name>-v<module-version>-v<unit-revision>` (e.g.
 `unit/database-v0.1.6-v8`); the wrapped module tag (`database-v0.1.6`) is
 pinned inside the unit. Bump the unit revision whenever the unit file changes;
-bump the module version pin deliberately and test with the internal and
-standalone stacks.
+bump the module version pin deliberately and test with the dev stack.
 
 ## CI
 

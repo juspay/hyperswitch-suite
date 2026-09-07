@@ -1,12 +1,9 @@
-# Internal stack
+# Dev stack
 
-> Part of the [AWS catalog stacks](../README.md). See that README for an
-> overview of the available stacks and how to choose between them.
-
-Full single-region composition of the catalog for the internal `dev`,
-`pre-prod` and `prod` environments. Unlike [`stacks/standalone`](../standalone/README.md)
-(BYO-VPC, used by the self-host generator), this stack creates its own VPC and
-wires up every catalog unit.
+Full single-region composition of the catalog for the internal environments.
+Start with `dev`; the same unit layout is promoted to `pre-prod` and `prod`
+with larger sizing and real domains. This stack creates its own VPC and wires
+up every catalog unit.
 
 Rendered by `terraform/aws/live/terragrunt.stack.hcl` — one `stack` block per
 environment — into `terraform/aws/live/<env>/<region>/`.

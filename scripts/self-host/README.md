@@ -6,7 +6,7 @@ app-of-apps + values + runbook). Three ways to invoke it:
 - **in-repo** (default): renders into this checkout — for merchants working in
   a fork of hyperswitch-suite;
 - **destination** (`--target-dir <path>`): renders into a separate directory,
-  vendoring `terraform/aws/catalog/{units,stacks/standalone}` and
+  vendoring `terraform/aws/catalog/{units,stacks/dev}` and
   git-initializing it, producing a self-contained config repo;
 - **no checkout** (`bootstrap.sh`): a curl-pipeable wrapper that downloads a
   throwaway tarball snapshot of the repo (no git, no persistent checkout),
@@ -44,7 +44,7 @@ Derived tokens (computed in generate.sh, not prompted): `ENV_SHORT`,
 
 ## Invariants
 
-- Terragrunt unit `path`s in `catalog/stacks/standalone` must match the
+- Terragrunt unit `path`s in `catalog/stacks/dev` must match the
   `$tfstate.*` S3 paths in `templates/argocd/apps/**` — they encode
   `<env>/<region>/<unit-path>/terraform.tfstate`.
 - `templates/infra-configurations/hyperswitch-stack/values.yaml.tpl` key paths

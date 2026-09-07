@@ -1,7 +1,7 @@
 # Live layer
 
-This directory holds the internal `dev`, `pre-prod` and `prod` environments,
-generated from [`terraform/aws/catalog/stacks/internal`](../catalog/stacks/internal/README.md)
+This directory holds the `dev`, `pre-prod` and `prod` environments,
+generated from [`terraform/aws/catalog/stacks/dev`](../catalog/stacks/dev/README.md)
 by [`terragrunt.stack.hcl`](./terragrunt.stack.hcl).
 
 There is no hand-maintained Terraform here. `terragrunt.stack.hcl` is the only
@@ -29,7 +29,7 @@ terragrunt run-all apply
 ```
 
 Units apply in dependency order (see the phase table in the
-[internal stack README](../catalog/stacks/internal/README.md)); `security-rules`
+[dev stack README](../catalog/stacks/dev/README.md)); `security-rules`
 always goes last.
 
 ## Placeholders

@@ -1,8 +1,8 @@
 # =============================================================================
 # Internal live layer
 # =============================================================================
-# Generates the internal pre-prod / prod environments from
-# terraform/aws/catalog/stacks/internal. Each `stack` block below renders into
+# Generates the dev / pre-prod / prod environments from
+# terraform/aws/catalog/stacks/dev. Each `stack` block below renders into
 # terraform/aws/live/<env>/<region>/ via `terragrunt stack generate` — that
 # generated tree is committed (run it again and `git diff` after editing any
 # value here).
@@ -20,7 +20,7 @@
 # =============================================================================
 
 # stack "dev" {
-#   source = "../catalog/stacks/internal"
+#   source = "../catalog/stacks/dev"
 #   path   = "dev/eu-central-1"
 
 #   no_dot_terragrunt_stack = true
@@ -70,7 +70,7 @@
 # }
 
 stack "pre-prod" {
-  source = "../catalog/stacks/internal"
+  source = "../catalog/stacks/dev"
   path   = "pre-prod/eu-central-1"
 
   no_dot_terragrunt_stack = true
@@ -113,7 +113,7 @@ stack "pre-prod" {
 }
 
 stack "prod" {
-  source = "../catalog/stacks/internal"
+  source = "../catalog/stacks/dev"
   path   = "prod/eu-central-1"
 
   no_dot_terragrunt_stack = true

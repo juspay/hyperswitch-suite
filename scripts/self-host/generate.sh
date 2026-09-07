@@ -5,7 +5,7 @@
 # Prompts for your environment values (AWS account, VPC, domains, sizing, ...)
 # and generates a self-contained config repo:
 #
-#   terraform/aws/catalog/                          (vendored units + standalone stack)
+#   terraform/aws/catalog/                          (vendored units + dev stack)
 #   terraform/aws/live/<env>/terragrunt.stack.hcl   (your Terragrunt stack)
 #   argocd/                                         (ArgoCD app-of-apps bundle)
 #   helm/charts/istio/                              (vendored istio chart)
@@ -202,13 +202,13 @@ info "Rendering self-host bundle into ${TARGET_DIR}"
 if [[ "$DESTINATION_MODE" -eq 1 ]]; then
     mkdir -p "${TARGET_DIR}/terraform/aws/catalog/stacks"
     rm -rf "${TARGET_DIR}/terraform/aws/catalog/units" \
-        "${TARGET_DIR}/terraform/aws/catalog/stacks/standalone"
+        "${TARGET_DIR}/terraform/aws/catalog/stacks/dev"
     cp -R "${REPO_ROOT}/terraform/aws/catalog/units" "${TARGET_DIR}/terraform/aws/catalog/units"
-    cp -R "${REPO_ROOT}/terraform/aws/catalog/stacks/standalone" "${TARGET_DIR}/terraform/aws/catalog/stacks/standalone"
+    cp -R "${REPO_ROOT}/terraform/aws/catalog/stacks/dev" "${TARGET_DIR}/terraform/aws/catalog/stacks/dev"
     ok "Vendored terraform catalog"
 fi
 
-# 1. Terragrunt: live stack file targeting the vendored standalone catalog stack
+# 1. Terragrunt: live stack file targeting the vendored dev catalog stack
 render_file "${TEMPLATES_DIR}/terraform/live/terragrunt.stack.hcl.tpl" \
     "${TARGET_DIR}/terraform/aws/live/${ENVIRONMENT}/terragrunt.stack.hcl"
 ok "terraform/aws/live/${ENVIRONMENT}/terragrunt.stack.hcl"

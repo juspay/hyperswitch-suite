@@ -25,7 +25,7 @@ The single API to access payment ecosystems across 130+ countries</div>
 <img src="./img/switch.png" alt="Hyperswitch as a switch integrating multiple payment processors" width="80%">
 </p>
 
-**Hyperswitch Suite** is the master repository for the Hyperswitch payments stack. It defines the open-source product bundle — the app server, web client, control center, card vault and WooCommerce plugin — along with the compatible versions of each component. It also hosts the Terraform and Terragrunt modules used to deploy the stack on AWS, GCP, OCI and Azure.
+**Hyperswitch Suite** is the master repository for the Hyperswitch payments stack. It defines the open-source product bundle — the app server, web client, control center, card vault and WooCommerce plugin — along with the compatible versions of each component. It also hosts the Terraform and Terragrunt modules used to deploy the stack on AWS and GCP.
 
 - For the **payment-engine source code**, see [`juspay/hyperswitch`](https://github.com/juspay/hyperswitch).
 - For **deployment modules and live environments**, see the [`terraform/`](terraform/) tree and the [Deploying Hyperswitch](#deploying-hyperswitch) section below.
@@ -121,14 +121,12 @@ components, each housed in separate repositories and open-sourced.
 
 ## Deploying Hyperswitch
 
-This repository contains the Infrastructure-as-Code (Terraform / Terragrunt) used to deploy Hyperswitch on multiple clouds.
+This repository contains the Infrastructure-as-Code (Terraform / Terragrunt) used to deploy Hyperswitch on AWS and GCP.
 
 | Cloud | Maturity | Live layer | Catalog/Units | Modules | Notes |
 |---|---|---|---|---|---|
-| **AWS** | Production-capable | `terraform/aws/live/` (Terragrunt Stacks) | `terraform/aws/catalog/units/` + `stacks/internal`, `stacks/standalone` | Base, composition, application-resources, CloudFront resources | Bootstrap for `dev/integ/prod/sandbox` |
+| **AWS** | Production-capable | `terraform/aws/live/` (Terragrunt Stacks) | `terraform/aws/catalog/units/` + `stacks/dev` | Base, composition, application-resources, CloudFront resources | Bootstrap for `dev/integ/prod/sandbox` |
 | **GCP** | Dev live + catalog migration | `terraform/gcp/live/dev/asia-south1/` | `terraform/gcp/catalog/units/` (19 pinned units) | Composition, application-resources, packer | Catalog units are the target pattern |
-| **OCI** | Modules + bootstrap only | None in this repo | None | Composition, application-resources, packer | Live layer is not yet part of this repo |
-| **Azure** | Early modules only | None in this repo | None | 2 composition modules (`vpc-network`, `storage-account-backend`) | Live layer is not yet part of this repo |
 
 Key deployment docs:
 

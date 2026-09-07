@@ -4,7 +4,7 @@
 # After changing this file run `terragrunt stack generate` in this directory
 # and commit the generated tree.
 stack "__AWS_REGION__" {
-  source = "../../catalog/stacks/standalone"
+  source = "../../catalog/stacks/dev"
   path   = "__AWS_REGION__"
 
   no_dot_terragrunt_stack = true

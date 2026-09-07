@@ -20,7 +20,7 @@ terraform/gcp/catalog/units/
 skeleton, same tag-pinning discipline.
 
 > **This PR ships units only.** The stack that composes them
-> (`catalog/stacks/internal`, including the `root.hcl` every unit includes) and
+> (`catalog/stacks/dev`, including the `root.hcl` every unit includes) and
 > the generated live layer follow in a separate PR, once these units are
 > tagged.
 
