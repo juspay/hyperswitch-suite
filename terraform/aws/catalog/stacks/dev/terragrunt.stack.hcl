@@ -20,13 +20,17 @@
 #   Phase 5 — K8s resources:    application-stack/{eks-resources,utils-load-balancer}
 #   Phase 6 — Apps:             application-stack/apps/*
 #   Phase 7 — Security rules:   security-rules (apply last)
+#
+# Units are consumed by immutable git ref (unit/aws/<name>-vX.Y.Z-v<rev>),
+# except application-stack/eks-01, which has no versioned module tag yet and
+# is still fetched by local path.
 # =============================================================================
 
 # -----------------------------------------------------------------------------
 # Phase 1 — Network & DNS
 # -----------------------------------------------------------------------------
 unit "vpc-network" {
-  source = "${get_repo_root()}/terraform/aws/catalog/units/vpc-network"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/vpc-network?ref=unit/aws/vpc-network-v0.1.11-v1"
   path   = "vpc-network"
 
   no_dot_terragrunt_stack = true
@@ -43,7 +47,7 @@ unit "vpc-network" {
 }
 
 unit "route53" {
-  source = "${get_repo_root()}/terraform/aws/catalog/units/route53"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/route53?ref=unit/aws/route53-v0.1.0-v1"
   path   = "route53"
 
   no_dot_terragrunt_stack = true
@@ -56,7 +60,7 @@ unit "route53" {
 }
 
 unit "acm" {
-  source = "${get_repo_root()}/terraform/aws/catalog/units/acm"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/acm?ref=unit/aws/acm-v0.1.0-v1"
   path   = "acm"
 
   no_dot_terragrunt_stack = true
@@ -70,7 +74,7 @@ unit "acm" {
 # Phase 2 — Data layer
 # -----------------------------------------------------------------------------
 unit "database" {
-  source = "${get_repo_root()}/terraform/aws/catalog/units/database"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/database?ref=unit/aws/database-v0.1.6-v1"
   path   = "database"
 
   no_dot_terragrunt_stack = true
@@ -82,7 +86,7 @@ unit "database" {
 }
 
 unit "elasticache" {
-  source = "${get_repo_root()}/terraform/aws/catalog/units/elasticache"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/elasticache?ref=unit/aws/elasticache-v0.1.5-v1"
   path   = "elasticache"
 
   no_dot_terragrunt_stack = true
@@ -93,7 +97,7 @@ unit "elasticache" {
 }
 
 unit "efs" {
-  source = "${get_repo_root()}/terraform/aws/catalog/units/efs"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/efs?ref=unit/aws/efs-v0.1.1-v1"
   path   = "efs"
 
   no_dot_terragrunt_stack = true
@@ -102,7 +106,7 @@ unit "efs" {
 }
 
 unit "kafka" {
-  source = "${get_repo_root()}/terraform/aws/catalog/units/kafka"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/kafka?ref=unit/aws/kafka-v0.1.3-v1"
   path   = "kafka"
 
   no_dot_terragrunt_stack = true
@@ -114,7 +118,7 @@ unit "kafka" {
 }
 
 unit "locker" {
-  source = "${get_repo_root()}/terraform/aws/catalog/units/locker"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/locker?ref=unit/aws/locker-v0.2.8-v1"
   path   = "locker"
 
   no_dot_terragrunt_stack = true
@@ -134,7 +138,7 @@ unit "locker" {
 # Phase 3 — Proxies & access
 # -----------------------------------------------------------------------------
 unit "squid-proxy" {
-  source = "${get_repo_root()}/terraform/aws/catalog/units/squid-proxy"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/squid-proxy?ref=unit/aws/squid-proxy-v0.1.4-v1"
   path   = "squid-proxy"
 
   no_dot_terragrunt_stack = true
@@ -150,7 +154,7 @@ unit "squid-proxy" {
 }
 
 unit "envoy-proxy" {
-  source = "${get_repo_root()}/terraform/aws/catalog/units/envoy-proxy"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/envoy-proxy?ref=unit/aws/envoy-proxy-v0.3.2-v1"
   path   = "envoy-proxy"
 
   no_dot_terragrunt_stack = true
@@ -174,7 +178,7 @@ unit "envoy-proxy" {
 }
 
 unit "jump-host" {
-  source = "${get_repo_root()}/terraform/aws/catalog/units/jump-host"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/jump-host?ref=unit/aws/jump-host-v0.2.1-v1"
   path   = "jump-host"
 
   no_dot_terragrunt_stack = true
@@ -221,7 +225,7 @@ unit "eks-01" {
 # Phase 5 — Kubernetes resources
 # -----------------------------------------------------------------------------
 unit "eks-resources" {
-  source = "${get_repo_root()}/terraform/aws/catalog/units/application-stack/eks-resources"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/application-stack/eks-resources?ref=unit/aws/eks-resources-v0.1.3-v1"
   path   = "application-stack/eks-resources"
 
   no_dot_terragrunt_stack = true
@@ -230,7 +234,7 @@ unit "eks-resources" {
 }
 
 unit "utils-load-balancer" {
-  source = "${get_repo_root()}/terraform/aws/catalog/units/application-stack/utils-load-balancer"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/application-stack/utils-load-balancer?ref=unit/aws/utils-load-balancer-v0.1.1-v1"
   path   = "application-stack/utils-load-balancer"
 
   no_dot_terragrunt_stack = true
@@ -242,7 +246,7 @@ unit "utils-load-balancer" {
 # Phase 6 — Apps (Kubernetes workloads)
 # -----------------------------------------------------------------------------
 unit "alb-controller" {
-  source = "${get_repo_root()}/terraform/aws/catalog/units/application-stack/apps/alb-controller"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/application-stack/apps/alb-controller?ref=unit/aws/alb-controller-v0.1.2-v1"
   path   = "application-stack/apps/alb-controller"
 
   no_dot_terragrunt_stack = true
@@ -251,7 +255,7 @@ unit "alb-controller" {
 }
 
 unit "external-secrets" {
-  source = "${get_repo_root()}/terraform/aws/catalog/units/application-stack/apps/external-secrets"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/application-stack/apps/external-secrets?ref=unit/aws/external-secrets-v0.1.1-v1"
   path   = "application-stack/apps/external-secrets"
 
   no_dot_terragrunt_stack = true
@@ -260,7 +264,7 @@ unit "external-secrets" {
 }
 
 unit "istio" {
-  source = "${get_repo_root()}/terraform/aws/catalog/units/application-stack/apps/istio"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/application-stack/apps/istio?ref=unit/aws/istio-v0.1.4-v1"
   path   = "application-stack/apps/istio"
 
   no_dot_terragrunt_stack = true
@@ -271,7 +275,7 @@ unit "istio" {
 }
 
 unit "otel" {
-  source = "${get_repo_root()}/terraform/aws/catalog/units/application-stack/apps/otel"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/application-stack/apps/otel?ref=unit/aws/otel-v0.1.0-v1"
   path   = "application-stack/apps/otel"
 
   no_dot_terragrunt_stack = true
@@ -280,7 +284,7 @@ unit "otel" {
 }
 
 unit "vector-dr" {
-  source = "${get_repo_root()}/terraform/aws/catalog/units/application-stack/apps/vector-dr"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/application-stack/apps/vector-dr?ref=unit/aws/vector-dr-v0.1.1-v1"
   path   = "application-stack/apps/vector-dr"
 
   no_dot_terragrunt_stack = true
@@ -289,7 +293,7 @@ unit "vector-dr" {
 }
 
 unit "loki" {
-  source = "${get_repo_root()}/terraform/aws/catalog/units/application-stack/apps/loki"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/application-stack/apps/loki?ref=unit/aws/loki-v0.1.3-v1"
   path   = "application-stack/apps/loki"
 
   no_dot_terragrunt_stack = true
@@ -298,7 +302,7 @@ unit "loki" {
 }
 
 unit "grafana" {
-  source = "${get_repo_root()}/terraform/aws/catalog/units/application-stack/apps/grafana"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/application-stack/apps/grafana?ref=unit/aws/grafana-v0.1.3-v1"
   path   = "application-stack/apps/grafana"
 
   no_dot_terragrunt_stack = true
@@ -309,7 +313,7 @@ unit "grafana" {
 }
 
 unit "ratelimiter" {
-  source = "${get_repo_root()}/terraform/aws/catalog/units/application-stack/apps/ratelimiter"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/application-stack/apps/ratelimiter?ref=unit/aws/ratelimiter-v0.1.0-v1"
   path   = "application-stack/apps/ratelimiter"
 
   no_dot_terragrunt_stack = true
@@ -318,7 +322,7 @@ unit "ratelimiter" {
 }
 
 unit "hyperswitch" {
-  source = "${get_repo_root()}/terraform/aws/catalog/units/application-stack/apps/hyperswitch"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/application-stack/apps/hyperswitch?ref=unit/aws/hyperswitch-v0.1.1-v1"
   path   = "application-stack/apps/hyperswitch"
 
   no_dot_terragrunt_stack = true
@@ -329,7 +333,7 @@ unit "hyperswitch" {
 }
 
 unit "decision-engine" {
-  source = "${get_repo_root()}/terraform/aws/catalog/units/application-stack/apps/decision-engine"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/application-stack/apps/decision-engine?ref=unit/aws/decision-engine-v0.1.2-v1"
   path   = "application-stack/apps/decision-engine"
 
   no_dot_terragrunt_stack = true
@@ -340,7 +344,7 @@ unit "decision-engine" {
 }
 
 unit "superposition" {
-  source = "${get_repo_root()}/terraform/aws/catalog/units/application-stack/apps/superposition"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/application-stack/apps/superposition?ref=unit/aws/superposition-v0.1.7-v1"
   path   = "application-stack/apps/superposition"
 
   no_dot_terragrunt_stack = true
@@ -354,7 +358,7 @@ unit "superposition" {
 # Phase 7 — Security rules (apply last)
 # -----------------------------------------------------------------------------
 unit "security-rules" {
-  source = "${get_repo_root()}/terraform/aws/catalog/units/security-rules"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/security-rules?ref=unit/aws/security-rules-v0.2.1-v1"
   path   = "security-rules"
 
   no_dot_terragrunt_stack = true
