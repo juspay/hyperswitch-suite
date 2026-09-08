@@ -123,10 +123,10 @@ components, each housed in separate repositories and open-sourced.
 
 This repository contains the Infrastructure-as-Code (Terraform / Terragrunt) used to deploy Hyperswitch on AWS and GCP.
 
-| Cloud | Maturity | Live layer | Catalog/Units | Modules | Notes |
-|---|---|---|---|---|---|
-| **AWS** | Production-capable | `terraform/aws/live/` (Terragrunt Stacks) | `terraform/aws/catalog/units/` + `stacks/dev` | Base, composition, application-resources, CloudFront resources | Bootstrap for `dev/integ/prod/sandbox` |
-| **GCP** | Dev live + catalog migration | `terraform/gcp/live/sandbox/asia-south1/` | `terraform/gcp/catalog/units/` + `stacks/dev`| Composition, application-resources, packer | Live rendered from catalog; `dev` block in `terraform/gcp/live/terragrunt.stack.hcl` is a commented template |
+| Cloud | Maturity | Live layer | Catalog/Units | Modules |
+|---|---|---|---|---|
+| **AWS** | Production-capable | `terraform/aws/live/` (Terragrunt Stacks) | `terraform/aws/catalog/units/` + `stacks/dev` | Base, composition, application-resources, CloudFront resources |
+| **GCP** | Dev live + catalog migration | `terraform/gcp/live/sandbox/asia-south1/` | `terraform/gcp/catalog/units/` + `stacks/dev`| Composition, application-resources, packer |
 
 Key deployment docs:
 
