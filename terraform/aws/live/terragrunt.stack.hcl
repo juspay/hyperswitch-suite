@@ -1,10 +1,13 @@
 # =============================================================================
 # AWS live layer
 # =============================================================================
-# Generates the dev environment from terraform/aws/catalog/stacks/dev. The
+# Generates the dev environment from terraform/aws/catalog/stacks/dev, pinned
+# to the stack/aws/catalog-v0.1.0 tag — the immutable release boundary for the
+# whole stack, same grammar as the unit tags the stack itself consumes. The
 # `stack` block below renders into terraform/aws/live/dev/<region>/ via
 # `terragrunt stack generate` — that generated tree is committed (run it again
-# and `git diff` after editing any value here).
+# and `git diff` after editing any value here). Bump the ref to roll every
+# unit in the stack forward at once.
 #
 # This is the ONLY file in terraform/aws/live/ that is edited by hand.
 #
@@ -16,7 +19,7 @@
 # =============================================================================
 
 stack "dev" {
-  source = "../catalog/stacks/dev"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/stacks/dev?ref=stack/aws/catalog-v0.1.0"
   path   = "dev/eu-central-1"
 
   no_dot_terragrunt_stack = true
