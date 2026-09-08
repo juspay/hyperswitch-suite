@@ -89,6 +89,10 @@ inputs = {
   database_name                        = "grafana"
   database_master_username             = "grafana_admin"
   database_manage_master_user_password = true
+  # Alternatively, fetch the master password from an existing AWS Secrets Manager secret
+  # (requires grafana module with database-v0.1.7 or later; set database_manage_master_user_password = false):
+  # database_master_password_secretsmanager_secret_id  = "<secret ARN or name>"
+  # database_master_password_secretsmanager_secret_key = "password" # only if the secret is a JSON object
 
   database_cluster_instances = {
     primary = {

@@ -69,7 +69,7 @@ resource "aws_iam_role_policy_attachment" "customer_managed" {
 # DATABASE
 # =========================================================================
 module "database" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/database?ref=database-v0.1.6"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/database?ref=database-v0.1.7"
 
   count = var.create_database ? 1 : 0
 
@@ -99,11 +99,13 @@ module "database" {
   iops                      = var.database_iops
 
   # Database Configuration
-  database_name                 = var.database_name
-  master_username               = var.database_master_username
-  master_password               = var.database_master_password
-  manage_master_user_password   = var.database_manage_master_user_password
-  master_user_secret_kms_key_id = var.database_master_user_secret_kms_key_id
+  database_name                             = var.database_name
+  master_username                           = var.database_master_username
+  master_password                           = var.database_master_password
+  manage_master_user_password               = var.database_manage_master_user_password
+  master_password_secretsmanager_secret_id  = var.database_master_password_secretsmanager_secret_id
+  master_password_secretsmanager_secret_key = var.database_master_password_secretsmanager_secret_key
+  master_user_secret_kms_key_id             = var.database_master_user_secret_kms_key_id
 
   # Instance Configuration
   cluster_instances = var.database_cluster_instances

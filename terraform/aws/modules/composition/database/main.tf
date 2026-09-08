@@ -1,6 +1,25 @@
 data "aws_region" "current" {}
 
 # ============================================================================
+# Master Password from AWS Secrets Manager
+# ============================================================================
+# Fetches the master DB password from an existing Secrets Manager secret when
+# master_password_secretsmanager_secret_id is set (alternative to passing
+# master_password directly or letting RDS manage it)
+data "aws_secretsmanager_secret_version" "master_password" {
+  count = var.master_password_secretsmanager_secret_id != null ? 1 : 0
+
+  secret_id = var.master_password_secretsmanager_secret_id
+
+  lifecycle {
+    precondition {
+      condition     = var.manage_master_user_password != true
+      error_message = "master_password_secretsmanager_secret_id cannot be used together with manage_master_user_password = true."
+    }
+  }
+}
+
+# ============================================================================
 # RDS Cluster Parameter Group (Custom)
 # ============================================================================
 resource "aws_rds_cluster_parameter_group" "custom" {
@@ -107,7 +126,7 @@ resource "aws_rds_cluster" "main" {
   # Database Configuration
   database_name                 = var.database_name
   master_username               = var.master_username
-  master_password               = var.master_password
+  master_password               = local.master_password
   manage_master_user_password   = var.manage_master_user_password
   master_user_secret_kms_key_id = local.kms_key_arn_for_master_secret
 

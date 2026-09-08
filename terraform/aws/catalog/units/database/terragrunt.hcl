@@ -4,7 +4,7 @@ include "root" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/database?ref=database-v0.1.6"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/database?ref=database-v0.1.7"
 }
 
 # Disabled when the stack provides its own VPC via values (BYO-VPC / standalone)
@@ -41,11 +41,21 @@ inputs = {
   vpc_id     = try(values.vpc_id, null) != null ? values.vpc_id : dependency.vpc.outputs.vpc_id
   subnet_ids = try(values.database_subnet_ids, null) != null ? values.database_subnet_ids : dependency.vpc.outputs.database_subnet_ids
 
-  cluster_identifier       = try(values.cluster_identifier, null)
-  engine                   = "aurora-postgresql"
-  engine_version           = try(values.engine_version, "17.9")
-  engine_mode              = "provisioned"
-  engine_lifecycle_support = "open-source-rds-extended-support"
+  cluster_identifier = try(values.cluster_identifier, null)
+
+  # Master credentials - either provide master_password directly, let RDS manage it
+  # (manage_master_user_password = true), or fetch it from an existing AWS Secrets
+  # Manager secret via master_password_secretsmanager_secret_id (optionally with
+  # master_password_secretsmanager_secret_key when the secret is a JSON object)
+  master_username                           = try(values.master_username, null)
+  master_password                           = try(values.master_password, null)
+  manage_master_user_password               = try(values.manage_master_user_password, null)
+  master_password_secretsmanager_secret_id  = try(values.master_password_secretsmanager_secret_id, null)
+  master_password_secretsmanager_secret_key = try(values.master_password_secretsmanager_secret_key, null)
+  engine                                    = "aurora-postgresql"
+  engine_version                            = try(values.engine_version, "17.9")
+  engine_mode                               = "provisioned"
+  engine_lifecycle_support                  = "open-source-rds-extended-support"
   # allow_major_version_upgrade = true
   apply_immediately = true
 

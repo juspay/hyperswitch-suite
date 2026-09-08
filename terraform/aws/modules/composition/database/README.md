@@ -31,6 +31,7 @@
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
 | [aws_iam_policy_document.rds_kms_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 | [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
+| [aws_secretsmanager_secret_version.master_password](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/secretsmanager_secret_version) | data source |
 
 ## Inputs
 
@@ -86,6 +87,8 @@
 | <a name="input_kms_key_id"></a> [kms\_key\_id](#input\_kms\_key\_id) | (Optional) ARN for the KMS encryption key | `string` | `null` | no |
 | <a name="input_manage_master_user_password"></a> [manage\_master\_user\_password](#input\_manage\_master\_user\_password) | (Optional) Set to true to allow RDS to manage the master user password in Secrets Manager. Cannot be set if master\_password is provided | `bool` | `null` | no |
 | <a name="input_master_password"></a> [master\_password](#input\_master\_password) | (Optional, required unless manage\_master\_user\_password is true or snapshot\_identifier is provided) Password for the master DB user | `string` | `null` | no |
+| <a name="input_master_password_secretsmanager_secret_id"></a> [master\_password\_secretsmanager\_secret\_id](#input\_master\_password\_secretsmanager\_secret\_id) | (Optional) ARN or name of an existing AWS Secrets Manager secret to fetch the master DB password from. Takes precedence over master\_password. Cannot be used together with manage\_master\_user\_password = true | `string` | `null` | no |
+| <a name="input_master_password_secretsmanager_secret_key"></a> [master\_password\_secretsmanager\_secret\_key](#input\_master\_password\_secretsmanager\_secret\_key) | (Optional) JSON key within the Secrets Manager secret that holds the master password (e.g. "password"). If null, the raw secret string is used as the password | `string` | `null` | no |
 | <a name="input_master_user_secret_kms_key_id"></a> [master\_user\_secret\_kms\_key\_id](#input\_master\_user\_secret\_kms\_key\_id) | (Optional) KMS key identifier for encrypting the master user password in Secrets Manager | `string` | `null` | no |
 | <a name="input_master_username"></a> [master\_username](#input\_master\_username) | (Required unless a snapshot\_identifier or replication\_source\_identifier is provided) Username for the master DB user | `string` | `null` | no |
 | <a name="input_monitoring_interval"></a> [monitoring\_interval](#input\_monitoring\_interval) | (Optional) Interval, in seconds, between points when Enhanced Monitoring metrics are collected. Valid Values: 0, 1, 5, 10, 15, 30, 60 | `number` | `0` | no |
