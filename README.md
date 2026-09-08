@@ -11,6 +11,8 @@ The single API to access payment ecosystems across 130+ countries</div>
 <p align="center">
   <a href="#supported-features">Supported Features</a> •
   <a href="#whats-included">What's Included</a> •
+  <a href="#deploying-hyperswitch">Deploying Hyperswitch</a> •
+  <a href="#suite-compatibility">Suite Compatibility</a> •
   <a href="#join-us-in-building-hyperswitch">Join us in building HyperSwitch</a> •
   <a href="#community">Community</a> •
   <a href="#versioning">Versioning</a> •
@@ -23,8 +25,10 @@ The single API to access payment ecosystems across 130+ countries</div>
 <img src="./img/switch.png" alt="Hyperswitch as a switch integrating multiple payment processors" width="80%">
 </p>
 
-Hyperswitch is a community-led, open payments switch to enable access to the
-best payments infrastructure for every digital business.
+**Hyperswitch Suite** is the master repository for the Hyperswitch payments stack. It defines the open-source product bundle — the app server, web client, control center, card vault and WooCommerce plugin — along with the compatible versions of each component. It also hosts the Terraform and Terragrunt modules used to deploy the stack on AWS and GCP.
+
+- For the **payment-engine source code**, see [`juspay/hyperswitch`](https://github.com/juspay/hyperswitch).
+- For **deployment modules and live environments**, see the [`terraform/`](terraform/) tree and the [Deploying Hyperswitch](#deploying-hyperswitch) section below.
 
 Using Hyperswitch, you can:
 
@@ -43,14 +47,16 @@ Using Hyperswitch, you can:
 
 ### Supported Payment Processors and Methods
 
-As of March 2024, we support 50+ payment processors and multiple global payment
-methods.
-In addition, we are continuously integrating new processors based on their reach
-and community requests.
-You can find the latest list of payment processors, supported methods, and
-features [here][supported-connectors-and-features].
+Hyperswitch integrates with **100+ payment processors** out of the box —
+including Stripe, Adyen, Braintree, Worldpay, Checkout.com, Cybersource and
+many others — exposing smart routing and retry logic across multiple global
+payment methods. We continuously add new processors based on their reach and
+community requests.
 
-[supported-connectors-and-features]: https://hyperswitch.io/pm-list
+You can browse the full list of supported processors, payment methods and
+capabilities [here][supported-connectors-and-features].
+
+[supported-connectors-and-features]: https://docs.hyperswitch.io/integrations/connectors-integrations/payment-processor-capabilities/available-connectors
 
 ### Hosted Version
 
@@ -112,6 +118,26 @@ components, each housed in separate repositories and open-sourced.
 [hyperswitch-control-center]: https://github.com/juspay/hyperswitch-control-center
 [hyperswitch-card-vault]: https://github.com/juspay/hyperswitch-card-vault
 [hyperswitch-woocommerce-plugin]: https://github.com/juspay/hyperswitch-woocommerce-plugin
+
+## Deploying Hyperswitch
+
+This repository contains the Infrastructure-as-Code (Terraform / Terragrunt) used to deploy Hyperswitch on AWS and GCP.
+
+| Cloud | Live layer | Catalog/Units | Modules |
+|---|---|---|---|
+| **AWS** | `terraform/aws/live/` (Terragrunt Stacks) | `terraform/aws/catalog/units/` + `stacks/dev` | Base, composition, application-resources, CloudFront resources |
+| **GCP** | `terraform/gcp/live/sandbox/asia-south1/` | `terraform/gcp/catalog/units/` + `stacks/dev`| Composition, application-resources, packer |
+
+Key deployment docs:
+
+- [`terraform/aws/ARCHITECTURE.md`](terraform/aws/ARCHITECTURE.md) — AWS module architecture and dependency graph
+- [`terraform/aws/README.md`](terraform/aws/README.md) — AWS step-by-step deployment guide
+- [`terraform/gcp/catalog/README.md`](terraform/gcp/catalog/README.md) — GCP catalog unit skeleton, tag naming and CI
+- [`terraform/aws/live/README.md`](terraform/aws/live/README.md) — how the AWS live layer is organised
+
+## Suite Compatibility
+
+The [CHANGELOG.md](./CHANGELOG.md) lists each **Hyperswitch Suite** release and the upstream component releases it is validated against: the Hyperswitch app server, control center, web client, card vault, encryption service and WooCommerce plugin. The suite release tag (e.g. `v1.21`) is the compatibility anchor; the individual application images and Helm values are managed in the GitOps layer (ArgoCD/Helm) outside this repository.
 
 ## Join us in building Hyperswitch
 
@@ -199,7 +225,8 @@ Get updates on Hyperswitch development and chat with the community:
 
 ## Versioning
 
-Check the [CHANGELOG.md](./CHANGELOG.md) file for details.
+Check the [CHANGELOG.md](./CHANGELOG.md) file for suite releases and the
+compatible upstream component versions.
 
 ## Copyright and License
 

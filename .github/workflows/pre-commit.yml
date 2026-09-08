@@ -1,0 +1,70 @@
+name: Pre-commit
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pre-commit:
+    name: Run Pre-commit Hooks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.5"
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v4
+        with:
+          tflint_version: latest
+
+      - name: Run pre-commit
+        uses: pre-commit/action@v3.0.1
+        id: pre-commit
+
+  pre-commit-summary:
+    name: Pre-commit Summary
+    runs-on: ubuntu-latest
+    needs: [pre-commit]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## Pre-commit Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          PRECOMMIT_RESULT="${{ needs.pre-commit.result }}"
+
+          if [ "$PRECOMMIT_RESULT" == "success" ]; then
+            echo "All pre-commit hooks **PASSED**." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Pre-commit hooks **FAILED**. See job logs for details." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Run locally to fix: \`pre-commit run --all-files\`" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Check required results
+        run: |
+          PRECOMMIT_RESULT="${{ needs.pre-commit.result }}"
+
+          if [ "$PRECOMMIT_RESULT" != "success" ]; then
+            echo "::error::Pre-commit hooks failed"
+            exit 1
+          fi
+
+          echo "All pre-commit hooks passed!"

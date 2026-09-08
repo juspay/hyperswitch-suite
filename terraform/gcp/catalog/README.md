@@ -1,28 +1,24 @@
-# GCP Terragrunt Catalog — units
+# GCP Terragrunt Catalog
 
-Reusable Terragrunt **units** for deploying Hyperswitch on GCP. Each unit is a
-parameterized `terragrunt.hcl` wrapping exactly one module from
-`terraform/gcp/modules` at a pinned release tag.
+Reusable Terragrunt **units** and a single **`stacks/dev`** for deploying
+Hyperswitch on GCP. Each unit is a parameterized `terragrunt.hcl` wrapping
+exactly one module from `terraform/gcp/modules` at a pinned release tag. The
+stack composes those units into a full single-region deployment.
 
 ```
-terraform/gcp/catalog/units/
-├── vpc-network/          ├── envoy-proxy/        ├── artifact-registry/
-├── alloydb/              ├── squid-proxy/        ├── bastion-host/
-├── memorystore-valkey/   ├── locker/             ├── firewall-rules/
-└── application-stack/
-    ├── gke/
-    └── apps/{argocd, external-secrets-operator, gateway-controller, grafana,
-               hyperswitch, istio, loki, superposition, vector}
+terraform/gcp/catalog/
+├── units/        # one directory per unit — a parameterized terragrunt.hcl
+│                 # wrapping a composition/application-resources module by tag
+└── stacks/dev/   # sandbox / dev / pre-prod / prod — creates its own VPC,
+                  # full unit set
 ```
 
-19 units. This mirrors the AWS catalog proposed in
+18 units. This mirrors the AWS catalog in
 [PR #302](https://github.com/juspay/hyperswitch-suite/pull/302) — same unit
 skeleton, same tag-pinning discipline.
 
-> **This PR ships units only.** The stack that composes them
-> (`catalog/stacks/internal`, including the `root.hcl` every unit includes) and
-> the generated live layer follow in a separate PR, once these units are
-> tagged.
+The stack is rendered by `terraform/gcp/live/terragrunt.stack.hcl` into
+`terraform/gcp/live/<env>/<region>/`.
 
 ## Unit skeleton
 
@@ -90,7 +86,7 @@ application-stack/apps/<name>    -> ../../gke, ../../../vpc-network
 
 ## Scope
 
-A unit exists here only if its module is published on `main`. All 19 pins
+A unit exists here only if its module is published on `main`. All 18 pins
 resolve to existing tags — `scripts/ci/check-gcp-pins.sh` enforces it.
 
 | Excluded | Why |
@@ -117,7 +113,7 @@ resolve to existing tags — `scripts/ci/check-gcp-pins.sh` enforces it.
 | `application-stack/gke` | `composition/gke` | `gcp-gke-v0.1.0` |
 | `…/apps/argocd` | `application-resources/argocd` | `gcp-apps-argocd-v0.1.0` |
 | `…/apps/external-secrets-operator` | `application-resources/external-secrets-operator` | `gcp-apps-eso-v0.1.0` |
-| `…/apps/gateway-controller` | `application-resources/gateway-controller` | `gcp-apps-gcp-v0.1.0` |
+| `…/apps/gateway-controller` | `application-resources/gateway-controller` | `gcp-apps-gateway-controller-v0.1.0` |
 | `…/apps/grafana` | `application-resources/grafana` | `gcp-apps-grafana-v0.1.0` |
 | `…/apps/hyperswitch` | `application-resources/hyperswitch` | `gcp-apps-hyperswitch-v0.1.0` |
 | `…/apps/istio` | `application-resources/istio` | `gcp-apps-istio-v0.1.0` |
@@ -125,28 +121,58 @@ resolve to existing tags — `scripts/ci/check-gcp-pins.sh` enforces it.
 | `…/apps/superposition` | `application-resources/superposition` | `gcp-apps-superposition-v0.1.0` |
 | `…/apps/vector` | `application-resources/vector` | `gcp-apps-vector-v0.1.0` |
 
-### Two tag names to clean up
+### One tag name to clean up
 
-Both are published and pinned as-is so the catalog works today, but neither
-follows the `gcp-apps-<module>-vX.Y.Z` grammar the other eight use:
-
-- `gcp-apps-eso-v0.1.0` abbreviates `external-secrets-operator`.
-- **`gcp-apps-gcp-v0.1.0` is the gateway-controller module** — that reads like
-  a mis-typed tag name. Re-tag as `gcp-apps-gateway-controller-vX.Y.Z` and
-  repoint the unit.
+`gcp-apps-eso-v0.1.0` abbreviates `external-secrets-operator`. It is published
+and pinned as-is so the catalog works today, but does not follow the
+`gcp-apps-<module>-vX.Y.Z` grammar the other app modules use.
 
 ## Versioning
 
-Module tags:
+### Module tags
 
 - composition module `<name>` → `gcp-<name>-vX.Y.Z`
 - application-resources module `<name>` → `gcp-apps-<name>-vX.Y.Z`
 
-Unit tags follow the AWS grammar,
-`unit/<name>-v<module-version>-v<unit-revision>` — the wrapped module's tag is
-pinned inside the unit, and the trailing revision bumps whenever the unit file
-changes. Tagging these units is the step between this PR and the stack PR that
-consumes them by ref.
+Create or move a module tag from the current commit:
+
+```bash
+git tag -a gcp-<name>-vX.Y.Z -m "gcp-<name>-vX.Y.Z"
+git push origin gcp-<name>-vX.Y.Z
+```
+
+### Unit tags
+
+Unit tags follow the AWS grammar, prefixed by cloud:
+`unit/gcp/<name>-v<module-version>-v<unit-revision>`. `<name>` is the leaf
+unit name (e.g. `vpc-network`, `gateway-controller`), and `<module-version>`
+is just the version suffix from the pinned module tag (e.g. `v0.1.0`). The
+wrapped module tag is pinned inside the unit, and the trailing revision bumps
+whenever the unit file changes. The `gcp/` prefix avoids collisions with AWS
+units, which use `unit/aws/...`.
+
+For a unit at `terraform/gcp/catalog/units/<unit-path>/terragrunt.hcl` that
+pins module tag `gcp-<name>-vX.Y.Z`, create the unit tag with:
+
+```bash
+git tag -a unit/gcp/<leaf-name>-vX.Y.Z-v<rev> -m "unit/gcp/<leaf-name>-vX.Y.Z-v<rev>"
+git push origin unit/gcp/<leaf-name>-vX.Y.Z-v<rev>
+```
+
+Examples:
+
+```bash
+# vpc-network unit, first revision against module tag gcp-vpc-network-v0.1.0
+git tag -a unit/gcp/vpc-network-v0.1.0-v1 -m "unit/gcp/vpc-network-v0.1.0-v1"
+git push origin unit/gcp/vpc-network-v0.1.0-v1
+
+# hyperswitch app unit, second revision against module tag gcp-apps-hyperswitch-v0.1.0
+git tag -a unit/gcp/hyperswitch-v0.1.0-v2 -m "unit/gcp/hyperswitch-v0.1.0-v2"
+git push origin unit/gcp/hyperswitch-v0.1.0-v2
+```
+
+After tagging, update the unit's `terraform { source = "...?ref=<unit-tag>" }`
+pin so the stack consumes the immutable unit release.
 
 ## CI
 

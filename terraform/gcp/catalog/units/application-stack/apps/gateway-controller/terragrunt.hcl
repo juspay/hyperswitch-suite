@@ -8,10 +8,7 @@ include "root" {
 }
 
 terraform {
-  # NOTE: `gcp-apps-gcp` is the published tag for the gateway-controller
-  # module — it looks like a mis-typed tag name. Re-tag as
-  # gcp-apps-gateway-controller-vX.Y.Z and repoint this when convenient.
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/application-resources/gateway-controller?ref=gcp-apps-gcp-v0.1.0"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/application-resources/gateway-controller?ref=gcp-apps-gateway-controller-v0.1.0"
 }
 
 inputs = {
