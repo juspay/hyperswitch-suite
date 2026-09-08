@@ -1,16 +1,19 @@
 # =============================================================================
 # GCP live layer
 # =============================================================================
-# Generates the GCP dev environment from terraform/gcp/catalog/stacks/dev.
-# This `stack` block renders into terraform/gcp/live/dev/asia-south1/ via
+# Generates the GCP dev environment from terraform/gcp/catalog/stacks/dev,
+# pinned to the stack/gcp/catalog-v0.1.0 tag. This `stack` block renders into
+# terraform/gcp/live/dev/asia-south1/ via
 # `terragrunt stack generate` — that generated tree is committed (run it again
 # and `git diff` after editing any value here).
 #
 # This is the ONLY file in terraform/gcp/live/ that is edited by hand.
 #
-# `source` is a plain relative path here, but the unit sources inside the stack
-# use get_repo_root() — a relative unit source loses its resolution context
-# once the stack is copied into the generated tree.
+# `source` uses a git ref pinned to the stack tag, matching the unit tags the
+# stack itself consumes — the tag is the immutable release boundary, and a
+# relative path would lose resolution context once the stack is copied into
+# the generated tree. Bump the ref to roll every unit in the stack forward at
+# once.
 #
 # Values marked REPLACE_ME cannot be committed to this repo
 # (scripts/ci/check-sensitive.sh gates exactly that class of value) and must be
@@ -20,7 +23,7 @@
 # =============================================================================
 
 stack "dev" {
-  source = "../catalog/stacks/dev"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/stacks/dev?ref=stack/gcp/catalog-v0.1.0"
   path   = "dev/asia-south1"
 
   no_dot_terragrunt_stack = true
