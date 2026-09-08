@@ -123,30 +123,30 @@ unit "efs" {
   )
 }
 
-unit "kafka" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/kafka?ref=unit/aws/kafka-v0.1.3-v1"
-  path   = "kafka"
-
-  no_dot_terragrunt_stack = true
-
-  values = merge(
-    {
-      broker_ami_id     = try(values.kafka_broker_ami_id, null)
-      controller_ami_id = try(values.kafka_controller_ami_id, null)
-    },
-    try(values.kafka_broker_count, null) != null ? { broker_count = values.kafka_broker_count } : {},
-    try(values.kafka_broker_instance_type, null) != null ? { broker_instance_type = values.kafka_broker_instance_type } : {},
-    try(values.kafka_broker_data_volume_size, null) != null ? { broker_data_volume_size = values.kafka_broker_data_volume_size } : {},
-    try(values.kafka_broker_data_volume_type, null) != null ? { broker_data_volume_type = values.kafka_broker_data_volume_type } : {},
-    try(values.kafka_broker_root_volume_size, null) != null ? { broker_root_volume_size = values.kafka_broker_root_volume_size } : {},
-    try(values.kafka_broker_root_volume_type, null) != null ? { broker_root_volume_type = values.kafka_broker_root_volume_type } : {},
-    try(values.kafka_controller_instance_type, null) != null ? { controller_instance_type = values.kafka_controller_instance_type } : {},
-    try(values.kafka_controller_metadata_volume_size, null) != null ? { controller_metadata_volume_size = values.kafka_controller_metadata_volume_size } : {},
-    try(values.kafka_controller_metadata_volume_type, null) != null ? { controller_metadata_volume_type = values.kafka_controller_metadata_volume_type } : {},
-    try(values.kafka_controller_root_volume_size, null) != null ? { controller_root_volume_size = values.kafka_controller_root_volume_size } : {},
-    try(values.kafka_controller_root_volume_type, null) != null ? { controller_root_volume_type = values.kafka_controller_root_volume_type } : {},
-  )
-}
+# unit "kafka" {
+#   source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/kafka?ref=unit/aws/kafka-v0.1.3-v1"
+#   path   = "kafka"
+#
+#   no_dot_terragrunt_stack = true
+#
+#   values = merge(
+#     {
+#       broker_ami_id     = try(values.kafka_broker_ami_id, null)
+#       controller_ami_id = try(values.kafka_controller_ami_id, null)
+#     },
+#     try(values.kafka_broker_count, null) != null ? { broker_count = values.kafka_broker_count } : {},
+#     try(values.kafka_broker_instance_type, null) != null ? { broker_instance_type = values.kafka_broker_instance_type } : {},
+#     try(values.kafka_broker_data_volume_size, null) != null ? { broker_data_volume_size = values.kafka_broker_data_volume_size } : {},
+#     try(values.kafka_broker_data_volume_type, null) != null ? { broker_data_volume_type = values.kafka_broker_data_volume_type } : {},
+#     try(values.kafka_broker_root_volume_size, null) != null ? { broker_root_volume_size = values.kafka_broker_root_volume_size } : {},
+#     try(values.kafka_broker_root_volume_type, null) != null ? { broker_root_volume_type = values.kafka_broker_root_volume_type } : {},
+#     try(values.kafka_controller_instance_type, null) != null ? { controller_instance_type = values.kafka_controller_instance_type } : {},
+#     try(values.kafka_controller_metadata_volume_size, null) != null ? { controller_metadata_volume_size = values.kafka_controller_metadata_volume_size } : {},
+#     try(values.kafka_controller_metadata_volume_type, null) != null ? { controller_metadata_volume_type = values.kafka_controller_metadata_volume_type } : {},
+#     try(values.kafka_controller_root_volume_size, null) != null ? { controller_root_volume_size = values.kafka_controller_root_volume_size } : {},
+#     try(values.kafka_controller_root_volume_type, null) != null ? { controller_root_volume_type = values.kafka_controller_root_volume_type } : {},
+#   )
+# }
 
 unit "locker" {
   source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/locker?ref=unit/aws/locker-v0.2.9-v1"
