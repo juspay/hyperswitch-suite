@@ -8,6 +8,9 @@ on:
       - 'terraform/aws/catalog/**'
       - '.github/workflows/self-host-bundle.yml'
 
+permissions:
+  contents: read
+
 jobs:
   render-and-validate:
     name: Render fixture + validate bundle

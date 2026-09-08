@@ -7,6 +7,9 @@ on:
       - 'terraform/aws/live/**'
       - '.github/workflows/terragrunt-validate.yml'
 
+permissions:
+  contents: read
+
 jobs:
   hcl-checks:
     name: hclfmt + hclvalidate (catalog + live)
