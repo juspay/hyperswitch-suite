@@ -130,20 +130,22 @@ inputs = {
         managed_by = "hyperswitch"
       }
     }
-    # failover = {
-    #   identifier                   = "failover-replica-1"
-    #   instance_class               = "db.r5.xlarge"
-    #   promotion_tier               = 1
-    #   availability_zone            = "${include.root.locals.region}b"
-    #   db_parameter_group_name      = "default.aurora-postgresql17"
-    #   performance_insights_enabled = true
-    #   performance_insights_retention_period = 7
-    #   auto_minor_version_upgrade = true
-    #   publicly_accessible        = false
-    #   copy_tags_to_snapshot      = false
-    #   monitoring_interval        = 0
-    #   tags                       = {}
-    # }
+    failover = {
+      identifier                            = null
+      instance_class                        = try(values.db_instance_class, "db.r5.large")
+      promotion_tier                        = 1
+      availability_zone                     = "${include.root.locals.region}b"
+      db_parameter_group_name               = "default.aurora-postgresql17"
+      performance_insights_enabled          = true
+      performance_insights_retention_period = try(values.performance_insights_retention_period, 7)
+      auto_minor_version_upgrade            = true
+      publicly_accessible                   = false
+      copy_tags_to_snapshot                 = false
+      monitoring_interval                   = 0
+      tags = {
+        managed_by = "hyperswitch"
+      }
+    }
   }
 
   tags = {
