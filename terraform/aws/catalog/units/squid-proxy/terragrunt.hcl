@@ -39,7 +39,7 @@ inputs = {
   ami_id        = values.ami_id
   instance_type = try(values.instance_type, "t3.medium")
 
-  generate_ssh_key = true
+  generate_ssh_key = try(values.generate_ssh_key, true)
 
   # Wazuh enrollment and sudo users are environment-specific; supplied via stack values.
   custom_userdata = replace(replace(replace(replace(replace(replace(
@@ -80,11 +80,11 @@ inputs = {
 
   enable_instance_refresh = true
   instance_refresh_preferences = {
-    min_healthy_percentage       = 50
-    instance_warmup              = 60
-    max_healthy_percentage       = 150
+    min_healthy_percentage       = try(values.instance_refresh_min_healthy_percentage, 50)
+    instance_warmup              = try(values.instance_refresh_warmup, 60)
+    max_healthy_percentage       = try(values.instance_refresh_max_healthy_percentage, 150)
     checkpoint_percentages       = []
-    checkpoint_delay             = 300
+    checkpoint_delay             = try(values.instance_refresh_checkpoint_delay, 300)
     scale_in_protected_instances = "Ignore"
     standby_instances            = "Ignore"
   }
@@ -94,11 +94,11 @@ inputs = {
   scaling_policies = {
     cpu_target_tracking = {
       enabled      = true
-      target_value = 70.0
+      target_value = try(values.cpu_scaling_target_value, 70.0)
     }
     memory_target_tracking = {
       enabled      = false
-      target_value = 70.0
+      target_value = try(values.memory_scaling_target_value, 70.0)
     }
   }
 

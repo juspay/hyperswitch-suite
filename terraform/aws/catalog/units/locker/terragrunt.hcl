@@ -113,7 +113,7 @@ inputs = {
     # master_password                  = "<redacted>"
     availability_zones              = ["${include.root.locals.region}a", "${include.root.locals.region}b"]
     allocated_storage               = null
-    storage_type                    = "aurora-iopt1"
+    storage_type                    = try(values.storage_type, "aurora-iopt1")
     network_type                    = "IPV4"
     port                            = 5432
     create_db_subnet_group          = true
@@ -130,8 +130,8 @@ inputs = {
       }
     ]
     backup_retention_period               = try(values.backup_retention_period, 7)
-    preferred_backup_window               = "02:03-02:33"
-    preferred_maintenance_window          = "tue:00:25-tue:00:55"
+    preferred_backup_window               = try(values.backup_window, "02:03-02:33")
+    preferred_maintenance_window          = try(values.maintenance_window, "tue:00:25-tue:00:55")
     skip_final_snapshot                   = true
     copy_tags_to_snapshot                 = true
     storage_encrypted                     = true
@@ -165,7 +165,7 @@ inputs = {
     }
   }
 
-  log_retention_days = 30
+  log_retention_days = try(values.log_retention_days, 30)
 
   tags = {
     Environment = include.root.locals.environment.full

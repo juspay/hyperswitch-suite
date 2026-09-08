@@ -28,15 +28,15 @@ inputs = {
     superposition-backup = {
       name             = "superposition-backup-efs"
       creation_token   = "superposition-backup-${include.root.locals.environment.full}"
-      performance_mode = "generalPurpose"
-      throughput_mode  = "elastic"
+      performance_mode = try(values.performance_mode, "generalPurpose")
+      throughput_mode  = try(values.throughput_mode, "elastic")
       encrypted        = true
       kms_key_id       = null
 
       # Single object in v2.x (breaking change from list in v1.x)
       lifecycle_policy = {
-        transition_to_ia                    = "AFTER_30_DAYS"
-        transition_to_primary_storage_class = "AFTER_1_ACCESS"
+        transition_to_ia                    = try(values.lifecycle_transition_to_ia, "AFTER_30_DAYS")
+        transition_to_primary_storage_class = try(values.lifecycle_transition_to_primary_storage_class, "AFTER_1_ACCESS")
       }
 
       replication_overwrite_protection = "ENABLED"

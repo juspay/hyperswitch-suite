@@ -35,7 +35,10 @@ inputs = {
   # OIDC and Service Account Configuration
   cluster_service_accounts = {
     "${dependency.eks.outputs.cluster_name}" = [
-      { namespace = "external-secrets-operator", name = "external-secrets-sa" }
+      {
+        namespace = try(values.kubernetes_namespace, "external-secrets-operator")
+        name      = try(values.service_account_name, "external-secrets-sa")
+      }
     ]
   }
 

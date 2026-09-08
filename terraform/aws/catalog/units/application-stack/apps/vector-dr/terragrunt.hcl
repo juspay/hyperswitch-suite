@@ -25,8 +25,8 @@ inputs = {
   cluster_service_accounts = {
     "${dependency.eks.outputs.cluster_name}" = [
       {
-        namespace = "vector"
-        name      = "vector-dr"
+        namespace = try(values.kubernetes_namespace, "vector")
+        name      = try(values.service_account_name, "vector-dr")
       }
     ]
   }
@@ -34,16 +34,16 @@ inputs = {
   s3 = {
     create             = true
     bucket_name        = "telemetry-backfill"
-    force_destroy      = true
-    versioning_enabled = false
+    force_destroy      = try(values.s3_force_destroy, true)
+    versioning_enabled = try(values.s3_versioning_enabled, false)
     lifecycle_rules    = []
   }
 
   sqs = {
     create             = true
-    message_retention  = 1209600
-    receive_wait_time  = 20
-    visibility_timeout = 300
+    message_retention  = try(values.sqs_message_retention, 1209600)
+    receive_wait_time  = try(values.sqs_receive_wait_time, 20)
+    visibility_timeout = try(values.sqs_visibility_timeout, 300)
   }
 
   tags = {

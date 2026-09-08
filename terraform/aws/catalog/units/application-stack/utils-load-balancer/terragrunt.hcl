@@ -31,7 +31,7 @@ inputs = {
   vpc_id       = dependency.vpc.outputs.vpc_id
   subnets      = dependency.vpc.outputs.external_incoming_subnet_ids
 
-  create_alb = false
+  create_alb = try(values.create_alb, false)
 
   ingress_rules = {}
 

@@ -39,6 +39,7 @@ unit "vpc-network" {
   values = merge(
     { vpc_cidr_prefix = values.vpc_cidr_prefix },
     try(values.single_nat_gateway, null) != null ? { single_nat_gateway = values.single_nat_gateway } : {},
+    try(values.custom_interface_vpc_endpoints, null) != null ? { custom_interface_vpc_endpoints = values.custom_interface_vpc_endpoints } : {},
   )
 }
 
@@ -76,11 +77,15 @@ unit "database" {
   no_dot_terragrunt_stack = true
 
   values = merge(
-    {
-      db_instance_class = try(values.db_instance_class, null)
-      engine_version    = try(values.db_engine_version, null)
-    },
+    # merge() arg order matters: database_engine_version (below) overrides the legacy shared db_engine_version.
+    try(values.db_instance_class, null) != null ? { db_instance_class = values.db_instance_class } : {},
+    try(values.db_engine_version, null) != null ? { engine_version = values.db_engine_version } : {},
+    try(values.database_engine_version, null) != null ? { engine_version = values.database_engine_version } : {},
     try(values.db_backup_retention_period, null) != null ? { backup_retention_period = values.db_backup_retention_period } : {},
+    try(values.database_storage_type, null) != null ? { storage_type = values.database_storage_type } : {},
+    try(values.database_backup_window, null) != null ? { backup_window = values.database_backup_window } : {},
+    try(values.database_maintenance_window, null) != null ? { maintenance_window = values.database_maintenance_window } : {},
+    try(values.database_performance_insights_retention_period, null) != null ? { performance_insights_retention_period = values.database_performance_insights_retention_period } : {},
   )
 }
 
@@ -97,6 +102,10 @@ unit "elasticache" {
     try(values.cache_num_node_groups, null) != null ? { cache_num_node_groups = values.cache_num_node_groups } : {},
     try(values.cache_replicas_per_node_group, null) != null ? { cache_replicas_per_node_group = values.cache_replicas_per_node_group } : {},
     try(values.cache_node_group_configuration, null) != null ? { cache_node_group_configuration = values.cache_node_group_configuration } : {},
+    try(values.elasticache_engine_version, null) != null ? { engine_version = values.elasticache_engine_version } : {},
+    try(values.elasticache_snapshot_retention_limit, null) != null ? { snapshot_retention_limit = values.elasticache_snapshot_retention_limit } : {},
+    try(values.elasticache_snapshot_window, null) != null ? { snapshot_window = values.elasticache_snapshot_window } : {},
+    try(values.elasticache_maintenance_window, null) != null ? { maintenance_window = values.elasticache_maintenance_window } : {},
   )
 }
 
@@ -106,7 +115,12 @@ unit "efs" {
 
   no_dot_terragrunt_stack = true
 
-  values = {}
+  values = merge(
+    try(values.efs_performance_mode, null) != null ? { performance_mode = values.efs_performance_mode } : {},
+    try(values.efs_throughput_mode, null) != null ? { throughput_mode = values.efs_throughput_mode } : {},
+    try(values.efs_lifecycle_transition_to_ia, null) != null ? { lifecycle_transition_to_ia = values.efs_lifecycle_transition_to_ia } : {},
+    try(values.efs_lifecycle_transition_to_primary_storage_class, null) != null ? { lifecycle_transition_to_primary_storage_class = values.efs_lifecycle_transition_to_primary_storage_class } : {},
+  )
 }
 
 unit "kafka" {
@@ -115,10 +129,23 @@ unit "kafka" {
 
   no_dot_terragrunt_stack = true
 
-  values = {
-    broker_ami_id     = try(values.kafka_broker_ami_id, null)
-    controller_ami_id = try(values.kafka_controller_ami_id, null)
-  }
+  values = merge(
+    {
+      broker_ami_id     = try(values.kafka_broker_ami_id, null)
+      controller_ami_id = try(values.kafka_controller_ami_id, null)
+    },
+    try(values.kafka_broker_count, null) != null ? { broker_count = values.kafka_broker_count } : {},
+    try(values.kafka_broker_instance_type, null) != null ? { broker_instance_type = values.kafka_broker_instance_type } : {},
+    try(values.kafka_broker_data_volume_size, null) != null ? { broker_data_volume_size = values.kafka_broker_data_volume_size } : {},
+    try(values.kafka_broker_data_volume_type, null) != null ? { broker_data_volume_type = values.kafka_broker_data_volume_type } : {},
+    try(values.kafka_broker_root_volume_size, null) != null ? { broker_root_volume_size = values.kafka_broker_root_volume_size } : {},
+    try(values.kafka_broker_root_volume_type, null) != null ? { broker_root_volume_type = values.kafka_broker_root_volume_type } : {},
+    try(values.kafka_controller_instance_type, null) != null ? { controller_instance_type = values.kafka_controller_instance_type } : {},
+    try(values.kafka_controller_metadata_volume_size, null) != null ? { controller_metadata_volume_size = values.kafka_controller_metadata_volume_size } : {},
+    try(values.kafka_controller_metadata_volume_type, null) != null ? { controller_metadata_volume_type = values.kafka_controller_metadata_volume_type } : {},
+    try(values.kafka_controller_root_volume_size, null) != null ? { controller_root_volume_size = values.kafka_controller_root_volume_size } : {},
+    try(values.kafka_controller_root_volume_type, null) != null ? { controller_root_volume_type = values.kafka_controller_root_volume_type } : {},
+  )
 }
 
 unit "locker" {
@@ -133,6 +160,10 @@ unit "locker" {
     try(values.locker_instance_type, null) != null ? { instance_type = values.locker_instance_type } : {},
     try(values.locker_backup_retention_period, null) != null ? { backup_retention_period = values.locker_backup_retention_period } : {},
     try(values.locker_db_instance_class, null) != null ? { db_instance_class = values.locker_db_instance_class } : {},
+    try(values.locker_storage_type, null) != null ? { storage_type = values.locker_storage_type } : {},
+    try(values.locker_log_retention_days, null) != null ? { log_retention_days = values.locker_log_retention_days } : {},
+    try(values.locker_backup_window, null) != null ? { backup_window = values.locker_backup_window } : {},
+    try(values.locker_maintenance_window, null) != null ? { maintenance_window = values.locker_maintenance_window } : {},
     try(values.wazuh_manager_addr, null) != null ? { wazuh_manager_addr = values.wazuh_manager_addr } : {},
     try(values.wazuh_worker_addr, null) != null ? { wazuh_worker_addr = values.wazuh_worker_addr } : {},
     try(values.wazuh_group, null) != null ? { wazuh_group = values.wazuh_group } : {},
@@ -157,6 +188,15 @@ unit "squid-proxy" {
     try(values.squid_max_size, null) != null ? { max_size = values.squid_max_size } : {},
     try(values.squid_desired_capacity, null) != null ? { desired_capacity = values.squid_desired_capacity } : {},
     try(values.squid_root_volume_size, null) != null ? { root_volume_size = values.squid_root_volume_size } : {},
+    try(values.squid_root_volume_type, null) != null ? { root_volume_type = values.squid_root_volume_type } : {},
+    try(values.squid_port, null) != null ? { squid_port = values.squid_port } : {},
+    try(values.squid_generate_ssh_key, null) != null ? { generate_ssh_key = values.squid_generate_ssh_key } : {},
+    try(values.squid_cpu_scaling_target_value, null) != null ? { cpu_scaling_target_value = values.squid_cpu_scaling_target_value } : {},
+    try(values.squid_memory_scaling_target_value, null) != null ? { memory_scaling_target_value = values.squid_memory_scaling_target_value } : {},
+    try(values.squid_instance_refresh_min_healthy_percentage, null) != null ? { instance_refresh_min_healthy_percentage = values.squid_instance_refresh_min_healthy_percentage } : {},
+    try(values.squid_instance_refresh_max_healthy_percentage, null) != null ? { instance_refresh_max_healthy_percentage = values.squid_instance_refresh_max_healthy_percentage } : {},
+    try(values.squid_instance_refresh_warmup, null) != null ? { instance_refresh_warmup = values.squid_instance_refresh_warmup } : {},
+    try(values.squid_instance_refresh_checkpoint_delay, null) != null ? { instance_refresh_checkpoint_delay = values.squid_instance_refresh_checkpoint_delay } : {},
     try(values.wazuh_manager_addr, null) != null ? { wazuh_manager_addr = values.wazuh_manager_addr } : {},
     try(values.wazuh_worker_addr, null) != null ? { wazuh_worker_addr = values.wazuh_worker_addr } : {},
     try(values.wazuh_group, null) != null ? { wazuh_group = values.wazuh_group } : {},
@@ -178,9 +218,24 @@ unit "envoy-proxy" {
     },
     try(values.envoy_instance_type, null) != null ? { instance_type = values.envoy_instance_type } : {},
     try(values.envoy_root_volume_size, null) != null ? { root_volume_size = values.envoy_root_volume_size } : {},
+    try(values.envoy_root_volume_type, null) != null ? { root_volume_type = values.envoy_root_volume_type } : {},
     try(values.envoy_min_size, null) != null ? { min_size = values.envoy_min_size } : {},
     try(values.envoy_max_size, null) != null ? { max_size = values.envoy_max_size } : {},
     try(values.envoy_desired_capacity, null) != null ? { desired_capacity = values.envoy_desired_capacity } : {},
+    try(values.envoy_cpu_scaling_target_value, null) != null ? { cpu_scaling_target_value = values.envoy_cpu_scaling_target_value } : {},
+    try(values.envoy_memory_scaling_target_value, null) != null ? { memory_scaling_target_value = values.envoy_memory_scaling_target_value } : {},
+    try(values.envoy_enable_spot_instances, null) != null ? { enable_spot_instances = values.envoy_enable_spot_instances } : {},
+    try(values.envoy_spot_instance_percentage, null) != null ? { spot_instance_percentage = values.envoy_spot_instance_percentage } : {},
+    try(values.envoy_on_demand_base_capacity, null) != null ? { on_demand_base_capacity = values.envoy_on_demand_base_capacity } : {},
+    try(values.envoy_spot_allocation_strategy, null) != null ? { spot_allocation_strategy = values.envoy_spot_allocation_strategy } : {},
+    try(values.envoy_enable_capacity_rebalance, null) != null ? { enable_capacity_rebalance = values.envoy_enable_capacity_rebalance } : {},
+    try(values.envoy_max_instance_lifetime, null) != null ? { max_instance_lifetime = values.envoy_max_instance_lifetime } : {},
+    try(values.envoy_generate_ssh_key, null) != null ? { generate_ssh_key = values.envoy_generate_ssh_key } : {},
+    try(values.envoy_health_check_interval, null) != null ? { health_check_interval = values.envoy_health_check_interval } : {},
+    try(values.envoy_health_check_timeout, null) != null ? { health_check_timeout = values.envoy_health_check_timeout } : {},
+    try(values.envoy_health_check_healthy_threshold, null) != null ? { health_check_healthy_threshold = values.envoy_health_check_healthy_threshold } : {},
+    try(values.envoy_health_check_unhealthy_threshold, null) != null ? { health_check_unhealthy_threshold = values.envoy_health_check_unhealthy_threshold } : {},
+    try(values.envoy_target_group_deregistration_delay, null) != null ? { target_group_deregistration_delay = values.envoy_target_group_deregistration_delay } : {},
     try(values.base_domain, null) != null ? { base_domain = values.base_domain } : {},
     try(values.cn_base_domain, null) != null ? { cn_base_domain = values.cn_base_domain } : {},
     try(values.opensearch_endpoint, null) != null ? { opensearch_endpoint = values.opensearch_endpoint } : {},
@@ -204,6 +259,16 @@ unit "jump-host" {
     { ami_id = values.ami_id },
     try(values.jump_host_instance_type, null) != null ? { instance_type = values.jump_host_instance_type } : {},
     try(values.jump_host_root_volume_size, null) != null ? { root_volume_size = values.jump_host_root_volume_size } : {},
+    try(values.jump_host_root_volume_type, null) != null ? { root_volume_type = values.jump_host_root_volume_type } : {},
+    try(values.jump_host_log_retention_days, null) != null ? { log_retention_days = values.jump_host_log_retention_days } : {},
+    try(values.jump_host_create_ssm_session_preferences, null) != null ? { create_ssm_session_preferences = values.jump_host_create_ssm_session_preferences } : {},
+    try(values.jump_host_ssm_idle_session_timeout, null) != null ? { ssm_idle_session_timeout = values.jump_host_ssm_idle_session_timeout } : {},
+    try(values.jump_host_ssm_max_session_duration, null) != null ? { ssm_max_session_duration = values.jump_host_ssm_max_session_duration } : {},
+    try(values.jump_host_ssm_run_as_user, null) != null ? { ssm_run_as_user = values.jump_host_ssm_run_as_user } : {},
+    try(values.jump_host_ssm_cloudwatch_logging_enabled, null) != null ? { ssm_cloudwatch_logging_enabled = values.jump_host_ssm_cloudwatch_logging_enabled } : {},
+    try(values.jump_host_ssm_cloudwatch_log_group_retention_days, null) != null ? { ssm_cloudwatch_log_group_retention_days = values.jump_host_ssm_cloudwatch_log_group_retention_days } : {},
+    try(values.jump_host_ssm_s3_logging_enabled, null) != null ? { ssm_s3_logging_enabled = values.jump_host_ssm_s3_logging_enabled } : {},
+    try(values.jump_host_ssm_s3_bucket_lifecycle_days, null) != null ? { ssm_s3_bucket_lifecycle_days = values.jump_host_ssm_s3_bucket_lifecycle_days } : {},
     try(values.wazuh_manager_addr, null) != null ? { wazuh_manager_addr = values.wazuh_manager_addr } : {},
     try(values.wazuh_worker_addr, null) != null ? { wazuh_worker_addr = values.wazuh_worker_addr } : {},
     try(values.wazuh_group, null) != null ? { wazuh_group = values.wazuh_group } : {},
@@ -227,14 +292,20 @@ unit "eks-01" {
       admin_sso_role_arn = values.admin_role_arn
       admin_access_cidrs = values.admin_access_cidrs
       default_ami_id     = try(values.eks_ami_id, null)
-
+      default_node_os    = try(values.eks_default_node_os, null)
+      root_volume_size   = try(values.eks_root_volume_size, null)
+      root_volume_type   = try(values.eks_root_volume_type, null)
+    },
+    try(values.eks_01_addon_versions, null) != null ? { addon_versions = values.eks_01_addon_versions } : {},
+    try(values.eks_01_system_nodes, null) != null ? { system_nodes = values.eks_01_system_nodes } : {
       system_nodes = {
         desired_size   = try(values.system_nodes_desired_size, 1)
         min_size       = try(values.system_nodes_min_size, 1)
         max_size       = try(values.system_nodes_max_size, 50)
         instance_types = values.eks_instance_types
       }
-
+    },
+    try(values.eks_01_generic_compute, null) != null ? { generic_compute = values.eks_01_generic_compute } : {
       generic_compute = {
         desired_size   = try(values.generic_compute_desired_size, 2)
         min_size       = try(values.generic_compute_min_size, 1)
@@ -242,9 +313,9 @@ unit "eks-01" {
         instance_types = values.eks_instance_types
       }
     },
-    try(values.monitoring, null) != null ? { monitoring = values.monitoring } : {},
-    try(values.keymanager, null) != null ? { keymanager = values.keymanager } : {},
-    try(values.auxillary, null) != null ? { auxillary = values.auxillary } : {},
+    try(values.eks_01_monitoring, null) != null ? { monitoring = values.eks_01_monitoring } : {},
+    try(values.eks_01_keymanager, null) != null ? { keymanager = values.eks_01_keymanager } : {},
+    try(values.eks_01_auxillary, null) != null ? { auxillary = values.eks_01_auxillary } : {},
   )
 }
 
@@ -257,7 +328,21 @@ unit "eks-resources" {
 
   no_dot_terragrunt_stack = true
 
-  values = {}
+  values = merge(
+    try(values.eks_resources_efs_storage_class_base_path, null) != null ? { efs_storage_class_base_path = values.eks_resources_efs_storage_class_base_path } : {},
+    try(values.eks_resources_efs_storage_class_directory_perms, null) != null ? { efs_storage_class_directory_perms = values.eks_resources_efs_storage_class_directory_perms } : {},
+    try(values.cluster_autoscaler_image, null) != null ? { cluster_autoscaler_image = values.cluster_autoscaler_image } : {},
+    try(values.cluster_autoscaler_image_version, null) != null ? { cluster_autoscaler_image_version = values.cluster_autoscaler_image_version } : {},
+    try(values.cluster_autoscaler_service_account_name, null) != null ? { cluster_autoscaler_service_account_name = values.cluster_autoscaler_service_account_name } : {},
+    try(values.cluster_autoscaler_requests_cpu, null) != null ? { cluster_autoscaler_requests_cpu = values.cluster_autoscaler_requests_cpu } : {},
+    try(values.cluster_autoscaler_requests_memory, null) != null ? { cluster_autoscaler_requests_memory = values.cluster_autoscaler_requests_memory } : {},
+    try(values.cluster_autoscaler_limits_cpu, null) != null ? { cluster_autoscaler_limits_cpu = values.cluster_autoscaler_limits_cpu } : {},
+    try(values.cluster_autoscaler_limits_memory, null) != null ? { cluster_autoscaler_limits_memory = values.cluster_autoscaler_limits_memory } : {},
+    try(values.cluster_autoscaler_log_level, null) != null ? { cluster_autoscaler_log_level = values.cluster_autoscaler_log_level } : {},
+    try(values.cluster_autoscaler_expander, null) != null ? { cluster_autoscaler_expander = values.cluster_autoscaler_expander } : {},
+    try(values.cluster_autoscaler_skip_local_storage, null) != null ? { cluster_autoscaler_skip_local_storage = values.cluster_autoscaler_skip_local_storage } : {},
+    try(values.cluster_autoscaler_skip_system_pods, null) != null ? { cluster_autoscaler_skip_system_pods = values.cluster_autoscaler_skip_system_pods } : {},
+  )
 }
 
 unit "utils-load-balancer" {
@@ -266,7 +351,9 @@ unit "utils-load-balancer" {
 
   no_dot_terragrunt_stack = true
 
-  values = {}
+  values = merge(
+    try(values.utils_load_balancer_create_alb, null) != null ? { create_alb = values.utils_load_balancer_create_alb } : {},
+  )
 }
 
 # -----------------------------------------------------------------------------
@@ -278,7 +365,12 @@ unit "alb-controller" {
 
   no_dot_terragrunt_stack = true
 
-  values = {}
+  values = merge(
+    try(values.alb_controller_namespace, null) != null ? { alb_controller_namespace = values.alb_controller_namespace } : {},
+    try(values.alb_controller_service_account_name, null) != null ? { alb_controller_service_account_name = values.alb_controller_service_account_name } : {},
+    try(values.alb_controller_create_service_account, null) != null ? { create_alb_controller_service_account = values.alb_controller_create_service_account } : {},
+    try(values.alb_controller_create_helm_release, null) != null ? { create_helm_release = values.alb_controller_create_helm_release } : {},
+  )
 }
 
 unit "external-secrets" {
@@ -287,7 +379,10 @@ unit "external-secrets" {
 
   no_dot_terragrunt_stack = true
 
-  values = {}
+  values = merge(
+    try(values.external_secrets_namespace, null) != null ? { kubernetes_namespace = values.external_secrets_namespace } : {},
+    try(values.external_secrets_service_account_name, null) != null ? { service_account_name = values.external_secrets_service_account_name } : {},
+  )
 }
 
 unit "istio" {
@@ -296,9 +391,11 @@ unit "istio" {
 
   no_dot_terragrunt_stack = true
 
-  values = {
-    host_domains = values.istio_host_domains
-  }
+  values = merge(
+    { host_domains = values.istio_host_domains },
+    try(values.istio_namespace, null) != null ? { istio_namespace = values.istio_namespace } : {},
+    try(values.istio_create_helm_releases, null) != null ? { create_helm_releases = values.istio_create_helm_releases } : {},
+  )
 }
 
 unit "otel" {
@@ -307,7 +404,10 @@ unit "otel" {
 
   no_dot_terragrunt_stack = true
 
-  values = {}
+  values = merge(
+    try(values.otel_namespace, null) != null ? { kubernetes_namespace = values.otel_namespace } : {},
+    try(values.otel_service_account_name, null) != null ? { service_account_name = values.otel_service_account_name } : {},
+  )
 }
 
 unit "vector-dr" {
@@ -316,7 +416,15 @@ unit "vector-dr" {
 
   no_dot_terragrunt_stack = true
 
-  values = {}
+  values = merge(
+    try(values.vector_dr_namespace, null) != null ? { kubernetes_namespace = values.vector_dr_namespace } : {},
+    try(values.vector_dr_service_account_name, null) != null ? { service_account_name = values.vector_dr_service_account_name } : {},
+    try(values.vector_dr_s3_force_destroy, null) != null ? { s3_force_destroy = values.vector_dr_s3_force_destroy } : {},
+    try(values.vector_dr_s3_versioning_enabled, null) != null ? { s3_versioning_enabled = values.vector_dr_s3_versioning_enabled } : {},
+    try(values.vector_dr_sqs_message_retention, null) != null ? { sqs_message_retention = values.vector_dr_sqs_message_retention } : {},
+    try(values.vector_dr_sqs_receive_wait_time, null) != null ? { sqs_receive_wait_time = values.vector_dr_sqs_receive_wait_time } : {},
+    try(values.vector_dr_sqs_visibility_timeout, null) != null ? { sqs_visibility_timeout = values.vector_dr_sqs_visibility_timeout } : {},
+  )
 }
 
 unit "loki" {
@@ -325,7 +433,13 @@ unit "loki" {
 
   no_dot_terragrunt_stack = true
 
-  values = {}
+  values = merge(
+    try(values.loki_namespace, null) != null ? { kubernetes_namespace = values.loki_namespace } : {},
+    try(values.loki_service_account_name, null) != null ? { service_account_name = values.loki_service_account_name } : {},
+    try(values.loki_s3_force_destroy, null) != null ? { s3_force_destroy = values.loki_s3_force_destroy } : {},
+    try(values.loki_s3_versioning_enabled, null) != null ? { s3_versioning_enabled = values.loki_s3_versioning_enabled } : {},
+    try(values.loki_s3_lifecycle_expiration_days, null) != null ? { s3_lifecycle_expiration_days = values.loki_s3_lifecycle_expiration_days } : {},
+  )
 }
 
 unit "grafana" {
@@ -336,7 +450,14 @@ unit "grafana" {
 
   values = merge(
     { base_domain = values.base_domain },
+    try(values.grafana_namespace, null) != null ? { kubernetes_namespace = values.grafana_namespace } : {},
+    try(values.grafana_service_account_name, null) != null ? { service_account_name = values.grafana_service_account_name } : {},
+    try(values.grafana_database_engine_version, null) != null ? { database_engine_version = values.grafana_database_engine_version } : {},
     try(values.grafana_db_instance_class, null) != null ? { grafana_db_instance_class = values.grafana_db_instance_class } : {},
+    try(values.grafana_database_backup_retention_period, null) != null ? { database_backup_retention_period = values.grafana_database_backup_retention_period } : {},
+    try(values.grafana_database_deletion_protection, null) != null ? { database_deletion_protection = values.grafana_database_deletion_protection } : {},
+    try(values.grafana_database_apply_immediately, null) != null ? { database_apply_immediately = values.grafana_database_apply_immediately } : {},
+    try(values.grafana_database_skip_final_snapshot, null) != null ? { database_skip_final_snapshot = values.grafana_database_skip_final_snapshot } : {},
   )
 }
 
@@ -347,8 +468,16 @@ unit "ratelimiter" {
   no_dot_terragrunt_stack = true
 
   values = merge(
-    {},
+    try(values.ratelimiter_namespace, null) != null ? { kubernetes_namespace = values.ratelimiter_namespace } : {},
+    try(values.ratelimiter_service_account_name, null) != null ? { service_account_name = values.ratelimiter_service_account_name } : {},
+    try(values.ratelimiter_cache_engine_version, null) != null ? { cache_engine_version = values.ratelimiter_cache_engine_version } : {},
+    try(values.ratelimiter_cache_parameter_group_name, null) != null ? { cache_parameter_group_name = values.ratelimiter_cache_parameter_group_name } : {},
     try(values.ratelimiter_cache_node_type, null) != null ? { cache_node_type = values.ratelimiter_cache_node_type } : {},
+    try(values.ratelimiter_cache_num_clusters, null) != null ? { cache_num_clusters = values.ratelimiter_cache_num_clusters } : {},
+    try(values.ratelimiter_cache_maintenance_window, null) != null ? { cache_maintenance_window = values.ratelimiter_cache_maintenance_window } : {},
+    try(values.ratelimiter_cache_snapshot_window, null) != null ? { cache_snapshot_window = values.ratelimiter_cache_snapshot_window } : {},
+    try(values.ratelimiter_cache_snapshot_retention_limit, null) != null ? { cache_snapshot_retention_limit = values.ratelimiter_cache_snapshot_retention_limit } : {},
+    try(values.ratelimiter_cache_apply_immediately, null) != null ? { cache_apply_immediately = values.ratelimiter_cache_apply_immediately } : {},
   )
 }
 
@@ -358,9 +487,17 @@ unit "hyperswitch" {
 
   no_dot_terragrunt_stack = true
 
-  values = {
-    ses_email_role_arn = try(values.ses_email_role_arn, null)
-  }
+  values = merge(
+    {
+      ses_email_role_arn = try(values.ses_email_role_arn, null)
+    },
+    try(values.hyperswitch_namespace, null) != null ? { kubernetes_namespace = values.hyperswitch_namespace } : {},
+    try(values.hyperswitch_service_account_name, null) != null ? { service_account_name = values.hyperswitch_service_account_name } : {},
+    try(values.hyperswitch_s3_dashboard_themes_versioning_enabled, null) != null ? { s3_dashboard_themes_versioning_enabled = values.hyperswitch_s3_dashboard_themes_versioning_enabled } : {},
+    try(values.hyperswitch_s3_dashboard_themes_force_destroy, null) != null ? { s3_dashboard_themes_force_destroy = values.hyperswitch_s3_dashboard_themes_force_destroy } : {},
+    try(values.hyperswitch_s3_file_uploads_versioning_enabled, null) != null ? { s3_file_uploads_versioning_enabled = values.hyperswitch_s3_file_uploads_versioning_enabled } : {},
+    try(values.hyperswitch_s3_file_uploads_force_destroy, null) != null ? { s3_file_uploads_force_destroy = values.hyperswitch_s3_file_uploads_force_destroy } : {},
+  )
 }
 
 unit "decision-engine" {
@@ -369,9 +506,16 @@ unit "decision-engine" {
 
   no_dot_terragrunt_stack = true
 
-  values = {
-    ses_email_role_arn = try(values.ses_email_role_arn, null)
-  }
+  values = merge(
+    {
+      ses_email_role_arn = try(values.ses_email_role_arn, null)
+    },
+    try(values.decision_engine_namespace, null) != null ? { kubernetes_namespace = values.decision_engine_namespace } : {},
+    try(values.decision_engine_service_account_name, null) != null ? { service_account_name = values.decision_engine_service_account_name } : {},
+    try(values.decision_engine_s3_force_destroy, null) != null ? { s3_force_destroy = values.decision_engine_s3_force_destroy } : {},
+    try(values.decision_engine_s3_versioning_enabled, null) != null ? { s3_versioning_enabled = values.decision_engine_s3_versioning_enabled } : {},
+    try(values.decision_engine_s3_noncurrent_version_expiration_days, null) != null ? { s3_noncurrent_version_expiration_days = values.decision_engine_s3_noncurrent_version_expiration_days } : {},
+  )
 }
 
 unit "superposition" {
@@ -382,8 +526,16 @@ unit "superposition" {
 
   values = merge(
     { base_domain = values.base_domain },
-    try(values.superposition_backup_retention_period, null) != null ? { backup_retention_period = values.superposition_backup_retention_period } : {},
+    try(values.superposition_namespace, null) != null ? { kubernetes_namespace = values.superposition_namespace } : {},
+    try(values.superposition_service_account_name, null) != null ? { service_account_name = values.superposition_service_account_name } : {},
+    try(values.superposition_engine_version, null) != null ? { engine_version = values.superposition_engine_version } : {},
+    try(values.superposition_db_cluster_parameter_group_name, null) != null ? { db_cluster_parameter_group_name = values.superposition_db_cluster_parameter_group_name } : {},
+    try(values.superposition_db_parameter_group_name, null) != null ? { db_parameter_group_name = values.superposition_db_parameter_group_name } : {},
     try(values.superposition_db_instance_class, null) != null ? { db_instance_class = values.superposition_db_instance_class } : {},
+    try(values.superposition_backup_retention_period, null) != null ? { backup_retention_period = values.superposition_backup_retention_period } : {},
+    try(values.superposition_skip_final_snapshot, null) != null ? { skip_final_snapshot = values.superposition_skip_final_snapshot } : {},
+    try(values.superposition_deletion_protection, null) != null ? { deletion_protection = values.superposition_deletion_protection } : {},
+    try(values.superposition_apply_immediately, null) != null ? { apply_immediately = values.superposition_apply_immediately } : {},
   )
 }
 

@@ -24,17 +24,17 @@ inputs = {
 
   eks_cluster_name = dependency.eks.outputs.cluster_name
 
-  alb_controller_namespace = "kube-system"
+  alb_controller_namespace = try(values.alb_controller_namespace, "kube-system")
 
-  alb_controller_service_account_name = "aws-load-balancer-controller-sa"
+  alb_controller_service_account_name = try(values.alb_controller_service_account_name, "aws-load-balancer-controller-sa")
 
-  create_alb_controller_service_account = false
+  create_alb_controller_service_account = try(values.create_alb_controller_service_account, false)
 
   service_account_labels = {}
 
   additional_service_account_annotations = {}
 
-  create_helm_release = false
+  create_helm_release = try(values.create_helm_release, false)
 
   common_tags = {
     Environment = include.root.locals.environment.full

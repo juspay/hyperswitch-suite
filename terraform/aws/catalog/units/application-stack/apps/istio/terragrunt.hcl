@@ -35,9 +35,9 @@ inputs = {
 
   eks_cluster_name = dependency.eks.outputs.cluster_name
 
-  istio_namespace = "istio-system"
+  istio_namespace = try(values.istio_namespace, "istio-system")
 
-  create_helm_releases = false
+  create_helm_releases = try(values.create_helm_releases, false)
 
   create_lb_security_group = true
 

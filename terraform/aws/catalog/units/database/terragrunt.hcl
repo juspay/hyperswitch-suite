@@ -68,7 +68,7 @@ inputs = {
 
   availability_zones = ["${include.root.locals.region}a", "${include.root.locals.region}b"]
   allocated_storage  = null
-  storage_type       = "aurora-iopt1"
+  storage_type       = try(values.storage_type, "aurora-iopt1")
   iops               = null
 
   network_type           = "IPV4"
@@ -90,8 +90,8 @@ inputs = {
   ]
 
   backup_retention_period      = try(values.backup_retention_period, 7)
-  preferred_backup_window      = "00:51-01:21"
-  preferred_maintenance_window = "thu:00:12-thu:00:42"
+  preferred_backup_window      = try(values.backup_window, "00:51-01:21")
+  preferred_maintenance_window = try(values.maintenance_window, "thu:00:12-thu:00:42")
   skip_final_snapshot          = true
   final_snapshot_identifier    = null
   copy_tags_to_snapshot        = false
@@ -121,7 +121,7 @@ inputs = {
       availability_zone                     = "${include.root.locals.region}a"
       db_parameter_group_name               = "default.aurora-postgresql17"
       performance_insights_enabled          = true
-      performance_insights_retention_period = 7
+      performance_insights_retention_period = try(values.performance_insights_retention_period, 7)
       auto_minor_version_upgrade            = true
       publicly_accessible                   = false
       copy_tags_to_snapshot                 = false

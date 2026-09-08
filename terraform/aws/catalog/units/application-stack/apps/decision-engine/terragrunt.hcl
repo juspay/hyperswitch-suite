@@ -35,8 +35,8 @@ inputs = {
   cluster_service_accounts = {
     "${dependency.eks.outputs.cluster_name}" = [
       {
-        namespace = "decision-engine"
-        name      = "decision-engine-sa"
+        namespace = try(values.kubernetes_namespace, "decision-engine")
+        name      = try(values.service_account_name, "decision-engine-sa")
       }
     ]
   }
@@ -66,15 +66,15 @@ inputs = {
   s3_bucket = {
     enabled            = true
     bucket_name        = "hyperswitch-decision-engine-${include.root.locals.environment.full}-${include.root.locals.region}"
-    force_destroy      = false
-    versioning_enabled = true
+    force_destroy      = try(values.s3_force_destroy, false)
+    versioning_enabled = try(values.s3_versioning_enabled, true)
     lifecycle_rules = [
       {
         id                            = "noncurrent-version-expiration"
         enabled                       = true
         prefix                        = ""
         expiration_days               = null
-        noncurrent_version_expiration = 30
+        noncurrent_version_expiration = try(values.s3_noncurrent_version_expiration_days, 30)
         transition                    = []
       }
     ]

@@ -136,7 +136,7 @@ inputs = {
   # ===========================================================================
 
   cluster_access_entries = merge(
-    {
+    try(values.admin_sso_role_arn, null) != null ? {
       admin_sso_role = {
         principal_arn = values.admin_sso_role_arn
         policy_associations = {
@@ -148,7 +148,7 @@ inputs = {
           }
         }
       }
-    },
+    } : {},
     try(values.view_sso_role_arn, null) != null ? {
       view_sso_role = {
         principal_arn = values.view_sso_role_arn
@@ -190,9 +190,9 @@ inputs = {
     } : {}
   )
 
-  kms_key_administrators = [
+  kms_key_administrators = try(values.admin_sso_role_arn, null) != null ? [
     values.admin_sso_role_arn
-  ]
+  ] : []
 
   # ===========================================================================
   # CLUSTER IAM ROLE CONFIGURATION
@@ -517,29 +517,31 @@ inputs = {
   # EKS ADDONS CONFIGURATION
   # ===========================================================================
 
+  # Addon versions can be overridden per stack via the `addon_versions` map
+  # keyed by addon name (e.g. { coredns = "v1.13.2-eksbuild.1" }).
   eks_addons = {
     "vpc-cni" = {
-      addon_version = "v1.21.1-eksbuild.3"
+      addon_version = try(values.addon_versions["vpc-cni"], "v1.21.1-eksbuild.3")
     }
     "kube-proxy" = {
-      addon_version = "v1.35.0-eksbuild.2"
+      addon_version = try(values.addon_versions["kube-proxy"], "v1.35.0-eksbuild.2")
     }
     "coredns" = {
-      addon_version = "v1.13.2-eksbuild.1"
+      addon_version = try(values.addon_versions["coredns"], "v1.13.2-eksbuild.1")
     }
     "aws-ebs-csi-driver" = {
-      addon_version        = "v1.55.0-eksbuild.1"
+      addon_version        = try(values.addon_versions["aws-ebs-csi-driver"], "v1.55.0-eksbuild.1")
       service_account_role = "ebs_csi"
     }
     "aws-efs-csi-driver" = {
-      addon_version        = "v3.0.1-eksbuild.1"
+      addon_version        = try(values.addon_versions["aws-efs-csi-driver"], "v3.0.1-eksbuild.1")
       service_account_role = "efs_csi"
     }
     "snapshot-controller" = {
-      addon_version = "v8.3.0-eksbuild.1"
+      addon_version = try(values.addon_versions["snapshot-controller"], "v8.3.0-eksbuild.1")
     }
     "metrics-server" = {
-      addon_version = "v0.8.0-eksbuild.6"
+      addon_version = try(values.addon_versions["metrics-server"], "v0.8.0-eksbuild.6")
     }
   }
 }

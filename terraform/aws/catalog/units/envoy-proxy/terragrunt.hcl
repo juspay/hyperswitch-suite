@@ -116,7 +116,7 @@ inputs = {
     imds_http_put_response_hop_limit = 10
     imds_instance_metadata_tags      = "enabled"
 
-    enable_detailed_monitoring = true
+    enable_detailed_monitoring = try(values.enable_detailed_monitoring, true)
 
     # Versioning
     update_default_version = true
@@ -135,11 +135,11 @@ inputs = {
   scaling_policies = {
     cpu_target_tracking = {
       enabled      = true
-      target_value = 70.0
+      target_value = try(values.cpu_scaling_target_value, 70.0)
     }
     memory_target_tracking = {
       enabled      = false
-      target_value = 70.0
+      target_value = try(values.memory_scaling_target_value, 70.0)
     }
   }
 
@@ -172,7 +172,7 @@ inputs = {
   config_files_source_path = "generated-config"
 
   # hyperswitch_cloudfront_dns = "dXXXXXXXXXXXXX.cloudfront.net"
-  internal_loadbalancer_dns = "istio.hyperswitch.internal"
+  internal_loadbalancer_dns = try(values.internal_loadbalancer_dns, "istio.hyperswitch.internal")
 
   virtual_hosts_domains = flatten(values(values.virtual_hosts_domains))
 
@@ -195,7 +195,7 @@ inputs = {
   enable_waf = false
 
   target_group_protocol             = try(dependency.acm.outputs.certificate_statuses["envoy-alb"], "") == "ISSUED" ? "HTTPS" : "HTTP"
-  target_group_deregistration_delay = 30
+  target_group_deregistration_delay = try(values.target_group_deregistration_delay, 30)
 
   health_check = {
     enabled             = true
@@ -203,30 +203,30 @@ inputs = {
     path                = "/ping"
     protocol            = try(dependency.acm.outputs.certificate_statuses["envoy-alb"], "") == "ISSUED" ? "HTTPS" : "HTTP"
     matcher             = "200"
-    interval            = 30
-    timeout             = 10
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
+    interval            = try(values.health_check_interval, 30)
+    timeout             = try(values.health_check_timeout, 10)
+    healthy_threshold   = try(values.health_check_healthy_threshold, 2)
+    unhealthy_threshold = try(values.health_check_unhealthy_threshold, 2)
   }
 
   # =========================================================================
   # Spot Instance Configuration
   # =========================================================================
-  enable_spot_instances = false
+  enable_spot_instances = try(values.enable_spot_instances, false)
 
-  spot_instance_percentage  = 50
-  on_demand_base_capacity   = 1
-  spot_allocation_strategy  = "capacity-optimized"
-  enable_capacity_rebalance = false
+  spot_instance_percentage  = try(values.spot_instance_percentage, 50)
+  on_demand_base_capacity   = try(values.on_demand_base_capacity, 1)
+  spot_allocation_strategy  = try(values.spot_allocation_strategy, "capacity-optimized")
+  enable_capacity_rebalance = try(values.enable_capacity_rebalance, false)
 
   # =========================================================================
   # ASG Advanced Configuration
   # =========================================================================
   termination_policies = ["OldestLaunchTemplate", "OldestInstance", "Default"]
 
-  max_instance_lifetime = 0
+  max_instance_lifetime = try(values.max_instance_lifetime, 0)
 
-  generate_ssh_key = true
+  generate_ssh_key = try(values.generate_ssh_key, true)
 
   create_iam_role = true
 

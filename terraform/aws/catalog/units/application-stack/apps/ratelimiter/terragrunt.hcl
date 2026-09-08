@@ -40,8 +40,8 @@ inputs = {
   cluster_service_accounts = {
     "${dependency.eks.outputs.cluster_name}" = [
       {
-        namespace = "ratelimiter"
-        name      = "ratelimiter-sa"
+        namespace = try(values.kubernetes_namespace, "ratelimiter")
+        name      = try(values.service_account_name, "ratelimiter-sa")
       }
     ]
   }
@@ -69,11 +69,11 @@ inputs = {
     elasticache_replication_group_id = "${include.root.locals.environment.short}-${include.root.locals.project_name}-ratelimiter"
     subnet_ids                       = dependency.vpc.outputs.elasticache_subnet_ids
     engine                           = "valkey"
-    engine_version                   = "8.2"
-    parameter_group_name             = "default.valkey8"
+    engine_version                   = try(values.cache_engine_version, "8.2")
+    parameter_group_name             = try(values.cache_parameter_group_name, "default.valkey8")
     port                             = 6379
     node_type                        = try(values.cache_node_type, "cache.t3.small")
-    num_cache_clusters               = 2
+    num_cache_clusters               = try(values.cache_num_clusters, 2)
     num_node_groups                  = null
     replicas_per_node_group          = null
     cluster_mode                     = "disabled"
@@ -86,10 +86,10 @@ inputs = {
     subnet_group_name                = null
     create_security_group            = true
     existing_security_group_ids      = []
-    maintenance_window               = "sun:05:00-sun:06:00"
-    snapshot_window                  = "03:00-05:00"
-    snapshot_retention_limit         = 1
-    apply_immediately                = false
+    maintenance_window               = try(values.cache_maintenance_window, "sun:05:00-sun:06:00")
+    snapshot_window                  = try(values.cache_snapshot_window, "03:00-05:00")
+    snapshot_retention_limit         = try(values.cache_snapshot_retention_limit, 1)
+    apply_immediately                = try(values.cache_apply_immediately, false)
   }
 
   # =========================================================================

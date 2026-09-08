@@ -29,24 +29,24 @@ inputs = {
   vpc_endpoint_security_group_id = dependency.vpc.outputs.vpc_endpoint_security_group_id
 
   # Cluster Configuration
-  broker_count = 3
+  broker_count = try(values.broker_count, 3)
 
   # Instance Configuration — cost-optimized for passive/DR
   broker_ami_id     = try(values.broker_ami_id, null)
   controller_ami_id = try(values.controller_ami_id, null)
 
-  broker_instance_type     = "t4g.medium"
-  controller_instance_type = "t4g.medium"
+  broker_instance_type     = try(values.broker_instance_type, "t4g.medium")
+  controller_instance_type = try(values.controller_instance_type, "t4g.medium")
 
   # Storage Configuration — smaller for passive/DR
-  broker_root_volume_size         = 30
-  broker_root_volume_type         = "gp3"
-  broker_data_volume_size         = 30
-  broker_data_volume_type         = "gp3"
-  controller_root_volume_size     = 30
-  controller_root_volume_type     = "gp3"
-  controller_metadata_volume_size = 10
-  controller_metadata_volume_type = "gp3"
+  broker_root_volume_size         = try(values.broker_root_volume_size, 30)
+  broker_root_volume_type         = try(values.broker_root_volume_type, "gp3")
+  broker_data_volume_size         = try(values.broker_data_volume_size, 30)
+  broker_data_volume_type         = try(values.broker_data_volume_type, "gp3")
+  controller_root_volume_size     = try(values.controller_root_volume_size, 30)
+  controller_root_volume_type     = try(values.controller_root_volume_type, "gp3")
+  controller_metadata_volume_size = try(values.controller_metadata_volume_size, 10)
+  controller_metadata_volume_type = try(values.controller_metadata_volume_type, "gp3")
 
   # SSH Key Configuration
   create_key_pair = true

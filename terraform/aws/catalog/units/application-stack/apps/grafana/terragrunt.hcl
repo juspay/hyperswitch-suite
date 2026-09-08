@@ -59,8 +59,8 @@ inputs = {
   cluster_service_accounts = {
     "${dependency.eks.outputs.cluster_name}" = [
       {
-        namespace = "monitoring"
-        name      = "grafana"
+        namespace = try(values.kubernetes_namespace, "monitoring")
+        name      = try(values.service_account_name, "grafana")
       }
     ]
   }
@@ -73,7 +73,7 @@ inputs = {
   assume_role_principals = []
 
   # Database Configuration
-  create_database = true
+  create_database = try(values.create_database, true)
 
   database_vpc_id                 = dependency.vpc.outputs.vpc_id
   database_subnet_ids             = dependency.vpc.outputs.database_subnet_ids
@@ -84,7 +84,7 @@ inputs = {
   database_cluster_identifier = "grafana-db"
 
   database_engine         = "aurora-postgresql"
-  database_engine_version = "16.11"
+  database_engine_version = try(values.database_engine_version, "16.11")
 
   database_name                        = "grafana"
   database_master_username             = "grafana_admin"
@@ -99,11 +99,11 @@ inputs = {
     }
   }
 
-  database_backup_retention_period = 7
-  database_deletion_protection     = false
+  database_backup_retention_period = try(values.database_backup_retention_period, 7)
+  database_deletion_protection     = try(values.database_deletion_protection, false)
   database_snapshot_identifier     = null
-  database_apply_immediately       = true
-  database_skip_final_snapshot     = true
+  database_apply_immediately       = try(values.database_apply_immediately, true)
+  database_skip_final_snapshot     = try(values.database_skip_final_snapshot, true)
   database_storage_encrypted       = true
 
   database_enabled_cloudwatch_logs_exports = ["postgresql"]

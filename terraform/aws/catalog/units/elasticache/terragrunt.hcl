@@ -75,9 +75,9 @@ inputs = {
   transit_encryption_enabled = false
 
   # Maintenance & Backup
-  maintenance_window         = "mon:04:00-mon:05:00"
-  snapshot_window            = "23:30-00:30"
-  snapshot_retention_limit   = 7
+  maintenance_window         = try(values.maintenance_window, "mon:04:00-mon:05:00")
+  snapshot_window            = try(values.snapshot_window, "23:30-00:30")
+  snapshot_retention_limit   = try(values.snapshot_retention_limit, 7)
   auto_minor_version_upgrade = true
   apply_immediately          = true
 

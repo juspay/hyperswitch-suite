@@ -60,8 +60,8 @@ inputs = {
   cluster_service_accounts = {
     "${dependency.eks.outputs.cluster_name}" = [
       {
-        namespace = "superposition"
-        name      = "superposition-role"
+        namespace = try(values.kubernetes_namespace, "superposition")
+        name      = try(values.service_account_name, "superposition-role")
       }
     ]
   }
@@ -120,17 +120,17 @@ inputs = {
     network_type                          = "IPV4"
     port                                  = 5432
     create_db_subnet_group                = true
-    db_cluster_parameter_group_name       = "default.aurora-postgresql17"
+    db_cluster_parameter_group_name       = try(values.db_cluster_parameter_group_name, "default.aurora-postgresql17")
     backup_retention_period               = try(values.backup_retention_period, 7)
-    preferred_backup_window               = "02:03-02:33"
-    preferred_maintenance_window          = "tue:00:25-tue:00:55"
-    skip_final_snapshot                   = true
+    preferred_backup_window               = try(values.backup_window, "02:03-02:33")
+    preferred_maintenance_window          = try(values.maintenance_window, "tue:00:25-tue:00:55")
+    skip_final_snapshot                   = try(values.skip_final_snapshot, true)
     copy_tags_to_snapshot                 = true
     storage_encrypted                     = true
-    deletion_protection                   = true
+    deletion_protection                   = try(values.deletion_protection, true)
     snapshot_identifier                   = null
     kms_key_id                            = null
-    apply_immediately                     = true
+    apply_immediately                     = try(values.apply_immediately, true)
     delete_automated_backups              = true
     enabled_cloudwatch_logs_exports       = []
     performance_insights_enabled          = false
@@ -152,7 +152,7 @@ inputs = {
         instance_class                        = try(values.db_instance_class, "db.r6g.large")
         promotion_tier                        = 1
         availability_zone                     = "${include.root.locals.region}a"
-        db_parameter_group_name               = "default.aurora-postgresql17"
+        db_parameter_group_name               = try(values.db_parameter_group_name, "default.aurora-postgresql17")
         auto_minor_version_upgrade            = true
         publicly_accessible                   = false
         copy_tags_to_snapshot                 = false

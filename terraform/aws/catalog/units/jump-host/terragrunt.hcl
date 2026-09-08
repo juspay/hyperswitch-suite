@@ -42,35 +42,35 @@ inputs = {
   root_volume_type = try(values.root_volume_type, "gp3")
 
   # Logging Configuration
-  log_retention_days = 30
+  log_retention_days = try(values.log_retention_days, 30)
 
   # SSM Session Encryption
-  enable_ssm_session_encryption = false
+  enable_ssm_session_encryption = try(values.enable_ssm_session_encryption, false)
 
   # SSM Session Preferences
-  ssm_idle_session_timeout = 10
-  ssm_max_session_duration = ""
-  ssm_run_as_user          = "ubuntu"
+  ssm_idle_session_timeout = try(values.ssm_idle_session_timeout, 10)
+  ssm_max_session_duration = try(values.ssm_max_session_duration, "")
+  ssm_run_as_user          = try(values.ssm_run_as_user, "ubuntu")
 
   # ---------------------------------------------------------------------------
   # CloudWatch logging for SSM sessions - Create new log group
   # ---------------------------------------------------------------------------
-  ssm_cloudwatch_logging_enabled          = false
+  ssm_cloudwatch_logging_enabled          = try(values.ssm_cloudwatch_logging_enabled, false)
   create_ssm_cloudwatch_log_group         = true
   ssm_cloudwatch_log_group_name           = ""
   ssm_cloudwatch_log_group_name_prefix    = "/aws/ssm/session-logs"
-  ssm_cloudwatch_log_group_retention_days = 90
+  ssm_cloudwatch_log_group_retention_days = try(values.ssm_cloudwatch_log_group_retention_days, 90)
 
   # ---------------------------------------------------------------------------
   # S3 logging for SSM sessions - Create new S3 bucket
   # ---------------------------------------------------------------------------
-  ssm_s3_logging_enabled       = false
+  ssm_s3_logging_enabled       = try(values.ssm_s3_logging_enabled, false)
   create_ssm_s3_bucket         = true
   ssm_s3_bucket_name           = ""
   ssm_s3_key_prefix            = "session-manager"
   ssm_s3_bucket_name_prefix    = "ssm-session-logs"
   ssm_s3_bucket_versioning     = true
-  ssm_s3_bucket_lifecycle_days = 90
+  ssm_s3_bucket_lifecycle_days = try(values.ssm_s3_bucket_lifecycle_days, 90)
 
   # Create SSM Session Preferences Document
   # Can be disabled per stack when the regional document already exists.

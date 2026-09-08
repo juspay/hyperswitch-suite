@@ -38,8 +38,8 @@ inputs = {
   cluster_service_accounts = {
     "${dependency.eks.outputs.cluster_name}" = [
       {
-        namespace = "hyperswitch"
-        name      = "hyperswitch-router-role"
+        namespace = try(values.kubernetes_namespace, "hyperswitch")
+        name      = try(values.service_account_name, "hyperswitch-router-role")
       }
     ]
   }
@@ -66,15 +66,15 @@ inputs = {
   # S3 Dashboard Themes Bucket
   s3_dashboard_themes = {
     create             = true
-    versioning_enabled = true
-    force_destroy      = false
+    versioning_enabled = try(values.s3_dashboard_themes_versioning_enabled, true)
+    force_destroy      = try(values.s3_dashboard_themes_force_destroy, false)
   }
 
   # S3 File Uploads Bucket
   s3_file_uploads = {
     create             = true
-    versioning_enabled = true
-    force_destroy      = false
+    versioning_enabled = try(values.s3_file_uploads_versioning_enabled, true)
+    force_destroy      = try(values.s3_file_uploads_force_destroy, false)
   }
 
   # SES Configuration (email-sending role is environment-specific; disabled when unset)

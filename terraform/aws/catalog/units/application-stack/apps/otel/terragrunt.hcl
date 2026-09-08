@@ -25,8 +25,8 @@ inputs = {
   cluster_service_accounts = {
     "${dependency.eks.outputs.cluster_name}" = [
       {
-        namespace = "monitoring"
-        name      = "otel-collector"
+        namespace = try(values.kubernetes_namespace, "monitoring")
+        name      = try(values.service_account_name, "otel-collector")
       }
     ]
   }

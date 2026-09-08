@@ -57,8 +57,8 @@ inputs = {
   cluster_service_accounts = {
     "${dependency.eks.outputs.cluster_name}" = [
       {
-        namespace = "loki"
-        name      = "loki"
+        namespace = try(values.kubernetes_namespace, "loki")
+        name      = try(values.service_account_name, "loki")
       }
     ]
   }
@@ -67,14 +67,14 @@ inputs = {
   s3 = {
     create             = true
     bucket_name        = null
-    force_destroy      = false
-    versioning_enabled = false
+    force_destroy      = try(values.s3_force_destroy, false)
+    versioning_enabled = try(values.s3_versioning_enabled, false)
     lifecycle_rules = [
       {
         id      = "expire-loki-logs-after-1-year"
         enabled = true
         expiration = {
-          days = 365
+          days = try(values.s3_lifecycle_expiration_days, 365)
         }
       }
     ]

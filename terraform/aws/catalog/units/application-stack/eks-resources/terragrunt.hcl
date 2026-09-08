@@ -110,8 +110,8 @@ inputs = {
       parameters = {
         provisioningMode = "efs-ap"
         fileSystemId     = dependency.efs.outputs.file_system_ids["superposition-backup"]
-        basePath         = "/superposition/backup-config"
-        directoryPerms   = "700"
+        basePath         = try(values.efs_storage_class_base_path, "/superposition/backup-config")
+        directoryPerms   = try(values.efs_storage_class_directory_perms, "700")
       }
     }
   }
@@ -123,51 +123,51 @@ inputs = {
   enable_cluster_autoscaler = true
 
   # Use default image from public registry (or specify ECR image)
-  cluster_autoscaler_image = null
+  cluster_autoscaler_image = try(values.cluster_autoscaler_image, null)
 
   # Service account name
-  cluster_autoscaler_service_account_name = null
+  cluster_autoscaler_service_account_name = try(values.cluster_autoscaler_service_account_name, null)
 
   # Resource limits for cluster autoscaler pod
   cluster_autoscaler_resources = {
-    requests_cpu    = "100m"
-    requests_memory = "600Mi"
-    limits_cpu      = "100m"
-    limits_memory   = "600Mi"
+    requests_cpu    = try(values.cluster_autoscaler_requests_cpu, "100m")
+    requests_memory = try(values.cluster_autoscaler_requests_memory, "600Mi")
+    limits_cpu      = try(values.cluster_autoscaler_limits_cpu, "100m")
+    limits_memory   = try(values.cluster_autoscaler_limits_memory, "600Mi")
   }
 
   # Log level: 1-5 (higher = more verbose)
-  cluster_autoscaler_log_level = 4
+  cluster_autoscaler_log_level = try(values.cluster_autoscaler_log_level, 4)
 
   # Expander strategy: least-waste, most-pods, priority, random
-  cluster_autoscaler_expander = "least-waste"
+  cluster_autoscaler_expander = try(values.cluster_autoscaler_expander, "least-waste")
 
   # Additional command line arguments
   # cluster_autoscaler_extra_args = [
   #   "--scale-down-unneeded-time=10m",
   #   "--scale-down-delay-after-add=10m"
   # ]
-  cluster_autoscaler_extra_args = []
+  cluster_autoscaler_extra_args = try(values.cluster_autoscaler_extra_args, [])
 
   # Override entire command (rarely needed)
-  cluster_autoscaler_command = null
+  cluster_autoscaler_command = try(values.cluster_autoscaler_command, null)
 
   # Extra args appended to default command
-  cluster_autoscaler_command_extra_args = []
+  cluster_autoscaler_command_extra_args = try(values.cluster_autoscaler_command_extra_args, [])
 
   # Node scheduling options
-  cluster_autoscaler_skip_local_storage = false
-  cluster_autoscaler_skip_system_pods   = false
-  cluster_autoscaler_node_selector      = {}
-  cluster_autoscaler_tolerations        = []
-  cluster_autoscaler_pod_annotations    = {}
+  cluster_autoscaler_skip_local_storage = try(values.cluster_autoscaler_skip_local_storage, false)
+  cluster_autoscaler_skip_system_pods   = try(values.cluster_autoscaler_skip_system_pods, false)
+  cluster_autoscaler_node_selector      = try(values.cluster_autoscaler_node_selector, {})
+  cluster_autoscaler_tolerations        = try(values.cluster_autoscaler_tolerations, [])
+  cluster_autoscaler_pod_annotations    = try(values.cluster_autoscaler_pod_annotations, {})
 
   # ===========================================================================
   # CLUSTER AUTOSCALER ECR CONFIGURATION (Optional)
   # Use this for private VPCs without internet access
   # ===========================================================================
   # Or specify exact image version
-  cluster_autoscaler_image_version = "v1.35.0"
+  cluster_autoscaler_image_version = try(values.cluster_autoscaler_image_version, "v1.35.0")
 
   # Source registry for cluster autoscaler images
   cluster_autoscaler_source_registry = "registry.k8s.io"
