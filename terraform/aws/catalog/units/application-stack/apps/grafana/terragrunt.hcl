@@ -39,7 +39,7 @@ dependency "vpc" {
 # Terragrunt Configuration
 # -----------------------------------------------------------------------------
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/application-resources/grafana?ref=apps-grafana-v0.1.3"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/application-resources/grafana?ref=apps-grafana-v0.1.5"
 }
 
 # -----------------------------------------------------------------------------
