@@ -194,6 +194,18 @@ variable "database_manage_master_user_password" {
   default     = true
 }
 
+variable "database_master_password_secretsmanager_secret_id" {
+  description = "ARN or name of an existing AWS Secrets Manager secret to fetch the master DB password from. Takes precedence over database_master_password. Cannot be used together with database_manage_master_user_password = true"
+  type        = string
+  default     = null
+}
+
+variable "database_master_password_secretsmanager_secret_key" {
+  description = "JSON key within the Secrets Manager secret that holds the master password (e.g. \"password\"). If null, the raw secret string is used"
+  type        = string
+  default     = null
+}
+
 variable "database_cluster_instances" {
   description = "Map of cluster instances to create"
   type = map(object({
@@ -524,31 +536,31 @@ variable "database_master_user_secret_kms_key_id" {
 variable "database_kms" {
   description = "KMS key configuration for RDS encryption. Set create=true to create a new KMS key, or provide existing_key_arn to use an existing key"
   type = object({
-    create           = optional(bool, false)
-    existing_key_arn = optional(string, null)
-    description      = optional(string, null)
-    multi_region     = optional(bool, false)
-    create_replica           = optional(bool, false)
-    create_replica_external  = optional(bool, false)
-    primary_key_arn          = optional(string, null)
-    primary_external_key_arn = optional(string, null)
-    create_external     = optional(bool, false)
-    key_material_base64 = optional(string, null)
-    valid_to            = optional(string, null)
-    key_usage                = optional(string, null)
-    customer_master_key_spec = optional(string, null)
-    key_spec                 = optional(string, null)
-    deletion_window_in_days  = optional(number, null)
+    create                             = optional(bool, false)
+    existing_key_arn                   = optional(string, null)
+    description                        = optional(string, null)
+    multi_region                       = optional(bool, false)
+    create_replica                     = optional(bool, false)
+    create_replica_external            = optional(bool, false)
+    primary_key_arn                    = optional(string, null)
+    primary_external_key_arn           = optional(string, null)
+    create_external                    = optional(bool, false)
+    key_material_base64                = optional(string, null)
+    valid_to                           = optional(string, null)
+    key_usage                          = optional(string, null)
+    customer_master_key_spec           = optional(string, null)
+    key_spec                           = optional(string, null)
+    deletion_window_in_days            = optional(number, null)
     is_enabled                         = optional(bool, null)
     enable_key_rotation                = optional(bool, true)
     rotation_period_in_days            = optional(number, null)
     bypass_policy_lockout_safety_check = optional(bool, null)
-    aliases                 = optional(list(string), [])
-    aliases_use_name_prefix = optional(bool, false)
-    key_administrators = optional(list(string), [])
-    key_users          = optional(list(string), [])
-    key_service_users  = optional(list(string), [])
-    key_owners         = optional(list(string), [])
+    aliases                            = optional(list(string), [])
+    aliases_use_name_prefix            = optional(bool, false)
+    key_administrators                 = optional(list(string), [])
+    key_users                          = optional(list(string), [])
+    key_service_users                  = optional(list(string), [])
+    key_owners                         = optional(list(string), [])
   })
   default = null
 }

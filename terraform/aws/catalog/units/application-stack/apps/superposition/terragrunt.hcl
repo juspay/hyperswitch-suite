@@ -4,7 +4,7 @@ include "root" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/application-resources/superposition?ref=apps-superposition-v0.1.7"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/application-resources/superposition?ref=apps-superposition-v0.1.8"
 }
 
 dependency "eks" {
@@ -114,6 +114,10 @@ inputs = {
 
     master_username = try(values.is_passive, false) ? null : "postgres"
     # master_password                       = null
+    # Alternatively, fetch the master password from an existing AWS Secrets Manager secret
+    # (requires superposition module with database-v0.1.7 or later):
+    # master_password_secretsmanager_secret_id  = "<secret ARN or name>"
+    # master_password_secretsmanager_secret_key = "password" # only if the secret is a JSON object
     availability_zones                    = ["${include.root.locals.region}a", "${include.root.locals.region}b"]
     allocated_storage                     = null
     storage_type                          = "aurora-iopt1"
