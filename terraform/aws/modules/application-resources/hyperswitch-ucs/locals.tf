@@ -6,8 +6,9 @@ locals {
       "Environment" = var.environment
       "Project"     = var.project_name
       "Application" = var.app_name
-      "Service"     = "Hyperswitch UCS (Unified Connector Service)"
-      "ManagedBy"   = "terraform"
+      # IAM tag values allow only letters, digits, spaces and _.:/=+-@ — no parentheses.
+      "Service"   = "Hyperswitch UCS Unified Connector Service"
+      "ManagedBy" = "terraform"
     },
     var.region != null ? { "Region" = var.region } : {},
     var.tags
