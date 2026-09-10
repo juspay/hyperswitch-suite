@@ -107,6 +107,7 @@ Application-specific resources that run on top of EKS. May require Kubernetes cl
 | `eks-iam/` | EKS IAM roles for service accounts (IRSA) |
 | `external-secrets-operator/` | External Secrets Operator deployment |
 | `hyperswitch/` | Hyperswitch application resources (S3, KMS, IAM) |
+| `hyperswitch-ucs/` | Hyperswitch UCS (Unified Connector Service) application resources (IAM/IRSA, Secrets Manager) |
 | `istio/` | Istio service mesh deployment |
 | `shared-policy/` | Shared IAM policies across services |
 
