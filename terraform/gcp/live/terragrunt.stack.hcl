@@ -42,6 +42,21 @@ stack "dev" {
     state_bucket = "REPLACE_ME-dev-asia-south1-tfstate"
 
     # -------------------------------------------------------------------------
+    # CI/CD identity
+    # -------------------------------------------------------------------------
+    # The AWS IAM role federated into this GCP project, so an AWS-only apply
+    # worker (infra-switch / Atlantis) can run terragrunt here with no static
+    # GCP key. Name the role, not its ARN.
+    #
+    # project_roles is left unset so the unit's own default list applies — that
+    # list is what a full live tree needs. Set it here only to deliberately
+    # narrow the grant for this environment.
+    infraswitch_federation = {
+      aws_account_id = "REPLACE_ME-aws-account-id"
+      aws_role_name  = "REPLACE_ME-aws-role-name"
+    }
+
+    # -------------------------------------------------------------------------
     # Networking
     # -------------------------------------------------------------------------
     vpc_cidr_prefix                   = "10.2"

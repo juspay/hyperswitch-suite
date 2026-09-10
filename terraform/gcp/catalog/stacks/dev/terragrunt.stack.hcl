@@ -32,6 +32,34 @@
 # -----------------------------------------------------------------------------
 # Phase 0 — Foundation
 # -----------------------------------------------------------------------------
+# iam-infraswitch-federation is listed first deliberately. It has no
+# `dependency` blocks, so Terragrunt is free to schedule it anywhere — but it
+# grants the CI/CD apply worker the GCP project roles that every OTHER unit's
+# apply needs. On a green-field rebuild a human applies this one first, as
+# themselves; everything after it can then be driven by the worker.
+unit "iam-infraswitch-federation" {
+  # Branch ref, not a unit tag, on purpose: no unit/gcp/iam-infraswitch-
+  # federation-* tag has been cut yet, and pinning one that does not exist
+  # fails at `terragrunt init` with a confusing "couldn't find remote ref".
+  # Repoint to unit/gcp/iam-infraswitch-federation-v0.1.0-v1 once that tag is
+  # cut, to match every other unit in this stack.
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/iam-infraswitch-federation?ref=feat/gcp-iam-infraswitch-federation-unit"
+  path   = "iam-infraswitch-federation"
+
+  no_dot_terragrunt_stack = true
+
+  # project_roles is omitted rather than passed as null when unset: a key
+  # present-but-null defeats the unit's own try(values.X, <default>) fallback,
+  # because try() rescues evaluation errors, not a resolved null.
+  values = merge(
+    {
+      aws_account_id = values.infraswitch_federation.aws_account_id
+      aws_role_name  = values.infraswitch_federation.aws_role_name
+    },
+    try(values.infraswitch_federation.project_roles, null) != null ? { project_roles = values.infraswitch_federation.project_roles } : {},
+  )
+}
+
 unit "vpc-network" {
   source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/vpc-network?ref=unit/gcp/vpc-network-v0.1.0-v1"
   path   = "vpc-network"
