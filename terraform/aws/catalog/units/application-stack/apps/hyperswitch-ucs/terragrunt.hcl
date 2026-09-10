@@ -4,7 +4,7 @@ include "root" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/application-resources/hyperswitch-ucs?ref=apps-hyperswitch-ucs-v0.1.0"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/application-resources/hyperswitch-ucs?ref=apps-hyperswitch-ucs-v0.1.1"
 }
 
 dependency "eks" {
