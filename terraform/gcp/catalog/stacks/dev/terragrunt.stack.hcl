@@ -107,6 +107,26 @@ unit "memorystore-valkey" {
   values = try(values.valkey, null) != null ? { valkey = values.valkey } : {}
 }
 
+# Cloud Spanner with the PostgreSQL interface — an ADDITIONAL database beside
+# alloydb, not a replacement for it. Unlike every other data unit here it has
+# no vpc-network dependency: Spanner is a global IAM-authenticated API
+# endpoint, not a VPC-attached service.
+#
+# The databases it creates are not reachable by a libpq client until PGAdapter
+# fronts them — see the unit for the full caveat.
+unit "spanner" {
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/spanner?ref=unit/gcp/spanner-v0.1.0-v1"
+  path   = "spanner"
+
+  no_dot_terragrunt_stack = true
+
+  # Omitted entirely rather than passed as null, for the same reason alloydb's
+  # block above says: a key present-but-null defeats the unit's own
+  # try(values.X, <default>) fallback, because try() rescues evaluation
+  # errors, not a successfully-resolved null.
+  values = try(values.spanner, null) != null ? { spanner = values.spanner } : {}
+}
+
 unit "gke" {
   source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/gke?ref=unit/gcp/gke-v0.1.0-v1"
   path   = "application-stack/gke"

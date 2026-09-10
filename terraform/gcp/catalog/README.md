@@ -13,7 +13,7 @@ terraform/gcp/catalog/
                   # full unit set
 ```
 
-19 units. This mirrors the AWS catalog in
+21 units. This mirrors the AWS catalog in
 [PR #302](https://github.com/juspay/hyperswitch-suite/pull/302) — same unit
 skeleton, same tag-pinning discipline.
 
@@ -67,7 +67,7 @@ Everything else that varies per environment arrives through Terragrunt Stacks
 | `custom_images` (`envoy`, `squid`) | `envoy-proxy`, `squid-proxy` |
 | `bastion_iap_members` | `bastion-host` |
 | `smtp_secret_id` | `hyperswitch` |
-| `alloydb`, `valkey`, `locker` (optional maps) | the matching data units |
+| `alloydb`, `valkey`, `locker`, `spanner` (optional maps) | the matching data units |
 
 ### Dependency layout
 
@@ -76,9 +76,10 @@ written against this layout:
 
 ```
 vpc-network                      alloydb              -> ../vpc-network
-memorystore-valkey               envoy-proxy          -> ../vpc-network
-artifact-registry                squid-proxy          -> ../vpc-network
-bastion-host                     firewall-rules       -> ../vpc-network
+spanner (no dependency)          envoy-proxy          -> ../vpc-network
+memorystore-valkey               squid-proxy          -> ../vpc-network
+artifact-registry                firewall-rules       -> ../vpc-network
+bastion-host
 locker                           -> ../vpc-network, ../application-stack/gke
 application-stack/gke            -> ../../vpc-network
 application-stack/apps/<name>    -> ../../gke, ../../../vpc-network
@@ -86,9 +87,8 @@ application-stack/apps/<name>    -> ../../gke, ../../../vpc-network
 
 ## Scope
 
-A unit exists here only if its module is published on `main`. 18 of the 19
-module pins resolve to existing tags — `scripts/ci/check-gcp-pins.sh` enforces
-it.
+A unit exists here only if its module is published on `main`. All 21 module
+pins resolve to existing tags — `scripts/ci/check-gcp-pins.sh` enforces it.
 
 The exception is `iam-infraswitch-federation`, whose *unit* source in
 `stacks/dev` is pinned to a branch until
@@ -110,6 +110,7 @@ The exception is `iam-infraswitch-federation`, whose *unit* source in
 | `iam-infraswitch-federation` | `application-resources/infraswitch-gcp-federation` | `gcp-apps-infraswitch-gcp-federation-v0.1.0` |
 | `vpc-network` | `composition/vpc-network` | `gcp-vpc-network-v0.1.0` |
 | `alloydb` | `composition/alloydb` | `gcp-alloydb-v0.1.0` |
+| `spanner` | `composition/spanner` | `gcp-spanner-v0.1.0` |
 | `memorystore-valkey` | `composition/memorystore-valkey` | `gcp-memorystore-valkey-v0.1.0` |
 | `artifact-registry` | `composition/artifact-registry` | `gcp-artifact-registry-v0.1.0` |
 | `bastion-host` | `composition/bastion-host` | `gcp-bastion-host-v0.1.0` |
