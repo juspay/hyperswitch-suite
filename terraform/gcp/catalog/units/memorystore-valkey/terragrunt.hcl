@@ -50,7 +50,7 @@ terraform {
 }
 
 
-inputs = {
+inputs = merge({
   project_id   = include.root.locals.project_id
   environment  = include.root.locals.environment.short
   project_name = include.root.locals.project_name
@@ -100,11 +100,11 @@ inputs = {
 
   deletion_protection_enabled = try(values.valkey.deletion_protection_enabled, true)
 
-  labels = {
+  labels = merge({
     environment = include.root.locals.environment.short
     project     = include.root.locals.project_name
     component   = "cache"
     engine      = "valkey"
     managed_by  = "terraform"
-  }
-}
+  }, try(values.common_labels, {}))
+}, try(values.cfg, {}))

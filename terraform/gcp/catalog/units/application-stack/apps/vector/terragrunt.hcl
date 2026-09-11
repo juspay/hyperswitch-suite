@@ -19,7 +19,7 @@ terraform {
   source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/application-resources/vector?ref=gcp-apps-vector-v0.1.0"
 }
 
-inputs = {
+inputs = merge({
   project_id   = include.root.locals.project_id
   environment  = include.root.locals.environment.short
   project_name = include.root.locals.project_name
@@ -40,8 +40,8 @@ inputs = {
   # No cross-region reads configured yet (single-region setup).
   cross_region_reader_members = []
 
-  labels = {
+  labels = merge({
     environment = include.root.locals.environment.short
     managed_by  = "terraform"
-  }
-}
+  }, try(values.common_labels, {}))
+}, try(values.cfg, {}))

@@ -20,7 +20,7 @@ terraform {
   source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/application-resources/external-secrets-operator?ref=gcp-apps-eso-v0.1.0"
 }
 
-inputs = {
+inputs = merge({
   project_id   = include.root.locals.project_id
   environment  = include.root.locals.environment.short
   project_name = include.root.locals.project_name
@@ -40,8 +40,8 @@ inputs = {
   # scope_to_project = false + explicit secret_ids for least privilege.
   scope_to_project = true
 
-  labels = {
+  labels = merge({
     environment = include.root.locals.environment.short
     managed_by  = "terraform"
-  }
-}
+  }, try(values.common_labels, {}))
+}, try(values.cfg, {}))
