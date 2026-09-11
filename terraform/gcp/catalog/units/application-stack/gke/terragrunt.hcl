@@ -7,6 +7,7 @@ dependency "vpc" {
   config_path = "../../vpc-network"
 
   mock_outputs = {
+    network_name                      = "mock-vpc"
     network_self_link                 = "projects/mock/global/networks/mock-vpc"
     gke_nodes_subnet_self_link        = "projects/mock/regions/asia-south1/subnetworks/mock-gke-nodes"
     gke_pods_secondary_range_name     = "mock-gke-pods"
@@ -19,7 +20,7 @@ terraform {
   source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/composition/gke?ref=gcp-gke-v0.1.0"
 }
 
-inputs = {
+inputs = merge({
   project_id   = include.root.locals.project_id
   environment  = include.root.locals.environment.short
   project_name = include.root.locals.project_name
@@ -28,8 +29,8 @@ inputs = {
   cluster_name = "${include.root.locals.project_name}-${include.root.locals.environment.short}-gke"
   regional     = true
 
-  network           = dependency.vpc.outputs.network_self_link
-  subnetwork        = dependency.vpc.outputs.gke_nodes_subnet_self_link
+  network           = dependency.vpc.outputs.network_name
+  subnetwork        = basename(dependency.vpc.outputs.gke_nodes_subnet_self_link)
   ip_range_pods     = dependency.vpc.outputs.gke_pods_secondary_range_name
   ip_range_services = dependency.vpc.outputs.gke_services_secondary_range_name
 
@@ -77,4 +78,4 @@ inputs = {
     project     = include.root.locals.project_name
     managed_by  = "terraform"
   }
-}
+}, try(values.cfg, {}))
