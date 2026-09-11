@@ -33,7 +33,7 @@
 # Phase 0 — Foundation
 # -----------------------------------------------------------------------------
 unit "vpc-network" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/vpc-network?ref=unit/gcp/vpc-network-v0.1.0-v1"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/vpc-network?ref=unit/gcp/vpc-network-v0.1.0-v2"
   path   = "vpc-network"
 
   no_dot_terragrunt_stack = true
@@ -59,7 +59,7 @@ unit "vpc-network" {
 # pole, so start it first.
 
 unit "alloydb" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/alloydb?ref=unit/gcp/alloydb-v0.1.0-v1"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/alloydb?ref=unit/gcp/alloydb-v0.1.0-v2"
   path   = "alloydb"
 
   no_dot_terragrunt_stack = true
@@ -71,7 +71,7 @@ unit "alloydb" {
 }
 
 unit "memorystore-valkey" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/memorystore-valkey?ref=unit/gcp/memorystore-valkey-v0.1.0-v1"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/memorystore-valkey?ref=unit/gcp/memorystore-valkey-v0.1.0-v2"
   path   = "memorystore-valkey"
 
   no_dot_terragrunt_stack = true
@@ -80,7 +80,7 @@ unit "memorystore-valkey" {
 }
 
 unit "gke" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/gke?ref=unit/gcp/gke-v0.1.0-v1"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/gke?ref=unit/gcp/gke-v0.1.0-v2"
   path   = "application-stack/gke"
 
   no_dot_terragrunt_stack = true
@@ -99,13 +99,13 @@ unit "gke" {
 # gateway-controller and istio provide the ingress the workload apps attach to.
 
 unit "gateway-controller" {
-  source                  = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/gateway-controller?ref=unit/gcp/gateway-controller-v0.1.0-v1"
+  source                  = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/gateway-controller?ref=unit/gcp/gateway-controller-v0.1.0-v2"
   path                    = "application-stack/apps/gateway-controller"
   no_dot_terragrunt_stack = true
 }
 
 unit "istio" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/istio?ref=unit/gcp/istio-v0.1.0-v1"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/istio?ref=unit/gcp/istio-v0.1.0-v2"
   path   = "application-stack/apps/istio"
 
   no_dot_terragrunt_stack = true
@@ -119,7 +119,7 @@ unit "istio" {
 }
 
 unit "argocd" {
-  source                  = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/argocd?ref=unit/gcp/argocd-v0.1.0-v1"
+  source                  = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/argocd?ref=unit/gcp/argocd-v0.1.0-v2"
   path                    = "application-stack/apps/argocd"
   no_dot_terragrunt_stack = true
 
@@ -127,7 +127,7 @@ unit "argocd" {
 }
 
 unit "external-secrets-operator" {
-  source                  = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/external-secrets-operator?ref=unit/gcp/external-secrets-operator-v0.1.0-v1"
+  source                  = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/external-secrets-operator?ref=unit/gcp/external-secrets-operator-v0.1.0-v2"
   path                    = "application-stack/apps/external-secrets-operator"
   no_dot_terragrunt_stack = true
 
@@ -138,7 +138,7 @@ unit "external-secrets-operator" {
 # Phase 3 — Workload apps
 # -----------------------------------------------------------------------------
 unit "loki" {
-  source                  = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/loki?ref=unit/gcp/loki-v0.1.0-v1"
+  source                  = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/loki?ref=unit/gcp/loki-v0.1.0-v2"
   path                    = "application-stack/apps/loki"
   no_dot_terragrunt_stack = true
 
@@ -146,7 +146,7 @@ unit "loki" {
 }
 
 unit "vector" {
-  source                  = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/vector?ref=unit/gcp/vector-v0.1.0-v1"
+  source                  = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/vector?ref=unit/gcp/vector-v0.1.0-v2"
   path                    = "application-stack/apps/vector"
   no_dot_terragrunt_stack = true
 
@@ -154,7 +154,7 @@ unit "vector" {
 }
 
 unit "grafana" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/grafana?ref=unit/gcp/grafana-v0.1.0-v1"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/grafana?ref=unit/gcp/grafana-v0.1.0-v2"
   path   = "application-stack/apps/grafana"
 
   no_dot_terragrunt_stack = true
@@ -168,7 +168,7 @@ unit "grafana" {
 }
 
 unit "superposition" {
-  source                  = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/superposition?ref=unit/gcp/superposition-v0.1.0-v1"
+  source                  = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/superposition?ref=unit/gcp/superposition-v0.1.0-v2"
   path                    = "application-stack/apps/superposition"
   no_dot_terragrunt_stack = true
 
@@ -176,7 +176,7 @@ unit "superposition" {
 }
 
 unit "hyperswitch" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/hyperswitch?ref=unit/gcp/hyperswitch-v0.1.0-v1"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/hyperswitch?ref=unit/gcp/hyperswitch-v0.1.0-v2"
   path   = "application-stack/apps/hyperswitch"
 
   no_dot_terragrunt_stack = true
@@ -197,19 +197,26 @@ unit "hyperswitch" {
 # need a pre-baked custom GCE image; terraform/gcp/packer/ has the definitions.
 
 unit "envoy-proxy" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/envoy-proxy?ref=unit/gcp/envoy-proxy-v0.1.0-v1"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/envoy-proxy?ref=unit/gcp/envoy-proxy-v0.1.0-v2"
   path   = "envoy-proxy"
 
   no_dot_terragrunt_stack = true
 
+  # envoy is optional (values.envoy is itself optional inside the unit) - a
+  # consumer that omits it entirely gets no envoy.yaml uploaded at all
+  # (custom_startup_script still renders, but has nothing to fetch). Set it
+  # to get the unit's default single-cluster config, or add
+  # values.envoy.assets_dir to point at a private config/envoy.yaml.tftpl +
+  # templates/startup.sh instead.
   values = {
     custom_images = values.custom_images
     domains       = values.domains
+    envoy         = try(values.envoy, null)
   }
 }
 
 unit "squid-proxy" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/squid-proxy?ref=unit/gcp/squid-proxy-v0.1.0-v1"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/squid-proxy?ref=unit/gcp/squid-proxy-v0.1.0-v2"
   path   = "squid-proxy"
 
   no_dot_terragrunt_stack = true
@@ -221,6 +228,11 @@ unit "squid-proxy" {
     # vpc-network derives the ranges themselves.
     vpc_cidr_prefix               = values.vpc_cidr_prefix
     gke_pods_secondary_range_cidr = values.gke_pods_secondary_range_cidr
+
+    # Optional - set values.squid.assets_dir to point at a private
+    # config/{squid.conf,allowedlist.txt} + templates/startup.sh directory
+    # instead of the unit's own bundled defaults.
+    squid = try(values.squid, {})
   }
 }
 
@@ -228,13 +240,13 @@ unit "squid-proxy" {
 # Phase 5 — Supporting infrastructure
 # -----------------------------------------------------------------------------
 unit "artifact-registry" {
-  source                  = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/artifact-registry?ref=unit/gcp/artifact-registry-v0.1.0-v1"
+  source                  = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/artifact-registry?ref=unit/gcp/artifact-registry-v0.1.0-v2"
   path                    = "artifact-registry"
   no_dot_terragrunt_stack = true
 }
 
 unit "bastion-host" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/bastion-host?ref=unit/gcp/bastion-host-v0.1.0-v1"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/bastion-host?ref=unit/gcp/bastion-host-v0.1.0-v2"
   path   = "bastion-host"
 
   no_dot_terragrunt_stack = true
@@ -251,7 +263,7 @@ unit "bastion-host" {
 # Data tier and identity for the card vault. The vault itself runs on GKE via
 # Helm, so this depends on both vpc-network and gke.
 unit "locker" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/locker?ref=unit/gcp/locker-v0.1.0-v1"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/locker?ref=unit/gcp/locker-v0.1.0-v2"
   path   = "locker"
 
   no_dot_terragrunt_stack = true
@@ -266,7 +278,7 @@ unit "locker" {
 # depends only on vpc-network, so Terragrunt may schedule it early — harmless,
 # but the rules only bite once the units they describe exist.
 unit "firewall-rules" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/firewall-rules?ref=unit/gcp/firewall-rules-v0.1.0-v1"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/firewall-rules?ref=unit/gcp/firewall-rules-v0.1.0-v2"
   path   = "firewall-rules"
 
   no_dot_terragrunt_stack = true
