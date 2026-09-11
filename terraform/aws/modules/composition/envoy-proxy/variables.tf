@@ -225,6 +225,76 @@ variable "listener_rules" {
 }
 
 # =========================================================================
+# Path-Based Routing Target Groups
+# =========================================================================
+
+variable "path_routing_target_groups" {
+  description = <<-EOT
+    Map of path-based target groups for path-based routing. Each entry creates
+    a cross-product of target groups — one per (path_entry × deployment) — so
+    that path-based traffic also participates in canary weighted splitting.
+
+    For each path entry, the module creates N target groups (where N = number
+    of deployments), one listener rule with weighted forward across all
+    deployment TGs, and attaches each TG to its corresponding ASG.
+
+    - path_patterns:    ALB path pattern values (e.g., ["/webhooks/*"]).
+    - priority:         Listener rule priority (1-50000). Must be unique across
+                        all listener rules including var.listener_rules.
+    - health_check:     Optional. Defaults to var.health_check if not specified.
+    - target_group_name: Optional. Base name for TGs. The deployment key is
+                         appended (e.g., "webhook-stable"). Truncated to 32 chars.
+
+    Example:
+      path_routing_target_groups = {
+        webhook = {
+          path_patterns = ["/webhooks/*", "/webhooks"]
+          priority      = 100
+        }
+      }
+
+    When create_lb = false, target groups are still created (gated on
+    create_target_group) and their ARNs are exported via the
+    path_routing_target_group_arns output for external listener configuration.
+    Listener rules are only created when create_lb = true.
+  EOT
+
+  type = map(object({
+    path_patterns = list(string)
+    priority      = number
+    health_check = optional(object({
+      enabled             = optional(bool, true)
+      port                = optional(number)
+      path                = optional(string)
+      protocol            = optional(string)
+      matcher             = optional(string)
+      interval            = optional(number)
+      timeout             = optional(number)
+      healthy_threshold   = optional(number)
+      unhealthy_threshold = optional(number)
+    }))
+    target_group_name = optional(string)
+  }))
+
+  default = {}
+
+  validation {
+    condition = alltrue([
+      for tg in var.path_routing_target_groups : tg.priority >= 1 && tg.priority <= 50000
+    ])
+    error_message = "Path routing target group priority must be between 1 and 50000."
+  }
+
+  validation {
+    condition = length(var.path_routing_target_groups) == 0 ? true : (
+      length(distinct([for tg in var.path_routing_target_groups : tg.priority])) ==
+      length(var.path_routing_target_groups)
+    )
+    error_message = "Path routing target group priorities must be unique."
+  }
+}
+
+# =========================================================================
 # WAF Configuration
 # =========================================================================
 

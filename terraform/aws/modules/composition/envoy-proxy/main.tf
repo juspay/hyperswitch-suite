@@ -433,6 +433,85 @@ resource "aws_lb_target_group" "envoy" {
 }
 
 # =========================================================================
+# Path-Based Routing Target Groups (Cross-Product with Deployments)
+# =========================================================================
+# One TG per (path_routing_entry × deployment) so that path-based traffic
+# also participates in canary weighted splitting. Each ASG attaches only
+# the TGs matching its own deployment key.
+resource "aws_lb_target_group" "path_routing" {
+  for_each = local.path_routing_tg_map
+
+  name                 = each.value.tg_name
+  port                 = var.envoy_traffic_port
+  protocol             = var.target_group_protocol
+  vpc_id               = var.vpc_id
+  target_type          = "instance"
+  deregistration_delay = var.target_group_deregistration_delay
+
+  health_check {
+    enabled             = coalesce(try(each.value.health_check.enabled, null), var.health_check.enabled)
+    port                = tostring(coalesce(try(each.value.health_check.port, null), var.health_check.port))
+    path                = coalesce(try(each.value.health_check.path, null), var.health_check.path)
+    protocol            = coalesce(try(each.value.health_check.protocol, null), var.health_check.protocol)
+    matcher             = coalesce(try(each.value.health_check.matcher, null), var.health_check.matcher)
+    interval            = coalesce(try(each.value.health_check.interval, null), var.health_check.interval)
+    timeout             = coalesce(try(each.value.health_check.timeout, null), var.health_check.timeout)
+    healthy_threshold   = coalesce(try(each.value.health_check.healthy_threshold, null), var.health_check.healthy_threshold)
+    unhealthy_threshold = coalesce(try(each.value.health_check.unhealthy_threshold, null), var.health_check.unhealthy_threshold)
+  }
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = each.value.tg_name
+    }
+  )
+
+  lifecycle {
+    create_before_destroy = false
+  }
+}
+
+# =========================================================================
+# Path-Based Routing Listener Rules (Weighted Forward)
+# =========================================================================
+# One listener rule per path entry. Each rule does a weighted forward
+# across all deployment TGs, mirroring the canary split of the default action.
+resource "aws_lb_listener_rule" "path_routing" {
+  for_each = (var.create_lb && var.create_target_group) ? var.path_routing_target_groups : {}
+
+  listener_arn = var.enable_https_listener ? aws_lb_listener.envoy_https[0].arn : aws_lb_listener.envoy_http[0].arn
+  priority     = each.value.priority
+
+  action {
+    type = "forward"
+    forward {
+      dynamic "target_group" {
+        for_each = var.deployments
+        content {
+          arn    = aws_lb_target_group.path_routing["${each.key}-${target_group.key}"].arn
+          weight = target_group.value.weight
+        }
+      }
+      stickiness {
+        enabled  = false
+        duration = 1
+      }
+    }
+  }
+
+  condition {
+    path_pattern {
+      values = each.value.path_patterns
+    }
+  }
+
+  tags = local.common_tags
+
+  depends_on = [aws_lb_target_group.path_routing]
+}
+
+# =========================================================================
 # Load Balancer Listeners (Create only if creating new ALB)
 # =========================================================================
 
@@ -791,12 +870,7 @@ module "asg" {
   default_cooldown          = 300
 
   # Traffic sources (replaces target_group_arns in v8+)
-  traffic_source_attachments = each.value.tg_available ? {
-    envoy_tg = {
-      traffic_source_identifier = local.target_group_arns[each.key]
-      traffic_source_type       = "elbv2"
-    }
-  } : null
+  traffic_source_attachments = length(local.asg_traffic_source_attachments[each.key]) > 0 ? local.asg_traffic_source_attachments[each.key] : null
 
   # Termination and lifecycle
   termination_policies  = var.termination_policies

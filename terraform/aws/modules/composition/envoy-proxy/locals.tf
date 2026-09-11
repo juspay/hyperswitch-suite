@@ -92,4 +92,58 @@ locals {
   target_group_arns = {
     for name, d in var.deployments : name => d.existing_target_group_arn != null ? d.existing_target_group_arn : (var.create_target_group ? aws_lb_target_group.envoy[name].arn : null)
   }
+
+  # Cross-product: one TG per (path_routing_entry × deployment).
+  # Each TG participates in canary weighted traffic splitting, mirroring
+  # how the main deployment TGs are weighted in the default listener action.
+  path_routing_deployment_tgs = var.create_target_group ? flatten([
+    for pk, ptg in var.path_routing_target_groups : [
+      for dk, d in var.deployments : {
+        key            = "${pk}-${dk}"
+        path_key       = pk
+        deployment_key = dk
+        weight         = d.weight
+        path_patterns  = ptg.path_patterns
+        priority       = ptg.priority
+        health_check   = ptg.health_check
+        tg_name        = substr("${coalesce(ptg.target_group_name, "pr-${pk}")}-${dk}", 0, 32)
+      }
+    ]
+  ]) : []
+
+  path_routing_tg_map = {
+    for tg in local.path_routing_deployment_tgs : tg.key => tg
+  }
+
+  # Flat map of cross-product TG ARNs: { "path-deployment" = arn }
+  path_routing_tg_arns = {
+    for k, tg in aws_lb_target_group.path_routing : k => tg.arn
+  }
+
+  # Nested map for output: { path_key = { deployment_key = arn } }
+  path_routing_tg_arns_nested = {
+    for pk in keys(var.path_routing_target_groups) : pk => {
+      for tg in local.path_routing_deployment_tgs : tg.deployment_key => aws_lb_target_group.path_routing[tg.key].arn
+      if tg.path_key == pk
+    }
+  }
+
+  # Each ASG only attaches path-routing TGs that belong to its deployment.
+  asg_traffic_source_attachments = {
+    for name, d in var.deployments : name => merge(
+      local.auto_scaling_groups[name].tg_available ? {
+        "${name}-tg" = {
+          traffic_source_identifier = local.target_group_arns[name]
+          traffic_source_type       = "elbv2"
+        }
+      } : {},
+      {
+        for tg in local.path_routing_deployment_tgs : "pr-${tg.key}" => {
+          traffic_source_identifier = aws_lb_target_group.path_routing[tg.key].arn
+          traffic_source_type       = "elbv2"
+        }
+        if tg.deployment_key == name
+      }
+    )
+  }
 }
