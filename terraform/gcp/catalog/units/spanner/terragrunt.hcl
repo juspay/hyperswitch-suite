@@ -30,11 +30,12 @@ include "root" {
 }
 
 terraform {
-  # ?ref=feat/gcp-iam-infraswitch-federation-unit, not the gcp-spanner-v0.1.0
-  # tag: that tag was never pushed (git ls-remote --tags confirms it doesn't
-  # exist), so it 404s on fetch. Repoint to a real tag once one is cut for
-  # this module.
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/composition/spanner?ref=feat/gcp-iam-infraswitch-federation-unit"
+  # ?ref=feat/gcp-suite-spanner-deferred, not the gcp-spanner-v0.1.0 tag: that
+  # tag was never pushed (git ls-remote --tags confirms it doesn't exist), so
+  # it 404s on fetch. This branch is where the module actually lives now -
+  # spanner was pulled out of suite PR #322 onto its own branch (still a
+  # test). Repoint to a real tag once one is cut for this module.
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/composition/spanner?ref=feat/gcp-suite-spanner-deferred"
 }
 
 inputs = merge({
