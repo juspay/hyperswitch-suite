@@ -52,18 +52,22 @@ inputs = merge({
   # consumer, not just a checkout of this repo.
   #
   # values.envoy is optional - the default here is a minimal single-cluster
-  # passthrough (see config/envoy.yaml.tftpl). A deployment that needs a
-  # different Envoy config entirely (extra filters, multiple clusters) should
-  # override envoy_config_content wholesale via values.cfg rather than fork
-  # this unit.
-  envoy_config_content = try(values.envoy, null) != null ? templatefile("${get_terragrunt_dir()}/config/envoy.yaml.tftpl", {
+  # passthrough (see config/envoy.yaml.tftpl).
+  #
+  # values.envoy.assets_dir swaps the BASE directory both paths below resolve
+  # against, defaulting to this unit's own bundled config/ + templates/. Point
+  # it at a private directory with the same config/envoy.yaml.tftpl and
+  # templates/startup.sh layout to ship real Envoy config (extra filters,
+  # auth, multiple clusters) without forking this unit or hand-rendering the
+  # whole content yourself via values.cfg.
+  envoy_config_content = try(values.envoy, null) != null ? templatefile("${try(values.envoy.assets_dir, get_terragrunt_dir())}/config/envoy.yaml.tftpl", {
     http_port     = 8080
     lb_ip         = try(values.envoy.lb_ip, "unknown")
     upstream_host = values.envoy.upstream_host
     upstream_port = try(values.envoy.upstream_port, 80)
   }) : null
 
-  custom_startup_script = file("${get_terragrunt_dir()}/templates/startup.sh")
+  custom_startup_script = file("${try(values.envoy.assets_dir, get_terragrunt_dir())}/templates/startup.sh")
 
   enable_cloud_armor   = true
   enable_mtls_listener = false

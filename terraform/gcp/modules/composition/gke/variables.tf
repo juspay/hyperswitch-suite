@@ -44,7 +44,7 @@ variable "zones" {
 }
 
 variable "network" {
-  description = "Self-link of the VPC network to host the cluster in"
+  description = "Bare NAME (not self-link) of the VPC network to host the cluster in - passed straight through to terraform-google-modules/kubernetes-engine's private-cluster submodule, which resolves it itself and expects a name, not a self-link."
   type        = string
 }
 
@@ -55,7 +55,7 @@ variable "network_project_id" {
 }
 
 variable "subnetwork" {
-  description = "Self-link of the subnetwork to host the cluster nodes in"
+  description = "Bare NAME (not self-link) of the subnetwork to host the cluster nodes in - same reason as `network` above."
   type        = string
 }
 
