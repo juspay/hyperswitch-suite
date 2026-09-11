@@ -58,7 +58,7 @@ inputs = merge({
   aws_account_id = values.aws_account_id
   aws_role_name  = values.aws_role_name
 
-  # The module's own defaults, plus eight roles a full live tree needs that
+  # The module's own defaults, plus nine roles a full live tree needs that
   # the defaults do not cover:
   #
   #   dns.admin                            vpc-network manages private Cloud
@@ -91,6 +91,19 @@ inputs = merge({
   #                                        (google_iap_tunnel_instance_iam_binding) -
   #                                        confirmed via a live 403 on
   #                                        iap.tunnelInstances.getIamPolicy.
+  #   pubsub.admin                         loki/vector's GCS-bucket-event and
+  #                                        log-event topics
+  #                                        (google_pubsub_topic,
+  #                                        google_pubsub_subscription) AND
+  #                                        their IAM bindings
+  #                                        (google_pubsub_topic_iam_member,
+  #                                        google_pubsub_subscription_iam_member) -
+  #                                        confirmed via a live 403 on
+  #                                        pubsub.topics.get. pubsub.editor
+  #                                        would cover the topics/
+  #                                        subscriptions themselves but not
+  #                                        their IAM policy management, which
+  #                                        both modules also need.
   #
   # A `values` knob rather than a literal so an environment can narrow the
   # grant without forking the unit - but narrowing below this set breaks
@@ -115,5 +128,6 @@ inputs = merge({
     "roles/logging.configWriter",
     "roles/iam.roleAdmin",
     "roles/iap.admin",
+    "roles/pubsub.admin",
   ])
 }, try(values.cfg, {}))
