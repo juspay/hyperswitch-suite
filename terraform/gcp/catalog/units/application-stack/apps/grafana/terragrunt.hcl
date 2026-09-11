@@ -55,8 +55,8 @@ inputs = merge({
     grafana = values.domains.grafana
   }
 
-  labels = {
+  labels = merge({
     environment = include.root.locals.environment.short
     managed_by  = "terraform"
-  }
+  }, try(values.common_labels, {}))
 }, try(values.cfg, {}))

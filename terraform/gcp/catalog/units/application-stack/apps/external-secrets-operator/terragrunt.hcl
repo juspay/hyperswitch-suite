@@ -40,8 +40,8 @@ inputs = merge({
   # scope_to_project = false + explicit secret_ids for least privilege.
   scope_to_project = true
 
-  labels = {
+  labels = merge({
     environment = include.root.locals.environment.short
     managed_by  = "terraform"
-  }
+  }, try(values.common_labels, {}))
 }, try(values.cfg, {}))

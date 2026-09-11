@@ -44,9 +44,9 @@ inputs = merge({
 
   enable_session_logging = true
 
-  labels = {
+  labels = merge({
     environment = include.root.locals.environment.short
     project     = include.root.locals.project_name
     managed_by  = "terraform"
-  }
+  }, try(values.common_labels, {}))
 }, try(values.cfg, {}))

@@ -140,10 +140,10 @@ inputs = merge({
   # cryptoKeyEncrypterDecrypter would widen its permissions for nothing.
   grant_kms_access = false
 
-  labels = {
+  labels = merge({
     environment = include.root.locals.environment.short
     project     = include.root.locals.project_name
     compliance  = "pci-dss"
     managed_by  = "terraform"
-  }
+  }, try(values.common_labels, {}))
 }, try(values.cfg, {}))

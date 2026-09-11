@@ -73,9 +73,9 @@ inputs = merge({
 
   additional_custom_role_ids = []
 
-  labels = {
+  labels = merge({
     environment = include.root.locals.environment.short
     managed_by  = "terraform"
     component   = "hyperswitch"
-  }
+  }, try(values.common_labels, {}))
 }, { for k, v in try(values.cfg, {}) : k => v if k != "kms_location" })

@@ -22,8 +22,8 @@ inputs = merge({
 
   create_service_account = false
 
-  labels = {
+  labels = merge({
     environment = include.root.locals.environment.short
     managed_by  = "terraform"
-  }
+  }, try(values.common_labels, {}))
 }, try(values.cfg, {}))

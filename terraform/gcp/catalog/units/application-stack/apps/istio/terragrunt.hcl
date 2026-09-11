@@ -48,8 +48,8 @@ inputs = merge({
     sandbox = [values.domains.api]
   }
 
-  labels = {
+  labels = merge({
     environment = include.root.locals.environment.short
     managed_by  = "terraform"
-  }
+  }, try(values.common_labels, {}))
 }, try(values.cfg, {}))

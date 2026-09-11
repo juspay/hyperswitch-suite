@@ -66,10 +66,10 @@ inputs = merge({
   }
   enable_default_deny_ingress = true
 
-  labels = {
+  labels = merge({
     environment = include.root.locals.environment.short
     project     = include.root.locals.project_name
     team        = "infra"
     managed_by  = "terraform"
-  }
+  }, try(values.common_labels, {}))
 }, try(values.cfg, {}))
