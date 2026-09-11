@@ -58,8 +58,8 @@ inputs = merge({
   aws_account_id = values.aws_account_id
   aws_role_name  = values.aws_role_name
 
-  # The module's own defaults, plus five roles a full live tree needs that the
-  # defaults do not cover:
+  # The module's own defaults, plus nine roles a full live tree needs that
+  # the defaults do not cover:
   #
   #   dns.admin                            vpc-network manages private Cloud
   #                                        DNS zones (Private Service Connect
@@ -72,6 +72,38 @@ inputs = merge({
   #   memorystore.admin                    memorystore-valkey (the Memorystore
   #                                        for Valkey API is distinct from the
   #                                        redis.admin the defaults grant).
+  #   logging.configWriter                 bastion-host's session-log sink
+  #                                        (google_logging_project_sink) -
+  #                                        confirmed via a live 403 on
+  #                                        logging.sinks.get; none of the
+  #                                        above roles cover Cloud Logging
+  #                                        sink configuration.
+  #   iam.roleAdmin                        bastion-host's OS Login viewer
+  #                                        custom role
+  #                                        (google_project_iam_custom_role) -
+  #                                        confirmed via a live 403 on
+  #                                        iam.roles.get. Distinct from
+  #                                        iam.serviceAccountAdmin, which only
+  #                                        covers service accounts, not custom
+  #                                        role definitions.
+  #   iap.admin                            bastion-host's IAP tunnel IAM
+  #                                        binding
+  #                                        (google_iap_tunnel_instance_iam_binding) -
+  #                                        confirmed via a live 403 on
+  #                                        iap.tunnelInstances.getIamPolicy.
+  #   pubsub.admin                         loki/vector's GCS-bucket-event and
+  #                                        log-event topics
+  #                                        (google_pubsub_topic,
+  #                                        google_pubsub_subscription) AND
+  #                                        their IAM bindings
+  #                                        (google_pubsub_topic_iam_member,
+  #                                        google_pubsub_subscription_iam_member) -
+  #                                        confirmed via a live 403 on
+  #                                        pubsub.topics.get. pubsub.editor
+  #                                        would cover the topics/
+  #                                        subscriptions themselves but not
+  #                                        their IAM policy management, which
+  #                                        both modules also need.
   #
   # A `values` knob rather than a literal so an environment can narrow the
   # grant without forking the unit - but narrowing below this set breaks
@@ -93,5 +125,9 @@ inputs = merge({
     "roles/artifactregistry.admin",
     "roles/networkconnectivity.consumerNetworkAdmin",
     "roles/memorystore.admin",
+    "roles/logging.configWriter",
+    "roles/iam.roleAdmin",
+    "roles/iap.admin",
+    "roles/pubsub.admin",
   ])
 }, try(values.cfg, {}))
