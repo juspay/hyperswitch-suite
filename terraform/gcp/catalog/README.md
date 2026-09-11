@@ -13,7 +13,7 @@ terraform/gcp/catalog/
                   # full unit set
 ```
 
-18 units. This mirrors the AWS catalog in
+19 units. This mirrors the AWS catalog in
 [PR #302](https://github.com/juspay/hyperswitch-suite/pull/302) — same unit
 skeleton, same tag-pinning discipline.
 
@@ -86,8 +86,8 @@ application-stack/apps/<name>    -> ../../gke, ../../../vpc-network
 
 ## Scope
 
-A unit exists here only if its module is published on `main`. All 18 pins
-resolve to existing tags — `scripts/ci/check-gcp-pins.sh` enforces it.
+A unit exists here only if its module is published on `main`. All 19 module
+pins resolve to existing tags — `scripts/ci/check-gcp-pins.sh` enforces it.
 
 | Excluded | Why |
 |---|---|
@@ -101,6 +101,7 @@ resolve to existing tags — `scripts/ci/check-gcp-pins.sh` enforces it.
 
 | Unit | Module | Tag |
 |---|---|---|
+| `iam-infraswitch-federation` | `application-resources/infraswitch-gcp-federation` | `gcp-apps-infraswitch-gcp-federation-v0.1.0` |
 | `vpc-network` | `composition/vpc-network` | `gcp-vpc-network-v0.1.0` |
 | `alloydb` | `composition/alloydb` | `gcp-alloydb-v0.1.0` |
 | `memorystore-valkey` | `composition/memorystore-valkey` | `gcp-memorystore-valkey-v0.1.0` |
