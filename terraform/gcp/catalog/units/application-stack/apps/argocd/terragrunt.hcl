@@ -38,8 +38,8 @@ inputs = merge({
   # No cross-project deployments configured yet.
   cross_project_target_service_accounts = []
 
-  labels = {
+  labels = merge({
     environment = include.root.locals.environment.short
     managed_by  = "terraform"
-  }
+  }, try(values.common_labels, {}))
 }, try(values.cfg, {}))

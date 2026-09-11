@@ -33,7 +33,7 @@ terraform {
   source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/composition/spanner?ref=gcp-spanner-v0.1.0"
 }
 
-inputs = {
+inputs = merge({
   project_id   = include.root.locals.project_id
   environment  = include.root.locals.environment.short
   project_name = include.root.locals.project_name
@@ -86,10 +86,10 @@ inputs = {
   # outside Terraform too. Left NONE so backups are declared per database.
   default_backup_schedule_type = try(values.spanner.default_backup_schedule_type, "NONE")
 
-  labels = {
+  labels = merge({
     environment = include.root.locals.environment.short
     project     = include.root.locals.project_name
     component   = "database"
     managed_by  = "terraform"
-  }
-}
+  }, try(values.common_labels, {}))
+}, try(values.cfg, {}))

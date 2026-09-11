@@ -77,10 +77,10 @@ inputs = merge({
   # it — the same constraint gke's deletion_protection has.
   deletion_protection = try(values.alloydb.deletion_protection, true)
 
-  labels = {
+  labels = merge({
     environment = include.root.locals.environment.short
     project     = include.root.locals.project_name
     component   = "database"
     managed_by  = "terraform"
-  }
+  }, try(values.common_labels, {}))
 }, try(values.cfg, {}))

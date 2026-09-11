@@ -21,7 +21,7 @@ terraform {
   source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/composition/squid-proxy?ref=gcp-squid-proxy-v0.1.0"
 }
 
-inputs = {
+inputs = merge({
   project_id   = include.root.locals.project_id
   environment  = include.root.locals.environment.short
   project_name = include.root.locals.project_name
@@ -49,9 +49,34 @@ inputs = {
   min_replicas = 2
   max_replicas = 6
 
-  labels = {
+  # ---------------------------------------------------------------------
+  # Config pipeline
+  # ---------------------------------------------------------------------
+  # Without these two inputs the module uploads nothing to the config bucket,
+  # the VM runs the stock Ubuntu squid.conf baked into the image, and that
+  # config ends in `http_access deny all`. Squid then accepts the TCP
+  # connection and silently drops the CONNECT, so clients hang for their full
+  # timeout instead of getting a fast 403 - indistinguishable from a network
+  # fault. See templates/startup.sh for the full explanation.
+  #
+  # get_terragrunt_dir() (not get_repo_root()): `terragrunt stack generate`
+  # copies this unit's non-HCL files (config/, templates/) alongside the
+  # generated terragrunt.hcl, so these paths resolve for any consumer.
+  #
+  # squid_config_content has a working default (config/squid.conf); the
+  # allowlist's default is DELIBERATELY minimal (Google's own API domains
+  # only, see config/allowedlist.txt) since a real deployment's allowlist is
+  # inherently environment-specific. Point values.squid.allowlist_file at a
+  # private file to extend it, or override squid_allowlist_content wholesale
+  # via values.cfg for anything more than a file swap.
+  squid_config_content    = file("${get_terragrunt_dir()}/config/squid.conf")
+  squid_allowlist_content = file(try(values.squid.allowlist_file, "${get_terragrunt_dir()}/config/allowedlist.txt"))
+
+  custom_startup_script = file("${get_terragrunt_dir()}/templates/startup.sh")
+
+  labels = merge({
     environment = include.root.locals.environment.short
     project     = include.root.locals.project_name
     managed_by  = "terraform"
-  }
-}
+  }, try(values.common_labels, {}))
+}, try(values.cfg, {}))

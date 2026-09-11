@@ -37,8 +37,8 @@ inputs = merge({
 
   bucket_location = include.root.locals.region
 
-  labels = {
+  labels = merge({
     environment = include.root.locals.environment.short
     managed_by  = "terraform"
-  }
+  }, try(values.common_labels, {}))
 }, try(values.cfg, {}))

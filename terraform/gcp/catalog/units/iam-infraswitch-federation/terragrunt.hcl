@@ -50,7 +50,7 @@ terraform {
   source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/application-resources/infraswitch-gcp-federation?ref=gcp-apps-infraswitch-gcp-federation-v0.1.0"
 }
 
-inputs = {
+inputs = merge({
   project_id = include.root.locals.project_id
 
   # Which AWS identity the pool trusts. Required - there is no sane default,
@@ -94,4 +94,4 @@ inputs = {
     "roles/networkconnectivity.consumerNetworkAdmin",
     "roles/memorystore.admin",
   ])
-}
+}, try(values.cfg, {}))

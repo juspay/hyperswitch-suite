@@ -40,8 +40,8 @@ inputs = merge({
   # No cross-region reads configured yet (single-region setup).
   cross_region_reader_members = []
 
-  labels = {
+  labels = merge({
     environment = include.root.locals.environment.short
     managed_by  = "terraform"
-  }
+  }, try(values.common_labels, {}))
 }, try(values.cfg, {}))
