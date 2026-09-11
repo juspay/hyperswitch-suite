@@ -50,7 +50,7 @@ terraform {
 }
 
 
-inputs = {
+inputs = merge({
   project_id   = include.root.locals.project_id
   environment  = include.root.locals.environment.short
   project_name = include.root.locals.project_name
@@ -107,4 +107,4 @@ inputs = {
     engine      = "valkey"
     managed_by  = "terraform"
   }
-}
+}, try(values.cfg, {}))

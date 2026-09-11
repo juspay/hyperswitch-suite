@@ -12,14 +12,14 @@ locals {
 
   istio_base = merge(
     { release_name = "istio-base", chart_repo = "https://istio-release.storage.googleapis.com/charts", chart_version = null, values = [], values_file = "" },
-    var.istio_base
+    try({ for k, v in var.istio_base : k => v if v != null }, {})
   )
   istiod = merge(
     { release_name = "istiod", chart_repo = "https://istio-release.storage.googleapis.com/charts", chart_version = null, values = [], values_file = "" },
-    var.istiod
+    try({ for k, v in var.istiod : k => v if v != null }, {})
   )
   istio_gateway = merge(
     { release_name = "istio-gateway", chart_repo = "https://istio-release.storage.googleapis.com/charts", chart_version = null, values = [], values_file = "" },
-    var.istio_gateway
+    try({ for k, v in var.istio_gateway : k => v if v != null }, {})
   )
 }

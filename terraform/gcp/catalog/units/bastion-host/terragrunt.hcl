@@ -19,7 +19,7 @@ terraform {
   source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/composition/bastion-host?ref=gcp-bastion-host-v0.1.0"
 }
 
-inputs = {
+inputs = merge({
   project_id   = include.root.locals.project_id
   environment  = include.root.locals.environment.short
   project_name = include.root.locals.project_name
@@ -49,4 +49,4 @@ inputs = {
     project     = include.root.locals.project_name
     managed_by  = "terraform"
   }
-}
+}, try(values.cfg, {}))

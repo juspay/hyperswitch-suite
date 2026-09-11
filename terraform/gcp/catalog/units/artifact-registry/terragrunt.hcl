@@ -10,7 +10,7 @@ terraform {
   source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/composition/artifact-registry?ref=gcp-artifact-registry-v0.1.0"
 }
 
-inputs = {
+inputs = merge({
   project_id  = include.root.locals.project_id
   environment = include.root.locals.environment.short
   location    = include.root.locals.region
@@ -33,4 +33,4 @@ inputs = {
     environment = include.root.locals.environment.short
     managed_by  = "terraform"
   }
-}
+}, try(values.cfg, {}))

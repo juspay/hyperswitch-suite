@@ -23,7 +23,7 @@ terraform {
   source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/application-resources/hyperswitch?ref=gcp-apps-hyperswitch-v0.1.0"
 }
 
-inputs = {
+inputs = merge({
   project_id   = include.root.locals.project_id
   environment  = include.root.locals.environment.short
   project_name = include.root.locals.project_name
@@ -43,7 +43,7 @@ inputs = {
 
   kms = {
     create          = true
-    location        = include.root.locals.region
+    location        = try(values.cfg.kms_location, include.root.locals.region)
     rotation_period = "7776000s" # 90 days
   }
 
@@ -78,4 +78,4 @@ inputs = {
     managed_by  = "terraform"
     component   = "hyperswitch"
   }
-}
+}, { for k, v in try(values.cfg, {}) : k => v if k != "kms_location" })
