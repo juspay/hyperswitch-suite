@@ -4,14 +4,15 @@ include "root" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/application-resources/external-secrets-operator?ref=eso-v0.1.1"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/application-resources/external-secrets-operator?ref=eso-v0.2.0"
 }
 
 dependency "eks" {
   config_path = "../../eks-01"
 
   mock_outputs = {
-    cluster_name = "mock-cluster"
+    oidc_provider_arn = "arn:aws:iam::123456789012:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/MOCK"
+    cluster_name      = "mock-cluster"
   }
   mock_outputs_merge_strategy_with_state = "shallow"
 }
@@ -34,12 +35,15 @@ inputs = {
 
   # OIDC and Service Account Configuration
   cluster_service_accounts = {
-    "${dependency.eks.outputs.cluster_name}" = [
-      {
-        namespace = try(values.kubernetes_namespace, "external-secrets-operator")
-        name      = try(values.service_account_name, "external-secrets-sa")
-      }
-    ]
+    "${dependency.eks.outputs.cluster_name}" = {
+      oidc_provider_arn = dependency.eks.outputs.oidc_provider_arn
+      service_accounts = [
+        {
+          namespace = try(values.kubernetes_namespace, "external-secrets-operator")
+          name      = try(values.service_account_name, "external-secrets-sa")
+        }
+      ]
+    }
   }
 
   # Additional Policies
