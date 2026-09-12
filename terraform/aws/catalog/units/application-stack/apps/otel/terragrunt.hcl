@@ -7,13 +7,14 @@ dependency "eks" {
   config_path = "../../eks-01"
 
   mock_outputs = {
-    cluster_name = "mock-cluster"
+    oidc_provider_arn = "arn:aws:iam::123456789012:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/MOCK"
+    cluster_name      = "mock-cluster"
   }
   mock_outputs_merge_strategy_with_state = "shallow"
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/application-resources/otel-collector?ref=tf/app/otel-v0.1.0"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/application-resources/otel-collector?ref=tf/app/otel-v0.2.0"
 }
 
 inputs = {
@@ -23,12 +24,15 @@ inputs = {
   app_name     = "otel"
 
   cluster_service_accounts = {
-    "${dependency.eks.outputs.cluster_name}" = [
-      {
-        namespace = try(values.kubernetes_namespace, "monitoring")
-        name      = try(values.service_account_name, "otel-collector")
-      }
-    ]
+    "${dependency.eks.outputs.cluster_name}" = {
+      oidc_provider_arn = dependency.eks.outputs.oidc_provider_arn
+      service_accounts = [
+        {
+          namespace = try(values.kubernetes_namespace, "monitoring")
+          name      = try(values.service_account_name, "otel-collector")
+        }
+      ]
+    }
   }
 
   aws_managed_policy_names = [

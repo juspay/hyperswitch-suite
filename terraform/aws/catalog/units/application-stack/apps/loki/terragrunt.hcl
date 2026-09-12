@@ -20,6 +20,7 @@ dependency "eks" {
   config_path = "../../eks-01"
 
   mock_outputs = {
+    oidc_provider_arn      = "arn:aws:iam::123456789012:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/MOCK"
     cluster_name           = "mock-cluster"
     node_security_group_id = "sg-mock"
   }
@@ -40,7 +41,7 @@ dependency "vpc_network" {
 # Terragrunt Configuration
 # -----------------------------------------------------------------------------
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/application-resources/loki?ref=tf/app/loki-v0.1.3"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/application-resources/loki?ref=tf/app/loki-v0.2.0"
 }
 
 # -----------------------------------------------------------------------------
@@ -55,12 +56,15 @@ inputs = {
 
   # OIDC/IRSA Configuration
   cluster_service_accounts = {
-    "${dependency.eks.outputs.cluster_name}" = [
-      {
-        namespace = try(values.kubernetes_namespace, "loki")
-        name      = try(values.service_account_name, "loki")
-      }
-    ]
+    "${dependency.eks.outputs.cluster_name}" = {
+      oidc_provider_arn = dependency.eks.outputs.oidc_provider_arn
+      service_accounts = [
+        {
+          namespace = try(values.kubernetes_namespace, "loki")
+          name      = try(values.service_account_name, "loki")
+        }
+      ]
+    }
   }
 
   # S3 Bucket Configuration for Loki Logs
