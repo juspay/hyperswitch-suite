@@ -3,15 +3,15 @@
 # GCP using its ServiceAccount token. Attaches to the pool via a data
 # source; does not create or modify the pool itself.
 
-data "google_iam_workload_identity_pool" "infraswitch" {
+data "google_iam_workload_identity_pool" "hyperops" {
   project                   = var.project_id
   workload_identity_pool_id = var.workload_identity_pool_id
 }
 
-resource "google_iam_workload_identity_pool_provider" "infraswitch_k8s" {
+resource "google_iam_workload_identity_pool_provider" "hyperops_k8s" {
   project                            = var.project_id
-  workload_identity_pool_id          = data.google_iam_workload_identity_pool.infraswitch.workload_identity_pool_id
-  workload_identity_pool_provider_id = "infraswitch-k8s-provider"
+  workload_identity_pool_id          = data.google_iam_workload_identity_pool.hyperops.workload_identity_pool_id
+  workload_identity_pool_provider_id = "hyperops-k8s-provider"
   display_name                       = "infra-switch-sa (K8s OIDC)"
   description                        = "EKS cluster ${var.eks_cluster_name}, namespace/SA ${var.k8s_namespace}/${var.k8s_service_account} only"
 
@@ -31,10 +31,10 @@ resource "google_iam_workload_identity_pool_provider" "infraswitch_k8s" {
 }
 
 # Grants project roles directly to the federated identity.
-resource "google_project_iam_member" "infraswitch_k8s_roles" {
+resource "google_project_iam_member" "hyperops_k8s_roles" {
   for_each = toset(var.project_roles)
 
   project = var.project_id
   role    = each.value
-  member  = "principal://iam.googleapis.com/${data.google_iam_workload_identity_pool.infraswitch.name}/subject/system:serviceaccount:${var.k8s_namespace}:${var.k8s_service_account}"
+  member  = "principal://iam.googleapis.com/${data.google_iam_workload_identity_pool.hyperops.name}/subject/system:serviceaccount:${var.k8s_namespace}:${var.k8s_service_account}"
 }

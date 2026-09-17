@@ -22,13 +22,13 @@ variable "eks_oidc_issuer_url" {
 variable "k8s_namespace" {
   description = "Kubernetes namespace of the ServiceAccount allowed to use this provider"
   type        = string
-  default     = "infra-switch"
+  default     = "hyperops"
 }
 
 variable "k8s_service_account" {
   description = "Name of the Kubernetes ServiceAccount allowed to use this provider"
   type        = string
-  default     = "infra-switch-sa"
+  default     = "hyperops-sa"
 }
 
 variable "project_roles" {

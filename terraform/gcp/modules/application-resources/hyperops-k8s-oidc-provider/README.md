@@ -1,7 +1,7 @@
-# infraswitch-k8s-oidc-provider
+# hyperops-k8s-oidc-provider
 
 Adds a generic OIDC provider to an **existing** workload identity pool
-(created separately by [infraswitch-gcp-federation](../infraswitch-gcp-federation)),
+(created separately by [hyperops-gcp-federation](../hyperops-gcp-federation)),
 trusting a Kubernetes cluster's own OIDC issuer — so a pod can authenticate
 to GCP using its own ServiceAccount token, with no AWS credential in the
 path.
@@ -9,15 +9,15 @@ path.
 ## Usage
 
 ```hcl
-module "infraswitch_k8s_oidc_provider" {
-  source = "../../modules/application-resources/infraswitch-k8s-oidc-provider"
+module "hyperops_k8s_oidc_provider" {
+  source = "../../modules/application-resources/hyperops-k8s-oidc-provider"
 
   project_id          = "your-gcp-project"
   eks_cluster_name    = "your-eks-cluster"
   eks_oidc_issuer_url = "https://oidc.eks.<region>.amazonaws.com/id/<cluster-id>"
 
-  k8s_namespace       = "infra-switch"
-  k8s_service_account = "infra-switch-sa"
+  k8s_namespace       = "hyperops"
+  k8s_service_account = "hyperops-sa"
 }
 ```
 
@@ -28,8 +28,8 @@ aws eks describe-cluster --name your-eks-cluster --region <region> \
   --query "cluster.identity.oidc.issuer" --output text
 ```
 
-`workload_identity_pool_id` defaults to `"infraswitch-aws-pool"` — the pool
-`infraswitch-gcp-federation` creates. Override it only if that module's own
+`workload_identity_pool_id` defaults to `"hyperops-aws-pool"` — the pool
+`hyperops-gcp-federation` creates. Override it only if that module's own
 `workload_identity_pool_id` was customized.
 
 ## One-time manual step (not Terraform): the pod's credential config
@@ -55,7 +55,7 @@ The pod needs a dedicated projected ServiceAccount token volume whose
 
 ```yaml
 volumes:
-  - name: infraswitch-k8s-token
+  - name: hyperops-k8s-token
     projected:
       sources:
         - serviceAccountToken:
@@ -67,7 +67,7 @@ volumes:
 `audience` defaults to this provider's own canonical resource name:
 
 ```
-//iam.googleapis.com/projects/<GCP_PROJECT_NUMBER>/locations/global/workloadIdentityPools/infraswitch-aws-pool/providers/infraswitch-k8s-provider
+//iam.googleapis.com/projects/<GCP_PROJECT_NUMBER>/locations/global/workloadIdentityPools/hyperops-aws-pool/providers/hyperops-k8s-provider
 ```
 
 `GCP_PROJECT_NUMBER` is the project's numeric number, not its string ID —
