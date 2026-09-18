@@ -64,6 +64,8 @@
 
 | Name | Description |
 |------|-------------|
+| <a name="output_aws_zone_type"></a> [aws\_zone\_type](#output\_aws\_zone\_type) | Zone type external-dns is scoped to (public, private, or empty for both), as passed to var.aws\_zone\_type |
+| <a name="output_domain_filters"></a> [domain\_filters](#output\_domain\_filters) | Domains external-dns is allowed to manage records for, as passed to var.domain\_filters |
 | <a name="output_external_dns_role_arn"></a> [external\_dns\_role\_arn](#output\_external\_dns\_role\_arn) | The ARN of the external-dns IAM role |
 | <a name="output_external_dns_service_account"></a> [external\_dns\_service\_account](#output\_external\_dns\_service\_account) | Service Account Name of external-dns |
 | <a name="output_region"></a> [region](#output\_region) | AWS region where resources are created |
