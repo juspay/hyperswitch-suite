@@ -40,6 +40,11 @@ variable "squid_port" {
   description = "Port for Squid proxy"
   type        = number
   default     = 3128
+
+  validation {
+    condition     = var.squid_port > 0 && var.squid_port <= 65535
+    error_message = "squid_port must be between 1 and 65535"
+  }
 }
 
 variable "ami_id" {
@@ -191,6 +196,12 @@ variable "config_files" {
   default     = {}
 }
 
+variable "loki_endpoint" {
+  description = "Loki endpoint URL substituted for the {{loki_endpoint}} placeholder in config_files content (e.g. vector.toml's Loki sink). Empty string leaves any {{loki_endpoint}} placeholder unresolved."
+  type        = string
+  default     = ""
+}
+
 variable "enable_detailed_monitoring" {
   description = "Enable detailed CloudWatch monitoring"
   type        = bool
@@ -278,6 +289,11 @@ variable "tcp_listener_port" {
   description = "Port for TCP listener (if enable_tcp_listener=true)"
   type        = number
   default     = 80
+
+  validation {
+    condition     = var.tcp_listener_port > 0 && var.tcp_listener_port <= 65535
+    error_message = "tcp_listener_port must be between 1 and 65535"
+  }
 }
 
 variable "enable_tls_listener" {
@@ -290,6 +306,11 @@ variable "tls_listener_port" {
   description = "Port for TLS listener (if enable_tls_listener=true)"
   type        = number
   default     = 443
+
+  validation {
+    condition     = var.tls_listener_port > 0 && var.tls_listener_port <= 65535
+    error_message = "tls_listener_port must be between 1 and 65535"
+  }
 }
 
 variable "tls_certificate_arn" {

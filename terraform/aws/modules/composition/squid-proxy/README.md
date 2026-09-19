@@ -4,13 +4,13 @@
 | Name | Version |
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.0 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.30.0 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 6.30.0 |
 | <a name="provider_tls"></a> [tls](#provider\_tls) | n/a |
 
 ## Modules
@@ -18,9 +18,9 @@
 | Name | Source | Version |
 |------|--------|---------|
 | <a name="module_asg"></a> [asg](#module\_asg) | ../../base/asg | n/a |
-| <a name="module_config_bucket"></a> [config\_bucket](#module\_config\_bucket) | ../../base/s3-bucket | n/a |
+| <a name="module_config_bucket"></a> [config\_bucket](#module\_config\_bucket) | terraform-aws-modules/s3-bucket/aws | ~> 4.0 |
 | <a name="module_launch_template"></a> [launch\_template](#module\_launch\_template) | ../../base/launch-template | n/a |
-| <a name="module_logs_bucket"></a> [logs\_bucket](#module\_logs\_bucket) | ../../base/s3-bucket | n/a |
+| <a name="module_logs_bucket"></a> [logs\_bucket](#module\_logs\_bucket) | terraform-aws-modules/s3-bucket/aws | ~> 4.0 |
 | <a name="module_nlb"></a> [nlb](#module\_nlb) | ../../base/nlb | n/a |
 | <a name="module_nlb_listener_tcp"></a> [nlb\_listener\_tcp](#module\_nlb\_listener\_tcp) | ../../base/nlb-listener | n/a |
 | <a name="module_nlb_listener_tls"></a> [nlb\_listener\_tls](#module\_nlb\_listener\_tls) | ../../base/nlb-listener | n/a |
@@ -86,6 +86,7 @@
 | <a name="input_lb_subnet_ids"></a> [lb\_subnet\_ids](#input\_lb\_subnet\_ids) | Subnet IDs for load balancer (service layer subnets) | `list(string)` | n/a | yes |
 | <a name="input_logs_bucket_arn"></a> [logs\_bucket\_arn](#input\_logs\_bucket\_arn) | ARN of existing S3 bucket for logs (required if create\_logs\_bucket=false) | `string` | `""` | no |
 | <a name="input_logs_bucket_name"></a> [logs\_bucket\_name](#input\_logs\_bucket\_name) | Name of existing S3 bucket for logs (required if create\_logs\_bucket=false) | `string` | `""` | no |
+| <a name="input_loki_endpoint"></a> [loki\_endpoint](#input\_loki\_endpoint) | Loki endpoint URL substituted for the {{loki\_endpoint}} placeholder in config\_files content (e.g. vector.toml's Loki sink). Empty string leaves any {{loki\_endpoint}} placeholder unresolved. | `string` | `""` | no |
 | <a name="input_max_size"></a> [max\_size](#input\_max\_size) | Maximum number of instances in ASG | `number` | `3` | no |
 | <a name="input_min_size"></a> [min\_size](#input\_min\_size) | Minimum number of instances in ASG | `number` | `1` | no |
 | <a name="input_name_override"></a> [name\_override](#input\_name\_override) | Override for resource name prefix (appended to environment and project name) | `string` | `"squid"` | no |
