@@ -597,10 +597,28 @@ variable "internal_loadbalancer_dns" {
   default     = ""
 }
 
+variable "auth_proxy_loadbalancer_dns" {
+  description = "Auth proxy / decision service load balancer DNS (for envoy.yaml templating)"
+  type        = string
+  default     = ""
+}
+
+variable "ratelimiter_loadbalancer_dns" {
+  description = "Ratelimiter service load balancer DNS (for envoy.yaml templating)"
+  type        = string
+  default     = ""
+}
+
 variable "virtual_hosts_domains" {
   description = "List of domain names for the Envoy virtual host (for envoy.yaml templating)"
   type        = list(string)
   default     = []
+}
+
+variable "default_host_for_http_10" {
+  description = "Default host for HTTP/1.0 requests without a Host header (for envoy.yaml templating). Defaults to the first entry of virtual_hosts_domains when unset."
+  type        = string
+  default     = ""
 }
 
 variable "eks_cluster_name" {

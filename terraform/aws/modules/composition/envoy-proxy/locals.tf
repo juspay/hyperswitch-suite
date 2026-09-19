@@ -25,21 +25,33 @@ locals {
   eks_cluster_name         = var.eks_cluster_name != "" ? var.eks_cluster_name : local.default_eks_cluster_name
 
   # Envoy configuration templating - replace placeholders with actual values
-  # Supports: {{hyperswitch_cloudfront_dns}}, {{internal_loadbalancer_dns}}, {{eks_cluster_name}}, {{virtual_hosts_domains}}
+  # Supports: {{hyperswitch_cloudfront_dns}}, {{internal_loadbalancer_dns}}, {{auth_proxy_loadbalancer_dns}},
+  # {{ratelimiter_loadbalancer_dns}}, {{eks_cluster_name}}, {{virtual_hosts_domains}}, {{default_host_for_http_10}}
   virtual_hosts_domains_json = jsonencode(var.virtual_hosts_domains)
+
+  default_host_for_http_10 = var.default_host_for_http_10 != "" ? var.default_host_for_http_10 : try(var.virtual_hosts_domains[0], "")
 
   envoy_config_content = replace(
     replace(
       replace(
         replace(
-          var.envoy_config_template,
-          "{{hyperswitch_cloudfront_dns}}", var.hyperswitch_cloudfront_dns
+          replace(
+            replace(
+              replace(
+                var.envoy_config_template,
+                "{{hyperswitch_cloudfront_dns}}", var.hyperswitch_cloudfront_dns
+              ),
+              "{{internal_loadbalancer_dns}}", var.internal_loadbalancer_dns
+            ),
+            "{{auth_proxy_loadbalancer_dns}}", var.auth_proxy_loadbalancer_dns
+          ),
+          "{{ratelimiter_loadbalancer_dns}}", var.ratelimiter_loadbalancer_dns
         ),
-        "{{internal_loadbalancer_dns}}", var.internal_loadbalancer_dns
+        "{{eks_cluster_name}}", local.eks_cluster_name
       ),
-      "{{eks_cluster_name}}", local.eks_cluster_name
+      "{{virtual_hosts_domains}}", local.virtual_hosts_domains_json
     ),
-    "{{virtual_hosts_domains}}", local.virtual_hosts_domains_json
+    "{{default_host_for_http_10}}", local.default_host_for_http_10
   )
 
   # Logs bucket selection - use created or existing
