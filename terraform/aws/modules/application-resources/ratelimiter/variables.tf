@@ -207,3 +207,12 @@ variable "lb_egress_rules" {
   }))
   default = {}
 }
+
+# =========================================================================
+# DNS
+# =========================================================================
+variable "domain" {
+  description = "DNS name (FQDN) for the ratelimiter LoadBalancer Service load balancer. Exposed as an output so deployment tooling (e.g. the external-dns hostname annotation rendered via tfstate) reads the domain from this unit instead of hardcoding it."
+  type        = string
+  default     = null
+}

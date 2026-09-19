@@ -112,3 +112,11 @@ output "security_group_name" {
   description = "Name of the security group (null if not created)"
   value       = var.create_security_group ? aws_security_group.this[0].name : null
 }
+
+# =========================================================================
+# DNS OUTPUTS
+# =========================================================================
+output "domain" {
+  description = "DNS name (FQDN) for the Loki gateway ingress load balancer"
+  value       = var.domain
+}

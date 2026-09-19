@@ -205,3 +205,12 @@ variable "security_group_egress_rules" {
     }
   ]
 }
+
+# =========================================================================
+# DNS
+# =========================================================================
+variable "domain" {
+  description = "DNS name (FQDN) for the Loki gateway ingress load balancer. Exposed as an output so deployment tooling (e.g. the external-dns hostname annotation rendered via tfstate) reads the domain from this unit instead of hardcoding it."
+  type        = string
+  default     = null
+}

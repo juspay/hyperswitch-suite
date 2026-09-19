@@ -47,6 +47,7 @@
 | <a name="input_cluster_service_accounts"></a> [cluster\_service\_accounts](#input\_cluster\_service\_accounts) | Map of EKS cluster name -> the cluster's OIDC provider ARN and the service accounts allowed to assume the IRSA role | <pre>map(object({<br/>    oidc_provider_arn = string<br/>    service_accounts = list(object({<br/>      namespace = string<br/>      name      = string<br/>    }))<br/>  }))</pre> | `{}` | no |
 | <a name="input_create_security_group"></a> [create\_security\_group](#input\_create\_security\_group) | Whether to create a security group for the Loki ALB ingress | `bool` | `false` | no |
 | <a name="input_customer_managed_policy_arns"></a> [customer\_managed\_policy\_arns](#input\_customer\_managed\_policy\_arns) | List of customer managed policy ARNs to attach | `list(string)` | `[]` | no |
+| <a name="input_domain"></a> [domain](#input\_domain) | DNS name (FQDN) for the Loki gateway ingress load balancer. Exposed as an output so deployment tooling (e.g. the external-dns hostname annotation rendered via tfstate) reads the domain from this unit instead of hardcoding it. | `string` | `null` | no |
 | <a name="input_eks_node_security_group_id"></a> [eks\_node\_security\_group\_id](#input\_eks\_node\_security\_group\_id) | EKS node security group ID. When provided, the module will create ingress rules on the EKS node security group to allow traffic from the Loki LB, and egress rules on the Loki LB to reach EKS nodes. | `string` | `null` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (e.g., sandbox, dev, prod) | `string` | n/a | yes |
 | <a name="input_force_detach_policies"></a> [force\_detach\_policies](#input\_force\_detach\_policies) | Whether to force detaching policies when destroying the role | `bool` | `true` | no |
@@ -72,6 +73,7 @@
 | <a name="output_assume_role_principals_enabled"></a> [assume\_role\_principals\_enabled](#output\_assume\_role\_principals\_enabled) | Whether assume role principals feature is enabled |
 | <a name="output_aws_managed_policies_enabled"></a> [aws\_managed\_policies\_enabled](#output\_aws\_managed\_policies\_enabled) | Whether AWS managed policy attachments feature is enabled |
 | <a name="output_customer_managed_policies_enabled"></a> [customer\_managed\_policies\_enabled](#output\_customer\_managed\_policies\_enabled) | Whether customer managed policy attachments feature is enabled |
+| <a name="output_domain"></a> [domain](#output\_domain) | DNS name (FQDN) for the Loki gateway ingress load balancer |
 | <a name="output_oidc_enabled"></a> [oidc\_enabled](#output\_oidc\_enabled) | Whether OIDC/IRSA feature is enabled |
 | <a name="output_region"></a> [region](#output\_region) | AWS region where resources are created |
 | <a name="output_role_arn"></a> [role\_arn](#output\_role\_arn) | ARN of the IAM role for Loki application |
