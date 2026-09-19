@@ -42,6 +42,14 @@ locals {
     "{{bucket-name}}", local.config_bucket_name
   )
 
+  # config_files templating - same placeholder substitution as userdata_content,
+  # applied to every uploaded config file's content (e.g. vector.toml's
+  # {{loki_endpoint}} Loki sink URL, so it can be region-coded by the caller
+  # instead of hardcoded per-region in a static file).
+  config_files_content = {
+    for key, path in var.config_files : key => replace(file(path), "{{loki_endpoint}}", var.loki_endpoint)
+  }
+
   # IAM role selection - use created or existing
   # Priority: 1) Created role+profile, 2) Created profile for existing role, 3) Existing profile
   instance_profile_name = (

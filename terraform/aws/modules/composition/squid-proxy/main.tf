@@ -49,13 +49,23 @@ resource "aws_ssm_parameter" "squid_private_key" {
 # =========================================================================
 # S3 Bucket for Squid Logs (Optional - Create only if needed)
 # =========================================================================
+# Uses the upstream registry module (matching envoy-proxy's bucket pattern)
+# rather than the local base/s3-bucket module: the base module's encryption
+# resource pins bucket_key_enabled explicitly (false), which fights AWS's
+# own attribute defaulting and produces a permanent plan diff. The registry
+# module passes bucket_key_enabled through as null when unset, leaving it
+# fully provider-managed and diff-free.
 module "logs_bucket" {
-  count  = var.create_logs_bucket ? 1 : 0
-  source = "../../base/s3-bucket"
+  count   = var.create_logs_bucket ? 1 : 0
+  source  = "terraform-aws-modules/s3-bucket/aws"
+  version = "~> 4.0"
 
-  bucket_name       = "${local.name_prefix}-logs-${data.aws_caller_identity.current.account_id}-${var.region}"
-  force_destroy     = var.environment != "prod" ? true : false
-  enable_versioning = false
+  bucket        = "${local.name_prefix}-logs-${data.aws_caller_identity.current.account_id}-${var.region}"
+  force_destroy = var.environment != "prod" ? true : false
+
+  versioning = {
+    enabled = false
+  }
 
   # Security best practices
   block_public_acls       = true
@@ -63,10 +73,15 @@ module "logs_bucket" {
   ignore_public_acls      = true
   restrict_public_buckets = true
 
-  sse_algorithm = "AES256"
+  server_side_encryption_configuration = {
+    rule = {
+      apply_server_side_encryption_by_default = {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
 
   # Note: Lifecycle rules removed - manage log retention manually if needed
-  lifecycle_rules = []
 
   tags = local.common_tags
 }
@@ -75,12 +90,16 @@ module "logs_bucket" {
 # S3 Bucket for Squid Configuration (Optional - Create only if needed)
 # =========================================================================
 module "config_bucket" {
-  count  = var.create_config_bucket ? 1 : 0
-  source = "../../base/s3-bucket"
+  count   = var.create_config_bucket ? 1 : 0
+  source  = "terraform-aws-modules/s3-bucket/aws"
+  version = "~> 4.0"
 
-  bucket_name       = "${local.name_prefix}-config-${data.aws_caller_identity.current.account_id}-${var.region}"
-  force_destroy     = var.environment != "prod" ? true : false
-  enable_versioning = true # Enable versioning to track config changes
+  bucket        = "${local.name_prefix}-config-${data.aws_caller_identity.current.account_id}-${var.region}"
+  force_destroy = var.environment != "prod" ? true : false
+
+  versioning = {
+    enabled = true # Enable versioning to track config changes
+  }
 
   # Security best practices
   block_public_acls       = true
@@ -88,17 +107,25 @@ module "config_bucket" {
   ignore_public_acls      = true
   restrict_public_buckets = true
 
-  sse_algorithm = "AES256"
+  server_side_encryption_configuration = {
+    rule = {
+      apply_server_side_encryption_by_default = {
+        sse_algorithm = "AES256"
+      }
+    }
+  }
 
   # Lifecycle rules for old versions
-  lifecycle_rules = [
+  lifecycle_rule = [
     {
-      id                            = "expire-old-config-versions"
-      enabled                       = true
-      prefix                        = ""
-      expiration_days               = null
-      noncurrent_version_expiration = 90 # Keep old versions for 90 days
-      transition                    = []
+      id      = "expire-old-config-versions"
+      enabled = true
+      filter = {
+        prefix = ""
+      }
+      noncurrent_version_expiration = {
+        noncurrent_days = 90 # Keep old versions for 90 days
+      }
     }
   ]
 
@@ -117,8 +144,8 @@ resource "aws_s3_object" "squid_config_files" {
 
   bucket  = local.config_bucket_name
   key     = "${var.s3_config_path_prefix}/${each.key}"
-  content = file(each.value)
-  etag    = filemd5(each.value)
+  content = local.config_files_content[each.key]
+  etag    = md5(local.config_files_content[each.key])
 
   tags = local.common_tags
 }
@@ -274,10 +301,18 @@ resource "aws_security_group" "asg" {
 # NLB Security Group
 # =========================================================================
 # NOTE: This security group is for the Network Load Balancer.
-# INBOUND RULES (who can access the NLB) should be defined in the 
-# security-rules module at the live layer to support cross-module 
+# INBOUND RULES (who can access the NLB) should be defined in the
+# security-rules module at the live layer to support cross-module
 # connectivity (e.g., EKS pods → Squid NLB).
 # Only internal rules (NLB → ASG) are defined here.
+#
+# IMPORTANT — backend port is always var.squid_port: the three rules below
+# (nlb_to_squid_outbound, squid_from_nlb_inbound, nlb_health_checks) all
+# govern NLB<->ASG traffic on var.squid_port, regardless of which listener
+# (var.tcp_listener_port or var.tls_listener_port) the client connected to —
+# the NLB always forwards to the target group's port (var.squid_port), never
+# the listener's port. This module already fully owns that path; do NOT add
+# a duplicate ingress/egress rule for it in a consuming security-rules unit.
 # =========================================================================
 resource "aws_security_group" "nlb" {
   count = var.create_nlb ? 1 : 0
