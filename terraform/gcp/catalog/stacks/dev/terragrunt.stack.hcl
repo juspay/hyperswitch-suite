@@ -33,7 +33,7 @@
 # Phase 0 — Foundation
 # -----------------------------------------------------------------------------
 unit "vpc-network" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/vpc-network?ref=unit/gcp/vpc-network-v0.1.0-v2"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/vpc-network?ref=unit/gcp/vpc-network-v0.1.0-v3"
   path   = "vpc-network"
 
   no_dot_terragrunt_stack = true
@@ -197,7 +197,7 @@ unit "hyperswitch" {
 # need a pre-baked custom GCE image; terraform/gcp/packer/ has the definitions.
 
 unit "envoy-proxy" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/envoy-proxy?ref=unit/gcp/envoy-proxy-v0.1.0-v2"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/envoy-proxy?ref=unit/gcp/envoy-proxy-v0.1.1-v1"
   path   = "envoy-proxy"
 
   no_dot_terragrunt_stack = true
@@ -278,7 +278,7 @@ unit "locker" {
 # depends only on vpc-network, so Terragrunt may schedule it early — harmless,
 # but the rules only bite once the units they describe exist.
 unit "firewall-rules" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/firewall-rules?ref=unit/gcp/firewall-rules-v0.1.0-v2"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/firewall-rules?ref=unit/gcp/firewall-rules-v0.1.1-v1"
   path   = "firewall-rules"
 
   no_dot_terragrunt_stack = true
