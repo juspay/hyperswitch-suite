@@ -14,9 +14,9 @@ output "rules_summary" {
   description = "Summary of firewall rules created"
   value = {
     total_rules = length(local.rules_flat)
-    by_component = {
-      for component, group in var.rules :
-      component => length(group.rules)
-    }
+    by_component = merge(
+      { for component, group in var.ingress_rules : "ingress-${component}" => length(group.rules) },
+      { for component, group in var.egress_rules : "egress-${component}" => length(group.rules) },
+    )
   }
 }

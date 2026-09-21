@@ -6,16 +6,35 @@
 #
 # GCP firewall rules are network-wide rather than resource-scoped, matched by
 # direction and target/source tags or service accounts. Rules are grouped by
-# logical component name purely for input organization, then flattened into the
-# list the upstream submodule expects.
+# direction first (ingress_rules / egress_rules), then by logical component
+# name, then flattened into the list the upstream submodule expects.
 
 locals {
-  rules_flat = merge([
-    for component, group in var.rules : {
+  ingress_rules_flat = merge([
+    for component, group in var.ingress_rules : {
       for rule in group.rules :
-      "${component}-${rule.name}" => merge(rule, { name = "${local.name_prefix}-${component}-${rule.name}" })
+      "ingress-${component}-${rule.name}" => merge(rule, {
+        name                    = "${local.name_prefix}-${component}-${rule.name}"
+        direction               = "INGRESS"
+        target_tags             = group.target_tags
+        target_service_accounts = group.target_service_accounts
+      })
     }
   ]...)
+
+  egress_rules_flat = merge([
+    for component, group in var.egress_rules : {
+      for rule in group.rules :
+      "egress-${component}-${rule.name}" => merge(rule, {
+        name                    = "${local.name_prefix}-${component}-${rule.name}"
+        direction               = "EGRESS"
+        target_tags             = group.target_tags
+        target_service_accounts = group.target_service_accounts
+      })
+    }
+  ]...)
+
+  rules_flat = merge(local.ingress_rules_flat, local.egress_rules_flat)
 }
 
 module "firewall_rules" {
