@@ -41,10 +41,25 @@ variable "envoy_config_content" {
   sensitive   = true
 }
 
-variable "additional_config_files_path" {
-  description = "Optional local directory whose files are uploaded verbatim to the config bucket alongside envoy.yaml (e.g. a vector.toml override). No placeholder templating is applied. \"envoy.yaml\" is skipped, since envoy_config_content already owns that object. Null skips this entirely"
+variable "config_files_source_path" {
+  description = <<-EOT
+    Local directory of config files to upload to the config bucket, one object per file
+    (relative path preserved as the object name) - vector.toml, or anything else a
+    deployment ships alongside envoy.yaml. Matches the AWS envoy-proxy composition
+    module's variable of the same name. Null skips this entirely.
+  EOT
   type        = string
   default     = null
+}
+
+variable "envoy_config_filename" {
+  description = <<-EOT
+    Name of the main Envoy config file (relative to config_files_source_path). This
+    entry's content is replaced with the rendered envoy_config_content on upload
+    instead of its raw file content, same as the AWS envoy-proxy module.
+  EOT
+  type        = string
+  default     = "envoy.yaml"
 }
 
 variable "force_destroy_buckets" {
