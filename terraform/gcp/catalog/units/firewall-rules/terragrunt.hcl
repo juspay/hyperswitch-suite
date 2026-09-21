@@ -31,7 +31,7 @@ dependency "vpc" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/composition/firewall-rules?ref=gcp-firewall-rules-v0.1.0"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/composition/firewall-rules?ref=gcp-firewall-rules-v0.1.1"
 }
 
 inputs = merge({
@@ -41,38 +41,54 @@ inputs = merge({
 
   network_name = dependency.vpc.outputs.network_name
 
-  rules = {
+  ingress_rules = {
     bastion-to-proxies = {
+      target_tags = ["envoy-proxy", "squid-proxy"]
       rules = [
         {
           name        = "allow-bastion-ssh"
           description = "Bastion IAP SSH to the edge proxy fleets"
-          direction   = "INGRESS"
           # GCP firewall rules cannot mix service-account and tag matching in
           # one rule (source_service_accounts conflicts with target_tags), so
           # source by the bastion's instance tag rather than its SA.
           source_tags = ["bastion-host"]
-          target_tags = ["envoy-proxy", "squid-proxy"]
           allow       = [{ protocol = "tcp", ports = ["22"] }]
         },
       ]
     }
 
-    gke-to-squid-egress = {
+    gke-to-squid = {
+      target_tags = ["squid-proxy"]
       rules = [
         {
           name        = "allow-gke-to-squid"
           description = "GKE nodes and pods to the Squid forward proxy"
-          direction   = "INGRESS"
           # Range-based, not tag-based: the clients are GKE pods, which carry
           # no network tags. Keep in sync with squid-proxy's ilb_source_ranges
           # — both derive from the same two stack values.
-          source_ranges = [
+          ranges = [
             "${values.vpc_cidr_prefix}.16.0/20",
             values.gke_pods_secondary_range_cidr,
           ]
-          target_tags = ["squid-proxy"]
-          allow       = [{ protocol = "tcp", ports = ["3128"] }]
+          allow = [{ protocol = "tcp", ports = ["3128"] }]
+        },
+      ]
+    }
+
+    gke-to-envoy-metrics = {
+      target_tags = ["envoy-proxy"]
+      rules = [
+        {
+          # Short name: the module prefixes it with
+          # "<environment>-<project_name>-<rule-group-key>-", and the
+          # longer, more descriptive name blew past GCP's 63-char cap.
+          name        = "allow-vector-metrics"
+          description = "GKE nodes and pods to the envoy-proxy fleet's Vector metrics port"
+          ranges = [
+            "${values.vpc_cidr_prefix}.16.0/20",
+            values.gke_pods_secondary_range_cidr,
+          ]
+          allow = [{ protocol = "tcp", ports = ["9273"] }]
         },
       ]
     }

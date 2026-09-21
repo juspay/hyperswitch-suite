@@ -17,7 +17,7 @@ dependency "vpc" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/composition/envoy-proxy?ref=gcp-envoy-proxy-v0.1.0"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/composition/envoy-proxy?ref=gcp-envoy-proxy-v0.1.1"
 }
 
 inputs = merge({
@@ -52,15 +52,15 @@ inputs = merge({
   # consumer, not just a checkout of this repo.
   #
   # values.envoy is optional - the default here is a minimal single-cluster
-  # passthrough (see config/envoy.yaml.tftpl).
+  # passthrough (see config/envoy.yaml).
   #
   # values.envoy.assets_dir swaps the BASE directory both paths below resolve
   # against, defaulting to this unit's own bundled config/ + templates/. Point
-  # it at a private directory with the same config/envoy.yaml.tftpl and
+  # it at a private directory with the same config/envoy.yaml and
   # templates/startup.sh layout to ship real Envoy config (extra filters,
   # auth, multiple clusters) without forking this unit or hand-rendering the
   # whole content yourself via values.cfg.
-  envoy_config_content = try(values.envoy, null) != null ? templatefile("${try(values.envoy.assets_dir, get_terragrunt_dir())}/config/envoy.yaml.tftpl", {
+  envoy_config_content = try(values.envoy, null) != null ? templatefile("${try(values.envoy.assets_dir, get_terragrunt_dir())}/config/envoy.yaml", {
     http_port     = 8080
     lb_ip         = try(values.envoy.lb_ip, "unknown")
     upstream_host = values.envoy.upstream_host
@@ -68,6 +68,14 @@ inputs = merge({
   }) : null
 
   custom_startup_script = file("${try(values.envoy.assets_dir, get_terragrunt_dir())}/templates/startup.sh")
+
+  # Every file under config/ becomes one object in the config bucket -
+  # vector.toml uploads verbatim; envoy.yaml (matching envoy_config_filename's
+  # default) gets envoy_config_content's already-rendered value instead of its
+  # raw on-disk template text. One object per file, not two. abspath() is
+  # required since Terraform resolves this path from its own module cache,
+  # not this directory.
+  config_files_source_path = abspath("${try(values.envoy.assets_dir, get_terragrunt_dir())}/config")
 
   enable_cloud_armor   = true
   enable_mtls_listener = false

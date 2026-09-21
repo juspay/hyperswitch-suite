@@ -58,8 +58,8 @@ inputs = merge({
   aws_account_id = values.aws_account_id
   aws_role_name  = values.aws_role_name
 
-  # The module's own defaults, plus five roles a full live tree needs that the
-  # defaults do not cover:
+  # The module's own defaults, plus nine roles a full live tree needs that
+  # the defaults do not cover:
   #
   #   dns.admin                            vpc-network manages private Cloud
   #                                        DNS zones (Private Service Connect
@@ -72,6 +72,15 @@ inputs = merge({
   #   memorystore.admin                    memorystore-valkey (the Memorystore
   #                                        for Valkey API is distinct from the
   #                                        redis.admin the defaults grant).
+  #   logging.configWriter                 bastion-host's logging sink
+  #                                        (google_logging_project_sink).
+  #   iam.roleAdmin                        bastion-host's custom IAM role
+  #                                        (google_project_iam_custom_role).
+  #   iap.admin                            bastion-host's IAP tunnel IAM
+  #                                        binding.
+  #   pubsub.admin                         loki/vector's pubsub topics and
+  #                                        their IAM bindings - pubsub.editor
+  #                                        doesn't cover the latter.
   #
   # A `values` knob rather than a literal so an environment can narrow the
   # grant without forking the unit - but narrowing below this set breaks
@@ -93,5 +102,9 @@ inputs = merge({
     "roles/artifactregistry.admin",
     "roles/networkconnectivity.consumerNetworkAdmin",
     "roles/memorystore.admin",
+    "roles/logging.configWriter",
+    "roles/iam.roleAdmin",
+    "roles/iap.admin",
+    "roles/pubsub.admin",
   ])
 }, try(values.cfg, {}))
