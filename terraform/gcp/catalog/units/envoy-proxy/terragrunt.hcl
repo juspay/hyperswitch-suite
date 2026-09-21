@@ -69,6 +69,14 @@ inputs = merge({
 
   custom_startup_script = file("${try(values.envoy.assets_dir, get_terragrunt_dir())}/templates/startup.sh")
 
+  # Ships vector.toml (config for the custom image's baked-in vector.service)
+  # to the config bucket alongside envoy.yaml. Points at config/extra/, not
+  # config/ itself, since the module uploads every file under this path
+  # verbatim except a literal "envoy.yaml". abspath() is required here since
+  # this value is a path Terraform resolves from its own module cache, not a
+  # rendered content string.
+  additional_config_files_path = abspath("${try(values.envoy.assets_dir, get_terragrunt_dir())}/config/extra")
+
   enable_cloud_armor   = true
   enable_mtls_listener = false
 

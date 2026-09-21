@@ -45,6 +45,56 @@ else
   exit 1
 fi
 
+# `envoy --mode validate` runs as root and leaves behind a root-owned
+# access-log file, which the real envoy.service (User=envoy) then fails to
+# open - re-own unconditionally rather than one hardcoded filename.
+chown -R envoy:envoy /var/log/envoy
+
 systemctl daemon-reload
 systemctl enable envoy.service
 systemctl restart envoy.service
+
+# Vector is optional - the image bakes in a working default vector.toml, so
+# a fleet with none in the config bucket still ships logs/metrics fine. This
+# lets a deployment override that default without rebuilding the image.
+if /snap/bin/gsutil -q stat "gs://${BUCKET}/vector.toml"; then
+  VSTAGE=/etc/vector/vector.staging.toml
+  if /snap/bin/gsutil cp "gs://${BUCKET}/vector.toml" "$VSTAGE"; then
+    if /usr/bin/vector validate "$VSTAGE"; then
+      mv "$VSTAGE" /etc/vector/vector.toml
+      chown root:vector /etc/vector/vector.toml
+      chmod 640 /etc/vector/vector.toml
+    else
+      echo "envoy-startup: fetched vector.toml failed validation, not applying" >&2
+      rm -f "$VSTAGE"
+    fi
+  else
+    echo "envoy-startup: failed to fetch gs://${BUCKET}/vector.toml, keeping the image's baked-in default" >&2
+  fi
+fi
+
+# Feeds vector.toml's get_env_var("METADATA_*") calls - the owning MIG's
+# name (the "created-by" attribute) and the instance template name.
+MD_BASE="http://metadata.google.internal/computeMetadata/v1/instance"
+fetch_meta() { curl -sS -H 'Metadata-Flavor: Google' "$1" || true; }
+
+INSTANCE_ID="$(fetch_meta "${MD_BASE}/id")"
+INSTANCE_IP="$(fetch_meta "${MD_BASE}/network-interfaces/0/ip")"
+CREATED_BY="$(fetch_meta "${MD_BASE}/attributes/created-by")"
+INSTANCE_TEMPLATE="$(fetch_meta "${MD_BASE}/attributes/instance-template")"
+
+cat > /etc/default/metadata <<EOF
+METADATA_INSTANCE_ID=${INSTANCE_ID:-unknown}
+METADATA_INSTANCE_IP=${INSTANCE_IP:-unknown}
+METADATA_ASG_NAME=${CREATED_BY##*/}
+METADATA_LT_VERSION=${INSTANCE_TEMPLATE##*/}
+EOF
+
+mkdir -p /etc/systemd/system/vector.service.d
+cat > /etc/systemd/system/vector.service.d/environment.conf <<EOF
+[Service]
+EnvironmentFile=-/etc/default/metadata
+EOF
+
+systemctl daemon-reload
+systemctl restart vector.service
