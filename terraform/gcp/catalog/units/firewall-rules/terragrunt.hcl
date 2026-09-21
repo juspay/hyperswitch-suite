@@ -67,12 +67,34 @@ inputs = merge({
           # Range-based, not tag-based: the clients are GKE pods, which carry
           # no network tags. Keep in sync with squid-proxy's ilb_source_ranges
           # — both derive from the same two stack values.
-          source_ranges = [
+          # The module's variable is `ranges`, not `source_ranges` - the
+          # latter silently drops during type coercion and GCP then defaults
+          # the rule's source to 0.0.0.0/0.
+          ranges = [
             "${values.vpc_cidr_prefix}.16.0/20",
             values.gke_pods_secondary_range_cidr,
           ]
           target_tags = ["squid-proxy"]
           allow       = [{ protocol = "tcp", ports = ["3128"] }]
+        },
+      ]
+    }
+
+    gke-to-envoy-metrics = {
+      rules = [
+        {
+          # Short name: the module prefixes it with
+          # "<environment>-<project_name>-<rule-group-key>-", and the
+          # longer, more descriptive name blew past GCP's 63-char cap.
+          name        = "allow-vector-metrics"
+          description = "GKE nodes and pods to the envoy-proxy fleet's Vector metrics port"
+          direction   = "INGRESS"
+          ranges = [
+            "${values.vpc_cidr_prefix}.16.0/20",
+            values.gke_pods_secondary_range_cidr,
+          ]
+          target_tags = ["envoy-proxy"]
+          allow       = [{ protocol = "tcp", ports = ["9273"] }]
         },
       ]
     }
