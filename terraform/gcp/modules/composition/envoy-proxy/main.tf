@@ -65,24 +65,21 @@ module "log_bucket" {
   labels = local.common_labels
 }
 
-resource "google_storage_bucket_object" "envoy_config" {
-  count = var.envoy_config_content != null ? 1 : 0
+# Uploads every file under config_files_source_path to the config bucket, one object per
+# file. The entry matching envoy_config_filename gets its content replaced with the
+# rendered envoy_config_content instead of its raw (pre-render) file content - same
+# pattern as the AWS envoy-proxy composition module's aws_s3_object.envoy_config_files.
+resource "google_storage_bucket_object" "envoy_config_files" {
+  for_each = var.config_files_source_path != null ? fileset(var.config_files_source_path, "**") : toset([])
 
-  bucket  = module.config_bucket.name
-  name    = "envoy.yaml"
-  content = var.envoy_config_content
-}
+  bucket = module.config_bucket.name
+  name   = each.value
 
-# Generic multi-file config upload, alongside the single-file
-# envoy_config_content (kept for backward compatibility).
-resource "google_storage_bucket_object" "additional_config_files" {
-  for_each = var.additional_config_files_path != null ? setsubtract(
-    fileset(var.additional_config_files_path, "**"), ["envoy.yaml"]
-  ) : toset([])
-
-  bucket  = module.config_bucket.name
-  name    = each.value
-  content = file("${var.additional_config_files_path}/${each.value}")
+  content = (
+    each.value == var.envoy_config_filename && var.envoy_config_content != null
+    ? var.envoy_config_content
+    : file("${var.config_files_source_path}/${each.value}")
+  )
 }
 
 module "config_secret" {
