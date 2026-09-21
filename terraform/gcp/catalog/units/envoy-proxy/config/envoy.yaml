@@ -7,7 +7,7 @@
 # single-cluster passthrough.
 #
 # The access log's path and JSON field names must match what config/vector.toml's
-# envoy_logs source/transforms expect (uploaded via additional_config_files_path) -
+# envoy_logs source/transforms expect (uploaded via config_files_source_path) -
 # renaming either breaks log parsing silently.
 #
 # Traffic path:
