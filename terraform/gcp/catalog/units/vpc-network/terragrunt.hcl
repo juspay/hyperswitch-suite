@@ -66,6 +66,16 @@ inputs = merge({
   }
   enable_default_deny_ingress = true
 
+  # Off by default - open egress (the module's own default) is the easy path for a
+  # first install. Set values.network_options.enable_default_deny_egress = true to lock
+  # GKE/other subnets down to no direct internet route, forcing egress through Squid's
+  # allowlist (nat_subnetwork_tiers should then be narrowed to just the Squid tier, and
+  # enable_psc_google_apis turned on so Artifact Registry/Google API calls still work).
+  enable_default_deny_egress = try(values.network_options.enable_default_deny_egress, false)
+  enable_psc_google_apis     = try(values.network_options.enable_psc_google_apis, false)
+  nat_subnetwork_tiers       = try(values.network_options.nat_subnetwork_tiers, null)
+  nat_log_filter             = try(values.network_options.nat_log_filter, "ERRORS_ONLY")
+
   labels = merge({
     environment = include.root.locals.environment.short
     project     = include.root.locals.project_name
