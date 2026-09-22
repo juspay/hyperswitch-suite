@@ -39,6 +39,7 @@
 | [aws_lb_listener_certificate.additional](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener_certificate) | resource |
 | [aws_lb_listener_rule.custom_rules](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener_rule) | resource |
 | [aws_lb_target_group.envoy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_target_group) | resource |
+| [aws_route53_record.envoy_lb](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_record) | resource |
 | [aws_s3_object.envoy_config_files](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_object) | resource |
 | [aws_security_group_rule.asg_ingress_from_alb_healthcheck](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
 | [aws_security_group_rule.asg_ingress_from_alb_traffic](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
@@ -73,6 +74,7 @@
 | <a name="input_default_host_for_http_10"></a> [default\_host\_for\_http\_10](#input\_default\_host\_for\_http\_10) | Default host for HTTP/1.0 requests without a Host header (for envoy.yaml templating). Defaults to the first entry of virtual\_hosts\_domains when unset. | `string` | `""` | no |
 | <a name="input_deployments"></a> [deployments](#input\_deployments) | Map of concurrent Envoy deployments. Each key is an identifier (e.g., "v1", "v2").<br/>Traffic is split across them via ALB weighted forward.<br/><br/>- launch\_template\_id:      Optional. Provide to use an external launch template.<br/>- launch\_template\_version: Optional. Defaults to "$Latest" for external LTs,<br/>                           or the module-managed LT's latest\_version. | <pre>map(object({<br/>    asg_name                  = optional(string)<br/>    weight                    = number<br/>    desired_capacity          = optional(number)<br/>    launch_template_id        = optional(string)<br/>    launch_template_version   = string<br/>    target_group_name         = optional(string)<br/>    existing_target_group_arn = optional(string)<br/>  }))</pre> | <pre>{<br/>  "stable": {<br/>    "launch_template_version": "$Latest",<br/>    "weight": 100<br/>  }<br/>}</pre> | no |
 | <a name="input_desired_capacity"></a> [desired\_capacity](#input\_desired\_capacity) | Desired number of instances in ASG | `number` | `1` | no |
+| <a name="input_dns"></a> [dns](#input\_dns) | Route53 records pointing at the Envoy load balancer. Each record is created as an A alias to this module's own LB, so no hardcoded LB hostname is needed. Requires create\_lb; zone\_id is required when create is true. | <pre>object({<br/>    create  = optional(bool, false)<br/>    zone_id = optional(string, null)<br/>    records = optional(map(object({<br/>      name                   = string<br/>      evaluate_target_health = optional(bool, false)<br/>    })), {})<br/>  })</pre> | `{}` | no |
 | <a name="input_eks_cluster_name"></a> [eks\_cluster\_name](#input\_eks\_cluster\_name) | EKS cluster name (for envoy.yaml templating) | `string` | `""` | no |
 | <a name="input_enable_autoscaling"></a> [enable\_autoscaling](#input\_enable\_autoscaling) | Enable auto-scaling policies for the ASG based on CPU and memory metrics | `bool` | `false` | no |
 | <a name="input_enable_capacity_rebalance"></a> [enable\_capacity\_rebalance](#input\_enable\_capacity\_rebalance) | Enable capacity rebalancing for spot instances (launches replacement before termination) | `bool` | `false` | no |
@@ -139,6 +141,7 @@
 | <a name="output_config_bucket_name"></a> [config\_bucket\_name](#output\_config\_bucket\_name) | Name of the S3 bucket for configuration (created or existing) |
 | <a name="output_config_version"></a> [config\_version](#output\_config\_version) | Current configuration version hash |
 | <a name="output_deployment_weights"></a> [deployment\_weights](#output\_deployment\_weights) | Map of deployment names to ALB traffic weights |
+| <a name="output_dns_record_fqdns"></a> [dns\_record\_fqdns](#output\_dns\_record\_fqdns) | Map of record key to the FQDN created for the Envoy load balancer |
 | <a name="output_iam_instance_profile_name"></a> [iam\_instance\_profile\_name](#output\_iam\_instance\_profile\_name) | Name of the IAM instance profile (created or existing) |
 | <a name="output_iam_role_arn"></a> [iam\_role\_arn](#output\_iam\_role\_arn) | ARN of the IAM role (created or existing) |
 | <a name="output_iam_role_created"></a> [iam\_role\_created](#output\_iam\_role\_created) | Whether IAM role was created by this module (true) or using existing (false) |
