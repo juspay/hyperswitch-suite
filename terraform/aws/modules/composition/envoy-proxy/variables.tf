@@ -789,6 +789,23 @@ variable "scaling_policies" {
   }
 }
 
+# =========================================================================
+# DNS Configuration
+# =========================================================================
+
+variable "dns" {
+  description = "Route53 records pointing at the Envoy load balancer. Each record is created as an A alias to this module's own LB, so no hardcoded LB hostname is needed. Requires create_lb; zone_id is required when create is true."
+  type = object({
+    create  = optional(bool, false)
+    zone_id = optional(string, null)
+    records = optional(map(object({
+      name                   = string
+      evaluate_target_health = optional(bool, false)
+    })), {})
+  })
+  default = {}
+}
+
 variable "tags" {
   description = "Common tags to apply to all resources"
   type        = map(string)

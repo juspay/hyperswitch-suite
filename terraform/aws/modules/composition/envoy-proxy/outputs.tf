@@ -137,3 +137,8 @@ output "deployment_weights" {
   description = "Map of deployment names to ALB traffic weights"
   value       = { for k, v in local.auto_scaling_groups : k => v.weight }
 }
+
+output "dns_record_fqdns" {
+  description = "Map of record key to the FQDN created for the Envoy load balancer"
+  value       = { for k, r in aws_route53_record.envoy_lb : k => r.fqdn }
+}

@@ -564,6 +564,33 @@ resource "aws_lb_listener_certificate" "additional" {
 }
 
 # =========================================================================
+# DNS Records
+# =========================================================================
+# Alias records pointing at this module's load balancer. An alias (rather than a
+# CNAME to a hardcoded *.elb.amazonaws.com hostname) follows the LB on its own,
+# so the record stays correct in every region without pinning one region's LB.
+resource "aws_route53_record" "envoy_lb" {
+  for_each = var.create_lb && var.dns.create ? var.dns.records : {}
+
+  lifecycle {
+    precondition {
+      condition     = var.dns.zone_id != null
+      error_message = "dns.zone_id is required when dns.create is true."
+    }
+  }
+
+  zone_id = var.dns.zone_id
+  name    = each.value.name
+  type    = "A"
+
+  alias {
+    name                   = module.alb[0].dns_name
+    zone_id                = module.alb[0].zone_id
+    evaluate_target_health = each.value.evaluate_target_health
+  }
+}
+
+# =========================================================================
 # Advanced Listener Rules (Header-based routing, path-based routing, etc.)
 # =========================================================================
 # Apply custom rules to HTTPS listener if enabled, otherwise to HTTP listener
