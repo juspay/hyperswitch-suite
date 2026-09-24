@@ -307,3 +307,13 @@ variable "custom_userdata_template_path" {
   type        = string
   default     = null
 }
+
+variable "default_node_os" {
+  description = "OS type for node group AMIs. Must be explicitly set. Options: 'al2023' (Amazon Linux 2023, MIME multipart YAML via nodeadm) or 'bottlerocket' (Bottlerocket, TOML format). Individual node groups can override this via the 'os_type' field."
+  type        = string
+  default     = "al2023"
+  validation {
+    condition     = contains(["al2023", "bottlerocket"], var.default_node_os)
+    error_message = "default_node_os must be either 'al2023' or 'bottlerocket'."
+  }
+}
