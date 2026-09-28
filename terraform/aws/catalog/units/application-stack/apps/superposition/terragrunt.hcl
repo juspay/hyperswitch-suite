@@ -155,8 +155,8 @@ inputs = {
     custom_parameter_group_description = null
     custom_parameter_group_parameters  = null
 
-    cluster_instances = {
-      failover = {
+    cluster_instances = try(values.cluster_instances, {
+      intance-1 = {
         instance_class                        = try(values.db_instance_class, "db.r6g.large")
         promotion_tier                        = 1
         availability_zone                     = "${include.root.locals.region}a"
@@ -168,7 +168,7 @@ inputs = {
         performance_insights_enabled          = false
         performance_insights_retention_period = 0
       }
-    }
+    })
   } : null
 
   tags = {
