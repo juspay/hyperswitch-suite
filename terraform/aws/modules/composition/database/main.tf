@@ -277,6 +277,13 @@ resource "aws_rds_cluster" "main" {
       # AWS automatically populates global_cluster_identifier after associating
       # the cluster with a global cluster. Ignoring prevents perpetual diff.
       global_cluster_identifier,
+      # Aurora rewrites this on both clusters during a global switchover /
+      # failover (the new primary loses it, the old primary gains it), so it
+      # must never be reconciled in place: re-adding it is not supported by
+      # ModifyDBCluster, and removing it triggers PromoteReadReplicaDBCluster
+      # against the demoted cluster. It still applies at create time, which is
+      # the only time it can take effect (bootstrapping a new secondary).
+      replication_source_identifier,
     ]
   }
 }
