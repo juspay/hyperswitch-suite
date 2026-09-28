@@ -52,9 +52,7 @@ inputs = {
   project_name = include.root.locals.project_name
   app_name     = "grafana"
 
-  host_domains = {
-    sandbox = "grafana.internal.${include.root.locals.deployment_tier}.${include.root.locals.region_code}.${values.base_domain}"
-  }
+  host_domains = values.host_domains
 
   # OIDC/IRSA Configuration
   cluster_service_accounts = {
