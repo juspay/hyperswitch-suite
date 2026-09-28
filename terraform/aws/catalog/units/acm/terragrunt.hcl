@@ -24,24 +24,7 @@ inputs = {
   project_name = include.root.locals.project_name
   region       = include.root.locals.region
 
-  certificates = {
-    internal-alb = {
-      domain_name                                 = "*.internal.${include.root.locals.deployment_tier}.${include.root.locals.region_code}.${values.base_domain}"
-      subject_alternative_names                   = ["*.sso.internal.${include.root.locals.deployment_tier}.${include.root.locals.region_code}.${values.base_domain}"]
-      zone_id                                     = dependency.route53.outputs.zone_ids["hyperswitch_public"]
-      validation_method                           = "DNS"
-      create_route53_records                      = true
-      validate_certificate                        = true
-      wait_for_validation                         = false
-      validation_allow_overwrite_records          = false
-      certificate_transparency_logging_preference = true
-      tags = {
-        Environment = include.root.locals.environment.full
-        Project     = include.root.locals.project_name
-        Component   = "Internal ALB ACM"
-        ManagedBy   = "terraform-IaC"
-      }
-    }
+  certificates = merge({
     envoy-alb = {
       domain_name                                 = "api.${include.root.locals.deployment_tier}.${include.root.locals.region_code}.${values.base_domain}"
       subject_alternative_names                   = []
@@ -59,7 +42,49 @@ inputs = {
         ManagedBy   = "terraform-IaC"
       }
     }
-  }
+    istio-alb = {
+      domain_name                                 = "istio.${include.root.locals.deployment_tier}.${include.root.locals.region_code}.${values.base_domain}"
+      subject_alternative_names                   = []
+      zone_id                                     = dependency.route53.outputs.zone_ids["hyperswitch_public"]
+      validation_method                           = "DNS"
+      create_route53_records                      = true
+      validate_certificate                        = true
+      wait_for_validation                         = false
+      validation_allow_overwrite_records          = false
+      certificate_transparency_logging_preference = true
+      tags = {
+        Environment = include.root.locals.environment.full
+        Project     = include.root.locals.project_name
+        Component   = "Istio ALB ACM"
+        ManagedBy   = "terraform-IaC"
+      }
+    }
+    },
+    # Additional certificates a stack needs beyond the standard set (e.g. an
+    # extra api hostname attached to the same envoy ALB). Only `domain_name`
+    # is required per entry; everything else defaults to the public-zone
+    # DNS-validated shape above and can be overridden per entry.
+    {
+      for name, cert in try(values.extra_certificates, {}) : name => merge(
+        {
+          subject_alternative_names                   = []
+          zone_id                                     = dependency.route53.outputs.zone_ids["hyperswitch_public"]
+          validation_method                           = "DNS"
+          create_route53_records                      = true
+          validate_certificate                        = true
+          wait_for_validation                         = false
+          validation_allow_overwrite_records          = false
+          certificate_transparency_logging_preference = true
+          tags = {
+            Environment = include.root.locals.environment.full
+            Project     = include.root.locals.project_name
+            Component   = "${name} ACM"
+            ManagedBy   = "terraform-IaC"
+          }
+        },
+        cert
+      )
+  })
 
   tags = {
     Environment = include.root.locals.environment.full

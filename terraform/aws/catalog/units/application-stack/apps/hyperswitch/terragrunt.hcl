@@ -36,15 +36,18 @@ inputs = {
   region       = include.root.locals.region
   project_name = include.root.locals.project_name
 
+  # A stack that runs several deployments on one cluster (each in its own
+  # namespace) passes the full list via `service_accounts`; the default is the
+  # single-deployment shape.
   cluster_service_accounts = {
     "${dependency.eks.outputs.cluster_name}" = {
       oidc_provider_arn = dependency.eks.outputs.oidc_provider_arn
-      service_accounts = [
+      service_accounts = try(values.service_accounts, [
         {
           namespace = try(values.kubernetes_namespace, "hyperswitch")
           name      = try(values.service_account_name, "hyperswitch-router-role")
         }
-      ]
+      ])
     }
   }
 
@@ -87,12 +90,14 @@ inputs = {
     role_arn = try(values.ses_email_role_arn, null)
   }
 
-  # Secrets Manager Configuration
+  # Secrets Manager Configuration. A stack whose deployments read secrets
+  # under several prefixes (one per deployment) overrides the ARN list via
+  # `secrets_manager_secret_arns`.
   secrets_manager = {
     enabled = true
-    secret_arns = [
+    secret_arns = try(values.secrets_manager_secret_arns, [
       "arn:aws:secretsmanager:${include.root.locals.region}:${include.root.locals.account_id}:secret:${include.root.locals.environment.full}/hyperswitch-*"
-    ]
+    ])
   }
 
   lambda = {
