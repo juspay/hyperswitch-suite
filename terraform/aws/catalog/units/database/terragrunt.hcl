@@ -4,7 +4,7 @@ include "root" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/database?ref=database-v0.1.7"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/database?ref=database-v0.1.8"
 }
 
 # Disabled when the stack provides its own VPC via values (BYO-VPC / standalone)
@@ -123,9 +123,8 @@ inputs = {
 
   create_security_group = true
 
-  cluster_instances = {
+  cluster_instances = try(values.cluster_instances, {
     primary = {
-      identifier                            = try(values.cluster_instance_identifier, null)
       instance_class                        = try(values.db_instance_class, "db.r5.large")
       promotion_tier                        = 0
       availability_zone                     = "${include.root.locals.region}a"
@@ -141,7 +140,6 @@ inputs = {
       }
     }
     failover = {
-      identifier                            = null
       instance_class                        = try(values.db_instance_class, "db.r5.large")
       promotion_tier                        = 1
       availability_zone                     = "${include.root.locals.region}b"
@@ -156,7 +154,7 @@ inputs = {
         managed_by = "hyperswitch"
       }
     }
-  }
+  })
 
   tags = {
     Environment = include.root.locals.environment.full
