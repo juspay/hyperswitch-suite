@@ -54,7 +54,7 @@ inputs = {
   server_root_volume_type  = try(values.server_root_volume_type, "gp3")
   server_data_volume_size  = try(values.server_data_volume_size, 700)
   server_data_volume_type  = try(values.server_data_volume_type, "gp3")
-  server_data2_volume_size = try(values.server_data2_volume_size, 20)
+  server_data2_volume_size = try(values.server_data2_volume_size, 500)
   server_data2_volume_type = try(values.server_data2_volume_type, "gp3")
 
   # Load Balancer Configuration
