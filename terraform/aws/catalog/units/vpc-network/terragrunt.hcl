@@ -7,6 +7,23 @@ terraform {
   source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/vpc-network?ref=vpc-v0.1.11"
 }
 
+# Passive-side only: sources the primary region's VPC id/cidr for vpc_peering_connections.
+locals {
+  vpc_peering_enabled = try(values.vpc_peering.enable, false)
+}
+
+dependency "primary_vpc" {
+  config_path = try(values.primary_vpc_config_path, try("../../${values.primary_region}/vpc-network", "."))
+
+  enabled = try(values.is_passive, false) && local.vpc_peering_enabled
+
+  mock_outputs = {
+    vpc_id         = "vpc-00000000000000000"
+    vpc_cidr_block = "10.x.x.x/16"
+  }
+  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
+}
+
 inputs = {
   vpc_name     = "${include.root.locals.project_name}-${include.root.locals.environment.short}-vpc"
   environment  = include.root.locals.environment.short
@@ -138,9 +155,40 @@ inputs = {
   manage_default_security_group = true
   manage_default_route_table    = true
 
-  vpc_peering_connections = {}
+  # Cross-region peering (same account only): passive is always the requester,
+  # active the accepter. Driven entirely by stack values (`is_passive`,
+  # `vpc_peering.enable`, `primary_region`), so single-region stacks are
+  # unaffected.
+  vpc_peering_connections = (
+    try(values.is_passive, false) && local.vpc_peering_enabled
+    ) ? {
+    peer-to-primary = {
+      peer_vpc_id   = dependency.primary_vpc.outputs.vpc_id
+      peer_vpc_cidr = [dependency.primary_vpc.outputs.vpc_cidr_block]
+      peer_region   = values.primary_region
+      peer_owner_id = include.root.locals.account_id
+      route_tables  = ["eks-workers", "private-isolated"]
+      auto_accept   = false
+      tags = {
+        PeerName = "${include.root.locals.environment.short}-${values.primary_region}-hyperswitch-vpc"
+      }
+    }
+  } : {}
 
-  enable_vpc_peering_routes = false
+  vpc_peering_accepter_connections = (
+    !try(values.is_passive, false) && local.vpc_peering_enabled
+    ) ? {
+    peer-from-passive = {
+      peering_connection_id = values.vpc_peering.connection_id
+      peer_vpc_cidr         = values.vpc_peering.peer_vpc_cidr
+      route_tables          = ["eks-workers", "private-isolated"]
+      tags = {
+        PeerName = "${include.root.locals.environment.short}-passive-hyperswitch-vpc"
+      }
+    }
+  } : {}
+
+  enable_vpc_peering_routes = local.vpc_peering_enabled
 
   tags = {
     Environment = include.root.locals.environment.short
