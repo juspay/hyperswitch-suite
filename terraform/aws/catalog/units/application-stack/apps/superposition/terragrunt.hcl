@@ -53,9 +53,7 @@ inputs = {
   project_name = include.root.locals.project_name
   app_name     = "superposition"
 
-  host_domains = {
-    sandbox = "superposition.internal.${include.root.locals.deployment_tier}.${include.root.locals.region_code}.${values.base_domain}"
-  }
+  host_domains = values.host_domains
 
   # OIDC/IRSA Configuration. A stack that runs several deployments on one
   # cluster (each in its own namespace) passes the full list via
