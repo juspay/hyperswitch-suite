@@ -4,7 +4,7 @@ include "root" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/application-resources/superposition?ref=apps-superposition-v0.2.0"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/application-resources/superposition?ref=apps-superposition-v0.2.1"
 }
 
 dependency "eks" {
