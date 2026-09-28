@@ -320,7 +320,7 @@ This version of the Hyperswitch App server is compatible with the following vers
 - Card Vault: [v0.9.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.9.0)
 - Encryption Service: [v0.1.14](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.14)
 - Superposition: [v0.115.0](https://github.com/juspay/superposition/releases/tag/v0.115.0)
-- Hyperswitch Prism: [v0.0.5](https://github.com/juspay/hyperswitch-prism/releases/tag/v0.5.0)
+- Hyperswitch Prism: [v0.5.0](https://github.com/juspay/hyperswitch-prism/releases/tag/v0.5.0)
 
 #### Database Migration Changes
 
