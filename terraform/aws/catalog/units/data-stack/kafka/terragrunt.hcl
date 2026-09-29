@@ -8,7 +8,7 @@ terraform {
 }
 
 dependency "vpc" {
-  config_path = "../vpc-network"
+  config_path = try(values.vpc_config_path, "../../vpc-network")
 
   mock_outputs = {
     vpc_id                         = "vpc-12345678"
@@ -31,21 +31,21 @@ inputs = {
   # Cluster Configuration
   broker_count = try(values.broker_count, 3)
 
-  # Instance Configuration — cost-optimized for passive/DR
+  # Instance Configuration
   broker_ami_id     = try(values.broker_ami_id, null)
   controller_ami_id = try(values.controller_ami_id, null)
 
-  broker_instance_type     = try(values.broker_instance_type, "t4g.medium")
-  controller_instance_type = try(values.controller_instance_type, "t4g.medium")
+  broker_instance_type     = try(values.broker_instance_type, "c7g.large")
+  controller_instance_type = try(values.controller_instance_type, "c7g.medium")
 
-  # Storage Configuration — smaller for passive/DR
+  # Storage Configuration
   broker_root_volume_size         = try(values.broker_root_volume_size, 30)
   broker_root_volume_type         = try(values.broker_root_volume_type, "gp3")
-  broker_data_volume_size         = try(values.broker_data_volume_size, 30)
+  broker_data_volume_size         = try(values.broker_data_volume_size, 100)
   broker_data_volume_type         = try(values.broker_data_volume_type, "gp3")
   controller_root_volume_size     = try(values.controller_root_volume_size, 30)
   controller_root_volume_type     = try(values.controller_root_volume_type, "gp3")
-  controller_metadata_volume_size = try(values.controller_metadata_volume_size, 10)
+  controller_metadata_volume_size = try(values.controller_metadata_volume_size, 100)
   controller_metadata_volume_type = try(values.controller_metadata_volume_type, "gp3")
 
   # SSH Key Configuration

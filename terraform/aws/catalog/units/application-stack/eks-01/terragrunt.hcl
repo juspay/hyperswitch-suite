@@ -98,7 +98,7 @@ inputs = {
   project_name         = include.root.locals.project_name
   environment          = include.root.locals.environment.short
   region               = include.root.locals.region
-  cluster_version      = try(values.cluster_version, "1.35")
+  cluster_version      = try(values.cluster_version, "1.36")
   cluster_name_version = "01"
 
   tags = {
@@ -386,7 +386,7 @@ inputs = {
 
   default_ami_id  = try(values.default_ami_id, null)
   default_node_os = try(values.default_node_os, "al2023")
-  # generate via aws ssm get-parameter --name "/aws/service/eks/optimized-ami/1.35/amazon-linux-2023/x86_64/standard/recommended/image_id" --region ap-south-1 --query Parameter.Value
+  # generate via aws ssm get-parameter --name "/aws/service/eks/optimized-ami/1.36/amazon-linux-2023/x86_64/standard/recommended/image_id" --region ap-south-1 --query Parameter.Value
 
   # ===========================================================================
   # SSH KEY CONFIGURATION
@@ -425,93 +425,25 @@ inputs = {
   # NODE GROUPS CONFIGURATION
   # ===========================================================================
 
-  # system-nodes and generic_compute are always created; monitoring, keymanager
-  # and auxillary are created only when their sizing values are provided
-  # (standalone stacks may run with just the two base groups).
-  node_groups = merge(
-    {
-      system-nodes = {
-        capacity_type  = "ON_DEMAND"
-        instance_types = values.system_nodes.instance_types
-        subnet_ids     = try(values.eks_workers_subnet_ids, null) != null ? values.eks_workers_subnet_ids : dependency.vpc.outputs.eks_workers_subnet_ids
-        desired_size   = values.system_nodes.desired_size
-        min_size       = try(values.system_nodes.min_size, 1)
-        max_size       = try(values.system_nodes.max_size, 50)
-        launch_template = {
-          ami_id = try(values.system_nodes.ami_id, null)
-        }
-        labels = {
-          "node-type" = "system-nodes"
-        }
+  # Values-driven node groups. Workload capacity is Karpenter-provisioned, so
+  # the default is a single system-nodes group (sized via `system_nodes`); a
+  # stack that needs additional static groups passes the full map via
+  # `node_groups`, each entry using the same shape as the defaults below.
+  node_groups = {
+    for name, ng in try(values.node_groups, { system-nodes = values.system_nodes }) : name => {
+      capacity_type              = try(ng.capacity_type, "ON_DEMAND")
+      instance_types             = ng.instance_types
+      subnet_ids                 = try(values.eks_workers_subnet_ids, null) != null ? values.eks_workers_subnet_ids : dependency.vpc.outputs.eks_workers_subnet_ids
+      desired_size               = ng.desired_size
+      min_size                   = try(ng.min_size, 1)
+      max_size                   = try(ng.max_size, 50)
+      max_unavailable_percentage = try(ng.max_unavailable_percentage, 1)
+      launch_template = {
+        ami_id = try(ng.ami_id, null)
       }
-
-      generic_compute = {
-        capacity_type  = "ON_DEMAND"
-        min_size       = try(values.generic_compute.min_size, 3)
-        max_size       = try(values.generic_compute.max_size, 50)
-        desired_size   = values.generic_compute.desired_size
-        instance_types = values.generic_compute.instance_types
-        subnet_ids     = try(values.eks_workers_subnet_ids, null) != null ? values.eks_workers_subnet_ids : dependency.vpc.outputs.eks_workers_subnet_ids
-        launch_template = {
-          ami_id = try(values.generic_compute.ami_id, null)
-        }
-        labels = {
-          "node-type" = "generic-compute"
-        }
-      }
-    },
-    try(values.monitoring, null) != null ? {
-      monitoring = {
-        capacity_type              = "ON_DEMAND"
-        min_size                   = try(values.monitoring.min_size, 1)
-        max_size                   = try(values.monitoring.max_size, 50)
-        desired_size               = values.monitoring.desired_size
-        instance_types             = values.monitoring.instance_types
-        subnet_ids                 = try(values.eks_workers_subnet_ids, null) != null ? values.eks_workers_subnet_ids : dependency.vpc.outputs.eks_workers_subnet_ids
-        max_unavailable_percentage = try(values.monitoring.max_unavailable_percentage, 1)
-        launch_template = {
-          ami_id = try(values.monitoring.ami_id, null)
-        }
-        labels = {
-          "node-type" = "monitoring"
-        }
-      }
-    } : {},
-    try(values.keymanager, null) != null ? {
-      keymanager = {
-        capacity_type              = "ON_DEMAND"
-        min_size                   = try(values.keymanager.min_size, 1)
-        max_size                   = try(values.keymanager.max_size, 50)
-        desired_size               = values.keymanager.desired_size
-        instance_types             = values.keymanager.instance_types
-        subnet_ids                 = try(values.eks_workers_subnet_ids, null) != null ? values.eks_workers_subnet_ids : dependency.vpc.outputs.eks_workers_subnet_ids
-        max_unavailable_percentage = try(values.keymanager.max_unavailable_percentage, 1)
-        launch_template = {
-          ami_id = try(values.keymanager.ami_id, null)
-        }
-        labels = {
-          "node-type" = "keymanager"
-        }
-      }
-    } : {},
-    try(values.auxillary, null) != null ? {
-      auxillary = {
-        capacity_type              = "ON_DEMAND"
-        min_size                   = try(values.auxillary.min_size, 0)
-        max_size                   = try(values.auxillary.max_size, 50)
-        desired_size               = values.auxillary.desired_size
-        instance_types             = values.auxillary.instance_types
-        subnet_ids                 = try(values.eks_workers_subnet_ids, null) != null ? values.eks_workers_subnet_ids : dependency.vpc.outputs.eks_workers_subnet_ids
-        max_unavailable_percentage = try(values.auxillary.max_unavailable_percentage, 1)
-        launch_template = {
-          ami_id = try(values.auxillary.ami_id, null)
-        }
-        labels = {
-          "node-type" = "auxillary"
-        }
-      }
-    } : {}
-  )
+      labels = try(ng.labels, { "node-type" = name })
+    }
+  }
 
   # ===========================================================================
   # EKS ADDONS CONFIGURATION
@@ -521,27 +453,27 @@ inputs = {
   # keyed by addon name (e.g. { coredns = "v1.13.2-eksbuild.1" }).
   eks_addons = {
     "vpc-cni" = {
-      addon_version = try(values.addon_versions["vpc-cni"], "v1.21.1-eksbuild.3")
+      addon_version = try(values.addon_versions["vpc-cni"], "v1.23.1-eksbuild.1")
     }
     "kube-proxy" = {
-      addon_version = try(values.addon_versions["kube-proxy"], "v1.35.0-eksbuild.2")
+      addon_version = try(values.addon_versions["kube-proxy"], "v1.36.0-eksbuild.25")
     }
     "coredns" = {
-      addon_version = try(values.addon_versions["coredns"], "v1.13.2-eksbuild.1")
+      addon_version = try(values.addon_versions["coredns"], "v1.14.3-eksbuild.23")
     }
     "aws-ebs-csi-driver" = {
-      addon_version        = try(values.addon_versions["aws-ebs-csi-driver"], "v1.55.0-eksbuild.1")
+      addon_version        = try(values.addon_versions["aws-ebs-csi-driver"], "v1.66.0-eksbuild.1")
       service_account_role = "ebs_csi"
     }
     "aws-efs-csi-driver" = {
-      addon_version        = try(values.addon_versions["aws-efs-csi-driver"], "v3.0.1-eksbuild.1")
+      addon_version        = try(values.addon_versions["aws-efs-csi-driver"], "v3.4.2-eksbuild.1")
       service_account_role = "efs_csi"
     }
     "snapshot-controller" = {
-      addon_version = try(values.addon_versions["snapshot-controller"], "v8.3.0-eksbuild.1")
+      addon_version = try(values.addon_versions["snapshot-controller"], "v8.6.0-eksbuild.8")
     }
     "metrics-server" = {
-      addon_version = try(values.addon_versions["metrics-server"], "v0.8.0-eksbuild.6")
+      addon_version = try(values.addon_versions["metrics-server"], "v0.9.0-eksbuild.11")
     }
   }
 }

@@ -4,7 +4,7 @@ include "root" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/locker?ref=locker-v0.2.10"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/locker?ref=locker-v0.2.11"
 }
 
 locals {
@@ -153,7 +153,7 @@ inputs = {
     backtrack_window                      = 0
     create_security_group                 = true
 
-    cluster_instances = {
+    cluster_instances = try(values.cluster_instances, {
       instance-1 = {
         instance_class                        = try(values.db_instance_class, "db.r6g.large")
         promotion_tier                        = 1
@@ -166,7 +166,7 @@ inputs = {
         performance_insights_enabled          = false
         performance_insights_retention_period = 0
       }
-    }
+    })
   }
 
   log_retention_days = try(values.log_retention_days, 30)

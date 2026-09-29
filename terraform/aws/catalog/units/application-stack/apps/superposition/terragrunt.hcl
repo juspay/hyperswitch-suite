@@ -4,7 +4,7 @@ include "root" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/application-resources/superposition?ref=apps-superposition-v0.2.0"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/application-resources/superposition?ref=apps-superposition-v0.2.1"
 }
 
 dependency "eks" {
@@ -53,20 +53,20 @@ inputs = {
   project_name = include.root.locals.project_name
   app_name     = "superposition"
 
-  host_domains = {
-    sandbox = "superposition.internal.${include.root.locals.deployment_tier}.${include.root.locals.region_code}.${values.base_domain}"
-  }
+  host_domains = values.host_domains
 
-  # OIDC/IRSA Configuration
+  # OIDC/IRSA Configuration. A stack that runs several deployments on one
+  # cluster (each in its own namespace) passes the full list via
+  # `service_accounts`; the default is the single-deployment shape.
   cluster_service_accounts = {
     "${dependency.eks.outputs.cluster_name}" = {
       oidc_provider_arn = dependency.eks.outputs.oidc_provider_arn
-      service_accounts = [
+      service_accounts = try(values.service_accounts, [
         {
           namespace = try(values.kubernetes_namespace, "superposition")
           name      = try(values.service_account_name, "superposition-role")
         }
-      ]
+      ])
     }
   }
 
@@ -155,8 +155,8 @@ inputs = {
     custom_parameter_group_description = null
     custom_parameter_group_parameters  = null
 
-    cluster_instances = {
-      failover = {
+    cluster_instances = try(values.cluster_instances, {
+      intance-1 = {
         instance_class                        = try(values.db_instance_class, "db.r6g.large")
         promotion_tier                        = 1
         availability_zone                     = "${include.root.locals.region}a"
@@ -168,7 +168,7 @@ inputs = {
         performance_insights_enabled          = false
         performance_insights_retention_period = 0
       }
-    }
+    })
   } : null
 
   tags = {

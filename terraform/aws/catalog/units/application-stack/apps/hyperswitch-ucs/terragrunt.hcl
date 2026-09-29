@@ -24,22 +24,26 @@ inputs = {
 
   # OIDC/IRSA Configuration. The hyperswitch-ucs chart names the service
   # account after the release (<release>-hyperswitch-ucs) unless
-  # serviceAccount.name is set; pass the name the deployment actually uses.
+  # serviceAccount.name is set, so the role must trust one service account per
+  # release. A stack that runs several releases on one cluster (each in its
+  # own namespace) passes the full list via `service_accounts`; the default is
+  # the single-release shape.
   cluster_service_accounts = {
-    "${dependency.eks.outputs.cluster_name}" = [
+    "${dependency.eks.outputs.cluster_name}" = try(values.service_accounts, [
       {
         namespace = try(values.kubernetes_namespace, "hyperswitch")
         name      = try(values.service_account_name, "hyperswitch-ucs")
       }
-    ]
+    ])
   }
 
   assume_role_principals   = []
   aws_managed_policy_names = []
 
   # Secrets Manager: the chart's External Secrets Operator resources
-  # authenticate as the service account above and read these secrets
-  # (e.g. the Superposition API token). Disabled when no ARNs are given.
+  # authenticate as the service accounts above and read these secrets (e.g.
+  # the Superposition API token). Secrets Manager appends a random suffix to
+  # secret ARNs, so pass wildcard ARNs. Disabled when no ARNs are given.
   secrets_manager = {
     enabled     = length(try(values.secrets_manager_secret_arns, [])) > 0
     secret_arns = try(values.secrets_manager_secret_arns, [])

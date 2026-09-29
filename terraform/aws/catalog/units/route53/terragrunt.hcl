@@ -28,12 +28,12 @@ inputs = {
       # Record targets (LB DNS names etc.) are environment-specific and are
       # supplied by the stack values, e.g.
       #   public_zone_records = {
-      #     envoy_alb = { name = "api.<tier>.<region_code>.<base_domain>", type = "CNAME", ttl = 300, records = ["<alb-dns-name>"] }
+      #     envoy_alb = { name = "<domain>", type = "CNAME", ttl = 300, records = ["<alb-dns-name>"] }
       #   }
       records = try(values.public_zone_records, {})
     }
     "hyperswitch_internal" = {
-      name    = "hyperswitch.internal"
+      name    = try(values.internal_zone_name, "hyperswitch.internal")
       comment = "Internal Route 53 Zone for Hyperswitch"
       vpc = {
         vpc_id = dependency.vpc.outputs.vpc_id

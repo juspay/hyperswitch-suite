@@ -24,10 +24,11 @@ dependency "eks" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/application-resources/ratelimiter?ref=ratelimiter-v0.2.0"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/application-resources/ratelimiter?ref=ratelimiter-v0.2.1"
 }
 
 inputs = {
+  domain = values.domain
 
   environment  = include.root.locals.environment.short
   region       = include.root.locals.region

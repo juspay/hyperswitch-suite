@@ -40,7 +40,7 @@ dependency "vpc" {
 # Terragrunt Configuration
 # -----------------------------------------------------------------------------
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/application-resources/grafana?ref=apps-grafana-v0.2.0"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/application-resources/grafana?ref=apps-grafana-v0.2.1"
 }
 
 # -----------------------------------------------------------------------------
@@ -52,9 +52,7 @@ inputs = {
   project_name = include.root.locals.project_name
   app_name     = "grafana"
 
-  host_domains = {
-    sandbox = "grafana.internal.${include.root.locals.deployment_tier}.${include.root.locals.region_code}.${values.base_domain}"
-  }
+  host_domains = values.host_domains
 
   # OIDC/IRSA Configuration
   cluster_service_accounts = {

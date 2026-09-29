@@ -41,13 +41,15 @@ dependency "vpc_network" {
 # Terragrunt Configuration
 # -----------------------------------------------------------------------------
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/application-resources/loki?ref=tf/app/loki-v0.2.0"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/application-resources/loki?ref=tf/app/loki-v0.2.1"
 }
 
 # -----------------------------------------------------------------------------
 # Inputs
 # -----------------------------------------------------------------------------
 inputs = {
+  domain = values.domain
+
   region       = include.root.locals.region
   environment  = include.root.locals.environment.short
   project_name = include.root.locals.project_name

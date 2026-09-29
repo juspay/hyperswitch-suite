@@ -32,16 +32,18 @@ inputs = {
   project_name = include.root.locals.project_name
   app_name     = "decision-engine"
 
-  # OIDC/IRSA Configuration
+  # OIDC/IRSA Configuration. A stack that runs several deployments on one
+  # cluster (each in its own namespace) passes the full list via
+  # `service_accounts`; the default is the single-deployment shape.
   cluster_service_accounts = {
     "${dependency.eks.outputs.cluster_name}" = {
       oidc_provider_arn = dependency.eks.outputs.oidc_provider_arn
-      service_accounts = [
+      service_accounts = try(values.service_accounts, [
         {
           namespace = try(values.kubernetes_namespace, "decision-engine")
           name      = try(values.service_account_name, "decision-engine-sa")
         }
-      ]
+      ])
     }
   }
 
