@@ -70,7 +70,10 @@ inputs = {
   # ElastiCache Configuration
   # =========================================================================
   elasticache_config = {
-    enabled                          = true
+    # Disabled by default: the ratelimiter's counter store moved in-cluster
+    # (valkey subchart of the ratelimiter helm chart). A stack that still
+    # needs the managed ElastiCache can opt back in via values.
+    enabled                          = try(values.elasticache_enabled, false)
     elasticache_replication_group_id = "${include.root.locals.environment.short}-${include.root.locals.project_name}-ratelimiter"
     subnet_ids                       = dependency.vpc.outputs.elasticache_subnet_ids
     engine                           = "valkey"
