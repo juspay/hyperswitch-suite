@@ -204,28 +204,28 @@ This module does not:
 ## Requirements
 
 | Name | Version |
-| ---- | ------- |
+|------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.31 |
 
 ## Providers
 
 | Name | Version |
-| ---- | ------- |
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.66.0 |
+|------|---------|
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 6.31 |
 | <a name="provider_terraform"></a> [terraform](#provider\_terraform) | n/a |
 
 ## Modules
 
 | Name | Source | Version |
-| ---- | ------ | ------- |
+|------|--------|---------|
 | <a name="module_database"></a> [database](#module\_database) | git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/database | database-v0.1.8 |
 | <a name="module_kms"></a> [kms](#module\_kms) | terraform-aws-modules/kms/aws | 4.2.0 |
 
 ## Resources
 
 | Name | Type |
-| ---- | ---- |
+|------|------|
 | [aws_iam_role.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role_policy.inline](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
 | [aws_iam_role_policy.kms_decrypt](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
@@ -242,7 +242,7 @@ This module does not:
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-| ---- | ----------- | ---- | ------- | :------: |
+|------|-------------|------|---------|:--------:|
 | <a name="input_additional_assume_role_statements"></a> [additional\_assume\_role\_statements](#input\_additional\_assume\_role\_statements) | Additional IAM trust-policy statements | `list(any)` | `[]` | no |
 | <a name="input_app_name"></a> [app\_name](#input\_app\_name) | Application name used for resource naming and tagging | `string` | `"invokr"` | no |
 | <a name="input_application_secret_description"></a> [application\_secret\_description](#input\_application\_secret\_description) | Description for the application secret | `string` | `null` | no |
@@ -275,7 +275,7 @@ This module does not:
 ## Outputs
 
 | Name | Description |
-| ---- | ----------- |
+|------|-------------|
 | <a name="output_account_id"></a> [account\_id](#output\_account\_id) | AWS account ID |
 | <a name="output_application_secret_arn"></a> [application\_secret\_arn](#output\_application\_secret\_arn) | ARN of the created or existing application secret |
 | <a name="output_application_secret_name"></a> [application\_secret\_name](#output\_application\_secret\_name) | Name of the created or existing application secret |
