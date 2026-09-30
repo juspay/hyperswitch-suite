@@ -42,6 +42,8 @@ certificates = {
     zone_id     = "Z1234567890ABC"
   }
 }
+Set region to issue a certificate in a different region than the provider
+(CloudFront viewer certificates must be in us-east-1).
 EOT
   type = map(object({
     domain_name                                 = string
@@ -63,6 +65,9 @@ EOT
     export                                      = optional(string, null)
     private_authority_arn                       = optional(string, null)
     tags                                        = optional(map(string), {})
+    # Region the certificate is created in (e.g. us-east-1 for CloudFront
+    # viewer certificates); null uses the provider region
+    region = optional(string, null)
   }))
   default = {}
 

@@ -24,6 +24,8 @@ module "certificate" {
 
   domain_name = each.value.domain_name
 
+  region = each.value.region
+
   subject_alternative_names = each.value.subject_alternative_names
 
   zone_id = each.value.zone_id
