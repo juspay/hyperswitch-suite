@@ -23,6 +23,35 @@ locals {
   # Distributions config
   all_distributions = var.distributions
 
+  # VPC Origins map - collect all vpc_origin type origins across distributions
+  vpc_origins_map = {
+    for origin in flatten([
+      for dist_name, dist_config in var.distributions : [
+        for origin in dist_config.origins :
+        {
+          key = "${dist_name}-${origin.origin_id}"
+          value = {
+            name                   = lookup(origin.vpc_origin_config, "name", "${var.project_name}-${dist_name}-${origin.origin_id}-${var.environment}")
+            alb_arn                = origin.vpc_origin_config.alb_arn
+            http_port              = lookup(origin.vpc_origin_config, "http_port", 80)
+            https_port             = lookup(origin.vpc_origin_config, "https_port", 443)
+            origin_protocol_policy = lookup(origin.vpc_origin_config, "origin_protocol_policy", "https-only")
+            origin_ssl_protocols = lookup(origin.vpc_origin_config, "origin_ssl_protocols", { items = ["TLSv1.2"], quantity = 1 })
+            origin_id              = origin.origin_id
+            dist_name              = dist_name
+          }
+        }
+        if origin.type == "vpc_origin" && lookup(origin, "vpc_origin_config", null) != null
+      ]
+    ]) : origin.key => origin.value
+  }
+
+  # VPC Origin IDs map for resolving origin_id to vpc_origin_id
+  vpc_origin_ids_map = {
+    for key, vpc_origin in aws_cloudfront_vpc_origin.this :
+    key => vpc_origin.id
+  }
+
   # CloudFront Functions ARN map for resolving function names to ARNs
   cloudfront_function_arns_map = { for k, v in aws_cloudfront_function.this : k => v.arn }
 
@@ -74,7 +103,12 @@ locals {
       for origin in dist_config.origins :
       merge(origin, {
         # Determine domain name based on origin type
-        resolved_domain_name = lookup(origin, "s3_bucket_domain_name", lookup(origin, "domain_name", null))
+        # For VPC origins, domain_name can be in vpc_origin_config or root level
+        resolved_domain_name = (
+          origin.type == "vpc_origin" && lookup(origin, "vpc_origin_config", null) != null ?
+          lookup(origin.vpc_origin_config, "domain_name", lookup(origin, "domain_name", null)) :
+          lookup(origin, "s3_bucket_domain_name", lookup(origin, "domain_name", null))
+        )
 
         # Use origin_access_identity from origin config if provided (for S3 origins)
         origin_access_identity = lookup(origin, "origin_access_identity", null)
@@ -90,6 +124,11 @@ locals {
             origin_read_timeout      = 30
           },
           lookup(origin, "custom_origin_config", {})
+        ) : null
+
+        # Set VPC Origin ID for vpc_origin type origins
+        vpc_origin_id = origin.type == "vpc_origin" ? (
+          lookup(local.vpc_origin_ids_map, "${dist_name}-${origin.origin_id}", null)
         ) : null
       })
     ]
