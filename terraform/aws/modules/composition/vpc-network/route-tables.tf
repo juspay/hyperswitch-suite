@@ -202,20 +202,22 @@ module "proxy_peering_nat_c_rt" {
 }
 
 
-# EKS Worker Route Table - Single route table for all EKS worker subnets (S3 only, no NAT)
+# EKS Worker Route Table - Single route table for all EKS worker subnets with NAT access
 module "eks_worker_rt" {
   source = "../../base/route-table"
+  count  = var.enable_nat_gateway ? 1 : 0
 
   vpc_id             = module.vpc.vpc_id
   route_table_name   = "${var.vpc_name}-EKSWorker"
 
-  create_nat_gateway_route = false
+  create_nat_gateway_route = true
+  nat_gateway_id           = module.external_incoming_subnets[0].nat_gateway_id
 
   tags = merge(
     var.tags,
     {
       Name = "${var.vpc_name}-EKSWorker"
-      Type = "eks-worker-s3-only"
+      Type = "eks-worker-nat"
     }
   )
 }
@@ -260,12 +262,12 @@ resource "aws_route_table_association" "management" {
   route_table_id = module.common_internet_s3_rt.route_table_id
 }
 
-# Associate EKS Worker subnets with EKSWorker route table (S3 only, no NAT)
+# Associate EKS Worker subnets with EKSWorker route table (NAT + S3)
 resource "aws_route_table_association" "eks_workers" {
-  count = length(var.eks_workers_subnet_cidrs)
+  count = var.enable_nat_gateway ? length(var.eks_workers_subnet_cidrs) : 0
 
   subnet_id      = module.eks_workers_subnets[count.index].subnet_id
-  route_table_id = module.eks_worker_rt.route_table_id
+  route_table_id = module.eks_worker_rt[0].route_table_id
 }
 
 # Associate EKS Control Plane subnets with CommonLocalRoute
