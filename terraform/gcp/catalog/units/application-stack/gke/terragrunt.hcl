@@ -26,8 +26,12 @@ inputs = merge({
   project_name = include.root.locals.project_name
   region       = include.root.locals.region
 
-  cluster_name = "${include.root.locals.project_name}-${include.root.locals.environment.short}-gke"
-  regional     = true
+  cluster_name = try(values.cfg.cluster_name_version, null) == null ? (
+    "${include.root.locals.project_name}-${include.root.locals.environment.short}-gke"
+    ) : (
+    "${include.root.locals.project_name}-${include.root.locals.environment.short}-gke-${values.cfg.cluster_name_version}"
+  )
+  regional = true
 
   network           = dependency.vpc.outputs.network_name
   subnetwork        = basename(dependency.vpc.outputs.gke_nodes_subnet_self_link)
