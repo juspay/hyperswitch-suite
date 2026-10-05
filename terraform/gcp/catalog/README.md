@@ -103,11 +103,11 @@ pins resolve to existing tags — `scripts/ci/check-gcp-pins.sh` enforces it.
 |---|---|---|
 | `iam-infraswitch-federation` | `application-resources/infraswitch-gcp-federation` | `gcp-apps-infraswitch-gcp-federation-v0.1.0` |
 | `vpc-network` | `composition/vpc-network` | `gcp-vpc-network-v0.1.0` |
-| `alloydb` | `composition/alloydb` | `gcp-alloydb-v0.1.0` |
+| `alloydb` | `composition/alloydb` | `gcp-alloydb-v0.1.1` |
 | `memorystore-valkey` | `composition/memorystore-valkey` | `gcp-memorystore-valkey-v0.1.0` |
 | `artifact-registry` | `composition/artifact-registry` | `gcp-artifact-registry-v0.1.0` |
 | `bastion-host` | `composition/bastion-host` | `gcp-bastion-host-v0.1.0` |
-| `locker` | `composition/locker` | `gcp-locker-v0.1.0` |
+| `locker` | `composition/locker` | `gcp-locker-v0.1.1` |
 | `firewall-rules` | `composition/firewall-rules` | `gcp-firewall-rules-v0.1.0` |
 | `envoy-proxy` | `composition/envoy-proxy` | `gcp-envoy-proxy-v0.1.0` |
 | `squid-proxy` | `composition/squid-proxy` | `gcp-squid-proxy-v0.1.0` |
@@ -115,11 +115,11 @@ pins resolve to existing tags — `scripts/ci/check-gcp-pins.sh` enforces it.
 | `…/apps/argocd` | `application-resources/argocd` | `gcp-apps-argocd-v0.1.0` |
 | `…/apps/external-secrets-operator` | `application-resources/external-secrets-operator` | `gcp-apps-eso-v0.1.0` |
 | `…/apps/gateway-controller` | `application-resources/gateway-controller` | `gcp-apps-gateway-controller-v0.1.0` |
-| `…/apps/grafana` | `application-resources/grafana` | `gcp-apps-grafana-v0.1.0` |
+| `…/apps/grafana` | `application-resources/grafana` | `gcp-apps-grafana-v0.1.1` |
 | `…/apps/hyperswitch` | `application-resources/hyperswitch` | `gcp-apps-hyperswitch-v0.1.0` |
 | `…/apps/istio` | `application-resources/istio` | `gcp-apps-istio-v0.1.0` |
 | `…/apps/loki` | `application-resources/loki` | `gcp-apps-loki-v0.1.0` |
-| `…/apps/superposition` | `application-resources/superposition` | `gcp-apps-superposition-v0.1.0` |
+| `…/apps/superposition` | `application-resources/superposition` | `gcp-apps-superposition-v0.1.1` |
 | `…/apps/vector` | `application-resources/vector` | `gcp-apps-vector-v0.1.0` |
 
 ### One tag name to clean up

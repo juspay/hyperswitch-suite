@@ -36,7 +36,7 @@ dependency "gke" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/composition/locker?ref=gcp-locker-v0.1.0"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/composition/locker?ref=gcp-locker-v0.1.1"
 }
 
 inputs = merge({
