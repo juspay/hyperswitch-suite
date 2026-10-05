@@ -105,9 +105,9 @@ relying on this path in anger.
 
 | Name | Version |
 | ---- | ------- |
-| <a name="provider_google"></a> [google](#provider\_google) | 7.46.0 |
+| <a name="provider_google"></a> [google](#provider\_google) | >= 7.23, < 8.0 |
 | <a name="provider_google-beta"></a> [google-beta](#provider\_google-beta) | >= 7.23, < 8.0 |
-| <a name="provider_random"></a> [random](#provider\_random) | 3.9.0 |
+| <a name="provider_random"></a> [random](#provider\_random) | >= 3.0 |
 
 ## Modules
 
@@ -152,6 +152,7 @@ relying on this path in anger.
 | <a name="input_project_name"></a> [project\_name](#input\_project\_name) | Project name for labeling and naming resources | `string` | `"hyperswitch"` | no |
 | <a name="input_read_pool_instances"></a> [read\_pool\_instances](#input\_read\_pool\_instances) | Read pool instances to create under this cluster, keyed by name - the same<br/>map-of-objects shape the AWS module uses for cluster\_instances. The map key<br/>becomes the instance\_id unless one is set explicitly. Empty by default<br/>(single-instance deployment); populate for read scaling:<br/><br/>  read\_pool\_instances = {<br/>    read-1 = { node\_count = 2, cpu\_count = 4 }<br/>    analytics = {<br/>      node\_count     = 1<br/>      cpu\_count      = 8<br/>      database\_flags = { "google.columnar\_engine.enabled" = "on" }<br/>    }<br/>  }<br/><br/>A pool with node\_count = 1 is zonal and node\_count >= 2 is regional, so<br/>availability\_type and gce\_zone are not settable on read pools. Labels and<br/>annotations are inherited from primary\_instance - that is an upstream module<br/>constraint, not a choice made here. | <pre>map(object({<br/>    instance_id        = optional(string)<br/>    display_name       = optional(string)<br/>    node_count         = optional(number, 1)<br/>    cpu_count          = optional(number, 2)<br/>    machine_type       = optional(string)<br/>    database_flags     = optional(map(string))<br/>    ssl_mode           = optional(string)<br/>    require_connectors = optional(bool)<br/>    enable_public_ip   = optional(bool, false)<br/>    cidr_range         = optional(list(string))<br/>    query_insights_config = optional(object({<br/>      query_string_length     = optional(number)<br/>      record_application_tags = optional(bool)<br/>      record_client_address   = optional(bool)<br/>      query_plans_per_minute  = optional(number)<br/>    }))<br/>  }))</pre> | `{}` | no |
 | <a name="input_region"></a> [region](#input\_region) | Region (AlloyDB 'location') for the cluster | `string` | n/a | yes |
+| <a name="input_restore_cluster"></a> [restore\_cluster](#input\_restore\_cluster) | Restore the new cluster from an existing backup source instead of creating it empty. Only honoured at create time - setting or changing this on an already-applied cluster has no effect (the underlying API field is immutable post-create). Only one of restore\_backup\_source or restore\_continuous\_backup\_source should be set | <pre>object({<br/>    restore_backup_source = optional(object({<br/>      # Despite the name, this is the backup's full resource name:<br/>      # projects/{project}/locations/{location}/backups/{backup}<br/>      backup_name = string<br/>    }))<br/>    restore_continuous_backup_source = optional(object({<br/>      # Full resource name: projects/{project}/locations/{location}/clusters/{cluster}<br/>      cluster       = string<br/>      point_in_time = string<br/>    }))<br/>  })</pre> | `null` | no |
 | <a name="input_secret_manager"></a> [secret\_manager](#input\_secret\_manager) | Set create=true to have this module store the auto-generated master password in Secret Manager. Only takes effect when master\_password is left unset. | <pre>object({<br/>    create    = optional(bool, false)<br/>    secret_id = optional(string)<br/>  })</pre> | `null` | no |
 
 ## Outputs

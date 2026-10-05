@@ -238,6 +238,23 @@ variable "automated_backup_start_hour" {
   default     = 2
 }
 
+variable "restore_cluster" {
+  description = "Restore the new cluster from an existing backup source instead of creating it empty. Only honoured at create time - setting or changing this on an already-applied cluster has no effect (the underlying API field is immutable post-create). Only one of restore_backup_source or restore_continuous_backup_source should be set"
+  type = object({
+    restore_backup_source = optional(object({
+      # Despite the name, this is the backup's full resource name:
+      # projects/{project}/locations/{location}/backups/{backup}
+      backup_name = string
+    }))
+    restore_continuous_backup_source = optional(object({
+      # Full resource name: projects/{project}/locations/{location}/clusters/{cluster}
+      cluster       = string
+      point_in_time = string
+    }))
+  })
+  default = null
+}
+
 # KMS / CMEK - same shape as composition/cloud-sql for consistency
 
 variable "kms" {

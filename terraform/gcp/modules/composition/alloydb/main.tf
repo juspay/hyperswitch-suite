@@ -62,6 +62,8 @@ module "alloydb" {
 
   cluster_encryption_key_name = local.kms_key_name
 
+  restore_cluster = var.restore_cluster
+
   deletion_protection = var.deletion_protection
 
   continuous_backup_enable               = var.continuous_backup_enabled
