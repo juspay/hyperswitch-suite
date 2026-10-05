@@ -26,19 +26,6 @@ inputs = merge({
   project_name = include.root.locals.project_name
   region       = include.root.locals.region
 
-  # Keeps this catalog's own <project_name>-<environment>-* naming
-  # convention (the module's own default, used only when cluster_name is
-  # left null, is reversed: <environment>-<project_name>-gke) while still
-  # letting values.unit_config.gke.cluster_name_version - passed through as
-  # values.cfg.cluster_name_version by the merge below - append a version
-  # suffix. Setting cluster_name unconditionally, as this did before, always
-  # wins over cluster_name_version per the module's own documented
-  # precedence, so that value previously had no effect no matter what a
-  # stack passed.
-  #
-  # The cluster name is ForceNew - setting or changing cluster_name_version
-  # on an already-applied cluster replaces it entirely. Never set this on a
-  # live environment without planning for that.
   cluster_name = try(values.cfg.cluster_name_version, null) == null ? (
     "${include.root.locals.project_name}-${include.root.locals.environment.short}-gke"
     ) : (
