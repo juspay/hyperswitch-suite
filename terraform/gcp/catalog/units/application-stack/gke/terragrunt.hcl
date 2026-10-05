@@ -54,7 +54,7 @@ inputs = merge({
 
   deletion_protection = true
 
-  node_pools = concat([
+  node_pools = try(values.gke_node_pools, null) != null ? values.gke_node_pools : [
     {
       name         = "system-pool"
       machine_type = values.machine_types.gke_system_pool
@@ -75,8 +75,7 @@ inputs = merge({
       auto_repair  = true
       auto_upgrade = true
     },
-    ], try(values.additional_node_pools, [])
-  )
+  ]
 
   labels = merge({
     environment = include.root.locals.environment.short
