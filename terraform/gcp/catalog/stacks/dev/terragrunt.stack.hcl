@@ -59,7 +59,7 @@ unit "vpc-network" {
 # pole, so start it first.
 
 unit "alloydb" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/alloydb?ref=unit/gcp/alloydb-v0.1.0-v2"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/alloydb?ref=unit/gcp/alloydb-v0.1.1-v1"
   path   = "alloydb"
 
   no_dot_terragrunt_stack = true
@@ -70,13 +70,36 @@ unit "alloydb" {
   values = try(values.alloydb, null) != null ? { alloydb = values.alloydb } : {}
 }
 
+# memorystore-valkey and memorystore-redis each excludes itself (see its own
+# terragrunt.hcl) based on its own independent *_enabled flag - not a single
+# shared choice, so nothing here enforces picking only one. Both units still
+# generate into the live tree either way (no for_each support on `unit`
+# blocks to skip that - verified against this Terragrunt version), they
+# just don't get applied when excluded. valkey_enabled defaults to true and
+# redis_enabled to false, so a stack that never sets either deploys exactly
+# as it did before this option existed.
 unit "memorystore-valkey" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/memorystore-valkey?ref=unit/gcp/memorystore-valkey-v0.1.0-v2"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/memorystore-valkey?ref=unit/gcp/memorystore-valkey-v0.1.0-v3"
   path   = "memorystore-valkey"
 
   no_dot_terragrunt_stack = true
 
-  values = try(values.valkey, null) != null ? { valkey = values.valkey } : {}
+  values = merge(
+    try(values.valkey, null) != null ? { valkey = values.valkey } : {},
+    { valkey_enabled = try(values.valkey_enabled, true) },
+  )
+}
+
+unit "memorystore-redis" {
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/memorystore-redis?ref=unit/gcp/memorystore-redis-v0.1.0-v1"
+  path   = "memorystore-redis"
+
+  no_dot_terragrunt_stack = true
+
+  values = merge(
+    try(values.redis, null) != null ? { redis = values.redis } : {},
+    { redis_enabled = try(values.redis_enabled, false) },
+  )
 }
 
 unit "gke" {
@@ -154,7 +177,7 @@ unit "vector" {
 }
 
 unit "grafana" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/grafana?ref=unit/gcp/grafana-v0.1.0-v2"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/grafana?ref=unit/gcp/grafana-v0.1.1-v1"
   path   = "application-stack/apps/grafana"
 
   no_dot_terragrunt_stack = true
@@ -168,7 +191,7 @@ unit "grafana" {
 }
 
 unit "superposition" {
-  source                  = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/superposition?ref=unit/gcp/superposition-v0.1.0-v2"
+  source                  = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/superposition?ref=unit/gcp/superposition-v0.1.1-v1"
   path                    = "application-stack/apps/superposition"
   no_dot_terragrunt_stack = true
 
@@ -263,7 +286,7 @@ unit "bastion-host" {
 # Data tier and identity for the card vault. The vault itself runs on GKE via
 # Helm, so this depends on both vpc-network and gke.
 unit "locker" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/locker?ref=unit/gcp/locker-v0.1.0-v2"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/locker?ref=unit/gcp/locker-v0.1.1-v1"
   path   = "locker"
 
   no_dot_terragrunt_stack = true
