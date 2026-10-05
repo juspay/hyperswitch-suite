@@ -90,7 +90,7 @@ unit "gke" {
     try(values.gke_master_ipv4_cidr_block, null) != null ? { gke_master_ipv4_cidr_block = values.gke_master_ipv4_cidr_block } : {},
     try(values.gke_deletion_protection, null) != null ? { gke_deletion_protection = values.gke_deletion_protection } : {},
     try(values.unit_config.gke, null) != null ? { cfg = values.unit_config.gke } : {},
-    try(values.gke_additional_node_pools, null) != null ? { additional_node_pools = values.gke_additional_node_pools } : {},
+    try(values.gke_node_pools, null) != null ? { gke_node_pools = values.gke_node_pools } : {},
   )
 }
 
