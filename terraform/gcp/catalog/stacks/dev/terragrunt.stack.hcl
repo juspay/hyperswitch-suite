@@ -33,7 +33,7 @@
 # Phase 0 — Foundation
 # -----------------------------------------------------------------------------
 unit "vpc-network" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/vpc-network?ref=unit/gcp/vpc-network-v0.1.0-v3"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/vpc-network?ref=unit/gcp/vpc-network-v0.1.0-v4"
   path   = "vpc-network"
 
   no_dot_terragrunt_stack = true
