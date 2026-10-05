@@ -40,7 +40,7 @@ every `REPLACE_ME` in `terragrunt.stack.hcl`:
 | `state_bucket` | a globally unique GCS bucket name; Terragrunt creates it on first `init` |
 | `vpn_cidr_blocks` | real office / VPN CIDRs. **Left empty, `gke` falls back to an allow-all `master_authorized_networks` entry that must not be applied.** |
 | `domains.api`, `domains.grafana` | real hostnames |
-| `custom_images.envoy`, `custom_images.squid` | names of images built from `terraform/gcp/packer/{envoy-proxy,squid-proxy}`. These two units will not `apply` without them |
+| `custom_images.envoy`, `custom_images.squid` | names of images built from `terraform/gcp/packer/{envoy-proxy,squid-proxy}` — build them first, see [`../packer/README.md`](../packer/README.md). These two units will not `apply` without them |
 | `bastion_iap_members` | the group(s) or user(s) granted IAP SSH to the bastion |
 
 ## Values

@@ -132,6 +132,7 @@ Key deployment docs:
 
 - [`terraform/aws/ARCHITECTURE.md`](terraform/aws/ARCHITECTURE.md) — AWS module architecture and dependency graph
 - [`terraform/aws/README.md`](terraform/aws/README.md) — AWS step-by-step deployment guide
+- [`terraform/gcp/packer/README.md`](terraform/gcp/packer/README.md) — GCP: build the Envoy and Squid images (do this before applying the stack)
 - [`terraform/gcp/catalog/README.md`](terraform/gcp/catalog/README.md) — GCP catalog unit skeleton, tag naming and CI
 - [`terraform/aws/live/README.md`](terraform/aws/live/README.md) — how the AWS live layer is organised
 

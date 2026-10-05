@@ -72,7 +72,7 @@ Consumed by units:
 | `machine_types` (`gke_system_pool`, `gke_generic_compute`) | `gke` |
 | `domains` (`api`, `grafana`) | `istio`, `grafana`, `hyperswitch` |
 | `smtp_secret_id` | `hyperswitch` |
-| `custom_images` (`envoy`, `squid`) | `envoy-proxy`, `squid-proxy` — image names, expanded to a full image path against `project_id` |
+| `custom_images` (`envoy`, `squid`) | `envoy-proxy`, `squid-proxy` — image names, expanded to a full image path against `project_id`; build them first, see [`packer/README.md`](../../../packer/README.md) |
 | `machine_types.bastion` | `bastion-host` |
 | `bastion_iap_members` | `bastion-host` — group(s)/user(s) granted IAP SSH |
 | `locker` (optional map) | `locker` — `availability_type`, `cpu_count`, `deletion_protection`, `kms_protection_level` |
