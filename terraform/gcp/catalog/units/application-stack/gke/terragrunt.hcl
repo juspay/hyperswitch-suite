@@ -54,11 +54,6 @@ inputs = merge({
 
   deletion_protection = true
 
-  # values.additional_node_pools lets a stack declare extra pools beyond the
-  # two below, for environment-specific sizing (e.g. a dedicated pool for one
-  # compute-heavy workload) without forking this unit. Same object shape as
-  # the two pools below. Appended, never replaces - the base two always
-  # exist for any stack that doesn't set this.
   node_pools = concat([
     {
       name         = "system-pool"
