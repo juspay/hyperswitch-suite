@@ -17,7 +17,7 @@ dependency "vpc" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/composition/gke?ref=gcp-gke-v0.1.0"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/composition/gke?ref=gcp-gke-v0.1.1"
 }
 
 inputs = merge({
@@ -54,7 +54,12 @@ inputs = merge({
 
   deletion_protection = true
 
-  node_pools = [
+  # values.additional_node_pools lets a stack declare extra pools beyond the
+  # two below, for environment-specific sizing (e.g. a dedicated pool for one
+  # compute-heavy workload) without forking this unit. Same object shape as
+  # the two pools below. Appended, never replaces - the base two always
+  # exist for any stack that doesn't set this.
+  node_pools = concat([
     {
       name         = "system-pool"
       machine_type = values.machine_types.gke_system_pool
@@ -75,7 +80,8 @@ inputs = merge({
       auto_repair  = true
       auto_upgrade = true
     },
-  ]
+    ], try(values.additional_node_pools, [])
+  )
 
   labels = merge({
     environment = include.root.locals.environment.short

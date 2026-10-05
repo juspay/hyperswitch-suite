@@ -80,7 +80,7 @@ unit "memorystore-valkey" {
 }
 
 unit "gke" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/gke?ref=unit/gcp/gke-v0.1.0-v2"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/gke?ref=unit/gcp/gke-v0.1.1-v1"
   path   = "application-stack/gke"
 
   no_dot_terragrunt_stack = true
@@ -90,6 +90,7 @@ unit "gke" {
     try(values.gke_master_ipv4_cidr_block, null) != null ? { gke_master_ipv4_cidr_block = values.gke_master_ipv4_cidr_block } : {},
     try(values.gke_deletion_protection, null) != null ? { gke_deletion_protection = values.gke_deletion_protection } : {},
     try(values.unit_config.gke, null) != null ? { cfg = values.unit_config.gke } : {},
+    try(values.gke_additional_node_pools, null) != null ? { additional_node_pools = values.gke_additional_node_pools } : {},
   )
 }
 
