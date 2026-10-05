@@ -179,8 +179,15 @@ resource "aws_cloudwatch_metric_alarm" "classified_alarms" {
   datapoints_to_alarm = each.value.datapoints_to_alarm
   actions_enabled     = each.value.actions_enabled
 
-  alarm_actions = var.sns_topic_arns != {} ? [lookup(var.sns_topic_arns, each.value.additional_tags.Severity, "")] : []
-  ok_actions    = each.value.skip_ok_action ? [] : (var.sns_topic_arns != {} ? [lookup(var.sns_topic_arns, each.value.additional_tags.Severity, "")] : [])
+  alarm_actions = each.value.topic_arns != {} ? [lookup(each.value.topic_arns, each.value.additional_tags.Severity, "")] : []
+  ok_actions    = each.value.skip_ok_action ? [] : (each.value.topic_arns != {} ? [lookup(each.value.topic_arns, each.value.additional_tags.Severity, "")] : [])
+
+  lifecycle {
+    precondition {
+      condition     = each.value.owner == null || contains(keys(each.value.topic_arns), each.value.additional_tags.Severity)
+      error_message = "Alarm ${each.value.alarm_name} resolves to owner \"${coalesce(each.value.owner, "-")}\", but var.owner_sns_topic_arns has no ${each.value.additional_tags.Severity} topic for that owner."
+    }
+  }
 
   tags = merge(local.common_tags, each.value.additional_tags, {
     Name = each.value.alarm_name
@@ -219,8 +226,15 @@ resource "aws_cloudwatch_metric_alarm" "classified_anomaly_alarms" {
     return_data = true
   }
 
-  alarm_actions = var.sns_topic_arns != {} ? [lookup(var.sns_topic_arns, each.value.additional_tags.Severity, "")] : []
-  ok_actions    = each.value.skip_ok_action ? [] : (var.sns_topic_arns != {} ? [lookup(var.sns_topic_arns, each.value.additional_tags.Severity, "")] : [])
+  alarm_actions = each.value.topic_arns != {} ? [lookup(each.value.topic_arns, each.value.additional_tags.Severity, "")] : []
+  ok_actions    = each.value.skip_ok_action ? [] : (each.value.topic_arns != {} ? [lookup(each.value.topic_arns, each.value.additional_tags.Severity, "")] : [])
+
+  lifecycle {
+    precondition {
+      condition     = each.value.owner == null || contains(keys(each.value.topic_arns), each.value.additional_tags.Severity)
+      error_message = "Alarm ${each.value.alarm_name} resolves to owner \"${coalesce(each.value.owner, "-")}\", but var.owner_sns_topic_arns has no ${each.value.additional_tags.Severity} topic for that owner."
+    }
+  }
 
   tags = merge(local.common_tags, each.value.additional_tags, {
     Name = each.value.alarm_name

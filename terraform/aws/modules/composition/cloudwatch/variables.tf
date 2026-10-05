@@ -27,6 +27,28 @@ variable "sns_topic_arns" {
   default     = {}
 }
 
+variable "owner_sns_topic_arns" {
+  description = <<-EOT
+    Map of owner -> severity -> SNS topic ARN, for routing classified alarms to
+    different teams. An alarm's owner is its own `owner` field, else
+    var.classification_owners[classification]. Alarms that resolve to no owner
+    keep using var.sns_topic_arns.
+    Example:
+      owner_sns_topic_arns = {
+        infra = { sev1 = "arn:...:infra-sev1", sev2 = "arn:...:infra-sev2" }
+        data  = { sev1 = "arn:...:data-sev1",  sev2 = "arn:...:data-sev2" }
+      }
+  EOT
+  type        = map(map(string))
+  default     = {}
+}
+
+variable "classification_owners" {
+  description = "Map of alarm classification -> owner key in var.owner_sns_topic_arns (e.g. { kafka-alerts = \"data\" })"
+  type        = map(string)
+  default     = {}
+}
+
 variable "dimension_map" {
   description = <<-EOT
     Flat map of named dimension sets used by classified alarms.
@@ -160,6 +182,7 @@ variable "classified_metric_alarms" {
   EOT
   type = map(object({
     classification = string
+    owner          = optional(string)
     metric_name    = string
     namespace      = string
     dimension_key  = optional(string, "")
@@ -193,6 +216,7 @@ variable "classified_anomaly_alarms" {
   EOT
   type = map(object({
     classification = string
+    owner          = optional(string)
     metric_name    = string
     namespace      = string
     dimension_key  = optional(string, "")
