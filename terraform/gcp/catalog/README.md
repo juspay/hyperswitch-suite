@@ -79,6 +79,7 @@ vpc-network                      alloydb              -> ../vpc-network
 memorystore-valkey               envoy-proxy          -> ../vpc-network
 artifact-registry                squid-proxy          -> ../vpc-network
 bastion-host                     firewall-rules       -> ../vpc-network
+memorystore-redis                                     -> ../vpc-network
 locker                           -> ../vpc-network, ../application-stack/gke
 application-stack/gke            -> ../../vpc-network
 application-stack/apps/<name>    -> ../../gke, ../../../vpc-network
@@ -105,6 +106,7 @@ pins resolve to existing tags — `scripts/ci/check-gcp-pins.sh` enforces it.
 | `vpc-network` | `composition/vpc-network` | `gcp-vpc-network-v0.1.0` |
 | `alloydb` | `composition/alloydb` | `gcp-alloydb-v0.1.1` |
 | `memorystore-valkey` | `composition/memorystore-valkey` | `gcp-memorystore-valkey-v0.1.0` |
+| `memorystore-redis` | `composition/memorystore-redis` | `gcp-memorystore-redis-v0.1.0` |
 | `artifact-registry` | `composition/artifact-registry` | `gcp-artifact-registry-v0.1.0` |
 | `bastion-host` | `composition/bastion-host` | `gcp-bastion-host-v0.1.0` |
 | `locker` | `composition/locker` | `gcp-locker-v0.1.1` |
