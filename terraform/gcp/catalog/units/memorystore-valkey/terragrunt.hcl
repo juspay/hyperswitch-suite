@@ -16,6 +16,17 @@ include "root" {
   expose = true
 }
 
+# Defaults to enabled, so a stack that never sets valkey_enabled (every
+# stack before this option existed) keeps deploying this unit exactly as
+# before. Independent of memorystore-redis's own redis_enabled - nothing
+# stops a stack setting both true, but both units reserve PSC addresses
+# from the same dedicated `memorystore` subnet (see above), so running
+# both at once in the same environment will hit a real conflict there.
+exclude {
+  if      = !try(values.valkey_enabled, true)
+  actions = ["all"]
+}
+
 locals {
   # vpc-network keys its `subnets` output by "<region>/<name_prefix>-<tier>",
   # where name_prefix is "<project_name>-<environment>". Derived rather than
