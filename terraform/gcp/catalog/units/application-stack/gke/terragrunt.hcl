@@ -17,7 +17,7 @@ dependency "vpc" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/composition/gke?ref=gcp-gke-v0.1.0"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/composition/gke?ref=gcp-gke-v0.1.1"
 }
 
 inputs = merge({
@@ -54,7 +54,7 @@ inputs = merge({
 
   deletion_protection = true
 
-  node_pools = [
+  node_pools = try(values.gke_node_pools, null) != null ? values.gke_node_pools : [
     {
       name         = "system-pool"
       machine_type = values.machine_types.gke_system_pool
