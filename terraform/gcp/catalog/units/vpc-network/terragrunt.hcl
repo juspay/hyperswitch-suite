@@ -59,11 +59,19 @@ inputs = merge({
   # Baseline firewall rules (cross-module rules live in ../firewall-rules,
   # deployed last)
   # ---------------------------------------------------------------------------
-  vpc_internal_ranges = {
-    primary  = "${values.vpc_cidr_prefix}.0.0/16"
-    gke_pods = values.gke_pods_secondary_range_cidr
-    gke_svcs = values.gke_services_secondary_range_cidr
-  }
+  # Merge, not replace: a stack can only ADD ranges (e.g. a PSA allocation, or
+  # the GKE master's own /28 - required once enable_default_deny_egress is on,
+  # otherwise kubelet can't reach the apiserver) via
+  # values.network_options.vpc_internal_ranges, without having to repeat
+  # primary/gke_pods/gke_svcs itself.
+  vpc_internal_ranges = merge(
+    {
+      primary  = "${values.vpc_cidr_prefix}.0.0/16"
+      gke_pods = values.gke_pods_secondary_range_cidr
+      gke_svcs = values.gke_services_secondary_range_cidr
+    },
+    try(values.network_options.vpc_internal_ranges, {})
+  )
   enable_default_deny_ingress = true
 
   # Off by default - open egress (the module's own default) is the easy path for a
