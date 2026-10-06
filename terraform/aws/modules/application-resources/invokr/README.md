@@ -74,6 +74,44 @@ The application secret resource is optional and is only an empty bootstrap-confi
 
 No Secrets Manager resource is required when encrypted values are delivered directly as Kubernetes Secrets. This container does not hold Invokr endpoint or reconciliation credentials; those remain encrypted in Invokr's PostgreSQL database.
 
+## Multi-region KMS And Shared Aurora
+
+Keep `create_database = false` when using an existing Aurora cluster. This
+module does not create a logical database or PostgreSQL user in that cluster;
+bootstrap the database and apply migrations separately on its current writer.
+The shared cluster's owner configures pg_cron and schedules required reboots.
+
+Create the multi-region primary key in its owning region:
+
+```hcl
+kms = {
+  create       = true
+  multi_region = true
+}
+```
+
+Then create a replica with a provider configured for the other region:
+
+```hcl
+kms = {
+  create          = true
+  create_replica  = true
+  primary_key_arn = "<ARN of the multi-region primary key>"
+}
+```
+
+The primary must already exist and be multi-region. `create_replica` requires
+`create = true` and a non-empty `primary_key_arn`; an existing `key_arn` cannot
+be combined with creation. `primary_key_arn` is only accepted in replica mode.
+Rotation is managed on the primary; replicas share its key material. Verify
+replica output ARNs and key policy access in a plan before deployment.
+
+Use the regional `kms_key_arn` and `role_arn` outputs for each deployment and set
+`AWS_REGION`. Database promotion does not require changing KMS ownership. Keep
+the same decrypted `INVOKR_ENCRYPTION_KEY` across regions; database URLs can be
+region-specific. Test ciphertext decryption in each region rather than assuming
+that copying a ciphertext value is sufficient.
+
 ## Example
 
 ```hcl
@@ -188,6 +226,25 @@ existing_application_secret_arn = "arn:aws:secretsmanager:ap-south-1:12345678901
 
 `database_security_group_id` is the stable output for live infrastructure that creates database ingress rules. The database composition creates the security group but this module does not add environment-specific ingress sources.
 
+## Validation
+
+With Terraform >= 1.7 (required for mocked providers), initialize dependencies
+and run the offline configuration tests:
+
+```bash
+terraform init -backend=false
+terraform validate
+terraform test
+```
+
+The tests cover single-region creation, multi-region primary/replica creation,
+existing-key configuration, and invalid replica inputs. Mocked plans do not
+verify AWS key policies, regional connectivity, or actual ciphertext decryption;
+review a real consuming-stack plan and test these before deployment.
+
+Release the updated module as `invokr-v0.1.1` before publishing/consuming the
+catalog unit pinned to that tag. Release tags are not created by this change.
+
 ## Non-goals
 
 This module does not:
@@ -204,28 +261,28 @@ This module does not:
 ## Requirements
 
 | Name | Version |
-|------|---------|
+| ---- | ------- |
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.31 |
 
 ## Providers
 
 | Name | Version |
-|------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 6.31 |
+| ---- | ------- |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.66.0 |
 | <a name="provider_terraform"></a> [terraform](#provider\_terraform) | n/a |
 
 ## Modules
 
 | Name | Source | Version |
-|------|--------|---------|
+| ---- | ------ | ------- |
 | <a name="module_database"></a> [database](#module\_database) | git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/database | database-v0.1.8 |
 | <a name="module_kms"></a> [kms](#module\_kms) | terraform-aws-modules/kms/aws | 4.2.0 |
 
 ## Resources
 
 | Name | Type |
-|------|------|
+| ---- | ---- |
 | [aws_iam_role.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role_policy.inline](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
 | [aws_iam_role_policy.kms_decrypt](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
@@ -242,7 +299,7 @@ This module does not:
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
+| ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_additional_assume_role_statements"></a> [additional\_assume\_role\_statements](#input\_additional\_assume\_role\_statements) | Additional IAM trust-policy statements | `list(any)` | `[]` | no |
 | <a name="input_app_name"></a> [app\_name](#input\_app\_name) | Application name used for resource naming and tagging | `string` | `"invokr"` | no |
 | <a name="input_application_secret_description"></a> [application\_secret\_description](#input\_application\_secret\_description) | Description for the application secret | `string` | `null` | no |
@@ -263,7 +320,7 @@ This module does not:
 | <a name="input_existing_application_secret_arn"></a> [existing\_application\_secret\_arn](#input\_existing\_application\_secret\_arn) | ARN of an existing Invokr application secret. Mutually exclusive with create\_application\_secret | `string` | `null` | no |
 | <a name="input_force_detach_policies"></a> [force\_detach\_policies](#input\_force\_detach\_policies) | Whether to detach policies before destroying the IAM role | `bool` | `true` | no |
 | <a name="input_inline_policies"></a> [inline\_policies](#input\_inline\_policies) | Additional inline IAM policies keyed by policy name | `map(string)` | `{}` | no |
-| <a name="input_kms"></a> [kms](#input\_kms) | Shared KMS key configuration. Create a key or provide an existing key ARN | <pre>object({<br/>    create                             = optional(bool, false)<br/>    key_arn                            = optional(string)<br/>    description                        = optional(string)<br/>    multi_region                       = optional(bool, false)<br/>    deletion_window_in_days            = optional(number, 30)<br/>    enable_key_rotation                = optional(bool, true)<br/>    rotation_period_in_days            = optional(number)<br/>    bypass_policy_lockout_safety_check = optional(bool)<br/>    aliases                            = optional(list(string), [])<br/>    aliases_use_name_prefix            = optional(bool, false)<br/>    key_administrators                 = optional(list(string), [])<br/>    key_users                          = optional(list(string), [])<br/>    key_service_users                  = optional(list(string), [])<br/>    key_owners                         = optional(list(string), [])<br/>    source_policy_documents            = optional(list(string), [])<br/>  })</pre> | `{}` | no |
+| <a name="input_kms"></a> [kms](#input\_kms) | Shared KMS key configuration. Create a key or provide an existing key ARN | <pre>object({<br/>    create                             = optional(bool, false)<br/>    create_replica                     = optional(bool, false)<br/>    primary_key_arn                    = optional(string)<br/>    key_arn                            = optional(string)<br/>    description                        = optional(string)<br/>    multi_region                       = optional(bool, false)<br/>    deletion_window_in_days            = optional(number, 30)<br/>    enable_key_rotation                = optional(bool, true)<br/>    rotation_period_in_days            = optional(number)<br/>    bypass_policy_lockout_safety_check = optional(bool)<br/>    aliases                            = optional(list(string), [])<br/>    aliases_use_name_prefix            = optional(bool, false)<br/>    key_administrators                 = optional(list(string), [])<br/>    key_users                          = optional(list(string), [])<br/>    key_service_users                  = optional(list(string), [])<br/>    key_owners                         = optional(list(string), [])<br/>    source_policy_documents            = optional(list(string), [])<br/>  })</pre> | `{}` | no |
 | <a name="input_max_session_duration"></a> [max\_session\_duration](#input\_max\_session\_duration) | Maximum IAM role session duration in seconds | `number` | `3600` | no |
 | <a name="input_project_name"></a> [project\_name](#input\_project\_name) | Project name used for resource naming and tagging | `string` | n/a | yes |
 | <a name="input_region"></a> [region](#input\_region) | AWS region. Defaults to the provider region when null | `string` | `null` | no |
@@ -275,7 +332,7 @@ This module does not:
 ## Outputs
 
 | Name | Description |
-|------|-------------|
+| ---- | ----------- |
 | <a name="output_account_id"></a> [account\_id](#output\_account\_id) | AWS account ID |
 | <a name="output_application_secret_arn"></a> [application\_secret\_arn](#output\_application\_secret\_arn) | ARN of the created or existing application secret |
 | <a name="output_application_secret_name"></a> [application\_secret\_name](#output\_application\_secret\_name) | Name of the created or existing application secret |

@@ -172,6 +172,8 @@ variable "kms" {
   description = "Shared KMS key configuration. Create a key or provide an existing key ARN"
   type = object({
     create                             = optional(bool, false)
+    create_replica                     = optional(bool, false)
+    primary_key_arn                    = optional(string)
     key_arn                            = optional(string)
     description                        = optional(string)
     multi_region                       = optional(bool, false)
@@ -192,6 +194,19 @@ variable "kms" {
   validation {
     condition     = !(var.kms.create && var.kms.key_arn != null)
     error_message = "kms.create and kms.key_arn are mutually exclusive."
+  }
+
+  validation {
+    condition = !var.kms.create_replica || (
+      var.kms.create &&
+      try(trimspace(var.kms.primary_key_arn) != "", false)
+    )
+    error_message = "KMS replica creation requires kms.create = true and a non-empty kms.primary_key_arn."
+  }
+
+  validation {
+    condition     = var.kms.create_replica || var.kms.primary_key_arn == null
+    error_message = "kms.primary_key_arn may only be supplied when kms.create_replica is true."
   }
 
   validation {

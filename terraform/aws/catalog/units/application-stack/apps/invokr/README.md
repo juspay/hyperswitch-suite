@@ -1,11 +1,12 @@
 # Invokr unit
 
-Reusable AWS application-resources unit, pinned to module `invokr-v0.1.0`.
-Proposed unit release tag: `aws/unit/invokr-v0.1.0` (not created here).
+Reusable AWS application-resources unit, pinned to module `invokr-v0.1.1`.
+Proposed unit release tag: `aws/unit/invokr-v0.1.1` (not created here).
+Publish the module tag before consuming this unit; then publish the unit tag.
 After merge and tagging, a consuming hyperswitch-infra sandbox catalog stack can use:
 
 ```hcl
-source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/application-stack/apps/invokr?ref=aws/unit/invokr-v0.1.0"
+source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/catalog/units/application-stack/apps/invokr?ref=aws/unit/invokr-v0.1.1"
 ```
 
 ## Prerequisites
@@ -101,12 +102,51 @@ migrations separately to install `pg_cron`; this unit runs no SQL and creates
 no PostgreSQL users or grants. Existing databases are used through externally
 delivered bootstrap configuration, not a database dependency.
 
+## Shared Database And Regional KMS
+
+For an existing Aurora cluster, keep `create_database = false`. Create the
+logical database, application user/grants, and run migrations separately on the
+current writer. Supply each deployment's regional connection URL through the
+external secret-delivery process; this unit does not read database state.
+Configure pg_cron on the shared cluster through its owning database unit, not
+through Invokr's optional dedicated database. Verify parameters and recovery in
+every region before testing promotion.
+
+KMS ownership is independent of the current Aurora writer. The consuming stack
+must explicitly resolve the primary key ARN (for example, through a Terragrunt
+dependency) before supplying the replica settings. No region names, primary-unit
+paths, or `is_passive` behavior are inferred here.
+
+Primary-region values:
+
+```hcl
+create_database = false
+kms = {
+  create       = true
+  multi_region = true
+}
+```
+
+Replica-region values:
+
+```hcl
+create_database = false
+kms = {
+  create          = true
+  create_replica  = true
+  primary_key_arn = "<ARN of the multi-region primary key>"
+}
+```
+
+Apply the primary key before its replica. Each regional deployment uses its
+local key and IRSA role and sets `AWS_REGION` explicitly. Keep the same Invokr
+application encryption key after decrypting bootstrap configuration in either
+region so stored database secrets remain readable. Regional database URLs may
+differ; deliver and test the appropriate ciphertext for each region.
+
 ## Region And Validation Limits
 
-No `is_passive`, primary-unit dependency, automatic global database, or KMS
-replica behavior is inferred. The released module supports `kms.multi_region`
-for a primary key but does **not** expose `create_replica` or `primary_key_arn`.
-Its database object exposes explicit global/replication settings; these require
+The database object exposes explicit global/replication settings; these require
 caller design and are not an automatic passive-region deployment path.
 
 Both dependencies use shallow mock/state merging and allow mocks only for
