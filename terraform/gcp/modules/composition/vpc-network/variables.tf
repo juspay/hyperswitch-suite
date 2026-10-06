@@ -172,6 +172,12 @@ variable "nat_static_ip_count" {
   default     = 0
 }
 
+variable "reserve_gke_ingress_ilb_ip" {
+  description = "Reserve a static INTERNAL IP in the gke-nodes subnet for an in-cluster gateway's internal LoadBalancer Service (e.g. Istio's ingressgateway) to request via loadBalancerIP. Lives here, not in the gateway's own unit, because this address needs to outlive that unit's lifecycle (a GKE/Istio reinstall shouldn't hand out a new IP out from under whatever else - e.g. a GCE-based edge proxy - is already configured to forward to it). Reserved IPs cost nothing while unattached, so this defaults to true"
+  type        = bool
+  default     = true
+}
+
 variable "nat_subnetwork_tiers" {
   description = <<-EOT
     Restricts Cloud NAT to only the named subnet tiers (keys from the
