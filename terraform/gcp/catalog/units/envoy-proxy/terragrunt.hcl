@@ -89,10 +89,23 @@ inputs = merge({
   # Every file under config/ becomes one object in the config bucket -
   # vector.toml uploads verbatim; envoy.yaml (matching envoy_config_filename's
   # default) gets envoy_config_content's already-rendered value instead of its
-  # raw on-disk template text. One object per file, not two. abspath() is
-  # required since Terraform resolves this path from its own module cache,
-  # not this directory.
-  config_files_source_path = abspath("${try(values.envoy.assets_dir, get_terragrunt_dir())}/config")
+  # raw on-disk template text. One object per file, not two.
+  #
+  # The path must be ABSOLUTE, since Terraform resolves it from its own module
+  # cache, not this directory - but abspath() on its own resolves a relative
+  # path against the directory Terragrunt was launched from, not this unit's.
+  # `terragrunt run --all` from a parent directory then pointed at a directory
+  # that does not exist, so fileset() came back empty and the plan tried to
+  # destroy the uploaded config objects. file()/templatefile() above resolve
+  # relative to this unit, so assets_dir is a path relative to the unit (or
+  # absolute); anchor a relative one to get_terragrunt_dir() so every caller
+  # sees the same directory.
+  config_files_source_path = abspath(try(
+    substr(values.envoy.assets_dir, 0, 1) == "/"
+    ? "${values.envoy.assets_dir}/config"
+    : "${get_terragrunt_dir()}/${values.envoy.assets_dir}/config",
+    "${get_terragrunt_dir()}/config",
+  ))
 
   enable_cloud_armor   = true
   enable_mtls_listener = false

@@ -46,10 +46,18 @@ variable "config_files_source_path" {
     Local directory of config files to upload to the config bucket, one object per file
     (relative path preserved as the object name) - vector.toml, or anything else a
     deployment ships alongside envoy.yaml. Matches the AWS envoy-proxy composition
-    module's variable of the same name. Null skips this entirely.
+    module's variable of the same name. Null skips this entirely. Must be an absolute
+    path to a directory that contains at least one file: a path that matches nothing
+    (typically a relative path resolved from the wrong directory) would otherwise plan
+    to destroy every uploaded config object, so it is rejected instead.
   EOT
   type        = string
   default     = null
+
+  validation {
+    condition     = var.config_files_source_path == null || length(fileset(var.config_files_source_path, "**")) > 0
+    error_message = "config_files_source_path matches no files. It must be an absolute path to an existing directory with at least one file (a relative path is resolved from the Terraform working directory, not the unit's)."
+  }
 }
 
 variable "envoy_config_filename" {
