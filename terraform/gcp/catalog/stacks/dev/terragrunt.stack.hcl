@@ -195,7 +195,7 @@ unit "grafana" {
 }
 
 unit "superposition" {
-  source                  = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/superposition?ref=unit/gcp/superposition-v0.1.1-v1"
+  source                  = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/superposition?ref=feat/gcp-apps-hyperswitch-superposition-existing-sa-units"
   path                    = "application-stack/apps/superposition"
   no_dot_terragrunt_stack = true
 
@@ -203,7 +203,7 @@ unit "superposition" {
 }
 
 unit "hyperswitch" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/hyperswitch?ref=unit/gcp/hyperswitch-v0.1.0-v2"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/hyperswitch?ref=feat/gcp-apps-hyperswitch-superposition-existing-sa-units"
   path   = "application-stack/apps/hyperswitch"
 
   no_dot_terragrunt_stack = true
