@@ -110,3 +110,15 @@ variable "labels" {
   type        = map(string)
   default     = {}
 }
+
+variable "use_existing_k8s_sa" {
+  description = "Whether the Kubernetes service account already exists (typically created by this app's own Helm chart). Set true to bind Workload Identity to it instead of having Terraform create it - creating an SA the chart also owns collides on apply"
+  type        = bool
+  default     = false
+}
+
+variable "annotate_k8s_sa" {
+  description = "Whether to annotate the Kubernetes service account with the Google service account email. Only meaningful when use_existing_k8s_sa = true; harmless otherwise"
+  type        = bool
+  default     = true
+}

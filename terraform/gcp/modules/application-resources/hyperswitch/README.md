@@ -11,7 +11,7 @@
 
 | Name | Version |
 | ---- | ------- |
-| <a name="provider_google"></a> [google](#provider\_google) | 7.46.0 |
+| <a name="provider_google"></a> [google](#provider\_google) | >= 6.0 |
 
 ## Modules
 
@@ -42,6 +42,7 @@
 | ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_additional_custom_role_ids"></a> [additional\_custom\_role\_ids](#input\_additional\_custom\_role\_ids) | List of project-level custom role IDs (e.g. from application-resources/shared-iam-roles) to grant the service account | `list(string)` | `[]` | no |
 | <a name="input_additional_project_roles"></a> [additional\_project\_roles](#input\_additional\_project\_roles) | Additional project-level IAM roles to grant Hyperswitch's service account | `list(string)` | `[]` | no |
+| <a name="input_annotate_k8s_sa"></a> [annotate\_k8s\_sa](#input\_annotate\_k8s\_sa) | Whether to annotate the Kubernetes service account with the Google service account email. Only meaningful when use\_existing\_k8s\_sa = true; harmless otherwise | `bool` | `true` | no |
 | <a name="input_cloud_functions"></a> [cloud\_functions](#input\_cloud\_functions) | Cloud Functions configuration. Set enabled=true and list function\_names to grant invoker access | <pre>object({<br/>    enabled        = optional(bool, false)<br/>    location       = optional(string)<br/>    function_names = optional(list(string), [])<br/>  })</pre> | `null` | no |
 | <a name="input_cluster_ca_certificate"></a> [cluster\_ca\_certificate](#input\_cluster\_ca\_certificate) | GKE cluster CA certificate, base64-encoded - required to configure this module's kubernetes provider | `string` | n/a | yes |
 | <a name="input_cluster_endpoint"></a> [cluster\_endpoint](#input\_cluster\_endpoint) | GKE cluster API server endpoint (bare host:port or IP, no scheme) - required to configure this module's kubernetes provider | `string` | n/a | yes |
@@ -60,6 +61,7 @@
 | <a name="input_public_domain"></a> [public\_domain](#input\_public\_domain) | Public domain name used to access Hyperswitch. Passed through as an output for wiring into DNS/certificate config | `string` | `null` | no |
 | <a name="input_secret_ids"></a> [secret\_ids](#input\_secret\_ids) | List of Secret Manager secret IDs to grant the service account access to | `list(string)` | `[]` | no |
 | <a name="input_smtp_secret_id"></a> [smtp\_secret\_id](#input\_smtp\_secret\_id) | Secret Manager secret ID holding SMTP credentials. Null disables granting access | `string` | `null` | no |
+| <a name="input_use_existing_k8s_sa"></a> [use\_existing\_k8s\_sa](#input\_use\_existing\_k8s\_sa) | Whether the Kubernetes service account already exists (typically created by this app's own Helm chart). Set true to bind Workload Identity to it instead of having Terraform create it - creating an SA the chart also owns collides on apply | `bool` | `false` | no |
 
 ## Outputs
 
