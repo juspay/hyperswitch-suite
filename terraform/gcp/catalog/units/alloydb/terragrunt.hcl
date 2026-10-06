@@ -62,6 +62,9 @@ inputs = merge({
   primary_instance = {
     availability_type = try(values.alloydb.availability_type, "ZONAL")
     cpu_count         = try(values.alloydb.cpu_count, 2)
+    # e.g. { max_connections = "32000" }. Was silently dropped for the primary
+    # (only the read pool's flags passed through); null keeps AlloyDB's default.
+    database_flags = try(values.alloydb.database_flags, null)
   }
 
   # Keyed by pool name. A production HA layout sets availability_type to
