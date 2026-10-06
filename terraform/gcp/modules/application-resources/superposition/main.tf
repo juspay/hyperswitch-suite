@@ -22,9 +22,6 @@ module "workload_identity" {
   namespace    = var.k8s_namespace
   k8s_sa_name  = var.k8s_service_account_name
 
-  use_existing_k8s_sa = var.use_existing_k8s_sa
-  annotate_k8s_sa     = var.annotate_k8s_sa
-
   roles = var.additional_project_roles
 }
 
