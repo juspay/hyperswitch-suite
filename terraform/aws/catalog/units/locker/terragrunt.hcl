@@ -154,9 +154,9 @@ inputs = {
     create_security_group                 = true
 
     cluster_instances = try(values.cluster_instances, {
-      instance-1 = {
+      instance_a = {
         instance_class                        = try(values.db_instance_class, "db.r6g.large")
-        promotion_tier                        = 1
+        promotion_tier                        = 0
         availability_zone                     = "${include.root.locals.region}a"
         db_parameter_group_name               = "default.aurora-postgresql17"
         auto_minor_version_upgrade            = true
