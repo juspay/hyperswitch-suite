@@ -130,8 +130,8 @@ inputs = {
   create_security_group = true
 
   cluster_instances = try(values.cluster_instances, {
-    primary = {
-      instance_class                        = try(values.db_instance_class, "db.r5.large")
+    instance_a = {
+      instance_class                        = try(values.db_instance_class, "db.r6g.large")
       promotion_tier                        = 0
       availability_zone                     = "${include.root.locals.region}a"
       db_parameter_group_name               = "default.aurora-postgresql17"
@@ -145,8 +145,8 @@ inputs = {
         managed_by = "hyperswitch"
       }
     }
-    failover = {
-      instance_class                        = try(values.db_instance_class, "db.r5.large")
+    instance_b = {
+      instance_class                        = try(values.db_instance_class, "db.r6g.large")
       promotion_tier                        = 1
       availability_zone                     = "${include.root.locals.region}b"
       db_parameter_group_name               = "default.aurora-postgresql17"

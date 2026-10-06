@@ -156,9 +156,9 @@ inputs = {
     custom_parameter_group_parameters  = null
 
     cluster_instances = try(values.cluster_instances, {
-      intance-1 = {
+      intance_a = {
         instance_class                        = try(values.db_instance_class, "db.r6g.large")
-        promotion_tier                        = 1
+        promotion_tier                        = 0
         availability_zone                     = "${include.root.locals.region}a"
         db_parameter_group_name               = try(values.db_parameter_group_name, "default.aurora-postgresql17")
         auto_minor_version_upgrade            = true
