@@ -283,6 +283,8 @@ unit "artifact-registry" {
   source                  = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/artifact-registry?ref=unit/gcp/artifact-registry-v0.1.0-v2"
   path                    = "artifact-registry"
   no_dot_terragrunt_stack = true
+
+  values = try(values.unit_config.artifact_registry, null) != null ? { cfg = values.unit_config.artifact_registry } : {}
 }
 
 unit "bastion-host" {
