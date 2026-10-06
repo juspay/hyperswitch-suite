@@ -28,8 +28,21 @@ install -d -o envoy -g envoy /etc/envoy /var/log/envoy
 # so the staging file must itself end in .yaml.
 STAGE=/etc/envoy/envoy.staging.yaml
 
-if ! /snap/bin/gsutil cp "gs://${BUCKET}/envoy.yaml" "$STAGE"; then
-  echo "envoy-startup: failed to fetch gs://${BUCKET}/envoy.yaml" >&2
+# Retry rather than fail once: the config object is uploaded by Terraform, and
+# an instance can boot before it lands (or before IAM propagates). Without a
+# retry the script exits and nothing ever re-runs it, leaving the node with no
+# envoy.yaml. Waits up to ~10 minutes, then fails loudly.
+fetched=0
+for attempt in $(seq 1 40); do
+  if /snap/bin/gsutil cp "gs://${BUCKET}/envoy.yaml" "$STAGE"; then
+    fetched=1
+    break
+  fi
+  echo "envoy-startup: gs://${BUCKET}/envoy.yaml not available yet (attempt ${attempt}/40), retrying in 15s" >&2
+  sleep 15
+done
+if [ "$fetched" != 1 ]; then
+  echo "envoy-startup: failed to fetch gs://${BUCKET}/envoy.yaml after 40 attempts" >&2
   exit 1
 fi
 
