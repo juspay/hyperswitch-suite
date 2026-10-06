@@ -191,7 +191,7 @@ unit "vmagent" {
 }
 
 unit "grafana" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/grafana?ref=unit/gcp/grafana-v0.1.1-v1"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/grafana?ref=feat/gcp-vpc-network-gke-ingress-ilb-ip-units"
   path   = "application-stack/apps/grafana"
 
   no_dot_terragrunt_stack = true
