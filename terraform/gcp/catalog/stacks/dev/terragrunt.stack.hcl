@@ -180,6 +180,16 @@ unit "vector" {
   values = try(values.unit_config.vector, null) != null ? { cfg = values.unit_config.vector } : {}
 }
 
+unit "vmagent" {
+  # TEMPORARY: pinned to the units PR branch; repoint to a unit/gcp/vmagent-*
+  # tag once that PR merges.
+  source                  = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/vmagent?ref=feat/gcp-vpc-network-gke-ingress-ilb-ip-units"
+  path                    = "application-stack/apps/vmagent"
+  no_dot_terragrunt_stack = true
+
+  values = try(values.unit_config.vmagent, null) != null ? { cfg = values.unit_config.vmagent } : {}
+}
+
 unit "grafana" {
   source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/grafana?ref=unit/gcp/grafana-v0.1.1-v1"
   path   = "application-stack/apps/grafana"
