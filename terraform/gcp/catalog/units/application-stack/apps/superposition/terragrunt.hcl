@@ -51,6 +51,13 @@ inputs = merge({
   database_config = {
     network_id = dependency.vpc.outputs.network_id
     tier       = "db-custom-2-8192"
+
+    # Store the generated master password in Secret Manager. Without this the
+    # alloydb module's random_password lives ONLY in Terraform state, and there
+    # is no secret for the app/migrations to read.
+    secret_manager = {
+      create = true
+    }
   }
 
   labels = merge({
