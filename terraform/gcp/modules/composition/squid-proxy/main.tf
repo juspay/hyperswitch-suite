@@ -128,9 +128,23 @@ module "proxy_template" {
 
   # iap-ssh matches the VPC's tag-scoped IAP-SSH firewall rule; without it no
   # existing rule covers these instances.
-  tags     = ["squid-proxy", "iap-ssh"]
-  labels   = local.common_labels
-  metadata = merge(var.metadata, { "config-bucket" = module.config_bucket.name })
+  tags   = ["squid-proxy", "iap-ssh"]
+  labels = local.common_labels
+  # config-checksum is an ordering guarantee as much as a change trigger: it
+  # reads every uploaded config object's md5hash, so this template (and the MIG
+  # that boots from it) can only be created AFTER the config objects exist in
+  # the bucket - otherwise an instance can boot first, fail to fetch
+  # squid.conf, and leave the egress path down. A changed config also changes
+  # the checksum, which produces a new template for the MIG to roll onto.
+  metadata = merge(var.metadata, {
+    "config-bucket" = module.config_bucket.name
+    "config-checksum" = md5(join(",", concat(
+      google_storage_bucket_object.squid_config[*].md5hash,
+      google_storage_bucket_object.squid_allowlist[*].md5hash,
+      google_storage_bucket_object.vector_config[*].md5hash,
+      [for k in sort(keys(google_storage_bucket_object.additional_config_files)) : google_storage_bucket_object.additional_config_files[k].md5hash],
+    )))
+  })
 
   # Null by default: this fleet's config/whitelist delivery is handled by
   # systemd units baked into the image, not by a startup script.

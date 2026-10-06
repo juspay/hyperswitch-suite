@@ -339,3 +339,9 @@ variable "labels" {
   type        = map(string)
   default     = {}
 }
+
+variable "lb_data_path_source_ranges" {
+  description = "Source ranges allowed to reach the envoy fleet on http_port for real client traffic. Defaults to the Google front-end ranges used by the global external Application LB (EXTERNAL_MANAGED) - Google-owned constants, not derivable from the VPC (see https://cloud.google.com/load-balancing/docs/firewall-rules). A regional/internal Application LB would instead use its proxy-only subnet's CIDR (a vpc-network output). Health-check ranges are opened separately by the lb-http module"
+  type        = list(string)
+  default     = ["34.96.0.0/20", "34.127.192.0/18"]
+}

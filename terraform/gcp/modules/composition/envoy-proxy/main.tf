@@ -82,6 +82,29 @@ resource "google_storage_bucket_object" "envoy_config_files" {
   )
 }
 
+# LB -> envoy data path. The load balancer's health-check ranges are opened by
+# the lb-http module (firewall_networks above), but a global external
+# Application LB forwards real client traffic from different Google front-end
+# ranges. Without this rule the backends report HEALTHY while every client
+# request returns 503. This is the GCP counterpart of the AWS envoy module's
+# asg_ingress_from_alb_traffic rule: the envoy module owns its own LB -> fleet
+# path instead of leaving it to a cross-unit firewall group.
+resource "google_compute_firewall" "lb_data_path" {
+  name        = "${local.name_prefix}-lb-data-path"
+  project     = var.project_id
+  network     = var.network
+  direction   = "INGRESS"
+  description = "Load balancer front-end ranges to the envoy fleet's HTTP port"
+
+  source_ranges = var.lb_data_path_source_ranges
+  target_tags   = ["envoy-proxy"]
+
+  allow {
+    protocol = "tcp"
+    ports    = [tostring(var.http_port)]
+  }
+}
+
 module "config_secret" {
   source  = "GoogleCloudPlatform/secret-manager/google"
   version = "0.9.0"
@@ -122,9 +145,18 @@ module "proxy_template" {
 
   # iap-ssh matches the VPC's tag-scoped IAP-SSH firewall rule; without it no
   # existing rule covers these instances.
-  tags           = ["envoy-proxy", "iap-ssh"]
-  labels         = merge(local.common_labels, { "deployment" = each.key })
-  metadata       = merge(var.metadata, { "config-bucket" = module.config_bucket.name })
+  tags   = ["envoy-proxy", "iap-ssh"]
+  labels = merge(local.common_labels, { "deployment" = each.key })
+  # config-checksum is an ordering guarantee as much as a change trigger: it
+  # reads every uploaded config object's md5hash, so this template (and the MIG
+  # that boots from it) can only be created AFTER the config objects exist in
+  # the bucket - otherwise the fleet can boot first, find no envoy.yaml, and sit
+  # UNHEALTHY. A changed config also changes the checksum, which produces a new
+  # template for the MIG to roll onto.
+  metadata = merge(var.metadata, {
+    "config-bucket"   = module.config_bucket.name
+    "config-checksum" = md5(join(",", [for k in sort(keys(google_storage_bucket_object.envoy_config_files)) : google_storage_bucket_object.envoy_config_files[k].md5hash]))
+  })
   startup_script = var.custom_startup_script
 }
 

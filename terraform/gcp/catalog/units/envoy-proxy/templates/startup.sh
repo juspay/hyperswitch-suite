@@ -20,28 +20,58 @@ install -d -o envoy -g envoy /etc/envoy /var/log/envoy
 
 # The instance service account has objectViewer on this bucket (granted by the
 # module); if this 403s or 404s, do NOT start Envoy with a stale/absent config.
+#
+# Download EVERY object in the config bucket - Terraform uploads one object per
+# file under the unit's config/ directory - instead of naming files here, so a
+# deployment can ship extra files (e.g. Lua scripts that envoy.yaml references)
+# without editing this script.
+#
+# Retry rather than fail once: the objects are uploaded by Terraform, and an
+# instance can boot before they land (or before IAM propagates). Without a
+# retry the script exits and nothing ever re-runs it, leaving the node with no
+# envoy.yaml. Waits up to ~10 minutes for envoy.yaml, then fails loudly.
+#
 # NOTE THE FILENAME. Envoy picks its config parser from the file EXTENSION:
 # a path ending in .yaml is parsed as YAML, anything else falls back to JSON.
 # Staging this as "envoy.yaml.new" made Envoy try to parse YAML as JSON and
 # fail on the very first character of the leading comment:
 #   Unable to parse JSON as proto ... unexpected character: '#'; expected '{'
-# so the staging file must itself end in .yaml.
-STAGE=/etc/envoy/envoy.staging.yaml
+# so the staged file keeps its .yaml name.
+STAGE_DIR="$(mktemp -d /var/tmp/envoy-config.XXXXXX)"
+trap 'rm -rf "$STAGE_DIR"' EXIT
 
-if ! /snap/bin/gsutil cp "gs://${BUCKET}/envoy.yaml" "$STAGE"; then
-  echo "envoy-startup: failed to fetch gs://${BUCKET}/envoy.yaml" >&2
+fetched=0
+for attempt in $(seq 1 40); do
+  if /snap/bin/gsutil -m rsync -r "gs://${BUCKET}" "$STAGE_DIR" && [ -f "$STAGE_DIR/envoy.yaml" ]; then
+    fetched=1
+    break
+  fi
+  echo "envoy-startup: gs://${BUCKET}/envoy.yaml not available yet (attempt ${attempt}/40), retrying in 15s" >&2
+  sleep 15
+done
+if [ "$fetched" != 1 ]; then
+  echo "envoy-startup: gs://${BUCKET} has no envoy.yaml after 40 attempts" >&2
   exit 1
 fi
+
+# Every file other than the two with a dedicated destination below lands under
+# /etc/envoy keeping its relative path. They go in first because envoy.yaml may
+# reference them.
+while IFS= read -r -d '' f; do
+  rel="${f#"$STAGE_DIR"/}"
+  case "$rel" in
+    envoy.yaml | vector.toml) continue ;;
+  esac
+  install -D -o envoy -g envoy -m 0644 "$f" "/etc/envoy/$rel"
+done < <(find "$STAGE_DIR" -type f -print0)
 
 # Validate before swapping in, so a bad config leaves the previous one intact
 # rather than putting the node into the same crash loop this script exists to
 # fix.
-if /usr/bin/envoy --mode validate -c "$STAGE"; then
-  mv "$STAGE" /etc/envoy/envoy.yaml
-  chown envoy:envoy /etc/envoy/envoy.yaml
+if /usr/bin/envoy --mode validate -c "$STAGE_DIR/envoy.yaml"; then
+  install -o envoy -g envoy -m 0644 "$STAGE_DIR/envoy.yaml" /etc/envoy/envoy.yaml
 else
   echo "envoy-startup: fetched config failed validation, not applying" >&2
-  rm -f "$STAGE"
   exit 1
 fi
 
@@ -57,19 +87,16 @@ systemctl restart envoy.service
 # Vector is optional - the image bakes in a working default vector.toml, so
 # a fleet with none in the config bucket still ships logs/metrics fine. This
 # lets a deployment override that default without rebuilding the image.
-if /snap/bin/gsutil -q stat "gs://${BUCKET}/vector.toml"; then
+if [ -f "$STAGE_DIR/vector.toml" ]; then
   VSTAGE=/etc/vector/vector.staging.toml
-  if /snap/bin/gsutil cp "gs://${BUCKET}/vector.toml" "$VSTAGE"; then
-    if /usr/bin/vector validate "$VSTAGE"; then
-      mv "$VSTAGE" /etc/vector/vector.toml
-      chown root:vector /etc/vector/vector.toml
-      chmod 640 /etc/vector/vector.toml
-    else
-      echo "envoy-startup: fetched vector.toml failed validation, not applying" >&2
-      rm -f "$VSTAGE"
-    fi
+  cp "$STAGE_DIR/vector.toml" "$VSTAGE"
+  if /usr/bin/vector validate "$VSTAGE"; then
+    mv "$VSTAGE" /etc/vector/vector.toml
+    chown root:vector /etc/vector/vector.toml
+    chmod 640 /etc/vector/vector.toml
   else
-    echo "envoy-startup: failed to fetch gs://${BUCKET}/vector.toml, keeping the image's baked-in default" >&2
+    echo "envoy-startup: fetched vector.toml failed validation, not applying" >&2
+    rm -f "$VSTAGE"
   fi
 fi
 
