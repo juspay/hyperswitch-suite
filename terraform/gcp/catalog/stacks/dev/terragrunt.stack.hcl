@@ -62,7 +62,7 @@ unit "vpc-network" {
 # pole, so start it first.
 
 unit "alloydb" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/alloydb?ref=unit/gcp/alloydb-v0.1.1-v1"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/alloydb?ref=feat/gcp-vpc-network-gke-ingress-ilb-ip-units"
   path   = "alloydb"
 
   no_dot_terragrunt_stack = true
