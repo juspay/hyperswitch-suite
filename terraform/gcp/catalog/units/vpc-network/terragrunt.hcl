@@ -7,10 +7,7 @@ include "root" {
 }
 
 terraform {
-  # TEMPORARY: pinned to the module PR's branch (not the gcp-vpc-network-v0.1.1
-  # tag, which doesn't exist until that PR merges) so this units PR is
-  # immediately testable. Repoint to the tag once the module PR lands.
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/composition/vpc-network?ref=feat/gcp-vpc-network-gke-ingress-ilb-ip-module"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/composition/vpc-network?ref=gcp-vpc-network-v0.1.1"
 }
 
 inputs = merge({

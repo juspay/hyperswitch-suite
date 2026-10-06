@@ -20,9 +20,7 @@ dependency "gke" {
 }
 
 terraform {
-  # TEMPORARY: module ref points at the module PR branch (use_existing_k8s_sa/annotate_k8s_sa);
-  # repoint to the new gcp-apps tag once that PR merges.
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/application-resources/hyperswitch?ref=feat/gcp-vpc-network-gke-ingress-ilb-ip-module"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/application-resources/hyperswitch?ref=gcp-apps-hyperswitch-v0.1.1"
 }
 
 inputs = merge({

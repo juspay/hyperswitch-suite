@@ -14,9 +14,7 @@ dependency "gke" {
 }
 
 terraform {
-  # TEMPORARY: module ref points at the module PR branch; repoint to the
-  # gcp-apps-vmagent tag once that PR merges.
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/application-resources/vmagent?ref=feat/gcp-vpc-network-gke-ingress-ilb-ip-module"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/application-resources/vmagent?ref=gcp-apps-vmagent-v0.1.0"
 }
 
 inputs = merge({
