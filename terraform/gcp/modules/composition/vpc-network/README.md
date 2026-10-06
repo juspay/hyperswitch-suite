@@ -11,7 +11,7 @@
 
 | Name | Version |
 | ---- | ------- |
-| <a name="provider_google"></a> [google](#provider\_google) | 7.45.0 |
+| <a name="provider_google"></a> [google](#provider\_google) | >= 6.0 |
 
 ## Modules
 
@@ -27,6 +27,7 @@
 
 | Name | Type |
 | ---- | ---- |
+| [google_compute_address.gke_ingress_ilb](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_address) | resource |
 | [google_compute_address.nat](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/compute_address) | resource |
 
 ## Inputs
@@ -63,6 +64,7 @@
 | <a name="input_project_name"></a> [project\_name](#input\_project\_name) | Project name used for resource naming | `string` | `"hyperswitch"` | no |
 | <a name="input_psc_google_apis_ip"></a> [psc\_google\_apis\_ip](#input\_psc\_google\_apis\_ip) | Internal IP address reserved for the Private Service Connect Google APIs endpoint. Must not collide with any subnet CIDR, the Private Service Access range, or any other reserved address in the VPC. Only used when enable\_psc\_google\_apis = true. | `string` | `"10.255.255.254"` | no |
 | <a name="input_region"></a> [region](#input\_region) | Region all subnets and regional resources (router, NAT, PSA) are created in | `string` | n/a | yes |
+| <a name="input_reserve_gke_ingress_ilb_ip"></a> [reserve\_gke\_ingress\_ilb\_ip](#input\_reserve\_gke\_ingress\_ilb\_ip) | Reserve a static INTERNAL IP in the gke-nodes subnet for an in-cluster gateway's internal LoadBalancer Service (e.g. Istio's ingressgateway) to request via loadBalancerIP. Lives here, not in the gateway's own unit, because this address needs to outlive that unit's lifecycle (a GKE/Istio reinstall shouldn't hand out a new IP out from under whatever else - e.g. a GCE-based edge proxy - is already configured to forward to it). Reserved IPs cost nothing while unattached, so this defaults to true | `bool` | `true` | no |
 | <a name="input_router_asn"></a> [router\_asn](#input\_router\_asn) | BGP ASN for the Cloud Router | `number` | `64514` | no |
 | <a name="input_routing_mode"></a> [routing\_mode](#input\_routing\_mode) | Network routing mode: GLOBAL or REGIONAL | `string` | `"GLOBAL"` | no |
 | <a name="input_serverless_connector_subnet_cidr"></a> [serverless\_connector\_subnet\_cidr](#input\_serverless\_connector\_subnet\_cidr) | CIDR (/28) for the Serverless VPC Access connector used by Cloud Functions/Cloud Run | `string` | `null` | no |
@@ -73,6 +75,7 @@
 
 | Name | Description |
 | ---- | ----------- |
+| <a name="output_gke_ingress_ilb_ip"></a> [gke\_ingress\_ilb\_ip](#output\_gke\_ingress\_ilb\_ip) | Static internal IP reserved for an in-cluster gateway's internal LoadBalancer Service (null unless reserve\_gke\_ingress\_ilb\_ip = true) |
 | <a name="output_gke_nodes_subnet_self_link"></a> [gke\_nodes\_subnet\_self\_link](#output\_gke\_nodes\_subnet\_self\_link) | Self-link of the GKE node pool subnet |
 | <a name="output_gke_pods_secondary_range_name"></a> [gke\_pods\_secondary\_range\_name](#output\_gke\_pods\_secondary\_range\_name) | Name of the GKE pods secondary range, for wiring into composition/gke |
 | <a name="output_gke_services_secondary_range_name"></a> [gke\_services\_secondary\_range\_name](#output\_gke\_services\_secondary\_range\_name) | Name of the GKE services secondary range, for wiring into composition/gke |

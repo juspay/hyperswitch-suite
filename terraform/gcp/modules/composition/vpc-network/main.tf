@@ -51,6 +51,25 @@ resource "google_compute_address" "nat" {
   labels       = local.common_labels
 }
 
+# Static internal IP for an in-cluster gateway's internal LoadBalancer
+# Service (e.g. Istio's ingressgateway), reserved here rather than in that
+# gateway's own unit so the address outlives that unit's lifecycle - a
+# cluster/gateway reinstall shouldn't hand out a new IP out from under
+# whatever else (e.g. a GCE-based edge proxy) is already configured to
+# forward to it. No `address` set deliberately: GCP picks a free one from
+# the subnet on first create, and a merely-reserved address (not yet
+# attached to anything) is never handed out to a node or pod.
+resource "google_compute_address" "gke_ingress_ilb" {
+  count = var.reserve_gke_ingress_ilb_ip ? 1 : 0
+
+  name         = "${local.name_prefix}-gke-ingress-ilb-ip"
+  project      = var.project_id
+  region       = var.region
+  address_type = "INTERNAL"
+  subnetwork   = module.vpc_network.subnets["${var.region}/${local.gke_nodes_subnet_name}"].self_link
+  labels       = local.common_labels
+}
+
 module "cloud_nat" {
   source  = "terraform-google-modules/cloud-nat/google"
   version = "7.0.0"
