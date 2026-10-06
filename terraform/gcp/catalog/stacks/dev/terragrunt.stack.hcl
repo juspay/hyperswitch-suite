@@ -33,10 +33,7 @@
 # Phase 0 — Foundation
 # -----------------------------------------------------------------------------
 unit "vpc-network" {
-  # TEMPORARY: pinned to the units PR's branch (not a unit/gcp/vpc-network
-  # tag) while the gke_ingress_ilb_ip module+unit PRs are in review. Repoint
-  # to unit/gcp/vpc-network-v0.1.1-v1 once that PR merges and gets tagged.
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/vpc-network?ref=feat/gcp-vpc-network-gke-ingress-ilb-ip-units"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/vpc-network?ref=unit/gcp/vpc-network-v0.1.1-v1"
   path   = "vpc-network"
 
   no_dot_terragrunt_stack = true
@@ -62,7 +59,7 @@ unit "vpc-network" {
 # pole, so start it first.
 
 unit "alloydb" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/alloydb?ref=feat/gcp-vpc-network-gke-ingress-ilb-ip-units"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/alloydb?ref=unit/gcp/alloydb-v0.1.1-v2"
   path   = "alloydb"
 
   no_dot_terragrunt_stack = true
@@ -181,9 +178,7 @@ unit "vector" {
 }
 
 unit "vmagent" {
-  # TEMPORARY: pinned to the units PR branch; repoint to a unit/gcp/vmagent-*
-  # tag once that PR merges.
-  source                  = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/vmagent?ref=feat/gcp-vpc-network-gke-ingress-ilb-ip-units"
+  source                  = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/vmagent?ref=unit/gcp/vmagent-v0.1.0-v1"
   path                    = "application-stack/apps/vmagent"
   no_dot_terragrunt_stack = true
 
@@ -191,7 +186,7 @@ unit "vmagent" {
 }
 
 unit "grafana" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/grafana?ref=feat/gcp-vpc-network-gke-ingress-ilb-ip-units"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/grafana?ref=unit/gcp/grafana-v0.1.1-v2"
   path   = "application-stack/apps/grafana"
 
   no_dot_terragrunt_stack = true
@@ -205,7 +200,7 @@ unit "grafana" {
 }
 
 unit "superposition" {
-  source                  = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/superposition?ref=feat/gcp-vpc-network-gke-ingress-ilb-ip-units"
+  source                  = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/superposition?ref=unit/gcp/superposition-v0.1.2-v1"
   path                    = "application-stack/apps/superposition"
   no_dot_terragrunt_stack = true
 
@@ -213,7 +208,7 @@ unit "superposition" {
 }
 
 unit "hyperswitch" {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/hyperswitch?ref=feat/gcp-vpc-network-gke-ingress-ilb-ip-units"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/application-stack/apps/hyperswitch?ref=unit/gcp/hyperswitch-v0.1.1-v1"
   path   = "application-stack/apps/hyperswitch"
 
   no_dot_terragrunt_stack = true
@@ -234,10 +229,7 @@ unit "hyperswitch" {
 # need a pre-baked custom GCE image; terraform/gcp/packer/ has the definitions.
 
 unit "envoy-proxy" {
-  # TEMPORARY: pinned to the units PR's branch (not a unit/gcp/envoy-proxy
-  # tag) while the gke_ingress_ilb_ip module+unit PRs are in review. Repoint
-  # to unit/gcp/envoy-proxy-v0.1.1-v2 once that PR merges and gets tagged.
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/envoy-proxy?ref=feat/gcp-vpc-network-gke-ingress-ilb-ip-units"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/envoy-proxy?ref=unit/gcp/envoy-proxy-v0.1.1-v2"
   path   = "envoy-proxy"
 
   no_dot_terragrunt_stack = true
