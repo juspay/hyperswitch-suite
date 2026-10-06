@@ -46,6 +46,11 @@ output "gke_services_secondary_range_name" {
   value       = "${local.name_prefix}-gke-services"
 }
 
+output "gke_ingress_ilb_ip" {
+  description = "Static internal IP reserved for an in-cluster gateway's internal LoadBalancer Service (null unless reserve_gke_ingress_ilb_ip = true)"
+  value       = try(google_compute_address.gke_ingress_ilb[0].address, null)
+}
+
 # Cloud Router / Cloud NAT Outputs
 
 output "router_name" {

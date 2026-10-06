@@ -10,10 +10,18 @@ dependency "vpc" {
   config_path = "../vpc-network"
 
   mock_outputs = {
-    network_self_link = "projects/mock/global/networks/mock-vpc"
-    subnets_by_tier   = { incoming-envoy = "projects/mock/regions/asia-south1/subnetworks/mock-incoming-envoy" }
+    network_self_link  = "projects/mock/global/networks/mock-vpc"
+    subnets_by_tier    = { incoming-envoy = "projects/mock/regions/asia-south1/subnetworks/mock-incoming-envoy" }
+    gke_ingress_ilb_ip = "10.0.16.250"
   }
   mock_outputs_merge_strategy_with_state = "shallow"
+  # Restrict the mock to init/validate/plan only: without this, an existing
+  # vpc-network state from before gke_ingress_ilb_ip existed would silently
+  # merge the mock IP into apply too (shallow merge fills in any output
+  # missing from real state with its mock value, with no warning). This
+  # turns that into a loud error on apply instead of a wrong IP baked into
+  # envoy.yaml - see upstream_host below.
+  mock_outputs_allowed_terraform_commands = ["init", "validate", "plan"]
 }
 
 terraform {
@@ -60,10 +68,19 @@ inputs = merge({
   # templates/startup.sh layout to ship real Envoy config (extra filters,
   # auth, multiple clusters) without forking this unit or hand-rendering the
   # whole content yourself via values.cfg.
+  #
+  # upstream_host: a stack can set values.envoy.upstream_host explicitly
+  # (e.g. to point at something outside this VPC), but the normal case -
+  # an in-cluster gateway's internal LoadBalancer IP (Istio's
+  # ingressgateway) - now resolves automatically from vpc-network's
+  # gke_ingress_ilb_ip output, with no value needed in the stack at all.
+  # coalesce(), not try()'s own default: try() only catches evaluation
+  # errors (a missing key), not an explicitly-set null, and the stack-level
+  # key may be present-but-null in some callers.
   envoy_config_content = try(values.envoy, null) != null ? templatefile("${try(values.envoy.assets_dir, get_terragrunt_dir())}/config/envoy.yaml", {
     http_port     = 8080
     lb_ip         = try(values.envoy.lb_ip, "unknown")
-    upstream_host = values.envoy.upstream_host
+    upstream_host = coalesce(try(values.envoy.upstream_host, null), dependency.vpc.outputs.gke_ingress_ilb_ip)
     upstream_port = try(values.envoy.upstream_port, 80)
   }) : null
 
