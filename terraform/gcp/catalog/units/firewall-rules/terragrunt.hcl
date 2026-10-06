@@ -120,14 +120,18 @@ inputs = merge({
     # this rule every CONNECT through Squid hangs until it times out, and
     # anything that depends on an outbound call (e.g. the router's deep health
     # check, connector calls) fails.
+    #
+    # Ports mirror the AWS squid_egress group (security-rules unit): 443 plus
+    # the connector-specific 25443 (Redsys), 19585 (Archipel) and 8443. Plain
+    # HTTP (80) is deliberately not opened, as on AWS.
     squid-to-internet = {
       target_tags = ["squid-proxy"]
       rules = [
         {
           name        = "allow-web-egress"
-          description = "Squid forward proxy to the internet on 80/443 (Cloud NAT carries it out)"
+          description = "Squid forward proxy to the internet on 443 and the connector ports (Cloud NAT carries it out)"
           ranges      = ["0.0.0.0/0"]
-          allow       = [{ protocol = "tcp", ports = ["80", "443"] }]
+          allow       = [{ protocol = "tcp", ports = ["443", "25443", "19585", "8443"] }]
         },
       ]
     }
