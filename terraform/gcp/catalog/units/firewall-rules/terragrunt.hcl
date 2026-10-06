@@ -92,5 +92,44 @@ inputs = merge({
         },
       ]
     }
+
+    # The global external Application LB (EXTERNAL_MANAGED) forwards client
+    # traffic to the envoy fleet from Google front-end ranges, which are
+    # different from its health-check ranges (130.211.0.0/22, 35.191.0.0/16 -
+    # opened by the envoy-proxy module itself). Without this rule the backends
+    # report HEALTHY but every client request returns 503.
+    lb-to-envoy = {
+      target_tags = ["envoy-proxy"]
+      rules = [
+        {
+          name        = "allow-gfe-data-path"
+          description = "Google front-end ranges to the envoy fleet's HTTP port (global external ALB data path)"
+          ranges      = ["34.96.0.0/20", "34.127.192.0/18"]
+          allow       = [{ protocol = "tcp", ports = ["8080"] }]
+        },
+      ]
+    }
+  }
+
+  # vpc-network's default-deny egress rule (priority 65534) leaves only
+  # internal ranges and the Google APIs endpoint reachable, so the paths that
+  # must leave the VPC are opened here, per component.
+  egress_rules = {
+    # Squid is the only tier allowed to reach the internet. Its own domain
+    # allowlist (allowedlist.txt) decides which hosts actually pass; without
+    # this rule every CONNECT through Squid hangs until it times out, and
+    # anything that depends on an outbound call (e.g. the router's deep health
+    # check, connector calls) fails.
+    squid-to-internet = {
+      target_tags = ["squid-proxy"]
+      rules = [
+        {
+          name        = "allow-web-egress"
+          description = "Squid forward proxy to the internet on 80/443 (Cloud NAT carries it out)"
+          ranges      = ["0.0.0.0/0"]
+          allow       = [{ protocol = "tcp", ports = ["80", "443"] }]
+        },
+      ]
+    }
   }
 }, try(values.cfg, {}))

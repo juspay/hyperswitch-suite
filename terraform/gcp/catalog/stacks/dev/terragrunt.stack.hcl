@@ -317,11 +317,17 @@ unit "firewall-rules" {
 
   no_dot_terragrunt_stack = true
 
-  values = {
-    # gke-to-squid-egress derives its source ranges from these, exactly as
-    # squid-proxy derives ilb_source_ranges and vpc-network derives the ranges
-    # themselves. All three must agree.
-    vpc_cidr_prefix               = values.vpc_cidr_prefix
-    gke_pods_secondary_range_cidr = values.gke_pods_secondary_range_cidr
-  }
+  values = merge(
+    {
+      # gke-to-squid-egress derives its source ranges from these, exactly as
+      # squid-proxy derives ilb_source_ranges and vpc-network derives the ranges
+      # themselves. All three must agree.
+      vpc_cidr_prefix               = values.vpc_cidr_prefix
+      gke_pods_secondary_range_cidr = values.gke_pods_secondary_range_cidr
+    },
+    # Per-environment overrides, like the other units. cfg is a shallow merge
+    # onto the unit's inputs, so setting ingress_rules/egress_rules here
+    # replaces that whole map.
+    try(values.unit_config.firewall_rules, null) != null ? { cfg = values.unit_config.firewall_rules } : {},
+  )
 }
