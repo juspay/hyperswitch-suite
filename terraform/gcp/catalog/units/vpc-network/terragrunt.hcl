@@ -7,7 +7,7 @@ include "root" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/composition/vpc-network?ref=gcp-vpc-network-v0.1.0"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/composition/vpc-network?ref=gcp-vpc-network-v0.1.1"
 }
 
 inputs = merge({
@@ -83,6 +83,11 @@ inputs = merge({
   enable_psc_google_apis     = try(values.network_options.enable_psc_google_apis, false)
   nat_subnetwork_tiers       = try(values.network_options.nat_subnetwork_tiers, null)
   nat_log_filter             = try(values.network_options.nat_log_filter, "ERRORS_ONLY")
+
+  # Static internal IP for an in-cluster gateway's internal LoadBalancer
+  # Service (e.g. Istio's ingressgateway) - see gke_ingress_ilb_ip output.
+  # Defaults to true: reserved-but-unattached addresses cost nothing.
+  reserve_gke_ingress_ilb_ip = try(values.network_options.reserve_gke_ingress_ilb_ip, true)
 
   labels = merge({
     environment = include.root.locals.environment.short
