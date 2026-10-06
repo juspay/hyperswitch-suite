@@ -51,9 +51,9 @@ inputs = merge({
     tier       = "db-custom-1-3840" # small - dashboard metadata only
   }
 
-  host_domains = {
-    grafana = values.domains.grafana
-  }
+  # Optional: a pure passthrough output (host_domains_map) with no resource
+  # reading it, so a stack without a Grafana hostname just omits it.
+  host_domains = try(values.domains.grafana, null) != null ? { grafana = values.domains.grafana } : {}
 
   labels = merge({
     environment = include.root.locals.environment.short
