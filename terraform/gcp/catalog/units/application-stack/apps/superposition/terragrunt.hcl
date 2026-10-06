@@ -25,7 +25,7 @@ dependency "gke" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/application-resources/superposition?ref=feat/gcp-dev-stack-redis-and-gke-node-pools"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/modules/application-resources/superposition?ref=feat/gcp-vpc-network-gke-ingress-ilb-ip-module"
 }
 
 inputs = merge({
