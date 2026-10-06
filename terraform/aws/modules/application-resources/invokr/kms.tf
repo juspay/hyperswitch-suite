@@ -5,6 +5,8 @@ module "kms" {
   count = var.kms.create ? 1 : 0
 
   create                             = true
+  create_replica                     = var.kms.create_replica
+  primary_key_arn                    = var.kms.primary_key_arn
   description                        = coalesce(var.kms.description, "KMS key for ${local.name_prefix}")
   multi_region                       = var.kms.multi_region
   deletion_window_in_days            = var.kms.deletion_window_in_days

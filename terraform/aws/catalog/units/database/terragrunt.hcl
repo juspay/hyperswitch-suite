@@ -91,12 +91,18 @@ inputs = {
   # Custom Parameter Group Configuration - Disable SSL
   create_custom_parameter_group = true
   custom_parameter_group_family = "aurora-postgresql17"
+  # Merge by parameter name so callers can extend or override the defaults.
   custom_parameter_group_parameters = [
-    {
-      name         = "rds.force_ssl"
-      value        = "0"
-      apply_method = "immediate"
-    }
+    for name, parameter in merge(
+      {
+        "rds.force_ssl" = {
+          name         = "rds.force_ssl"
+          value        = "0"
+          apply_method = "immediate"
+        }
+      },
+      { for parameter in try(values.custom_parameter_group_parameters, []) : parameter.name => parameter }
+    ) : parameter
   ]
 
   backup_retention_period      = try(values.backup_retention_period, 7)
