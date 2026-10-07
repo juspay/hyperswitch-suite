@@ -90,14 +90,6 @@ unit "memorystore-valkey" {
   )
 }
 
-# memorystore-redis is Memorystore for Redis, the CLASSIC product (STANDARD_HA,
-# a plain non-cluster endpoint), not Memorystore for Redis Cluster - the cluster
-# product blocks CLUSTER FAILOVER and has no failover command. Set redis_enabled
-# = true AND valkey_enabled = false to use it. The optional `redis` block takes:
-# tier (STANDARD_HA | BASIC), memory_size_gb, redis_version, read_replica_count,
-# location_id and alternative_location_id. The old cluster keys (shard_count,
-# replica_count, node_type, zone_distribution_config_mode) no longer exist and
-# are silently ignored if still set.
 unit "memorystore-redis" {
   source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/gcp/catalog/units/memorystore-redis?ref=unit/gcp/memorystore-redis-v0.1.0-v1"
   path   = "memorystore-redis"
