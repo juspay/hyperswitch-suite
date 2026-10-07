@@ -60,21 +60,12 @@ inputs = merge({
   authorized_network = dependency.vpc.outputs.network_id
   reserved_ip_range  = dependency.vpc.outputs.private_service_access_range_name
 
-  # STANDARD_HA is the analogue of AWS multi_az_enabled = true: a primary plus
-  # a synchronous standby (the replica) in a different zone, with automatic
-  # failover AND `gcloud redis instances failover`. The standby IS the replica
-  # a failover promotes - BASIC has none, so it cannot fail over at all (a node
-  # failure there is downtime). Hence STANDARD_HA stays the default.
+  # STANDARD_HA is the analogue of AWS multi_az_enabled = true (primary and
+  # standby in different zones, automatic failover). BASIC has no failover.
   tier = try(values.redis.tier, "STANDARD_HA")
 
-  # Classic Memorystore for Redis has no shards: it scales by instance size, and
-  # the capacity tier (M1 1-4 GiB, M2 5-10, M3 11-35) is what sets network
-  # throughput - within a tier a bigger instance is not faster. Redis is
-  # single-threaded, and a single shared-core-nano Valkey shard was pinned
-  # during the 1000 TPS ramp in earlier load tests, so the default starts at the
-  # first size of the M3 tier (16 GiB) rather than at the minimum. Small or
-  # throwaway environments can set redis.memory_size_gb lower.
-  memory_size_gb = try(values.redis.memory_size_gb, 16)
+  # Capacity also sets the throughput tier (M1 1-4 GiB, M2 5-10, M3 11-35).
+  memory_size_gb = try(values.redis.memory_size_gb, 10)
 
   # Pinned rather than inherited from the module default so it cannot drift.
   redis_version = try(values.redis.redis_version, "REDIS_7_2")
