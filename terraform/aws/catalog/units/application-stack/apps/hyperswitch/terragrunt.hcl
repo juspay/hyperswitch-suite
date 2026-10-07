@@ -101,13 +101,20 @@ inputs = {
   }
 
   lambda = {
-    enabled = !try(values.is_passive, false)
+    # The router invokes the reporting step_1 lambdas. They normally live in
+    # the active region only, but a stack that hosts them regardless (e.g. a
+    # passive region the lambda stack migrated to) opts in via values.
+    enabled = try(values.enable_reporting_lambda_invoke, !try(values.is_passive, false))
     function_arns = [
-      "arn:aws:lambda:${include.root.locals.region}:${include.root.locals.account_id}:function:weekly_payment_report_generator_step_1",
-      "arn:aws:lambda:${include.root.locals.region}:${include.root.locals.account_id}:function:weekly_refund_report_generator_step_1",
-      "arn:aws:lambda:${include.root.locals.region}:${include.root.locals.account_id}:function:weekly_dispute_report_generator_step_1",
-      "arn:aws:lambda:${include.root.locals.region}:${include.root.locals.account_id}:function:weekly_authentication_report_generator_step_1",
-      "arn:aws:lambda:${include.root.locals.region}:${include.root.locals.account_id}:function:weekly_payout_report_generator_step_1"
+      for fn in concat([
+        "weekly_payment_report_generator_step_1",
+        "weekly_refund_report_generator_step_1",
+        "weekly_dispute_report_generator_step_1",
+        "weekly_authentication_report_generator_step_1",
+        "weekly_payout_report_generator_step_1",
+        "weekly_relay_report_generator_step_1",
+      ], try(values.extra_reporting_lambda_invoke_function_names, [])) :
+      "arn:aws:lambda:${include.root.locals.region}:${include.root.locals.account_id}:function:${fn}"
     ]
   }
 
