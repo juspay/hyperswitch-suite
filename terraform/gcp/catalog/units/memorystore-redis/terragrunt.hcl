@@ -1,55 +1,43 @@
-# Memorystore for Redis Cluster - the Redis-engine sibling of the
-# memorystore-valkey unit, for environments that want Redis instead of
-# Valkey. Not wired into any stack yet - this unit stands alone, same as
-# memorystore-valkey did before it was picked up by the dev stack; offering
-# an actual Valkey-vs-Redis choice at the stack level is follow-up work.
+# Memorystore for Redis, the CLASSIC product (google_redis_instance), STANDARD_HA
+# by default: a primary plus a synchronous standby in another zone. This is the
+# Redis-engine sibling of the memorystore-valkey unit, for environments that
+# want Redis instead of Valkey.
 #
-# Requires Private Service Connect, NOT the PSA peering AlloyDB uses: the
-# module creates a service_connection_policy on a DEDICATED subnet. Reuses
-# the same `memorystore` tier subnet the valkey unit uses - the two are
-# meant to be mutually exclusive per environment, never both deployed into
-# the same stack at once, so there's no contention over that subnet's
-# reserved PSC addresses.
+# It deliberately is NOT Memorystore for Redis Cluster. That product blocks
+# CLUSTER FAILOVER (NOPERM) and has no failover command, so a failover cannot
+# be exercised on it; the classic product has one:
+#   gcloud redis instances failover <instance> --region <region>
+#     [--data-protection-mode limited-data-loss|force-data-loss]
+# The application talks to it as a plain, NON-cluster Redis: one host:port, so
+# the client must run with cluster_enabled = false.
 #
-# auth and transit encryption are left at the module defaults (disabled),
-# matching the application's lack of Redis AUTH/TLS support.
+# Connectivity is Private Service Access, the same peering AlloyDB uses, so it
+# needs the vpc-network unit's network and PSA range - not the dedicated
+# `memorystore` PSC subnet that valkey uses. The two units therefore no longer
+# contend for a subnet, but they are still meant to be exclusive per
+# environment (one cache engine per stack): redis_enabled defaults to false and
+# valkey_enabled to true, so a stack opts in with redis_enabled = true AND
+# valkey_enabled = false.
+#
+# auth and transit encryption are left off, matching the application's lack of
+# Redis AUTH/TLS support.
 
 include "root" {
   path   = find_in_parent_folders("root.hcl")
   expose = true
 }
 
-# Defaults to disabled (memorystore-valkey is the incumbent engine), so a
-# stack opts in explicitly by setting redis_enabled = true. Independent of
-# memorystore-valkey's own valkey_enabled - nothing stops a stack setting
-# both true, but both units reserve PSC addresses from the same dedicated
-# `memorystore` subnet, so running both at once in the same environment
-# will hit a real conflict there.
 exclude {
   if      = !try(values.redis_enabled, false)
   actions = ["all"]
-}
-
-locals {
-  # vpc-network keys its `subnets` output by "<region>/<name_prefix>-<tier>",
-  # where name_prefix is "<project_name>-<environment>". Derived rather than
-  # hardcoded so the unit works in any environment.
-  memorystore_subnet_key = format(
-    "%s/%s-%s-memorystore",
-    include.root.locals.region,
-    include.root.locals.project_name,
-    include.root.locals.environment.short,
-  )
 }
 
 dependency "vpc" {
   config_path = "../vpc-network"
 
   mock_outputs = {
-    network_name = "mock-vpc"
-    subnets = {
-      (local.memorystore_subnet_key) = { name = "mock-memorystore" }
-    }
+    network_id                        = "projects/mock/global/networks/mock-vpc"
+    private_service_access_range_name = "mock-psa-range"
   }
   mock_outputs_merge_strategy_with_state = "shallow"
 }
@@ -69,45 +57,55 @@ inputs = merge({
   project_name = include.root.locals.project_name
   region       = include.root.locals.region
 
-  network      = dependency.vpc.outputs.network_name
-  subnet_names = [dependency.vpc.outputs.subnets[local.memorystore_subnet_key].name]
+  authorized_network = dependency.vpc.outputs.network_id
+  reserved_ip_range  = dependency.vpc.outputs.private_service_access_range_name
 
-  shard_count   = try(values.redis.shard_count, 1)
-  replica_count = try(values.redis.replica_count, 0)
-  node_type     = try(values.redis.node_type, "REDIS_SHARED_CORE_NANO")
+  # STANDARD_HA is the analogue of AWS multi_az_enabled = true (primary and
+  # standby in different zones, automatic failover). BASIC has no failover.
+  tier = try(values.redis.tier, "STANDARD_HA")
 
-  # Pinned rather than inherited from module defaults, so it doesn't drift
-  # with a default bump. MULTI_ZONE is the analogue of AWS multi_az_enabled =
-  # true and is IMMUTABLE - changing it later forces instance replacement.
-  zone_distribution_config_mode = try(values.redis.zone_distribution_config_mode, "MULTI_ZONE")
+  # Capacity also sets the throughput tier (M1 1-4 GiB, M2 5-10, M3 11-35).
+  memory_size_gb = try(values.redis.memory_size_gb, 1)
 
-  # Unlike memorystore-valkey, this resource has no automated_backup_config -
-  # the installed module version doesn't expose scheduled off-instance
-  # backups for Redis Cluster yet. In-instance RDB persistence is the only
-  # durability knob available; set here rather than left at the API default
-  # (PERSISTENCE_MODE_UNSPECIFIED) so data survives a node restart.
+  # Pinned rather than inherited from the module default so it cannot drift.
+  redis_version = try(values.redis.redis_version, "REDIS_7_2")
+
+  # Readable replicas on top of the HA standby (0 = none). NOT the old Redis
+  # Cluster `replica_count` per shard: a stack that still sets
+  # redis.replica_count / shard_count / node_type has those silently ignored.
+  read_replica_count = try(values.redis.read_replica_count, 0)
+
+  # Pin the primary and standby to specific zones, or leave unset to let Google
+  # choose. Set both or neither.
+  location_id             = try(values.redis.location_id, null)
+  alternative_location_id = try(values.redis.alternative_location_id, null)
+
+  auth_enabled            = false
+  transit_encryption_mode = "DISABLED"
+
+  # In-instance RDB snapshots, so data survives a node restart.
   persistence_config = {
-    mode       = "RDB"
-    rdb_config = { rdb_snapshot_period = "TWENTY_FOUR_HOURS" }
+    persistence_mode    = "RDB"
+    rdb_snapshot_period = "TWENTY_FOUR_HOURS"
   }
 
   # Analogue of AWS maintenance_window = "mon:04:00-mon:05:00". Left unset,
   # Google picks the window - exactly the kind of thing that should not differ
-  # silently between clouds. Unlike memorystore-valkey's weekly_maintenance_window
-  # (a list, for that submodule's own interface reasons), this resource takes a
-  # single object with different field names (day_of_the_week/hours/minutes).
-  weekly_maintenance_window = {
-    day_of_the_week = "MONDAY"
-    hours           = "4"
-    minutes         = "0"
+  # silently between clouds.
+  maintenance_policy = {
+    day = "MONDAY"
+    start_time = {
+      hours   = 4
+      minutes = 0
+      seconds = 0
+      nanos   = 0
+    }
   }
 
-  # redis_configs (the parameter_group_name analogue) is deliberately unset:
-  # Memorystore's defaults already agree with the stock ElastiCache group on
-  # the parameter that matters (maxmemory-policy = volatile-lru). The knob is
-  # plumbed if a custom group ever needs porting.
-
-  deletion_protection_enabled = try(values.redis.deletion_protection_enabled, true)
+  # redis_configs is deliberately unset: Memorystore's defaults already agree
+  # with the stock ElastiCache group on the parameter that matters
+  # (maxmemory-policy = volatile-lru). The knob is plumbed if a custom group
+  # ever needs porting.
 
   labels = merge({
     environment = include.root.locals.environment.short

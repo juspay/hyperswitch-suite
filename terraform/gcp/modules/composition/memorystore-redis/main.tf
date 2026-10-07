@@ -1,65 +1,68 @@
-# Memorystore for Redis Cluster - the Redis-engine sibling of
-# composition/memorystore-valkey, NOT the classic Memorystore for Redis
-# product (composition/memorystore). Same new Memorystore platform as
-# Valkey - Private Service Connect for discovery, not the Private Service
-# Access peering the classic product uses - but a distinct GCP resource
-# (google_redis_cluster, via the registry module's modules/redis-cluster)
-# with its own variable surface, which is why this is a separate composition
-# module rather than an engine switch on memorystore-valkey.
+# Memorystore for Redis - the CLASSIC product (google_redis_instance, via the
+# registry module's root module), STANDARD_HA by default: one primary plus a
+# synchronous standby in another zone, with automatic failover AND a
+# customer-triggerable manual failover:
+#
+#   gcloud redis instances failover <instance> --region <region> \
+#     [--data-protection-mode limited-data-loss|force-data-loss]
+#
+# This replaces the earlier Memorystore for Redis CLUSTER implementation of this
+# module (google_redis_cluster). That product blocks CLUSTER FAILOVER ("NOPERM
+# this user has no permissions to run the 'cluster|failover' command" - listed in
+# its "Supported and blocked commands" page) and has no failover command in
+# `gcloud redis clusters`, so a failover cannot be exercised on it. The classic
+# product can, which is what the zonal-failover resilience tests need.
+#
+# Connectivity is Private Service Access (the same peering AlloyDB uses), NOT
+# the Private Service Connect + dedicated subnet that Redis Cluster / Valkey
+# need, so no service connection policy and no `memorystore` subnet is involved
+# here. The application talks to it as a plain, non-cluster Redis (a single
+# host:port, cluster_enabled = false on the client).
 
-module "redis_cluster" {
-  source  = "terraform-google-modules/memorystore/google//modules/redis-cluster"
+module "redis" {
+  source  = "terraform-google-modules/memorystore/google"
   version = "16.1.1"
 
-  project_id = var.project_id
-  name       = local.instance_id
-  region     = var.region
+  project_id   = var.project_id
+  region       = var.region
+  name         = local.instance_id
+  display_name = local.instance_id
 
-  network = ["projects/${local.network_project}/global/networks/${var.network}"]
+  tier           = var.tier
+  memory_size_gb = var.memory_size_gb
+  redis_version  = var.redis_version
 
-  service_connection_policies = {
-    "${local.instance_id}-scp" = {
-      network_name    = var.network
-      network_project = local.network_project
-      subnet_names    = var.subnet_names
-    }
-  }
+  # Placement. Leave both null to let Google choose; set both to pin the
+  # primary and the standby to specific, different zones.
+  location_id             = var.location_id
+  alternative_location_id = var.alternative_location_id
 
-  shard_count   = var.shard_count
-  replica_count = var.replica_count
-  node_type     = var.node_type
+  # Replicas. STANDARD_HA always has exactly one standby; `read_replica_count`
+  # adds readable replicas on top (the provider then wants replica_count = the
+  # number of read replicas, 1-5, and READ_REPLICAS_ENABLED). Without read
+  # replicas the only valid replica_count for STANDARD_HA is 1, and for BASIC 0.
+  read_replicas_mode = local.read_replicas_enabled ? "READ_REPLICAS_ENABLED" : "READ_REPLICAS_DISABLED"
+  replica_count      = local.replica_count
+  secondary_ip_range = var.secondary_ip_range
 
-  # Immutable after creation.
-  zone_distribution_config_mode = var.zone_distribution_config_mode
-  zone_distribution_config_zone = var.zone_distribution_config_zone
+  # Private Service Access. Both are pinned: the registry module's own defaults
+  # are connect_mode = DIRECT_PEERING and transit_encryption_mode =
+  # SERVER_AUTHENTICATION (TLS on), neither of which this stack wants.
+  connect_mode       = "PRIVATE_SERVICE_ACCESS"
+  authorized_network = var.authorized_network
+  reserved_ip_range  = var.reserved_ip_range
 
-  # Engine parameters, inline rather than a separate parameter-group resource.
-  redis_configs = var.redis_configs
-
-  # In-instance RDB/AOF persistence. Unlike memorystore-valkey, this submodule
-  # has no automated_backup_config / managed_backup_source / gcs_source - the
-  # registry module simply doesn't expose scheduled off-instance backups or
-  # create-time restore for this resource yet.
-  persistence_config = var.persistence_config
-
-  weekly_maintenance_window = var.weekly_maintenance_window
-
-  # Cross-cluster replication (this resource's equivalent of
-  # memorystore-valkey's instance_role/primary_instance/secondary_instance).
-  cluster_role       = var.cluster_role
-  primary_cluster    = var.primary_cluster
-  secondary_clusters = var.secondary_clusters
-
-  authorization_mode      = var.authorization_mode
+  auth_enabled            = var.auth_enabled
   transit_encryption_mode = var.transit_encryption_mode
 
-  deletion_protection_enabled = var.deletion_protection_enabled
+  redis_configs = var.redis_configs
 
-  # CMEK - forwarded here because the submodule exposes it. memorystore-valkey
-  # cannot forward the equivalent kms_key: the installed valkey submodule
-  # version (16.1.1) doesn't expose it, even though the underlying resource
-  # supports it.
-  kms_key = var.kms_key
+  # In-instance RDB snapshots (null leaves persistence off).
+  persistence_config = var.persistence_config
+
+  maintenance_policy = var.maintenance_policy
+
+  customer_managed_key = var.customer_managed_key
 
   enable_apis = true
 
