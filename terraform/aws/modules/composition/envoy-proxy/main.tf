@@ -118,7 +118,13 @@ module "config_bucket" {
 # Git is the source of truth - any changes to files will trigger re-upload
 
 resource "aws_s3_object" "envoy_config_files" {
-  for_each = var.upload_config_to_s3 ? fileset(var.config_files_source_path, "**") : []
+  # Hidden files are excluded: terragrunt stack generation drops a non-UTF-8
+  # .terragrunt-stack-manifest marker into generated directories, which would
+  # fail file() below and does not belong in the config bucket.
+  for_each = var.upload_config_to_s3 ? toset([
+    for f in fileset(var.config_files_source_path, "**") : f
+    if length(regexall("(^|/)\\.", f)) == 0
+  ]) : []
 
   bucket = local.config_bucket_name
   key    = "envoy/${each.value}"
