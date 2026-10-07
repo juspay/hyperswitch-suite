@@ -12,8 +12,8 @@ resource "aws_launch_template" "default" {
   name_prefix = "${var.environment}-${var.project_name}-nodes-"
   description = "EKS nodes default launch template"
 
-  # Use provided default AMI ID
-  image_id = var.default_ami_id
+  # AMI: provided default, or the latest EKS-optimized AMI for the cluster version
+  image_id = local.eks_node_ami_id
 
   # SSH Key (if configured)
   key_name = local.ssh_key_name
@@ -107,7 +107,7 @@ resource "aws_launch_template" "custom_node_group" {
   # AMI: custom if specified, otherwise use default
   image_id = coalesce(
     try(each.value.launch_template.ami_id, null),
-    var.default_ami_id
+    local.eks_node_ami_id
   )
 
   # SSH Key (if configured)
