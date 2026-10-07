@@ -72,15 +72,15 @@ module "payment_files" {
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev/sandbox/prod) | `string` | n/a | yes |
-| <a name="input_region"></a> [region](#input\_region) | Primary (source) region. The source bucket is created with the default aws provider, which must be configured for this region. | `string` | n/a | yes |
-| <a name="input_project_name"></a> [project\_name](#input\_project\_name) | Project name for resource naming | `string` | `"hyperswitch"` | no |
-| <a name="input_tags"></a> [tags](#input\_tags) | Common tags to apply to all resources | `map(string)` | `{}` | no |
 | <a name="input_bucket_name"></a> [bucket\_name](#input\_bucket\_name) | Name of the source S3 bucket. When null, it is derived as "<project\_name>-<environment>-<region>". | `string` | `null` | no |
+| <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev/sandbox/prod) | `string` | n/a | yes |
 | <a name="input_force_destroy"></a> [force\_destroy](#input\_force\_destroy) | Allow deleting non-empty buckets on destroy (applies to both source and replica) | `bool` | `false` | no |
-| <a name="input_versioning_enabled"></a> [versioning\_enabled](#input\_versioning\_enabled) | Enable versioning on the source bucket. Forced to true when replication is enabled, since cross-region replication requires versioning. | `bool` | `true` | no |
 | <a name="input_kms_key_arn"></a> [kms\_key\_arn](#input\_kms\_key\_arn) | Optional KMS key ARN (in the source region) for SSE-KMS on the source bucket. When null, SSE-S3 (AES256) is used. | `string` | `null` | no |
-| <a name="input_replication_configuration"></a> [replication\_configuration](#input\_replication\_configuration) | Cross-region replication configuration (enabled / region / bucket\_name / storage\_class / kms\_key\_arn / rule\_id). | <pre>object({<br/>    enabled       = optional(bool, false)<br/>    region        = optional(string)<br/>    bucket_name   = optional(string)<br/>    storage_class = optional(string, "STANDARD")<br/>    kms_key_arn   = optional(string)<br/>    rule_id       = optional(string, "replicate-all")<br/>  })</pre> | `{}` | no |
+| <a name="input_project_name"></a> [project\_name](#input\_project\_name) | Project name for resource naming | `string` | `"hyperswitch"` | no |
+| <a name="input_region"></a> [region](#input\_region) | Primary (source) region. The source bucket is created with the default aws provider, which must be configured for this region. | `string` | n/a | yes |
+| <a name="input_replication_configuration"></a> [replication\_configuration](#input\_replication\_configuration) | Cross-region replication configuration. When enabled, a replica bucket is<br/>created in `region` and CRR is configured from the source bucket.<br/><br/>- enabled:       whether to create the replica and configure replication.<br/>- region:        replica region. Required when enabled; must differ from the source region.<br/>- bucket\_name:   replica bucket name. When null, derived as "<project\_name>-<environment>-<region>".<br/>- storage\_class: storage class for replicated objects.<br/>- kms\_key\_arn:   KMS key ARN in the replica region. Required when the source bucket uses kms\_key\_arn (KMS keys are regional).<br/>- rule\_id:       ID for the replication rule. | <pre>object({<br/>    enabled       = optional(bool, false)<br/>    region        = optional(string)<br/>    bucket_name   = optional(string)<br/>    storage_class = optional(string, "STANDARD")<br/>    kms_key_arn   = optional(string)<br/>    rule_id       = optional(string, "replicate-all")<br/>  })</pre> | `{}` | no |
+| <a name="input_tags"></a> [tags](#input\_tags) | Common tags to apply to all resources | `map(string)` | `{}` | no |
+| <a name="input_versioning_enabled"></a> [versioning\_enabled](#input\_versioning\_enabled) | Enable versioning on the source bucket. Forced to true when replication is enabled, since cross-region replication requires versioning. | `bool` | `true` | no |
 
 ## Outputs
 
