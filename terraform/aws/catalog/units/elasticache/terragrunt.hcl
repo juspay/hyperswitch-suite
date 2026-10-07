@@ -48,10 +48,13 @@ inputs = {
   # Replication Group Configuration
   elasticache_replication_group_id = "${include.root.locals.environment.short}-${include.root.locals.project_name}-valkey"
 
-  # Engine Configuration
-  engine               = "valkey"
+  # Engine Configuration. Defaults to Valkey; a secondary joining a legacy
+  # Redis global datastore (e.g. us-east-1's redis 7.0 primary) must match the
+  # primary's engine, version and parameter-group family, so these are
+  # overridable via values.
+  engine               = try(values.cache_engine, "valkey")
   engine_version       = try(values.engine_version, "8.2")
-  parameter_group_name = "default.valkey8.cluster.on"
+  parameter_group_name = try(values.cache_parameter_group_name, "default.valkey8.cluster.on")
   port                 = 6379
 
   # Node Configuration
