@@ -21,7 +21,6 @@ dependency "vpc" {
   # missing from real state with its mock value, with no warning). This
   # turns that into a loud error on apply instead of a wrong IP baked into
   # envoy.yaml - see upstream_host below.
-  mock_outputs_allowed_terraform_commands = ["init", "validate", "plan"]
 }
 
 terraform {
