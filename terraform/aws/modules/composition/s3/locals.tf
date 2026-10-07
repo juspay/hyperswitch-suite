@@ -10,9 +10,13 @@ locals {
 
   # Bucket names: use the explicit input, else derive from project/env/region.
   source_bucket_name = coalesce(var.bucket_name, "${local.name_prefix}-${var.region}")
+  # coalesce evaluates all arguments, so the derived fallback must never
+  # interpolate a null region (that throws a raw template error at plan time,
+  # masking the replication_guard message). Fall back to var.region when the
+  # replica region is unset; the guard still blocks the real misconfiguration.
   replica_bucket_name = local.replication_enabled ? coalesce(
     var.replication_configuration.bucket_name,
-    "${local.name_prefix}-${local.replica_region}",
+    "${local.name_prefix}-${coalesce(local.replica_region, var.region)}",
   ) : null
 
   # Cross-region replication requires versioning on the source bucket, so force

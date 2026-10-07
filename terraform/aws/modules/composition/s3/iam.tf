@@ -26,7 +26,9 @@ data "aws_iam_policy_document" "replication_assume" {
 resource "aws_iam_role" "replication" {
   count = local.replication_enabled ? 1 : 0
 
-  name               = substr("${local.source_bucket_name}-s3-replication", 0, 64)
+  # Truncate the bucket portion (<=48) so the disambiguating suffix always
+  # survives IAM's 64-char role-name limit.
+  name               = "${substr(local.source_bucket_name, 0, 48)}-s3-replication"
   assume_role_policy = data.aws_iam_policy_document.replication_assume[0].json
 
   tags = local.common_tags
@@ -64,8 +66,10 @@ data "aws_iam_policy_document" "replication" {
     resources = ["${local.replica_bucket_arn}/*"]
   }
 
-  # SSE-KMS replication: decrypt source objects with the source key, re-encrypt
-  # on the destination with the replica-region key.
+  # SSE-KMS replication: decrypt source objects with the source-region key,
+  # re-encrypt on the destination with the replica-region key. S3 uses
+  # GenerateDataKey (not Encrypt) to write replicated objects. Both statements
+  # are scoped to S3 in the respective region via kms:ViaService.
   dynamic "statement" {
     for_each = var.kms_key_arn != null ? [1] : []
     content {
@@ -73,6 +77,12 @@ data "aws_iam_policy_document" "replication" {
       effect    = "Allow"
       actions   = ["kms:Decrypt"]
       resources = [var.kms_key_arn]
+
+      condition {
+        test     = "StringEquals"
+        variable = "kms:ViaService"
+        values   = ["s3.${var.region}.amazonaws.com"]
+      }
     }
   }
 
@@ -81,8 +91,14 @@ data "aws_iam_policy_document" "replication" {
     content {
       sid       = "AllowEncryptDestinationKmsKey"
       effect    = "Allow"
-      actions   = ["kms:Encrypt"]
+      actions   = ["kms:Encrypt", "kms:GenerateDataKey"]
       resources = [local.replica_kms_key_arn]
+
+      condition {
+        test     = "StringEquals"
+        variable = "kms:ViaService"
+        values   = ["s3.${coalesce(local.replica_region, var.region)}.amazonaws.com"]
+      }
     }
   }
 }
@@ -90,7 +106,7 @@ data "aws_iam_policy_document" "replication" {
 resource "aws_iam_role_policy" "replication" {
   count = local.replication_enabled ? 1 : 0
 
-  name   = substr("${local.source_bucket_name}-s3-replication", 0, 64)
+  name   = "replication"
   role   = aws_iam_role.replication[0].id
   policy = data.aws_iam_policy_document.replication[0].json
 }
