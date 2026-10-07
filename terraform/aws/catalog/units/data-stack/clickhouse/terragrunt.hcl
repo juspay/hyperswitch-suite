@@ -15,7 +15,7 @@ dependency "vpc" {
     data_stack_subnet_ids          = ["subnet-12345678", "subnet-12345679"]
     vpc_endpoint_security_group_id = "sg-12345678"
   }
-  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
+  mock_outputs_merge_strategy_with_state = "shallow"
 }
 
 inputs = {

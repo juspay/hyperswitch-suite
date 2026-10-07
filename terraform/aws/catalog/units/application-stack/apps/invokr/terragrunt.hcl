@@ -14,7 +14,6 @@ dependency "eks" {
     oidc_provider_arn = "arn:aws:iam::123456789012:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/MOCK"
     cluster_name      = "mock-cluster"
   }
-  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
   mock_outputs_merge_strategy_with_state  = "shallow"
 }
 
@@ -26,7 +25,6 @@ dependency "vpc" {
     vpc_id              = "vpc-12345678"
     database_subnet_ids = ["subnet-12345678", "subnet-87654321"]
   }
-  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
   mock_outputs_merge_strategy_with_state  = "shallow"
 }
 

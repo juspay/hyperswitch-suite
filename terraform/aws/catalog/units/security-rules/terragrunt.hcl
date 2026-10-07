@@ -155,7 +155,6 @@ dependency "kafka" {
     controller_security_group_id = "sg-kafka-controller"
   }
   mock_outputs_merge_strategy_with_state  = "shallow"
-  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
 }
 
 # dependency "clickhouse" {
