@@ -1,12 +1,16 @@
 # =========================================================================
 # IAM role assumed by S3 to perform cross-region replication
 # =========================================================================
-# Created only when replication is enabled. Bucket ARNs are built from the name
-# variables (not module outputs) so the policy does not depend on the bucket
-# modules, keeping the dependency graph acyclic.
+# Created only when replication is enabled. Bucket ARNs are built from the
+# resolved bucket names (not module outputs) so the policy does not depend on the
+# bucket modules, keeping the dependency graph acyclic.
+#
+# The role name is derived from the source bucket name (bounded to IAM's 64-char
+# limit) so multiple instances of this module in the same account/env do not
+# collide on an identical role name.
 
 data "aws_iam_policy_document" "replication_assume" {
-  count = var.enable_replication ? 1 : 0
+  count = local.replication_enabled ? 1 : 0
 
   statement {
     effect  = "Allow"
@@ -20,16 +24,16 @@ data "aws_iam_policy_document" "replication_assume" {
 }
 
 resource "aws_iam_role" "replication" {
-  count = var.enable_replication ? 1 : 0
+  count = local.replication_enabled ? 1 : 0
 
-  name               = "${local.name_prefix}-s3-replication"
+  name               = substr("${local.source_bucket_name}-s3-replication", 0, 64)
   assume_role_policy = data.aws_iam_policy_document.replication_assume[0].json
 
   tags = local.common_tags
 }
 
 data "aws_iam_policy_document" "replication" {
-  count = var.enable_replication ? 1 : 0
+  count = local.replication_enabled ? 1 : 0
 
   statement {
     sid       = "AllowReadReplicationConfigAndList"
@@ -59,12 +63,34 @@ data "aws_iam_policy_document" "replication" {
     ]
     resources = ["${local.replica_bucket_arn}/*"]
   }
+
+  # SSE-KMS replication: decrypt source objects with the source key, re-encrypt
+  # on the destination with the replica-region key.
+  dynamic "statement" {
+    for_each = var.kms_key_arn != null ? [1] : []
+    content {
+      sid       = "AllowDecryptSourceKmsKey"
+      effect    = "Allow"
+      actions   = ["kms:Decrypt"]
+      resources = [var.kms_key_arn]
+    }
+  }
+
+  dynamic "statement" {
+    for_each = local.kms_replication ? [1] : []
+    content {
+      sid       = "AllowEncryptDestinationKmsKey"
+      effect    = "Allow"
+      actions   = ["kms:Encrypt"]
+      resources = [local.replica_kms_key_arn]
+    }
+  }
 }
 
 resource "aws_iam_role_policy" "replication" {
-  count = var.enable_replication ? 1 : 0
+  count = local.replication_enabled ? 1 : 0
 
-  name   = "${local.name_prefix}-s3-replication"
+  name   = substr("${local.source_bucket_name}-s3-replication", 0, 64)
   role   = aws_iam_role.replication[0].id
   policy = data.aws_iam_policy_document.replication[0].json
 }

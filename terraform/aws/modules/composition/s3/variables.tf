@@ -22,9 +22,10 @@ variable "tags" {
 }
 
 # Source Bucket
-variable "source_bucket_name" {
-  description = "Name of the source S3 bucket to create"
+variable "bucket_name" {
+  description = "Name of the source S3 bucket. When null, it is derived as \"<project_name>-<environment>-<region>\"."
   type        = string
+  default     = null
 }
 
 variable "force_destroy" {
@@ -34,44 +35,37 @@ variable "force_destroy" {
 }
 
 variable "versioning_enabled" {
-  description = "Enable versioning on the source bucket. Forced to true when enable_replication is true, since cross-region replication requires versioning."
+  description = "Enable versioning on the source bucket. Forced to true when replication is enabled, since cross-region replication requires versioning."
   type        = bool
   default     = true
 }
 
 variable "kms_key_arn" {
-  description = "Optional KMS key ARN for SSE-KMS on the buckets. When null, SSE-S3 (AES256) is used."
+  description = "Optional KMS key ARN (in the source region) for SSE-KMS on the source bucket. When null, SSE-S3 (AES256) is used."
   type        = string
   default     = null
 }
 
 # Replication
-variable "enable_replication" {
-  description = "Whether to create a replica bucket in a different region and configure cross-region replication from the source bucket."
-  type        = bool
-  default     = false
-}
+variable "replication_configuration" {
+  description = <<-EOT
+    Cross-region replication configuration. When enabled, a replica bucket is
+    created in `region` and CRR is configured from the source bucket.
 
-variable "replica_region" {
-  description = "Region for the replica bucket. Required when enable_replication is true."
-  type        = string
-  default     = null
-}
-
-variable "replica_bucket_name" {
-  description = "Name of the replica S3 bucket. Required when enable_replication is true."
-  type        = string
-  default     = null
-}
-
-variable "replica_storage_class" {
-  description = "Storage class for replicated objects in the replica bucket"
-  type        = string
-  default     = "STANDARD"
-}
-
-variable "replication_rule_id" {
-  description = "ID for the replication rule"
-  type        = string
-  default     = "replicate-all"
+    - enabled:       whether to create the replica and configure replication.
+    - region:        replica region. Required when enabled; must differ from the source region.
+    - bucket_name:   replica bucket name. When null, derived as "<project_name>-<environment>-<region>".
+    - storage_class: storage class for replicated objects.
+    - kms_key_arn:   KMS key ARN in the replica region. Required when the source bucket uses kms_key_arn (KMS keys are regional).
+    - rule_id:       ID for the replication rule.
+  EOT
+  type = object({
+    enabled       = optional(bool, false)
+    region        = optional(string)
+    bucket_name   = optional(string)
+    storage_class = optional(string, "STANDARD")
+    kms_key_arn   = optional(string)
+    rule_id       = optional(string, "replicate-all")
+  })
+  default = {}
 }

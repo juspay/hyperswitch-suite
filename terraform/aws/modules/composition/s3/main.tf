@@ -2,14 +2,19 @@
 # Input guard
 # =========================================================================
 # Cross-variable validation blocks require Terraform >= 1.9; this module targets
-# >= 1.5, so enforce the replication inputs with a resource precondition instead.
+# >= 1.5.7, so enforce the replication inputs with resource preconditions.
 resource "terraform_data" "replication_guard" {
-  count = var.enable_replication ? 1 : 0
+  count = local.replication_enabled ? 1 : 0
 
   lifecycle {
     precondition {
-      condition     = var.replica_region != null && var.replica_bucket_name != null
-      error_message = "enable_replication = true requires both replica_region and replica_bucket_name to be set."
+      condition     = try(trimspace(local.replica_region), "") != "" && local.replica_region != var.region
+      error_message = "replication_configuration.enabled = true requires a non-empty region that differs from the source region (var.region)."
+    }
+
+    precondition {
+      condition     = var.kms_key_arn == null || local.replica_kms_key_arn != null
+      error_message = "When kms_key_arn is set and replication is enabled, replication_configuration.kms_key_arn (a replica-region key) must also be set, because KMS keys are regional."
     }
   }
 }
@@ -21,7 +26,7 @@ module "source_bucket" {
   source  = "terraform-aws-modules/s3-bucket/aws"
   version = "~> 5.0"
 
-  bucket        = var.source_bucket_name
+  bucket        = local.source_bucket_name
   force_destroy = var.force_destroy
 
   versioning = {
@@ -34,24 +39,12 @@ module "source_bucket" {
   ignore_public_acls      = true
   restrict_public_buckets = true
 
-  server_side_encryption_configuration = local.sse_config
+  server_side_encryption_configuration = local.source_sse_config
 
   # Attach replication only when a replica is being created.
-  replication_configuration = var.enable_replication ? {
-    role = aws_iam_role.replication[0].arn
-    rules = [
-      {
-        id                        = var.replication_rule_id
-        status                    = "Enabled"
-        priority                  = 10
-        delete_marker_replication = true
-
-        destination = {
-          bucket        = module.replica_bucket[0].s3_bucket_arn
-          storage_class = var.replica_storage_class
-        }
-      }
-    ]
+  replication_configuration = local.replication_enabled ? {
+    role  = aws_iam_role.replication[0].arn
+    rules = local.replication_rules
   } : {}
 
   tags = local.common_tags
@@ -64,13 +57,13 @@ module "replica_bucket" {
   source  = "terraform-aws-modules/s3-bucket/aws"
   version = "~> 5.0"
 
-  count = var.enable_replication ? 1 : 0
+  count = local.replication_enabled ? 1 : 0
 
   providers = {
     aws = aws.replica
   }
 
-  bucket        = var.replica_bucket_name
+  bucket        = local.replica_bucket_name
   force_destroy = var.force_destroy
 
   # Versioning is mandatory on a replication target.
@@ -84,7 +77,7 @@ module "replica_bucket" {
   ignore_public_acls      = true
   restrict_public_buckets = true
 
-  server_side_encryption_configuration = local.sse_config
+  server_side_encryption_configuration = local.replica_sse_config
 
   tags = merge(local.common_tags, { Role = "replica" })
 }

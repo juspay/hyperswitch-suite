@@ -2,15 +2,21 @@
 
 Creates an S3 bucket using the registry module
 [`terraform-aws-modules/s3-bucket/aws`](https://registry.terraform.io/modules/terraform-aws-modules/s3-bucket/aws)
-(`~> 5.0`). When `enable_replication` is set, it also creates a replica bucket in a
-different region and wires up cross-region replication (CRR) from the source bucket:
-versioning is forced on both buckets, an IAM replication role is created, and a
-replication rule is attached to the source bucket.
+(`~> 5.0`). When `replication_configuration.enabled` is set, it also creates a
+replica bucket in a different region and wires up cross-region replication (CRR)
+from the source bucket: versioning is forced on both buckets, an IAM replication
+role is created, and a replication rule is attached to the source bucket.
+
+KMS is regional, so the source and replica buckets take their own key ARNs
+(`kms_key_arn` and `replication_configuration.kms_key_arn`). When the source is
+KMS-encrypted, the replication rule opts SSE-KMS objects into replication, sets the
+replica key on the destination, and the replication role is granted
+decrypt/encrypt on the respective keys.
 
 The replica bucket is provisioned through the module's own `aws.replica` provider
-alias, whose region comes from `replica_region`. The default (source-region)
-provider is supplied by the consuming layer (for Terragrunt roots, the generated
-`provider.tf` from `root.hcl`).
+alias, whose region comes from `replication_configuration.region`. The default
+(source-region) provider is supplied by the consuming layer (for Terragrunt roots,
+the generated `provider.tf` from `root.hcl`).
 
 ## Example
 
@@ -18,13 +24,15 @@ provider is supplied by the consuming layer (for Terragrunt roots, the generated
 module "payment_files" {
   source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/s3?ref=s3-v0.1.0"
 
-  environment        = "sandbox"
-  region             = "ap-south-1"
-  source_bucket_name = "hyperswitch-sandbox-payment-files"
+  environment = "sandbox"
+  region      = "ap-south-1"
+  bucket_name = "hyperswitch-sandbox-payment-files" # optional; derived when omitted
 
-  enable_replication  = true
-  replica_region      = "ap-south-2"
-  replica_bucket_name = "hyperswitch-sandbox-payment-files-replica"
+  replication_configuration = {
+    enabled     = true
+    region      = "ap-south-2"
+    bucket_name = "hyperswitch-sandbox-payment-files-replica" # optional; derived when omitted
+  }
 }
 ```
 
@@ -33,7 +41,7 @@ module "payment_files" {
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.7 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.2 |
 
 ## Providers
@@ -64,18 +72,14 @@ module "payment_files" {
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev/sandbox/prod) | `string` | n/a | yes |
-| <a name="input_source_bucket_name"></a> [source\_bucket\_name](#input\_source\_bucket\_name) | Name of the source S3 bucket to create | `string` | n/a | yes |
 | <a name="input_region"></a> [region](#input\_region) | Primary (source) region. The source bucket is created with the default aws provider, which must be configured for this region. | `string` | n/a | yes |
 | <a name="input_project_name"></a> [project\_name](#input\_project\_name) | Project name for resource naming | `string` | `"hyperswitch"` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Common tags to apply to all resources | `map(string)` | `{}` | no |
+| <a name="input_bucket_name"></a> [bucket\_name](#input\_bucket\_name) | Name of the source S3 bucket. When null, it is derived as "<project\_name>-<environment>-<region>". | `string` | `null` | no |
 | <a name="input_force_destroy"></a> [force\_destroy](#input\_force\_destroy) | Allow deleting non-empty buckets on destroy (applies to both source and replica) | `bool` | `false` | no |
-| <a name="input_versioning_enabled"></a> [versioning\_enabled](#input\_versioning\_enabled) | Enable versioning on the source bucket. Forced to true when enable\_replication is true, since cross-region replication requires versioning. | `bool` | `true` | no |
-| <a name="input_kms_key_arn"></a> [kms\_key\_arn](#input\_kms\_key\_arn) | Optional KMS key ARN for SSE-KMS on the buckets. When null, SSE-S3 (AES256) is used. | `string` | `null` | no |
-| <a name="input_enable_replication"></a> [enable\_replication](#input\_enable\_replication) | Whether to create a replica bucket in a different region and configure cross-region replication from the source bucket. | `bool` | `false` | no |
-| <a name="input_replica_region"></a> [replica\_region](#input\_replica\_region) | Region for the replica bucket. Required when enable\_replication is true. | `string` | `null` | no |
-| <a name="input_replica_bucket_name"></a> [replica\_bucket\_name](#input\_replica\_bucket\_name) | Name of the replica S3 bucket. Required when enable\_replication is true. | `string` | `null` | no |
-| <a name="input_replica_storage_class"></a> [replica\_storage\_class](#input\_replica\_storage\_class) | Storage class for replicated objects in the replica bucket | `string` | `"STANDARD"` | no |
-| <a name="input_replication_rule_id"></a> [replication\_rule\_id](#input\_replication\_rule\_id) | ID for the replication rule | `string` | `"replicate-all"` | no |
+| <a name="input_versioning_enabled"></a> [versioning\_enabled](#input\_versioning\_enabled) | Enable versioning on the source bucket. Forced to true when replication is enabled, since cross-region replication requires versioning. | `bool` | `true` | no |
+| <a name="input_kms_key_arn"></a> [kms\_key\_arn](#input\_kms\_key\_arn) | Optional KMS key ARN (in the source region) for SSE-KMS on the source bucket. When null, SSE-S3 (AES256) is used. | `string` | `null` | no |
+| <a name="input_replication_configuration"></a> [replication\_configuration](#input\_replication\_configuration) | Cross-region replication configuration (enabled / region / bucket\_name / storage\_class / kms\_key\_arn / rule\_id). | <pre>object({<br/>    enabled       = optional(bool, false)<br/>    region        = optional(string)<br/>    bucket_name   = optional(string)<br/>    storage_class = optional(string, "STANDARD")<br/>    kms_key_arn   = optional(string)<br/>    rule_id       = optional(string, "replicate-all")<br/>  })</pre> | `{}` | no |
 
 ## Outputs
 

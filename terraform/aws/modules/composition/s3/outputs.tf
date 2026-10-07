@@ -30,5 +30,5 @@ output "replication_role_arn" {
 
 output "replication_enabled" {
   description = "Whether cross-region replication is configured"
-  value       = var.enable_replication
+  value       = local.replication_enabled
 }
