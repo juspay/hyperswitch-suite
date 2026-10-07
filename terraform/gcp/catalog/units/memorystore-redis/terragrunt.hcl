@@ -65,7 +65,7 @@ inputs = merge({
   tier = try(values.redis.tier, "STANDARD_HA")
 
   # Capacity also sets the throughput tier (M1 1-4 GiB, M2 5-10, M3 11-35).
-  memory_size_gb = try(values.redis.memory_size_gb, 1)
+  memory_size_gb = try(values.redis.memory_size_gb, 10)
 
   # Pinned rather than inherited from the module default so it cannot drift.
   redis_version = try(values.redis.redis_version, "REDIS_7_2")
