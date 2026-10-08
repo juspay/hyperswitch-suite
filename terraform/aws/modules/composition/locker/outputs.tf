@@ -168,3 +168,42 @@ output "db_kms_key_aliases" {
   description = "Aliases of the database KMS key (if created by the module)"
   value       = var.create_locker_database && var.database_config != null ? module.database[0].module_kms_key_aliases : null
 }
+
+# =========================================================================
+# ElastiCache Outputs
+# =========================================================================
+
+output "elasticache_replication_group_id" {
+  description = "ID of the Locker ElastiCache replication group (if created by the module)"
+  value       = var.create_locker_elasticache ? module.elasticache[0].replication_group_id : null
+}
+
+output "elasticache_replication_group_arn" {
+  description = "ARN of the Locker ElastiCache replication group (if created by the module)"
+  value       = var.create_locker_elasticache ? module.elasticache[0].replication_group_arn : null
+}
+
+output "elasticache_primary_endpoint_address" {
+  description = "Primary endpoint of the Locker ElastiCache replication group (cluster mode disabled)"
+  value       = var.create_locker_elasticache ? module.elasticache[0].replication_group_primary_endpoint_address : null
+}
+
+output "elasticache_configuration_endpoint_address" {
+  description = "Configuration endpoint of the Locker ElastiCache replication group (cluster mode enabled)"
+  value       = var.create_locker_elasticache ? module.elasticache[0].replication_group_configuration_endpoint_address : null
+}
+
+output "elasticache_port" {
+  description = "Port of the Locker ElastiCache replication group"
+  value       = var.create_locker_elasticache ? module.elasticache[0].replication_group_port : null
+}
+
+output "elasticache_security_group_id" {
+  description = "Security group ID of the Locker ElastiCache replication group (if created by the module)"
+  value       = var.create_locker_elasticache ? module.elasticache[0].security_group_id : null
+}
+
+output "elasticache_global_replication_group_id" {
+  description = "Global replication group ID of the Locker ElastiCache (if global is enabled)"
+  value       = var.create_locker_elasticache ? module.elasticache[0].global_replication_group_id : null
+}

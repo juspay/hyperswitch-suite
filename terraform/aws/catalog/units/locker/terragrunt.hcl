@@ -4,7 +4,7 @@ include "root" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/locker?ref=locker-v0.2.11"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/locker?ref=locker-v0.2.12"
 }
 
 locals {
@@ -29,9 +29,10 @@ dependency "locker-primary" {
   enabled     = try(values.is_passive, false)
 
   mock_outputs = {
-    db_cluster_arn       = "arn:aws:mock:::123456789012:mock/mock"
-    db_global_cluster_id = "mock-db_global_cluster_id"
-    kms_key_arn          = "arn:aws:kms:us-east-1:123456789012:key/mock"
+    db_cluster_arn                          = "arn:aws:mock:::123456789012:mock/mock"
+    db_global_cluster_id                    = "mock-db_global_cluster_id"
+    kms_key_arn                             = "arn:aws:kms:us-east-1:123456789012:key/mock"
+    elasticache_global_replication_group_id = "mock-elasticache_global_replication_group_id"
   }
   mock_outputs_merge_strategy_with_state = "shallow"
 }
@@ -170,6 +171,82 @@ inputs = {
   }
 
   log_retention_days = try(values.log_retention_days, 30)
+
+  # ElastiCache (Valkey) for locker — opt-in via values, wired the same way as
+  # database_config above and mirroring the standalone catalog elasticache unit.
+  create_locker_elasticache = try(values.create_locker_elasticache, false)
+
+  elasticache_config = {
+    subnet_ids = try(values.cache_subnet_ids, dependency.vpc.outputs.locker_database_subnet_ids)
+
+    # Create new subnet group and security group
+    create_elasticache_subnet_group = true
+    create_security_group           = true
+
+    # Engine Configuration. Defaults to Valkey; a secondary joining a legacy
+    # Redis global datastore must match the primary's engine, version and
+    # parameter-group family, so these are overridable via values.
+    engine               = try(values.cache_engine, "valkey")
+    engine_version       = try(values.cache_engine_version, "8.2")
+    parameter_group_name = try(values.cache_parameter_group_name, "default.valkey8.cluster.on")
+    port                 = 6379
+
+    # Node Configuration
+    node_type            = try(values.cache_node_type, "cache.m6g.large")
+    cluster_mode         = "enabled"
+    num_node_groups      = try(values.cache_num_node_groups, 1)
+    data_tiering_enabled = false
+
+    # High Availability
+    automatic_failover_enabled = true
+    multi_az_enabled           = true
+
+    # Network Configuration
+    ip_discovery = "ipv4"
+    network_type = "ipv4"
+
+    # Security. kms_key_id left null so the module defaults to the locker's
+    # own KMS key, matching the standalone locker-elasticache wiring.
+    at_rest_encryption_enabled = true
+    kms_key_id                 = null
+    transit_encryption_enabled = false
+
+    # Maintenance & Backup
+    maintenance_window         = try(values.cache_maintenance_window, "mon:04:00-mon:05:00")
+    snapshot_window            = try(values.cache_snapshot_window, "23:30-00:30")
+    snapshot_retention_limit   = try(values.cache_snapshot_retention_limit, 7)
+    auto_minor_version_upgrade = true
+    apply_immediately          = true
+
+    # Log Delivery (engine/slow logs to CloudWatch or Kinesis Firehose).
+    # Ignored on passive secondaries by the module. Unless the stack sets
+    # create_log_groups = false, the module also creates the CloudWatch log
+    # groups named as destinations.
+    log_delivery = merge(
+      { create_log_groups = true },
+      try(values.cache_log_delivery, { configuration = [] })
+    )
+
+    # Global Replication Configuration (secondary region joins the primary
+    # locker's global datastore, same pattern as database_config above)
+    create_global_replication_group = !try(values.is_passive, false)
+    global_replication_group_id     = try(values.is_passive, false) ? dependency.locker-primary.outputs.elasticache_global_replication_group_id : try(values.cache_global_replication_group_id, null)
+    global_deletion_protection      = true
+    is_secondary_region             = try(values.is_passive, false)
+    use_existing_as_global_primary  = false
+    source_replication_group_id     = null
+
+    # Node Group Configuration (1 shard with 1 replica across AZ a/b)
+    node_group_configuration = try(values.cache_node_group_configuration, [
+      {
+        node_group_id              = "0001"
+        primary_availability_zone  = "${include.root.locals.region}a"
+        replica_availability_zones = ["${include.root.locals.region}b"]
+        replica_count              = try(values.cache_replicas_per_node_group, 1)
+        slots                      = "0-16383"
+      }
+    ])
+  }
 
   tags = {
     Environment = include.root.locals.environment.full
