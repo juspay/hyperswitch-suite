@@ -24,7 +24,7 @@ module "config_bucket" {
   version = "12.3.0"
 
   project_id         = var.project_id
-  name               = "${local.name_prefix}-config"
+  name               = local.bucket_names["config"]
   location           = var.bucket_location
   versioning         = true
   bucket_policy_only = true
@@ -45,7 +45,7 @@ module "log_bucket" {
   version = "12.3.0"
 
   project_id         = var.project_id
-  name               = "${local.name_prefix}-logs"
+  name               = local.bucket_names["logs"]
   location           = var.bucket_location
   versioning         = true
   bucket_policy_only = true
