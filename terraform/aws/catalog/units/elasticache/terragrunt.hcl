@@ -84,6 +84,15 @@ inputs = {
   auto_minor_version_upgrade = true
   apply_immediately          = true
 
+  # Log Delivery (engine/slow logs to CloudWatch or Kinesis Firehose).
+  # Ignored on passive secondaries by the module. Unless the stack sets
+  # create_log_groups = false, the module also creates the CloudWatch log
+  # groups named as destinations.
+  log_delivery = merge(
+    { create_log_groups = true },
+    try(values.log_delivery, { configuration = [] })
+  )
+
   # Security Group Configuration
   existing_security_group_ids = []
 
