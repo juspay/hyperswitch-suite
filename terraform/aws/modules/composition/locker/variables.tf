@@ -325,3 +325,90 @@ variable "kms" {
   })
   default = {}
 }
+
+# =========================================================================
+# Feature: ElastiCache (Valkey/Redis) for Locker
+# =========================================================================
+
+variable "create_locker_elasticache" {
+  description = "Create an ElastiCache replication group for Locker"
+  type        = bool
+  default     = false
+}
+
+variable "elasticache_config" {
+  description = "Configuration object for the Locker ElastiCache replication group. Defaults mirror the standalone locker-elasticache unit (valkey 8.2, cluster mode enabled)."
+  type = object({
+    subnet_ids = optional(list(string), [])
+
+    create_elasticache_subnet_group = optional(bool, true)
+    elasticache_subnet_group_name   = optional(string, null)
+
+    create_security_group       = optional(bool, true)
+    security_group_name         = optional(string, null)
+    security_group_description  = optional(string, null)
+    existing_security_group_ids = optional(list(string), [])
+
+    elasticache_replication_group_id = optional(string, null)
+
+    engine               = optional(string, "valkey")
+    engine_version       = optional(string, "8.2")
+    parameter_group_name = optional(string, "default.valkey8.cluster.on")
+    port                 = optional(number, 6379)
+
+    node_type               = optional(string, "cache.m5.large")
+    cluster_mode            = optional(string, "enabled")
+    num_cache_clusters      = optional(number, null)
+    num_node_groups         = optional(number, null)
+    replicas_per_node_group = optional(number, null)
+    data_tiering_enabled    = optional(bool, false)
+
+    automatic_failover_enabled = optional(bool, true)
+    multi_az_enabled           = optional(bool, true)
+
+    ip_discovery = optional(string, "ipv4")
+    network_type = optional(string, "ipv4")
+
+    at_rest_encryption_enabled = optional(bool, true)
+    # Defaults to the locker's own KMS key (see elasticache.tf) when left null
+    kms_key_id                 = optional(string, null)
+    transit_encryption_enabled = optional(bool, false)
+
+    maintenance_window         = optional(string, "sun:05:00-sun:06:00")
+    snapshot_window            = optional(string, "03:00-05:00")
+    snapshot_retention_limit   = optional(number, 1)
+    auto_minor_version_upgrade = optional(bool, true)
+    apply_immediately          = optional(bool, false)
+
+    create_global_replication_group = optional(bool, false)
+    global_replication_group_id     = optional(string, null)
+    global_deletion_protection      = optional(bool, true)
+    is_secondary_region             = optional(bool, false)
+    use_existing_as_global_primary  = optional(bool, false)
+    source_replication_group_id     = optional(string, null)
+
+    node_group_configuration = optional(list(object({
+      node_group_id              = optional(string)
+      primary_availability_zone  = optional(string)
+      primary_outpost_arn        = optional(string)
+      replica_availability_zones = optional(list(string))
+      replica_count              = optional(number)
+      replica_outpost_arns       = optional(list(string))
+      slots                      = optional(string)
+    })), [])
+
+    log_delivery = optional(object({
+      configuration = optional(list(object({
+        destination      = string
+        destination_type = string
+        log_format       = string
+        log_type         = string
+      })), [])
+      create_log_groups        = optional(bool, false)
+      log_group_retention_days = optional(number, 30)
+    }), {})
+
+    tags = optional(map(string), {})
+  })
+  default = {}
+}
