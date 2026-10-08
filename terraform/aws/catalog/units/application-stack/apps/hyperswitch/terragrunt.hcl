@@ -89,17 +89,18 @@ inputs = {
     aliases             = ["${include.root.locals.environment.full}-router-key"]
   }
 
-  # Create own bucket, or reference the replica (create=false) when wired.
+  # Create own bucket, or reference an existing one when wired (create=false).
+  # Passive region → the in-region replica; primary → the source bucket.
   s3_dashboard_themes = {
     create             = try(values.dashboard_s3_config_path, null) == null
-    bucket_arn         = try(dependency.dashboard_bucket.outputs.replica_bucket_arn, null)
+    bucket_arn         = try(values.is_passive, false) ? try(dependency.dashboard_bucket.outputs.replica_bucket_arn, null) : try(dependency.dashboard_bucket.outputs.source_bucket_arn, null)
     versioning_enabled = try(values.s3_dashboard_themes_versioning_enabled, true)
     force_destroy      = try(values.s3_dashboard_themes_force_destroy, false)
   }
 
   s3_file_uploads = {
     create             = try(values.file_uploads_s3_config_path, null) == null
-    bucket_arn         = try(dependency.file_uploads_bucket.outputs.replica_bucket_arn, null)
+    bucket_arn         = try(values.is_passive, false) ? try(dependency.file_uploads_bucket.outputs.replica_bucket_arn, null) : try(dependency.file_uploads_bucket.outputs.source_bucket_arn, null)
     versioning_enabled = try(values.s3_file_uploads_versioning_enabled, true)
     force_destroy      = try(values.s3_file_uploads_force_destroy, false)
   }
