@@ -66,7 +66,7 @@ variable "annotate_k8s_sa" {
 }
 
 variable "bucket_name" {
-  description = "Custom chunks bucket name. If null, auto-generated as '<env>-<project>-loki-chunks'"
+  description = "Custom chunks bucket name. If null, auto-generated as '<env>-<project>-loki-chunks-<suffix>' (see bucket_name_suffix); a name given here is used verbatim, with no suffix"
   type        = string
   default     = null
 }

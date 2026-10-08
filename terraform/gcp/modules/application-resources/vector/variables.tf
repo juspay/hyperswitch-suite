@@ -72,7 +72,7 @@ variable "create_bucket" {
 }
 
 variable "bucket_name" {
-  description = "Custom bucket name. If null, auto-generated as '<env>-<project>-vector-logs'"
+  description = "Custom bucket name. If null, auto-generated as '<env>-<project>-vector-logs-<suffix>' (see bucket_name_suffix); a name given here is used verbatim, with no suffix"
   type        = string
   default     = null
 }
