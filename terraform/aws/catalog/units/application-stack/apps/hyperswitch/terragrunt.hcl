@@ -27,9 +27,28 @@ dependency "hyperswitch-primary" {
   mock_outputs_merge_strategy_with_state = "shallow"
 }
 
-# dependency "dashboard_integ_buckets" {
-#   config_path = "../dashboard-integ-buckets"
-# }
+# Replica dashboard buckets (composition/s3); gated on the *_s3_config_path values.
+dependency "dashboard_bucket" {
+  config_path = try(values.dashboard_s3_config_path, "")
+  enabled     = try(values.dashboard_s3_config_path, null) != null
+
+  mock_outputs = {
+    source_bucket_arn  = "arn:aws:s3:::mock-dashboard"
+    replica_bucket_arn = "arn:aws:s3:::mock-dashboard-replica"
+  }
+  mock_outputs_merge_strategy_with_state = "shallow"
+}
+
+dependency "file_uploads_bucket" {
+  config_path = try(values.file_uploads_s3_config_path, "")
+  enabled     = try(values.file_uploads_s3_config_path, null) != null
+
+  mock_outputs = {
+    source_bucket_arn  = "arn:aws:s3:::mock-file-uploads"
+    replica_bucket_arn = "arn:aws:s3:::mock-file-uploads-replica"
+  }
+  mock_outputs_merge_strategy_with_state = "shallow"
+}
 
 inputs = {
   environment  = include.root.locals.environment.full
@@ -70,16 +89,17 @@ inputs = {
     aliases             = ["${include.root.locals.environment.full}-router-key"]
   }
 
-  # S3 Dashboard Themes Bucket
+  # Create own bucket, or reference the replica (create=false) when wired.
   s3_dashboard_themes = {
-    create             = true
+    create             = try(values.dashboard_s3_config_path, null) == null
+    bucket_arn         = try(dependency.dashboard_bucket.outputs.replica_bucket_arn, null)
     versioning_enabled = try(values.s3_dashboard_themes_versioning_enabled, true)
     force_destroy      = try(values.s3_dashboard_themes_force_destroy, false)
   }
 
-  # S3 File Uploads Bucket
   s3_file_uploads = {
-    create             = true
+    create             = try(values.file_uploads_s3_config_path, null) == null
+    bucket_arn         = try(dependency.file_uploads_bucket.outputs.replica_bucket_arn, null)
     versioning_enabled = try(values.s3_file_uploads_versioning_enabled, true)
     force_destroy      = try(values.s3_file_uploads_force_destroy, false)
   }
@@ -123,32 +143,5 @@ inputs = {
     enabled = false
   }
 
-  # Additional IAM Policy - Integ Dashboard Buckets Access
-  # additional_iam_policies = {
-  #   integ_dashboard_s3_access = {
-  #     policy = jsonencode({
-  #       Version = "2012-10-17"
-  #       Statement = [
-  #         {
-  #           Sid    = "AllowIntegDashboardThemesBucketAccess"
-  #           Effect = "Allow"
-  #           Action = ["s3:GetObject", "s3:PutObject", "s3:ListBucket", "s3:DeleteObject"]
-  #           Resource = [
-  #             dependency.dashboard_integ_buckets.outputs.s3_dashboard_themes_bucket_arn,
-  #             "${dependency.dashboard_integ_buckets.outputs.s3_dashboard_themes_bucket_arn}/*"
-  #           ]
-  #         },
-  #         {
-  #           Sid    = "AllowIntegFileUploadsBucketAccess"
-  #           Effect = "Allow"
-  #           Action = ["s3:GetObject", "s3:PutObject", "s3:ListBucket", "s3:DeleteObject"]
-  #           Resource = [
-  #             dependency.dashboard_integ_buckets.outputs.s3_file_uploads_bucket_arn,
-  #             "${dependency.dashboard_integ_buckets.outputs.s3_file_uploads_bucket_arn}/*"
-  #           ]
-  #         }
-  #       ]
-  #     })
-  #   }
-  # }
+  # Bucket access is granted by the module via the s3_* inputs above.
 }

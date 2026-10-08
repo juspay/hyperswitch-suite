@@ -18,6 +18,7 @@ inputs = {
   force_destroy      = try(values.s3_force_destroy, false)
   versioning_enabled = try(values.s3_versioning_enabled, true)
   kms_key_arn        = try(values.s3_kms_key_arn, null)
+  bucket_region      = try(values.s3_bucket_region, null)
 
   # Optional cross-region replication. The replica provider alias lives inside
   # the module (driven by replication_configuration.region), so no provider
