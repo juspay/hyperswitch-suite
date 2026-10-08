@@ -47,7 +47,26 @@ resource "aws_security_group" "elasticache_sg" {
 }
 
 # ElastiCache Redis Replication Group
+# CloudWatch log groups for log delivery (optional). Deduplicated by
+# destination name since engine-log and slow-log may share one group.
+# Secondary clusters skip this along with log_delivery_configuration itself.
+resource "aws_cloudwatch_log_group" "log_delivery" {
+  for_each = var.log_delivery.create_log_groups && !local.is_secondary_cluster ? toset([
+    for config in var.log_delivery.configuration : config.destination
+    if config.destination_type == "cloudwatch-logs"
+  ]) : []
+
+  name              = each.value
+  retention_in_days = var.log_delivery.log_group_retention_days
+
+  tags = local.common_tags
+}
+
 resource "aws_elasticache_replication_group" "main" {
+  # The log groups must exist before ElastiCache validates the log delivery
+  # destinations.
+  depends_on = [aws_cloudwatch_log_group.log_delivery]
+
   # Required
   replication_group_id = local.elasticache_replication_group_id
   description          = "${title(var.project_name)} ${title(var.environment)} Elasticache replication group"
@@ -100,7 +119,7 @@ resource "aws_elasticache_replication_group" "main" {
   user_group_ids = local.is_secondary_cluster ? null : var.user_group_ids
   # Log Delivery Configuration
   dynamic "log_delivery_configuration" {
-    for_each = local.is_secondary_cluster ? [] : var.log_delivery_configuration
+    for_each = local.is_secondary_cluster ? [] : var.log_delivery.configuration
     content {
       destination      = log_delivery_configuration.value.destination
       destination_type = log_delivery_configuration.value.destination_type

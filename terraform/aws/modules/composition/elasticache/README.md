@@ -20,6 +20,7 @@ No modules.
 
 | Name | Type |
 |------|------|
+| [aws_cloudwatch_log_group.log_delivery](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
 | [aws_elasticache_global_replication_group.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/elasticache_global_replication_group) | resource |
 | [aws_elasticache_replication_group.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/elasticache_replication_group) | resource |
 | [aws_elasticache_subnet_group.elasticache_subnet_group](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/elasticache_subnet_group) | resource |
@@ -52,7 +53,7 @@ No modules.
 | <a name="input_ip_discovery"></a> [ip\_discovery](#input\_ip\_discovery) | (Optional) The IP version to advertise in the discovery protocol. Valid values are ipv4 or ipv6 | `string` | `"ipv4"` | no |
 | <a name="input_is_secondary_region"></a> [is\_secondary\_region](#input\_is\_secondary\_region) | Whether this is a secondary region in a global replication setup (attaches to existing global replication group) | `bool` | `false` | no |
 | <a name="input_kms_key_id"></a> [kms\_key\_id](#input\_kms\_key\_id) | (Optional) The ARN of the key that you wish to use if encrypting at rest. Can be specified only if at\_rest\_encryption\_enabled = true | `string` | `null` | no |
-| <a name="input_log_delivery_configuration"></a> [log\_delivery\_configuration](#input\_log\_delivery\_configuration) | (Optional, Redis only) Specifies the destination and format of Redis/Valkey SLOWLOG or Engine Log. Max of 2 blocks | <pre>list(object({<br/>    destination      = string<br/>    destination_type = string<br/>    log_format       = string<br/>    log_type         = string<br/>  }))</pre> | `[]` | no |
+| <a name="input_log_delivery"></a> [log\_delivery](#input\_log\_delivery) | Engine/slow log delivery. Set create\_log\_groups to also create the CloudWatch log groups named as destinations. | <pre>object({<br/>    configuration = list(object({<br/>      destination      = string<br/>      destination_type = string<br/>      log_format       = string<br/>      log_type         = string<br/>    }))<br/>    create_log_groups        = optional(bool, false)<br/>    log_group_retention_days = optional(number, 30)<br/>  })</pre> | <pre>{<br/>  "configuration": []<br/>}</pre> | no |
 | <a name="input_maintenance_window"></a> [maintenance\_window](#input\_maintenance\_window) | (Optional) Specifies the weekly time range for maintenance. Format: ddd:hh24:mi-ddd:hh24:mi (24H Clock UTC). Minimum 60 minute period | `string` | `"sun:05:00-sun:06:00"` | no |
 | <a name="input_multi_az_enabled"></a> [multi\_az\_enabled](#input\_multi\_az\_enabled) | (Optional) Specifies whether to enable Multi-AZ Support. If true, automatic\_failover\_enabled must also be enabled | `bool` | `true` | no |
 | <a name="input_network_type"></a> [network\_type](#input\_network\_type) | (Optional) The IP versions for cache cluster connections. Valid values are ipv4, ipv6, or dual\_stack | `string` | `"ipv4"` | no |

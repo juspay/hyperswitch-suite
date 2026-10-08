@@ -319,19 +319,23 @@ variable "user_group_ids" {
 }
 
 # Log Delivery
-variable "log_delivery_configuration" {
-  description = "(Optional, Redis only) Specifies the destination and format of Redis/Valkey SLOWLOG or Engine Log. Max of 2 blocks"
-  type = list(object({
-    destination      = string
-    destination_type = string
-    log_format       = string
-    log_type         = string
-  }))
-  default = []
+variable "log_delivery" {
+  description = "Engine/slow log delivery. Set create_log_groups to also create the CloudWatch log groups named as destinations."
+  type = object({
+    configuration = list(object({
+      destination      = string
+      destination_type = string
+      log_format       = string
+      log_type         = string
+    }))
+    create_log_groups        = optional(bool, false)
+    log_group_retention_days = optional(number, 30)
+  })
+  default = { configuration = [] }
 
   validation {
-    condition     = length(var.log_delivery_configuration) <= 2
-    error_message = "Maximum of 2 log_delivery_configuration blocks allowed."
+    condition     = length(var.log_delivery.configuration) <= 2
+    error_message = "Maximum of 2 log delivery configuration blocks allowed."
   }
 }
 
