@@ -376,6 +376,24 @@ resource "aws_security_group_rule" "nlb_health_checks" {
 }
 
 # =========================================================================
+# ASG Security Group - S3 Egress (Gateway VPC Endpoint)
+# =========================================================================
+# Instances pull Squid config from the S3 config bucket and ship logs to the
+# logs bucket. Same-region S3 traffic rides the S3 gateway VPC endpoint, so
+# egress is scoped to the regional S3 managed prefix list instead of
+# 0.0.0.0/0. The subnet route tables must carry the S3 gateway endpoint
+# route (the vpc-network module attaches it).
+resource "aws_security_group_rule" "asg_egress_s3" {
+  security_group_id = aws_security_group.asg.id
+  type              = "egress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  prefix_list_ids   = [data.aws_prefix_list.s3.id]
+  description       = "Allow HTTPS to same-region S3 via gateway endpoint"
+}
+
+# =========================================================================
 # Network Load Balancer (Conditional - Create only if needed)
 # =========================================================================
 module "nlb" {

@@ -114,6 +114,27 @@ resource "aws_security_group_rule" "rds_ingress_from_locker" {
 }
 
 # =========================================================================
+# LOCKER SECURITY GROUP - S3 EGRESS (GATEWAY VPC ENDPOINT)
+# =========================================================================
+# Same-region S3 traffic rides the S3 gateway VPC endpoint, so egress is
+# scoped to the regional S3 managed prefix list instead of 0.0.0.0/0. The
+# subnet route tables must carry the S3 gateway endpoint route (the
+# vpc-network module attaches it).
+data "aws_prefix_list" "s3" {
+  name = "com.amazonaws.${var.region}.s3"
+}
+
+resource "aws_security_group_rule" "locker_egress_s3" {
+  security_group_id = local.locker_security_group_id
+  type              = "egress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  prefix_list_ids   = [data.aws_prefix_list.s3.id]
+  description       = "Allow HTTPS to same-region S3 via gateway endpoint"
+}
+
+# =========================================================================
 # MONITORING - CLOUDWATCH LOGS
 # =========================================================================
 resource "aws_cloudwatch_log_group" "locker" {
