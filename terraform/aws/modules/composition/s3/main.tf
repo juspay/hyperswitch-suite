@@ -20,11 +20,15 @@ resource "terraform_data" "replication_guard" {
 }
 
 # =========================================================================
-# Source bucket (primary region — default aws provider)
+# Source bucket (created in var.region via the aws.source alias)
 # =========================================================================
 module "source_bucket" {
   source  = "terraform-aws-modules/s3-bucket/aws"
   version = "~> 5.0"
+
+  providers = {
+    aws = aws.source
+  }
 
   bucket        = local.source_bucket_name
   force_destroy = var.force_destroy
@@ -45,7 +49,7 @@ module "source_bucket" {
   replication_configuration = local.replication_enabled ? {
     role  = aws_iam_role.replication[0].arn
     rules = local.replication_rules
-  } : {}
+  } : { role = null, rules = null }
 
   tags = local.common_tags
 }
