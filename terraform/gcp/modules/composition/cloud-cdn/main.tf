@@ -14,7 +14,7 @@ module "log_bucket" {
   count = var.enable_logging ? 1 : 0
 
   project_id    = var.project_id
-  name          = "${local.name_prefix}-logs"
+  name          = local.bucket_names["logs"]
   location      = var.log_bucket_location
   force_destroy = false
 

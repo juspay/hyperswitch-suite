@@ -66,7 +66,7 @@ variable "annotate_k8s_sa" {
 }
 
 variable "bucket_name" {
-  description = "Custom chunks bucket name. If null, auto-generated as '<env>-<project>-loki-chunks'"
+  description = "Custom chunks bucket name. If null, auto-generated as '<env>-<project>-loki-chunks-<suffix>' (see bucket_name_suffix); a name given here is used verbatim, with no suffix"
   type        = string
   default     = null
 }
@@ -99,4 +99,15 @@ variable "labels" {
   description = "Additional labels to apply to all resources"
   type        = map(string)
   default     = {}
+}
+
+variable "bucket_name_suffix" {
+  description = "Suffix appended to this module's DEFAULT bucket names (<env>-<project>-<component>-<role>-<suffix>). GCS bucket names are global, so the same name in two projects collides; the suffix is what lets several environments coexist. null = the first 6 hex characters of sha256(project_id): stable across applies and unique per project. \"\" = no suffix (the names this module produced before the suffix existed - set it on existing deployments to avoid replacing their buckets). Any other value is used as given (1-16 lowercase letters, digits and hyphens). The readable prefix is trimmed so the full name stays within the 63-character GCS limit; the role and the suffix are never trimmed."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.bucket_name_suffix == null || can(regex("^([a-z0-9]([a-z0-9-]{0,14}[a-z0-9])?)?$", var.bucket_name_suffix))
+    error_message = "bucket_name_suffix must be null, an empty string, or 1-16 characters of lowercase letters, digits and hyphens that starts and ends with a letter or digit."
+  }
 }
