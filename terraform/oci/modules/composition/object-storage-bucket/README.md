@@ -3,13 +3,13 @@
 A generic OCI Object Storage bucket. One bucket, an optional lifecycle policy,
 and optional Terraform-managed objects. Nothing else.
 
-## Why this exists separately from `object-storage-backend`
+## Why this exists separately from the state bucket
 
-`object-storage-backend` is the Terraform-state bucket and is deliberately not
-generic: `versioning = "Enabled"` and `access_type = "NoPublicAccess"` are
-posture literals there, the name is derived from `state_bucket_name`, and it
-creates an `oci_identity_policy` for state access. Making those two literals
-into inputs would remove the guarantee that module exists to provide.
+The Terraform-state bucket is deliberately not generic: `versioning =
+"Enabled"` and `access_type = "NoPublicAccess"` are posture literals, the name
+is derived from the state bucket name, and it creates an `oci_identity_policy`
+for state access. Making those two literals into inputs would remove the
+guarantee that module exists to provide.
 
 ## Position in the port
 

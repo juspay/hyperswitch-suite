@@ -50,7 +50,7 @@ plumbing. `route53.md` section 4 holds the mapping for when a consumer appears.
 
 ## Pointing a domain at a load balancer
 
-Use a plain `A` record at `composition/load-balancer`'s `ip_address` output.
+Use a plain `A` record at the load-balancer module's `ip_address` output.
 OCI load balancers get real IPs, so the apex problem Route 53's ALIAS record
 exists to solve does not arise. What is lost is `evaluate_target_health`; the
 equivalent is a steering policy with a HEALTH rule plus a Health Checks

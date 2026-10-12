@@ -43,7 +43,7 @@ resource "oci_objectstorage_bucket" "this" {
 }
 
 # A separate resource on OCI rather than an inline block, the same structural
-# difference composition/object-storage-backend documents.
+# difference the state-bucket module documents.
 resource "oci_objectstorage_object_lifecycle_policy" "this" {
   count = length(var.lifecycle_rules) > 0 ? 1 : 0
 

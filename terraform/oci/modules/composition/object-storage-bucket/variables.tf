@@ -122,7 +122,7 @@ variable "kms_key_id" {
 variable "lifecycle_rules" {
   description = <<-EOT
     Object lifecycle rules. Empty means no policy object is created at all,
-    matching composition/object-storage-backend's []-means-unused pattern.
+    matching the state-bucket module's []-means-unused pattern.
 
     WATCH THE ARCHIVE ACTION. C21 in build-log.md: OCI rejects
     PutObjectLifecyclePolicy for any policy containing an ARCHIVE rule with
