@@ -11,6 +11,12 @@ locals {
   extra_atlantis_dependencies = [
     "templates/userdata.sh"
   ]
+
+  # Parameter-group families must match the engine major versions; derive them
+  # from the version inputs so stacks overriding engine_version (e.g. a passive
+  # stack pinning its primary's version) don't reference the wrong family.
+  aurora_pg_family = "aurora-postgresql${split(".", try(values.engine_version, "17.9"))[0]}"
+  cache_pg_family  = "${try(values.cache_engine, "valkey")}${split(".", try(values.cache_engine_version, "8.2"))[0]}"
 }
 
 dependency "vpc" {
@@ -122,11 +128,11 @@ inputs = {
     network_type                    = "IPV4"
     port                            = 5432
     create_db_subnet_group          = true
-    db_cluster_parameter_group_name = "default.aurora-postgresql17"
+    db_cluster_parameter_group_name = "default.${local.aurora_pg_family}"
     # Custom Parameter Group Configuration - Disable SSL
     create_custom_parameter_group = true
     custom_parameter_group_name   = "${include.root.locals.environment.short}-locker-db-parameter-group"
-    custom_parameter_group_family = "aurora-postgresql17"
+    custom_parameter_group_family = local.aurora_pg_family
     custom_parameter_group_parameters = [
       {
         name         = "rds.force_ssl"
@@ -159,7 +165,7 @@ inputs = {
         instance_class                        = try(values.db_instance_class, "db.r6g.large")
         promotion_tier                        = 0
         availability_zone                     = "${include.root.locals.region}a"
-        db_parameter_group_name               = "default.aurora-postgresql17"
+        db_parameter_group_name               = "default.${local.aurora_pg_family}"
         auto_minor_version_upgrade            = true
         publicly_accessible                   = false
         copy_tags_to_snapshot                 = false
@@ -188,7 +194,7 @@ inputs = {
     # parameter-group family, so these are overridable via values.
     engine               = try(values.cache_engine, "valkey")
     engine_version       = try(values.cache_engine_version, "8.2")
-    parameter_group_name = try(values.cache_parameter_group_name, "default.valkey8.cluster.on")
+    parameter_group_name = try(values.cache_parameter_group_name, "default.${local.cache_pg_family}.cluster.on")
     port                 = 6379
 
     # Node Configuration

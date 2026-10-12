@@ -29,6 +29,13 @@ terraform {
   source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/elasticache?ref=elasticache-v0.1.6"
 }
 
+locals {
+  # The default parameter-group family must match the engine and its major
+  # version; a secondary joining a legacy Redis primary overrides both via
+  # values and the default follows along.
+  cache_pg_family = "${try(values.cache_engine, "valkey")}${split(".", try(values.engine_version, "8.2"))[0]}"
+}
+
 inputs = {
 
   # Required Variables
@@ -54,7 +61,7 @@ inputs = {
   # overridable via values.
   engine               = try(values.cache_engine, "valkey")
   engine_version       = try(values.engine_version, "8.2")
-  parameter_group_name = try(values.cache_parameter_group_name, "default.valkey8.cluster.on")
+  parameter_group_name = try(values.cache_parameter_group_name, "default.${local.cache_pg_family}.cluster.on")
   port                 = 6379
 
   # Node Configuration
