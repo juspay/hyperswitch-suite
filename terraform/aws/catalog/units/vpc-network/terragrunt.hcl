@@ -18,8 +18,10 @@ dependency "primary_vpc" {
   enabled = try(values.is_passive, false) && local.vpc_peering_enabled
 
   mock_outputs = {
-    vpc_id         = "vpc-00000000000000000"
-    vpc_cidr_block = "10.x.x.x/16"
+    vpc_id                         = "vpc-00000000000000000"
+    vpc_cidr_block                 = "10.x.x.x/16"
+    eks_workers_subnet_cidr_blocks = ["10.x.0.0/22", "10.x.4.0/22"]
+    data_stack_subnet_cidr_blocks  = ["10.x.16.0/24", "10.x.17.0/24"]
   }
   mock_outputs_merge_strategy_with_state = "shallow"
 }
@@ -163,8 +165,13 @@ inputs = {
     try(values.is_passive, false) && local.vpc_peering_enabled
     ) ? {
     peer-to-primary = {
-      peer_vpc_id   = dependency.primary_vpc.outputs.vpc_id
-      peer_vpc_cidr = [dependency.primary_vpc.outputs.vpc_cidr_block]
+      peer_vpc_id = dependency.primary_vpc.outputs.vpc_id
+      # Narrow scope: route only the primary's data-stack (Kafka/ClickHouse) and
+      # EKS worker subnets, matching the route_tables below — not the full VPC CIDR.
+      peer_vpc_cidr = concat(
+        dependency.primary_vpc.outputs.data_stack_subnet_cidr_blocks,
+        dependency.primary_vpc.outputs.eks_workers_subnet_cidr_blocks,
+      )
       peer_region   = values.primary_region
       peer_owner_id = include.root.locals.account_id
       route_tables  = ["eks-workers", "private-isolated"]
@@ -180,8 +187,10 @@ inputs = {
     ) ? {
     peer-from-passive = {
       peering_connection_id = values.vpc_peering.connection_id
-      peer_vpc_cidr         = values.vpc_peering.peer_vpc_cidr
-      route_tables          = ["eks-workers", "private-isolated"]
+      # Narrow scope: values.vpc_peering.peer_vpc_cidr must list only the passive's
+      # eks-workers and data-stack subnet CIDRs — not the full VPC CIDR.
+      peer_vpc_cidr = values.vpc_peering.peer_vpc_cidr
+      route_tables  = ["eks-workers", "private-isolated"]
       tags = {
         PeerName = "${include.root.locals.environment.short}-passive-hyperswitch-vpc"
       }
