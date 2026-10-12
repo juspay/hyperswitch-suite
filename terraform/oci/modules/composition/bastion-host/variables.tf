@@ -1,5 +1,5 @@
 variable "compartment_id" {
-  description = "OCID of the compartment every resource in this module is created in. Replaces the implicit AWS account scope; a flat compartment is the deliberate first-cut simplification (prerequisite P5, oci/identity-model.md)."
+  description = "OCID of the compartment every resource in this module is created in. A flat compartment is the deliberate first-cut simplification."
   type        = string
 }
 
@@ -69,19 +69,16 @@ variable "create_nsg" {
   description = <<-EOT
     Whether this module creates its own Network Security Group.
 
-    NSGs, never security lists - oci/network-security-model.md section 5,
-    Option A. Created EMPTY: catalog/units/oci/security-rules, in the last
-    stack phase, writes the rules by reading nsg_id from this module's outputs.
+    Created EMPTY: catalog/units/oci/security-rules, in the last stack phase,
+    writes the rules by reading nsg_id from this module's outputs.
 
-    THE ONE THING WHOEVER WRITES THOSE RULES MUST KNOW, and it is the single
-    most load-bearing finding on this module's check sheet:
-    "match AWS's zero-ingress security group" IS NOT AN ACHIEVABLE
-    INSTRUCTION ON OCI. Every OCI Bastion session type - Managed SSH, SSH Port
-    Forwarding and Dynamic (SOCKS5) Port Forwarding - requires an inbound rule
-    on the target allowing traffic from the bastion's private endpoint IP on
-    the target port. SSM Session Manager needs zero inbound rules under any
-    configuration because the SSM Agent only ever makes outbound calls.
-    bastion_private_endpoint_ip is exported for exactly this rule.
+    THE ONE THING WHOEVER WRITES THOSE RULES MUST KNOW: a zero-ingress NSG is
+    NOT an achievable state on OCI. Every OCI Bastion session type - Managed
+    SSH, SSH Port Forwarding and Dynamic (SOCKS5) Port Forwarding - requires an
+    inbound rule on the target allowing traffic from the bastion's private
+    endpoint IP on the target port. SSM Session Manager needs zero inbound
+    rules under any configuration because the agent only ever makes outbound
+    calls. bastion_private_endpoint_ip is exported for exactly this rule.
   EOT
   type        = bool
   default     = true
@@ -107,7 +104,7 @@ variable "image_id" {
     One caveat that IS image-dependent: OCI Bastion's Managed SSH session type
     requires the Oracle Cloud Agent's Bastion plugin on the target. This module
     deliberately targets PORT_FORWARDING sessions instead (see the connection
-    guide and check sheet §4), which are agentless, so the plugin is enabled
+    guide), which are agentless, so the plugin is enabled
     below as a convenience rather than a requirement.
   EOT
   type        = string
@@ -138,7 +135,7 @@ variable "boot_volume_size_in_gbs" {
 }
 
 variable "boot_volume_kms_key_id" {
-  description = "Customer-managed KMS key for the boot volume. Null uses Oracle-managed encryption, the mapping for the AWS module's root_block_device.encrypted = true. Default-encrypted behaviour is Tier 2 pending confirmation (check sheet open question 5)."
+  description = "Customer-managed KMS key for the boot volume. Null uses Oracle-managed encryption. Default-encrypted behaviour is Tier 2 pending confirmation."
   type        = string
   default     = null
 }
@@ -158,8 +155,7 @@ variable "ssh_public_keys" {
     Session Manager is keyless and IAM-authenticated. Every OCI Bastion session
     requires an SSH keypair (key_details.public_key_content is a REQUIRED
     argument on oci_bastion_session), and a PORT_FORWARDING session forwards to
-    the instance's own sshd, which must already trust the operator's key. See
-    check sheet §3 item 2 and §4.
+    the instance's own sshd, which must already trust the operator's key.
   EOT
   type        = list(string)
   default     = []
@@ -178,7 +174,7 @@ variable "user_data" {
 }
 
 variable "enable_oracle_cloud_agent_bastion_plugin" {
-  description = "Enables the Oracle Cloud Agent's Bastion plugin on the instance. Required only for Managed SSH sessions, which this module deliberately does not use - PORT_FORWARDING is the correct session type for a fixed, known jump target (check sheet §4). Enabled anyway so an operator who needs Managed SSH is not blocked by a reboot."
+  description = "Enables the Oracle Cloud Agent's Bastion plugin on the instance. Required only for Managed SSH sessions, which this module deliberately does not use - PORT_FORWARDING is the correct session type for a fixed, known jump target. Enabled anyway so an operator who needs Managed SSH is not blocked by a reboot."
   type        = bool
   default     = true
 }
@@ -212,16 +208,12 @@ variable "bastion_max_session_ttl_seconds" {
     Bastion-wide cap on how long any single session may live -
     oci_bastion_bastion.max_session_ttl_in_seconds.
 
-    PARTIAL (check sheet feature 5). This maps to AWS's `maxSessionDuration`
-    session preference in spirit, but NOT to `idleSessionTimeout`: OCI's field
-    is a session-LIFETIME cap, not an idle timer, and no idle-specific control
-    was found. A session held open and unused is not reaped by this.
+    This is a session-LIFETIME cap, not an idle timer, and no idle-specific
+    control was found. A session held open and unused is not reaped by this.
 
-    Commonly cited bounds are 1800-10800 seconds, from secondary sources only -
-    Oracle's own API reference page was not retrieved (check sheet open
-    question 2). 10800 is the conservative choice: if the real maximum is
-    lower the API rejects it loudly at apply time rather than silently
-    truncating.
+    Commonly cited bounds are 1800-10800 seconds, from secondary sources only;
+    10800 is the conservative choice: if the real maximum is lower the API
+    rejects it loudly at apply time rather than silently truncating.
   EOT
   type        = number
   default     = 10800
@@ -249,7 +241,7 @@ variable "enable_session_recording" {
     Whether to create the Object Storage bucket that a SELF-MANAGED session
     recorder writes to.
 
-    NONE, twice over (check sheet features 3 and 4). This variable replaces
+    NONE, twice over. This variable replaces
     BOTH of the AWS module's `ssm_cloudwatch_logging_enabled` and
     `ssm_s3_logging_enabled`, and the rename is deliberate rather than
     cosmetic: those two flags toggle a MANAGED capability, and there is no
@@ -269,8 +261,8 @@ variable "enable_session_recording" {
     (disk full, misconfigured shipping) in a way a managed AWS checkbox is less
     likely to, so it needs a health check of its own.
 
-    Adopting that pipeline is an oracle-gate item (check sheet §8 item 2, not
-    consulted). The bucket is created honestly named and empty rather than
+    Adopting that pipeline is a reviewed decision, not
+    consulted yet. The bucket is created honestly named and empty rather than
     pretending the capability exists.
   EOT
   type        = bool
@@ -306,12 +298,12 @@ variable "enable_migration_mode" {
     Temporary escape hatch granting remote command execution against the jump
     host, for one-off migration work. Meant to be turned back off.
 
-    PARTIAL (check sheet feature 10), and the shortfall is specifically about
-    Terraform, not about the cloud. OCI Run Command is the functional analogue
-    of the AWS module's `ssm:SendCommand` grant - it explicitly works "even
-    when the instance does not have SSH access or open inbound ports". But
-    there is NO Terraform resource for it in oracle/oci 9.0.0: the permission
-    is expressible (an IAM policy verb granted to the instance's dynamic
+    The shortfall is about Terraform, not about the cloud. OCI Run Command is
+    the functional analogue of the AWS module's `ssm:SendCommand` grant - it
+    explicitly works "even when the instance does not have SSH access or open
+    inbound ports". But there is NO Terraform resource for it in oracle/oci
+    9.0.0: the permission is expressible (an IAM policy verb granted to the
+    instance's dynamic
     group), the command content and invocation are API/CLI/Console-only.
 
     Consequence worth naming: the AWS module's `migration_mode_status` output
@@ -322,7 +314,7 @@ variable "enable_migration_mode" {
 
     This module therefore creates nothing when this is true. It only surfaces
     the flag in outputs, because the policy statement it would drive belongs to
-    oci/identity-model.md's dynamic-group design, which has not landed.
+    a dynamic-group design that has not landed.
   EOT
   type        = bool
   default     = false

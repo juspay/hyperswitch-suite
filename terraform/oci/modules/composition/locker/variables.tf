@@ -1,8 +1,6 @@
-# composition/locker (OCI) - inputs. Fewer than the AWS module's 22, and the
-# reductions are deliberate: no VM fleet/ALB inputs (features 11-13 N/A), no
-# key generation inputs (feature 1's state-exposure path is not reproduced), and
-# no attachable-policy inputs (feature 10; the escape hatch is contributing
-# statements to the one shared policy). Added with no AWS counterpart:
+# composition/locker (OCI) - inputs. The reductions are deliberate: no VM fleet
+# or load-balancer inputs, no key-generation inputs, and no attachable-policy
+# inputs (grants are contributed as statements to the one shared policy). Added:
 # vcn_id, vault.*, k8s_namespace, k8s_service_account_name.
 
 # Identity and naming
@@ -34,7 +32,7 @@ variable "tags" {
 }
 
 variable "defined_tags" {
-  description = "OCI defined tags, passed through untouched. No AWS counterpart - defined tags need a tag namespace this module does not own."
+  description = "OCI defined tags, passed through untouched. Defined tags need a tag namespace this module does not own."
   type        = map(string)
   default     = {}
 }
@@ -62,11 +60,10 @@ variable "vault" {
   description = <<-EOT
     The OCI Vault holding this module's key and secrets.
 
-    No AWS counterpart: an OCI key lives inside a vault, and crypto calls go to
-    that vault's endpoint, so "create a KMS key" is a two-object operation.
-    This module creates its OWN vault by default rather than using the
-    environment's shared one, for the same reason the AWS module creates its
-    own KMS key - the card vault's key custody boundary is its PCI-DSS scope
+    An OCI key lives inside a vault, and crypto calls go to that vault's
+    endpoint, so "create a KMS key" is a two-object operation. This module
+    creates its OWN vault by default rather than using the environment's shared
+    one, because the card vault's key custody boundary is its PCI-DSS scope
     boundary.
 
       create              - build a dedicated vault (default) or use an
@@ -75,14 +72,10 @@ variable "vault" {
       management_endpoint - required when create = false; oci_kms_key takes the
                             endpoint, not a vault id.
       vault_type          - DEFAULT is the multi-tenant HSM partition and the
-                            AWS KMS equivalent. VIRTUAL_PRIVATE is a dedicated
-                            single-tenant HSM partition - stronger than plain
-                            AWS KMS, which needs a CloudHSM custom key store to
-                            match it - and materially more expensive. Parity,
-                            not improvement, is the default.
-      replica_region      - cross-region vault replication, the analogue of the
-                            AWS module's kms.multi_region + create_replica used
-                            by the passive stack. Vault-granular, not
+                            standard choice. VIRTUAL_PRIVATE is a dedicated
+                            single-tenant HSM partition - stronger isolation and
+                            materially more expensive.
+      replica_region      - cross-region vault replication. Vault-granular, not
                             key-granular. See kms.tf.
   EOT
   type = object({
@@ -108,7 +101,7 @@ variable "vault" {
 
 variable "kms_key" {
   description = <<-EOT
-    The card vault's dedicated encryption key (check sheet feature 14, FULL).
+    The card vault's dedicated encryption key.
 
       algorithm / length  - AES with length in BYTES, not bits. 32 = AES-256,
                             the AWS SYMMETRIC_DEFAULT equivalent.
@@ -162,11 +155,10 @@ variable "db_admin_secret" {
   description = <<-EOT
     Where the card vault database's admin password comes from.
 
-    THERE IS NO PLAINTEXT-PASSWORD OPTION HERE, BY DESIGN. The AWS module's
-    tls_private_key/SSM pattern and the sibling composition/database module's
-    random_password both put a credential into Terraform state; for the card
-    vault that is the specific thing this port set out not to reproduce
-    (check sheet section 4.2, master-checksheet.md finding A1). Two paths only:
+    THERE IS NO PLAINTEXT-PASSWORD OPTION HERE, BY DESIGN. The sibling
+    composition/database module's random_password puts a credential into
+    Terraform state; for the card vault that is the specific thing this port set
+    out not to reproduce. Two paths only:
 
       create = true (default) - OCI Vault GENERATES the value server-side
           (`enable_auto_generation` + `secret_generation_context`). Terraform
@@ -343,7 +335,7 @@ variable "k8s_namespace" {
 }
 
 variable "k8s_service_account_name" {
-  description = "Kubernetes service account the card-vault pod runs as. The other half of the workload identity tuple, and a hard security boundary: a grant without this condition authorises EVERY pod in the namespace. VERIFY IT AGAINST THE DEPLOYED CHART before relying on the default - the chart GCP deployed hardcodes its service-account name with no serviceAccount.create toggle (check sheet open question 9.5), so this may not be a free variable in practice."
+  description = "Kubernetes service account the card-vault pod runs as. The other half of the workload identity tuple, and a hard security boundary: a grant without this condition authorises EVERY pod in the namespace. VERIFY IT AGAINST THE DEPLOYED CHART before relying on the default - the deployed chart hardcodes its service-account name with no serviceAccount.create toggle, so this may not be a free variable in practice."
   type        = string
   default     = "locker"
 }
@@ -355,7 +347,7 @@ variable "workload_grant_compartment_id" {
 }
 
 variable "grant_workload_key_usage" {
-  description = "Emit a `use keys` grant scoped to this module's own key, the analogue of the AWS locker_kms policy. OFF by default: hyperswitch-card-vault compiles only the kms-aws and kms-hashicorp-vault features, so there is no confirmed way for the running application to use an OCI key, and an unusable grant is exactly the kind of surplus permission this port is meant to remove. See identity.tf and check sheet open question 9.5."
+  description = "Emit a `use keys` grant scoped to this module's own key. OFF by default: hyperswitch-card-vault compiles only the kms-aws and kms-hashicorp-vault features, so there is no confirmed way for the running application to use an OCI key, and an unusable grant is exactly the kind of surplus permission this port is meant to remove. See identity.tf."
   type        = bool
   default     = false
 }

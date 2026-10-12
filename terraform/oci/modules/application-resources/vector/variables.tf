@@ -1,4 +1,4 @@
-# vector - OCI port of application-resources/vector (one instantiation per log stream)
+# vector - one instantiation per log stream
 
 variable "compartment_id" {
   description = "OCID of the compartment this module's resources live in, and the default location term of every statement it renders. Must be at or below the compartment the shared `oke-workload-identity` policy is attached to."
@@ -32,13 +32,10 @@ variable "app_name" {
     `vector-dr-consumer`, `vector-hyperswitch-art`, `vector-ucs-deja`. Used in
     bucket, stream and NSG naming, exactly as the AWS module's `app_name` is.
 
-    THIS IS WHAT MAKES FIVE INSTANTIATIONS DISTINCT. AWS has five separate
-    roles today; this port keeps five separate statement sets rather than
-    merging them into one shared "vector" identity - a merge would be a real
-    architectural change with no AWS evidence behind it, and would give all five
-    streams each other's bucket access. (Check sheet section 4.1; that
-    keep-separate call is an oracle gate item, section 8 item 3, NOT YET
-    CONSULTED.)
+    THIS IS WHAT MAKES FIVE INSTANTIATIONS DISTINCT. Five separate statement
+    sets rather than one shared "vector" identity - a merge would be a real
+    architectural change with no justification, and would give all five
+    streams each other's bucket access.
   EOT
   type        = string
   default     = "vector"
@@ -126,8 +123,7 @@ variable "bucket_read_only" {
 
     For CONSUMER-ONLY instantiations (`vector-dr-consumer`), which read objects
     another stream wrote and never write themselves. Producers must leave this
-    false: `PutObject` needs OBJECT_CREATE, which only `manage` grants
-    (identity-model.md section 3.5).
+    false: `PutObject` needs OBJECT_CREATE, which only `manage` grants.
   EOT
   type        = bool
   default     = false
@@ -164,8 +160,7 @@ variable "stream_partitions" {
     parallelism at one. Multiple partitions buy throughput and lose
     cross-partition order, which is what SQS standard already did.
 
-    Check sheet section 8 item 2: an oracle gate item, NOT YET CONSULTED. Also
-    section 9 Q3 - Streaming's per-partition throughput ceiling was not verified
+    Streaming's per-partition throughput ceiling was not verified
     against this log volume; load-test before committing to 1 in prod.
   EOT
   type        = number
@@ -181,11 +176,8 @@ variable "stream_retention_hours" {
   description = <<-EOT
     Stream retention, in hours. Capped at OCI's ceiling of 168 (7 days).
 
-    A REAL REGRESSION, not a rename. The AWS module defaults
-    `message_retention_seconds` to 1,209,600 - fourteen days, the SQS maximum.
-    OCI Streaming's range is 24-168 hours, so the backlog headroom halves: a
+    A REAL REGRESSION, not a rename. OCI Streaming's range is 24-168 hours, so the backlog headroom halves: a
     consumer down for more than a week loses history it would have kept on AWS.
-    Check sheet section 8 item 6, oracle gate NOT YET CONSULTED.
   EOT
   type        = number
   default     = 168
@@ -205,7 +197,7 @@ variable "stream_pool_id" {
     `<tenancy-name>/<username>/<stream-pool-OCID>` - the pool OCID is part of
     the credential, not just placement. A private stream pool is also the only
     way to keep the Kafka endpoint off the public internet, which matters for
-    the cross-region case (check sheet section 4.5).
+    the cross-region case.
   EOT
   type        = string
   default     = null
@@ -251,7 +243,7 @@ variable "auth_token_vault_secret_id" {
         those out of band, deliberately.
       * Mint a DEDICATED, least-privilege OCI user for this consumption alone.
         Auth tokens authenticate as the whole user everywhere that user has
-        grants (check sheet section 9 Q2, unverified) - so a shared user is the
+        grants - so a shared user is the
         difference between a bounded credential and a wide one.
       * Project it into the pod with `external-secrets-operator`, which itself
         runs under workload identity - the same relay `otel-collector` uses for
@@ -262,11 +254,7 @@ variable "auth_token_vault_secret_id" {
     (`create_notification = false`) and poll Object Storage directly under pure
     workload identity - the `read`/`manage objects` grant is already there.
     Zero static credentials, at the cost of poll-interval latency instead of
-    push, and custom code instead of configuration. Check sheet section 4.4
-    option 2.
-
-    Check sheet section 8 item 1 calls this the highest-value gate item in the
-    loki/vector/grafana trio. NOT YET CONSULTED.
+    push, and custom code instead of configuration.
   EOT
   type        = string
   default     = null
@@ -309,8 +297,6 @@ variable "cross_region_read" {
 
     `kms_key_arn` has no counterpart: there is no customer-managed key on the
     Object Storage side to decrypt with.
-
-    Check sheet section 4.5 and section 8 item 5, oracle gate NOT YET CONSULTED.
   EOT
   type = object({
     enabled                  = optional(bool, false)
@@ -325,10 +311,9 @@ variable "cross_region_read" {
 variable "shared_statements" {
   description = <<-EOT
     Statement strings contributed from a shared source. Replaces
-    `customer_managed_policy_arns` / `aws_managed_policy_names` (check sheet
-    feature 2, SUBSTITUTE - nothing is attachable on OCI).
+    `customer_managed_policy_arns` / `aws_managed_policy_names` - nothing is attachable on OCI.
 
-    identity-model.md section 1.2's union-of-actions row for `vector` includes
+    The union-of-actions picture for `vector` includes
     SNS publish and KMS decrypt, neither of which exists as a resource in this
     module - so at least one of the five instantiations attaches something
     beyond its own bucket and queue grants. On OCI those become

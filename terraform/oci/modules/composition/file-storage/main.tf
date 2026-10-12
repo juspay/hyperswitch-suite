@@ -53,7 +53,7 @@ resource "oci_file_storage_mount_target" "this" {
   # kerberos {} and ldap_idmap {} are NOT set here, deliberately. They are
   # mount-target-WIDE and are the only mechanism enforcing a mapped POSIX
   # identity; wiring one consumer would silently change identity handling for all
-  # of them, which is the residual risk the check sheet records. Not exposed
+  # of them, which is the residual risk. Not exposed
   # until a real consumer needs it and the trade is made explicitly.
 }
 

@@ -1,7 +1,7 @@
-# shared-policy - the OCI port of AWS `shared-policy`. AWS creates detached,
-# attachable `aws_iam_policy` objects; OCI has no such object - `oci_identity_policy`
-# IS the grant. So this module creates NOTHING (no main.tf): it renders shared
-# grants into statement strings for the shared oke-workload-identity object.
+# shared-policy - AWS creates detached, attachable `aws_iam_policy` objects;
+# OCI has no such object - `oci_identity_policy` IS the grant. So this module
+# creates NOTHING (no main.tf): it renders shared grants into statement strings
+# for the shared oke-workload-identity object.
 # REJECTED ALTERNATIVE (recorded because tempting): one real policy object per
 # grant with a broad `request.principal.type='workload'` subject but NO
 # service_account condition - that grants the permission to EVERY POD IN THE
@@ -34,7 +34,7 @@ variable "subjects" {
 
     THE NEW REQUIRED INPUT, and the whole reason this module changed shape. On
     AWS the subject is supplied later, by an attachment; on OCI it must be known
-    at render time (check sheet section 4.1). One shared grant used by three
+    at render time. One shared grant used by three
     apps is therefore three statements, not one attachment - which is the real
     cost of the substitution and the reason the 50-statements-per-object and
     500-per-compartment-hierarchy limits bite here.
@@ -91,7 +91,7 @@ variable "grants" {
                         location + optional condition, not a document;
       * `name`        - the statement is anonymous; only this map key names it,
                         and the key is Terraform-side only;
-      * `path`        - PARTIAL, check sheet section 4.3. OCI's organisational
+      * `path`        - PARTIAL. OCI's organisational
                         axis is the compartment (which is also the policy's
                         scope, so it is load-bearing rather than decorative)
                         plus freeform tags. There is no name hierarchy;
@@ -99,7 +99,7 @@ variable "grants" {
                         audit question "who has hs-ses-assume-policy?" was a
                         single attachment listing on AWS and becomes a text
                         search here; tag the CONSUMING policy object with the
-                        logical grant names it embeds (check sheet 4.1).
+                        logical grant names it embeds.
 
       verb           - inspect | read | use | manage. Cumulative lattice.
                        Note `use objects` CANNOT create an object; anything that

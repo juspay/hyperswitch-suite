@@ -6,7 +6,7 @@ output "policy_statements" {
     `oci_identity_policy` owned by the `oke-workload-identity` unit. Rendered,
     normalised and sorted.
 
-    THIS MODULE CREATES NO POLICY OBJECT (identity-model.md section 3.7). Hand
+    THIS MODULE CREATES NO POLICY OBJECT. Hand
     this list to `oke-workload-identity`.
 
     Expect exactly THREE statements per cluster: `read metrics`,
@@ -37,10 +37,9 @@ output "datasource_uses_static_credential" {
     with a static User Principal API key rather than workload identity.
 
     Surfaced as an output, and therefore in the plan, because it is an accepted
-    regression against identity-model.md section 3.1 and must not be taken
+    regression against the identity model and must not be taken
     quietly. It flips only when `datasource_api_key_vault_secret_id` is set,
-    i.e. when check sheet section 9 Q1 has resolved against the plugins
-    supporting a workload-identity SDK path.
+    i.e. when the plugins support a workload-identity SDK path.
 
     False does NOT mean the datasources work - it means no static credential was
     wired. If Q1 resolves against workload identity and this stays false,
@@ -102,7 +101,7 @@ output "database_admin_username" {
 }
 
 output "database_vault_secret_id" {
-  description = "OCID of the Vault secret holding the generated admin password, when database_config.vault_secret.create was set. Project it into the pod with external-secrets-operator rather than granting Grafana direct Vault access (check sheet section 9 Q4)."
+  description = "OCID of the Vault secret holding the generated admin password, when database_config.vault_secret.create was set. Project it into the pod with external-secrets-operator rather than granting Grafana direct Vault access."
   value       = one(module.database[*].vault_secret_id)
   sensitive   = true
 }
@@ -125,7 +124,7 @@ output "database_ca_certificate" {
 }
 
 output "database_tls_required" {
-  description = "Always true, and not configurable. Stated as a first-class output so a consumer reading this module cannot mistake AWS's TLS-optional default for what happens here (check sheet feature 5, verdict NONE)."
+  description = "Always true, and not configurable. Stated as a first-class output so a consumer reading this module cannot mistake AWS's TLS-optional default for what happens here."
   value       = true
 }
 

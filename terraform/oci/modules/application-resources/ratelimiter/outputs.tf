@@ -5,8 +5,7 @@ output "policy_statements" {
   description = <<-EOT
     Statements for the environment's shared `oke-workload-identity` object.
 
-    EMPTY BY DEFAULT, AND THAT IS CORRECT. identity-model.md section 1.2 records
-    this workload as "1 SA x 0 grants - STS only (identity with no cloud grants;
+    EMPTY BY DEFAULT, AND THAT IS CORRECT. This workload is "1 SA x 0 grants - STS only (identity with no cloud grants;
     the role exists for future use)". On AWS an empty role is still an object
     with an ARN; on OCI an identity is its statements, so there is no object and
     nothing to emit. The pod still runs under `ratelimiter-sa` with

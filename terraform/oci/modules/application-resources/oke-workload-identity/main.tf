@@ -45,7 +45,7 @@ resource "oci_identity_policy" "workload_identity" {
 
     precondition {
       condition     = length(local.all_statements) <= var.max_statements
-      error_message = "This policy has ${length(local.all_statements)} statements against a cap of ${var.max_statements} (OCI's hard per-policy-object limit is 50). Do NOT resolve this by giving an app its own policy object - the tenancy limit is 100 objects and both `name` and `compartment_id` are non-updatable. Split by tier into a second environment-scoped policy instead, and consult the oracle gate first."
+      error_message = "This policy has ${length(local.all_statements)} statements against a cap of ${var.max_statements} (OCI's hard per-policy-object limit is 50). Do NOT resolve this by giving an app its own policy object - the tenancy limit is 100 objects and both `name` and `compartment_id` are non-updatable. Split by tier into a second environment-scoped policy instead."
     }
   }
 }

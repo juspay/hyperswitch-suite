@@ -8,7 +8,7 @@ variable "compartment_id" {
 }
 
 variable "region" {
-  description = "OCI region identifier, e.g. ap-mumbai-1. Used for naming and for resolving the service-gateway CIDR labels; subnets are regional so no availability-domain input exists (see the vpc-network check sheet section 4.2)."
+  description = "OCI region identifier, e.g. ap-mumbai-1. Used for naming and for resolving the service-gateway CIDR labels; subnets are regional so no availability-domain input exists."
   type        = string
 }
 
@@ -98,7 +98,7 @@ variable "dhcp_dns_server_type" {
 }
 
 variable "dhcp_custom_dns_servers" {
-  description = "Up to 3 custom DNS server IPs, only meaningful when dhcp_dns_server_type = CustomDnsServer. AWS allowed 4 (see check sheet section 4.9)."
+  description = "Up to 3 custom DNS server IPs, only meaningful when dhcp_dns_server_type = CustomDnsServer."
   type        = list(string)
   default     = []
 
@@ -125,7 +125,7 @@ variable "create_internet_gateway" {
 }
 
 variable "enable_nat_gateway" {
-  description = "Create the VCN NAT gateway. SUBSTITUTE for AWS's per-AZ NAT fleet: OCI's NAT gateway is a regional VCN-scoped service with a hard limit of 1 per VCN, so single_nat_gateway / nat_gateway_count have no counterpart and are not carried (check sheet section 4.1)."
+  description = "Create the VCN NAT gateway. OCI's NAT gateway is a regional VCN-scoped service with a hard limit of 1 per VCN."
   type        = bool
   default     = true
 }
@@ -148,10 +148,8 @@ variable "enable_service_gateway_object_storage" {
     gateway. MUTUALLY EXCLUSIVE with enable_service_gateway_all_services -
     Oracle: "Because Object Storage is covered by both ... a service gateway
     can use only one of those service CIDR labels. Likewise, a route table can
-    have a single rule for one of the service CIDR labels."
-    This contradicts the check sheet's section 4.3 wording ("enable both
-    service CIDR labels on the single service gateway"), which is not
-    achievable; see the comment in gateways.tf.
+    have a single rule for one of the service CIDR labels." Enabling both is
+    not achievable; see the comment in gateways.tf.
   EOT
   type        = bool
   default     = false
@@ -226,7 +224,7 @@ variable "oke_api_endpoint_subnet_cidr" {
 # recommended production pattern is a private cluster reached via the Bastion
 # service regardless of this setting.
 variable "oke_api_endpoint_is_public" {
-  description = "Whether a SECOND, additive OKE API endpoint subnet (oke-api-endpoint-public) is created and made the cluster's active endpoint subnet, matching AWS EKS's cluster_endpoint_public_access = true behaviour. Defaults false. The original private subnet is never touched by this toggle - see C33 in build-log.md for why recreating it in place deadlocks against the cluster's own Oracle-managed Service VNIC. Flip alongside the oke unit's own control_plane_is_public / assign_public_ip_to_control_plane and its control_plane_subnet_id selection."
+  description = "Whether a SECOND, additive OKE API endpoint subnet (oke-api-endpoint-public) is created and made the cluster's active endpoint subnet, matching AWS EKS's cluster_endpoint_public_access = true behaviour. Defaults false. The original private subnet is never touched by this toggle - recreating it in place deadlocks against the cluster's own Oracle-managed Service VNIC. Flip alongside the oke unit's own control_plane_is_public / assign_public_ip_to_control_plane and its control_plane_subnet_id selection."
   type        = bool
   default     = false
 }

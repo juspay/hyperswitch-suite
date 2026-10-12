@@ -23,7 +23,7 @@ output "system_role" {
 
   precondition {
     condition     = var.enable_warm_standby == (var.primary_db_system_id != null)
-    error_message = "enable_warm_standby and primary_db_system_id must be set together. Warm standby is OFF by default and that default is a decision (300 s RPO floor, manual-only failover, second full db system) - see docs/multi-cloud-parity/oci/data-tier-strategy.md before turning it on."
+    error_message = "enable_warm_standby and primary_db_system_id must be set together. Warm standby is OFF by default and that default is a decision (300 s RPO floor, manual-only failover, second full db system) - review before turning it on."
   }
 
   precondition {
@@ -104,7 +104,7 @@ output "primary_db_system_id" {
 }
 
 output "replication_config" {
-  description = "Configured cross-region DR posture. New output with no AWS counterpart - the manual-failover runbook has to be able to read the RPO that is actually in force, because there is no automatic failover to fall back on. rpo_in_seconds is the ENFORCEMENT THRESHOLD, not a measured lag; no steady-state lag figure is published for warm standby."
+  description = "Configured cross-region DR posture. The manual-failover runbook has to be able to read the RPO that is actually in force, because there is no automatic failover to fall back on. rpo_in_seconds is the ENFORCEMENT THRESHOLD, not a measured lag; no steady-state lag figure is published for warm standby."
   value = {
     enabled         = local.is_standby
     is_rpo_enforced = local.is_standby ? var.is_rpo_enforced : null
@@ -191,7 +191,7 @@ output "admin_username" {
 }
 
 output "admin_password" {
-  description = "The admin password in effect, module-generated when admin_password was left unset. No AWS counterpart - it exists because OCI has no manage_master_user_password, exactly as alloydb exposes generated_user_password for the same reason. Null on a warm standby."
+  description = "The admin password in effect, module-generated when admin_password was left unset. Null on a warm standby."
   value       = local.admin_password
   sensitive   = true
 }
@@ -253,19 +253,12 @@ output "freeform_tags" {
 
 output "encryption_at_rest" {
   description = <<-EOT
-    Encryption posture. This output exists BECAUSE the AWS ones cannot:
-    storage_encrypted, kms_key_id, module_kms_key_arn, module_kms_key_id and
-    module_kms_key_aliases all disappear, along with the nested
-    terraform-aws-modules/kms/aws module, its enable_key_rotation, and the
-    multi_region = true the AWS passive roots set.
-
-    PARTIAL (check sheet feature 11, section 4.9): data IS encrypted at rest,
-    but only with Oracle-managed keys. Provider 9.0.0's oci_psql_db_system has
-    NO customer-managed-key argument - verified by dumping the provider's own
-    schema, not asserted - and the console create flow has no encryption-key
-    section either; the only Vault reference there is the admin password. There
-    is no toggle, so this module deliberately offers none: an empty CMEK
-    variable would imply a capability that does not exist.
+    Encryption posture. Data IS encrypted at rest, but only with Oracle-managed
+    keys. Provider 9.0.0's oci_psql_db_system has NO customer-managed-key
+    argument, and the console create flow has no encryption-key section either;
+    the only Vault reference there is the admin password. There is no toggle, so
+    this module deliberately offers none: an empty CMEK variable would imply a
+    capability that does not exist.
 
     Consequence for a PCI-scope payments database: the tenancy cannot
     demonstrate customer-held key custody for data at rest. That is an audit

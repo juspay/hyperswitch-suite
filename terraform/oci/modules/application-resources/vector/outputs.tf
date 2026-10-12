@@ -6,7 +6,7 @@ output "policy_statements" {
     `oci_identity_policy` owned by the `oke-workload-identity` unit. Rendered,
     normalised and sorted.
 
-    THIS MODULE CREATES NO POLICY OBJECT (identity-model.md section 3.7). With
+    THIS MODULE CREATES NO POLICY OBJECT. With
     five instantiations, this module is the widest contributor in the platform -
     concatenate all five lists into the one shared object rather than giving any
     of them a policy of its own.
@@ -51,7 +51,7 @@ output "stream_id" {
 }
 
 output "stream_messages_endpoint" {
-  description = "Streaming messages endpoint. REGIONAL, unlike Pub/Sub and unlike an SQS queue URL's reachability story - a cross-region consumer needs a network path decided separately (check sheet section 4.5)."
+  description = "Streaming messages endpoint. REGIONAL, unlike Pub/Sub and unlike an SQS queue URL's reachability story - a cross-region consumer needs a network path decided separately."
   value       = one(oci_streaming_stream.events[*].messages_endpoint)
 }
 
@@ -61,7 +61,7 @@ output "stream_pool_id" {
 }
 
 output "stream_retention_hours" {
-  description = "Retention actually applied, in hours. Capped at 168 - AWS's SQS default of 14 days is not reachable on OCI Streaming (check sheet section 8 item 6)."
+  description = "Retention actually applied, in hours. Capped at 168 - AWS's SQS default of 14 days is not reachable on OCI Streaming."
   value       = one(oci_streaming_stream.events[*].retention_in_hours)
 }
 
@@ -71,7 +71,7 @@ output "events_rule_id" {
 }
 
 output "events_rule_condition" {
-  description = "The rendered Events-rule condition JSON, including the mandatory bucket-name filter. Surfaced so a reviewer can confirm the rule is scoped to this bucket rather than to every object-storage event in the compartment subtree (check sheet section 4.4, residual risk 2)."
+  description = "The rendered Events-rule condition JSON, including the mandatory bucket-name filter. Surfaced so a reviewer can confirm the rule is scoped to this bucket rather than to every object-storage event in the compartment subtree."
   value       = var.create_notification ? local.event_condition : null
 }
 
@@ -111,7 +111,7 @@ output "kafka_uses_static_credential" {
     TRUE means this instantiation is consuming the event stream with a
     long-lived, user-bound OCI auth token rather than workload identity.
 
-    THIS IS THE ONE DOCUMENTED EXCEPTION TO identity-model.md section 3.1 IN THE
+    THIS IS THE ONE DOCUMENTED EXCEPTION TO THE IDENTITY MODEL IN THE
     WHOLE APPLICATION SET, and it is surfaced as an output so it appears in the
     plan and in every consumer's state rather than being buried in a Helm value.
     It is not a defect in this module: OCI Streaming's Kafka endpoint
@@ -121,7 +121,7 @@ output "kafka_uses_static_credential" {
     False with `create_notification = true` means the pipeline is built but no
     credential is wired - the stream will fill and nothing will read it.
     False with `create_notification = false` is the identity-model-clean posture
-    (check sheet section 4.4 option 2: poll under workload identity instead).
+    (poll under workload identity instead).
   EOT
   value       = local.uses_static_kafka_credential
 }
@@ -132,7 +132,7 @@ output "auth_token_vault_secret_id" {
 }
 
 output "cross_region_read_enabled" {
-  description = "Whether cross-region read grants were emitted. PARTIAL: the IAM half is complete, the NETWORK half is not expressible here - Streaming is regional, so a public TLS endpoint or a DRG path must be decided separately (check sheet section 4.5)."
+  description = "Whether cross-region read grants were emitted. PARTIAL: the IAM half is complete, the NETWORK half is not expressible here - Streaming is regional, so a public TLS endpoint or a DRG path must be decided separately."
   value       = local.cross_region_enabled
 }
 

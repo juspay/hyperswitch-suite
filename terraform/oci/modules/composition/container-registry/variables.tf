@@ -147,7 +147,7 @@ variable "default_is_immutable" {
 # NOT YET ORACLE-GATED - the mechanism is here, off by default; the decision to
 # adopt it is still open.
 variable "push_subjects" {
-  description = "OCI IAM subjects granted push+pull on repositories in this compartment (e.g. [\"group CI-Pipeline\", \"dynamic-group ci-runners\"]). Empty creates no policy. Cross-TENANCY CI needs a formal Define/Endorse/Admit relationship instead - see check sheet feature 6."
+  description = "OCI IAM subjects granted push+pull on repositories in this compartment (e.g. [\"group CI-Pipeline\", \"dynamic-group ci-runners\"]). Empty creates no policy. Cross-TENANCY CI needs a formal Define/Endorse/Admit relationship instead."
   type        = list(string)
   default     = []
 }

@@ -45,7 +45,7 @@ output "cross_tenancy_statements" {
 
     UNVERIFIED. Oracle documents this construction with
     `request.principal.type = 'nodepool'`; `'workload'` is documented neither
-    way. Do not build on this output until check sheet question 1 is answered
+    way. Do not build on this output until resolved
     empirically (two tenancies, one Endorse, one Admit, one API call from a
     pod). If it does not work, the fallback is a static API key for the remote
     tenancy - a long-lived credential this port otherwise removes.

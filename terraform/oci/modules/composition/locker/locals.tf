@@ -18,7 +18,7 @@ locals {
   )
 
   # Key custody: a key lives inside a VAULT on OCI, so "create a KMS key" becomes
-  # create-a-vault-and-a-key; vault_id has no direct AWS counterpart.
+  # create-a-vault-and-a-key.
   create_vault = var.vault.create
   vault_id     = local.create_vault ? oci_kms_vault.locker[0].id : var.vault.vault_id
 

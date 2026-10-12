@@ -11,7 +11,7 @@ output "nlb_ip_address" {
 }
 
 output "proxy_endpoints" {
-  description = "Map of protocol to endpoint, the same shape the AWS module exports. Only one entry: there is no TLS endpoint because OCI's NLB cannot terminate TLS (check sheet feature 3, verdict NONE)."
+  description = "Map of protocol to endpoint, the same shape the AWS module exports. Only one entry: there is no TLS endpoint because OCI's NLB cannot terminate TLS."
   value = {
     tcp = try("${oci_network_load_balancer_network_load_balancer.this[0].ip_addresses[0].ip_address}:${var.squid_port}", null)
   }

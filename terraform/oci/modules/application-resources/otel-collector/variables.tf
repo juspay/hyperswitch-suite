@@ -1,14 +1,14 @@
-# otel-collector - the OCI port of the AWS module of the same name.
-# THE KEY DIFFERENCE: OCI SPLITS THE AWS MODULE'S ONE IDENTITY INTO THREE:
+# otel-collector - OCI splits the identity surface the single AWS role covered
+# into three:
 #   metrics -> OCI Monitoring  `use metrics`      IAM / workload identity
 #   logs    -> OCI Logging     `use log-content`  IAM / workload identity
 #   TRACES  -> OCI APM         NOT IAM AT ALL - `Authorization: dataKey` header.
-# So `AWSXRayDaemonWriteAccess` has NO IAM counterpart; `use apm-domains`
+# So `AWSXRayDaemonWriteAccess` has no IAM counterpart; `use apm-domains`
 # governs MANAGING domains, not uploading. THIS MODULE CREATES NO
 # `oci_identity_policy` - it renders statements for the shared object and owns
 # the two observability backends AWS never had to configure.
-# CONSEQUENCE (unresolved oracle gate): a long-lived data key is not rotated by
-# anything automatic - it needs an owner and a rotation interval.
+# CONSEQUENCE: a long-lived data key is not rotated by anything automatic - it
+# needs an owner and a rotation interval.
 
 variable "compartment_id" {
   description = "OCID of the environment compartment. Default location term in rendered statements, default home for the APM domain and log group, and the attachment point of the consuming shared policy object. Replaces AWS `region` + the implicit account: neither is part of an OCI IAM grant."
@@ -57,7 +57,7 @@ variable "metrics_namespace" {
     this way. Leave it null only if you actually want the collector able to
     publish into any namespace in the compartment.
 
-    OPEN (check sheet question 5): whether PostMetricData creates a namespace
+    OPEN: whether PostMetricData creates a namespace
     implicitly or the namespace must pre-exist was not confirmed. If it must
     pre-exist, that is another resource this module would own.
   EOT
@@ -66,13 +66,13 @@ variable "metrics_namespace" {
 }
 
 variable "enable_metrics_grant" {
-  description = "Emit `use metrics` (METRIC_WRITE / PostMetricData). True by default. Set false only if metrics go to APM via OTLP with the data key instead of to OCI Monitoring - doing both duplicates data and cost (check sheet question 2). If both this and enable_logs_grant are false this module contributes NO statements at all, and the collector's only credential is the APM data key."
+  description = "Emit `use metrics` (METRIC_WRITE / PostMetricData). True by default. Set false only if metrics go to APM via OTLP with the data key instead of to OCI Monitoring - doing both duplicates data and cost. If both this and enable_logs_grant are false this module contributes NO statements at all, and the collector's only credential is the APM data key."
   type        = bool
   default     = true
 }
 
 variable "enable_logs_grant" {
-  description = "Emit `use log-content` (LOG_CONTENT_PUSH). True by default. `use log-content` grants the verb but there must be a TARGET - see create_log_group. OPEN (check sheet question 1): whether OCI APM accepts an OTLP logs signal at all; the APM configuration page documents spans and metrics endpoints only, which is why this module assumes logs go to OCI Logging."
+  description = "Emit `use log-content` (LOG_CONTENT_PUSH). True by default. `use log-content` grants the verb but there must be a TARGET - see create_log_group. OPEN: whether OCI APM accepts an OTLP logs signal at all; the APM configuration page documents spans and metrics endpoints only, which is why this module assumes logs go to OCI Logging."
   type        = bool
   default     = true
 }
@@ -107,14 +107,13 @@ variable "create_apm_domain" {
   description = <<-EOT
     Create an `oci_apm_apm_domain` and export its data upload endpoint.
 
-    SCOPE CREEP BY NECESSITY, and an oracle gate item (check sheet section 8
-    item 4), NOT CONSULTED. On AWS this module is an identity and nothing else,
+    SCOPE CREEP BY NECESSITY. On AWS this module is an identity and nothing else,
     because X-Ray needs no configuration. Here the trace backend is an explicit
     object with an explicit regional endpoint, so either this module owns it or
     a separate `oci-apm` unit does - which moves the dependency without moving
     the coupling.
 
-    OPEN (check sheet question 6): APM domains are REGIONAL and the data upload
+    OPEN: APM domains are REGIONAL and the data upload
     endpoint is region-specific, while compartments are global. A cluster in one
     region exporting to a domain in another cross-region-egresses every span.
   EOT
@@ -154,8 +153,8 @@ variable "apm_data_key_secret_id" {
     key into the vault once, and reference the SECRET by OCID from here so
     external-secrets-operator projects it into the `monitoring` namespace.
 
-    Check sheet question 3 asks whether any Terraform path can obtain the key
-    without state exposure. Until it is answered, the answer here is "do not
+    Whether any Terraform path can obtain the key
+    without state exposure was left open. Until it is answered, the answer here is "do not
     try".
   EOT
   type        = string
@@ -190,7 +189,7 @@ variable "log_display_name" {
 }
 
 variable "log_retention_duration" {
-  description = "Retention in days for the created custom log. OPEN (check sheet question 4): the AWS side sets no retention here, so there is no value to port - this is a new decision, not a translation. 30 mirrors the OCI service default."
+  description = "Retention in days for the created custom log. The AWS side sets no retention here, so there is no value to port - this is a new decision, not a translation. 30 mirrors the OCI service default."
   type        = number
   default     = 30
 

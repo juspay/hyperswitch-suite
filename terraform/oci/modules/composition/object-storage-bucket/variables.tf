@@ -82,10 +82,10 @@ variable "versioning" {
   description = <<-EOT
     "Enabled" or "Disabled".
 
-    C2 in docs/multi-cloud-parity/oci/build-log.md applies here too and is the
-    reason this module has no retention-rule input: OCI Object Storage
-    retention rules and versioning are MUTUALLY EXCLUSIVE in both directions.
-    A module that exposed both would fail at apply rather than at plan.
+    This is the reason this module has no retention-rule input: OCI Object
+    Storage retention rules and versioning are MUTUALLY EXCLUSIVE in both
+    directions. A module that exposed both would fail at apply rather than at
+    plan.
   EOT
   type        = string
   default     = "Disabled"
@@ -111,9 +111,9 @@ variable "kms_key_id" {
   description = <<-EOT
     Customer-managed key OCID, or null for Oracle-managed encryption.
 
-    Null is NOT "unencrypted". C3 in build-log.md: Object Storage encryption is
-    always on (AES-256, Oracle-managed key by default) and cannot be disabled.
-    This input only chooses WHOSE key, never WHETHER.
+    Null is NOT "unencrypted". Object Storage encryption is always on (AES-256,
+    Oracle-managed key by default) and cannot be disabled. This input only
+    chooses WHOSE key, never WHETHER.
   EOT
   type        = string
   default     = null
@@ -124,11 +124,11 @@ variable "lifecycle_rules" {
     Object lifecycle rules. Empty means no policy object is created at all,
     matching the state-bucket module's []-means-unused pattern.
 
-    WATCH THE ARCHIVE ACTION. C21 in build-log.md: OCI rejects
-    PutObjectLifecyclePolicy for any policy containing an ARCHIVE rule with
-    400-InsufficientServicePermissions unless the Object Storage service
-    principal is granted `manage object-family` in the compartment. That grant
-    lives in the `oke-workload-identity` unit in hyperswitch-infra, not here.
+    WATCH THE ARCHIVE ACTION. OCI rejects PutObjectLifecyclePolicy for any
+    policy containing an ARCHIVE rule with 400-InsufficientServicePermissions
+    unless the Object Storage service principal is granted `manage object-family`
+    in the compartment. That grant lives in the `oke-workload-identity` unit in
+    hyperswitch-infra, not here.
   EOT
   type = list(object({
     name        = string

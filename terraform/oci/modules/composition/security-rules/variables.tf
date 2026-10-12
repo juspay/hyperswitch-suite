@@ -19,7 +19,7 @@ variable "compartment_id" {
 }
 
 # -------------------------------------------------------------------------
-# Default security list guard - see ../../../../docs (network-security-model.md §3.3, §6)
+# Default security list guard: the NSG-only model requires an empty default list.
 # -------------------------------------------------------------------------
 variable "default_security_list_id" {
   description = <<-EOT
@@ -57,7 +57,7 @@ variable "allowed_non_default_security_lists" {
     Map of the LEGITIMATE non-default security lists permitted in this VCN,
     keyed by a short logical name (e.g. "bastion", "redis"). Each entry names a
     resource type with a VNIC but no (or partial) NSG support - the single case
-    the NSG-only model (network-security-model.md section 5) tolerates. Each
+    the NSG-only model tolerates. Each
     entry matches a discovered list by EITHER:
 
       security_list_ocid - OCID of a list THIS IaC owns and exports

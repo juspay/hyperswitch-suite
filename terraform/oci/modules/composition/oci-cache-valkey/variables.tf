@@ -72,12 +72,9 @@ variable "vcn_id" {
   description = <<-EOT
     OCID of the VCN the module-owned NSG is created in.
 
-    Only required when create_nsg is true (the default). Added during
-    assembly 2026-09-03 to bring this module in line with the sibling
-    `database` module in the same wave, which already creates its own NSG -
-    this module originally created none, an inconsistency found by
-    comparison rather than self-reported. See
-    docs/multi-cloud-parity/oci/build-log.md.
+    Only required when create_nsg is true (the default), bringing this module
+    in line with the sibling `database` module, which already creates its own
+    NSG.
   EOT
   type        = string
   default     = null
@@ -94,13 +91,11 @@ variable "create_nsg" {
     to it, exporting its OCID as nsg_id. Mirrors the `database` module's
     create_nsg and AWS's create_security_group.
 
-    docs/multi-cloud-parity/oci/network-security-model.md has settled this:
     NSGs only, never VCN security lists, because only NSGs expose the
     standalone per-rule resource the security-last phase unit needs to attach
-    cross-module rules without owning the NSG itself. This module was
-    originally the one module in wave 1 that created no NSG at all, relying
-    on the shared subnet security list - weaker isolation than every sibling
-    data-tier module. Default true fixes that.
+    cross-module rules without owning the NSG itself. This module originally
+    created no NSG, relying on the shared subnet security list - weaker
+    isolation than every sibling data-tier module. Default true fixes that.
   EOT
   type        = bool
   default     = true
@@ -152,7 +147,7 @@ variable "cluster_mode" {
   description = <<-EOT
     SHARDED or NONSHARDED. Literals confirmed from the oci_redis_redis_cluster
     schema docs (node_count: "...when clusterMode is SHARDED... when clusterMode
-    is NONSHARDED"), closing open question 2 on the check sheet.
+    is NONSHARDED").
 
     SHARDED   - shard_count independent write shards, node_count nodes per shard.
     NONSHARDED - one primary holding all data, node_count total nodes, the
@@ -172,25 +167,22 @@ variable "shard_count" {
     Number of shards. Only meaningful when cluster_mode = "SHARDED"; must be
     null when NONSHARDED.
 
-    PARTIAL PARITY (check sheet feature 3). OCI requires an ODD shard count
-    between 3 and 99. The live AWS shared cache runs num_node_groups = 2, which
-    is both even and below OCI's minimum: THAT TOPOLOGY CANNOT BE CREATED ON
-    OCI, at all, by any module. There is no mechanical translation and this
-    module does not invent one.
+    OCI requires an ODD shard count between 3 and 99. A 2-shard topology
+    CANNOT BE CREATED on OCI, at all, by any module; this module does not invent
+    a mechanical translation.
 
     The operator picks one of two real trade-offs when instantiating the unit,
     as a per-instantiation `values` decision:
       1. shard_count = 3 (OCI's minimum sharded config) - keeps independent
-         write sharding, but is 50% more nodes than the AWS 2-shard layout for
-         no capacity reason other than satisfying the constraint.
+         write sharding, but is 50% more nodes than a 2-shard layout for no
+         capacity reason other than satisfying the constraint.
       2. cluster_mode = "NONSHARDED" - fits OCI's limits but is a genuine
          write-throughput regression from 2 write shards, not a rename.
     Both change cost/capacity, so this is a capacity-planning call made with
-    real utilization numbers, not a default baked into a module. Left to the
-    oracle gate per check sheet section 8 item 3 - unconsulted as of writing.
+    real utilization numbers, not a default baked into a module.
 
     Whether the odd/>=3 rule is a hard product limit or a raisable service
-    limit is check sheet open question 5, unanswered.
+    limit is unconfirmed.
   EOT
   type        = number
   default     = null
@@ -212,7 +204,7 @@ variable "node_count" {
     and half of cluster_mode/num_node_groups) into one. There is no separate
     replica count: node_count = 1 + replicas.
 
-    High availability is implicit (check sheet feature 4, FULL): any cluster
+    High availability is implicit: any cluster
     with node_count > 1 runs 1 primary + replicas with automatic promotion.
     There is no automatic_failover_enabled / multi_az_enabled toggle to port -
     failover is a property of having replicas, not an option. Keep node_count
@@ -297,17 +289,14 @@ variable "create_backup" {
   description = <<-EOT
     Create one oci_redis_oci_cache_backup of this cluster.
 
-    PARTIAL PARITY (check sheet feature 10). OCI's backup is a DISCRETE,
-    EXPLICITLY-TRIGGERED resource: creating it takes exactly one backup.
-    There is no snapshot_window / schedule / backup-policy argument anywhere
-    in the redis service's resource surface, so AWS's declarative "nightly
+    OCI's backup is a DISCRETE, EXPLICITLY-TRIGGERED resource: creating it takes
+    exactly one backup. There is no snapshot_window / schedule / backup-policy
+    argument anywhere in the redis service's resource surface, so a "nightly
     snapshot, keep N days" behaviour does NOT port. Recurring backups need
     external automation (OCI Resource Scheduler, a cron pipeline) that creates
-    a new backup on a schedule and prunes old ones - new operational surface
-    the AWS module never needed.
+    a new backup on a schedule and prunes old ones - new operational surface.
 
-    Defaults false so the first apply provisions the cluster only, matching
-    the check sheet's validation plan (expect exactly 1 oci_redis_redis_cluster).
+    Defaults false so the first apply provisions the cluster only.
   EOT
   type        = bool
   default     = false
@@ -329,10 +318,9 @@ variable "backup_export_to_object_storage_trigger" {
   description = <<-EOT
     Increment to trigger an export of the backup into Object Storage.
 
-    This is step 2 of the four-step cross-region DR substitute described in the
-    check sheet (backup -> export -> Object Storage cross-region replication ->
-    re-import). Steps 3 and 4 are deliberately OUT OF SCOPE for this module and
-    blocked on the oracle gate - see the NONE note in main.tf.
+    Step 2 of the four-step cross-region DR substitute (backup -> export ->
+    Object Storage cross-region replication -> re-import). Steps 3 and 4 are
+    deliberately OUT OF SCOPE for this module.
   EOT
   type        = number
   default     = null
@@ -384,7 +372,7 @@ variable "cache_users" {
     authentication_type: PASSWORD is the only literal confirmed against the
     schema. The OCI Cache overview advertises "IAM authentication" and
     oci_redis_redis_cluster_create_identity_token exists, but the exact IAM
-    literal is unconfirmed (check sheet open question 3), so this module does
+    literal is unconfirmed, so this module does
     not validate the value against a list it cannot vouch for.
   EOT
   type = map(object({
@@ -427,7 +415,7 @@ variable "defined_tags" {
 
 # Timeouts
 variable "timeouts" {
-  description = "Per-operation timeouts. The provider defaults to 20m for all three; a large sharded cluster create can exceed that, and the check sheet's DR discussion already leans on the create timeout being visible, so it is an input rather than a hidden default."
+  description = "Per-operation timeouts. The provider defaults to 20m for all three; a large sharded cluster create can exceed that, and the DR discussion relies on the create timeout being visible, so it is an input rather than a hidden default."
   type = object({
     create = optional(string, "60m")
     update = optional(string, "60m")

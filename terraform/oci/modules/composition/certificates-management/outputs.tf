@@ -41,11 +41,10 @@ output "self_managed_renewal" {
     Logical names of the certificates NOBODY renews automatically - every
     IMPORTED certificate, i.e. exactly the ones that are publicly trusted and
     therefore exactly the ones whose expiry is a hard TLS outage rather than a
-    warning banner (acm.md gap on feature 4).
+    warning banner.
 
     This output exists to be consumed, not read: point an expiry alarm at it
-    from day one. On AWS this list would always be empty, because ACM renewed
-    everything invisibly. On OCI it is the operational debt the port creates.
+    from day one. It is the automated-renewal gap this module creates.
   EOT
   value       = sort(keys(local.imported_certificates))
 }

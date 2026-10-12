@@ -45,7 +45,7 @@ resource "oci_objectstorage_bucket" "logs" {
   defined_tags  = var.defined_tags
 }
 
-# Bucket + lifecycle policy; the ARCHIVE tier is Glacier's counterpart.
+# Bucket + lifecycle policy; the ARCHIVE tier is the cold-storage tier.
 resource "oci_objectstorage_object_lifecycle_policy" "logs" {
   count = var.create_logs_bucket ? 1 : 0
 

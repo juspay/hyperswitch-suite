@@ -6,9 +6,7 @@ output "policy_statements" {
     presents the same identity contract and the stack can concatenate them all
     without special-casing this one.
 
-    Istio needs no cloud identity: identity-model.md section 1.2 row 13 records
-    it as "no" pod identity, "helm only", and nothing in the OCI port changes
-    that - the gateway's exposure runs through the built-in Cloud Controller
+    Istio needs no cloud identity: the gateway's exposure runs through the built-in Cloud Controller
     Manager, which needs no IAM role and no ServiceAccount.
 
     If this list is ever non-empty, something has been added to this module that
@@ -67,13 +65,13 @@ output "gateway_service_annotations" {
     `load-balancer-type`, `oci-network-security-groups`, and
     `security-list-management-mode = "None"` - the last of which is what keeps
     the CCM from silently creating VCN security-list rules that
-    network-security-model.md says should not exist.
+    the NSG-only model says should not exist.
   EOT
   value       = local.ccm_annotations
 }
 
 output "load_balancer_type" {
-  description = "`lb` (L7, mirroring AWS's ALB) or `nlb` (L4, mirroring GCP's passthrough NLB). The unresolved TLS-termination fork - check sheet section 9 Q2."
+  description = "`lb` (L7) or `nlb` (L4). The unresolved TLS-termination fork."
   value       = var.load_balancer_type
 }
 

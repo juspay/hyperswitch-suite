@@ -1,4 +1,5 @@
-# hyperswitch - OCI port of application-resources/hyperswitch
+# hyperswitch - KMS, object storage, email, secrets grants and policy
+# statements for the main workload.
 
 variable "compartment_id" {
   description = <<-EOT
@@ -9,7 +10,7 @@ variable "compartment_id" {
     attached to, or a descendant of it: a policy governs only its own
     compartment and that compartment's descendants, so a grant naming a
     compartment outside that subtree is unreachable from where the policy is
-    attached (identity-model.md section 3.4).
+    attached.
   EOT
   type        = string
 
@@ -40,8 +41,7 @@ variable "cluster_ids" {
     OCIDs of every OKE cluster whose workloads these grants authorise. A LIST
     from day one even though dev has exactly one cluster: N clusters means N
     statements, not N policy objects, and `request.principal.cluster_id` is one
-    of the four conditions that make up the entire security boundary
-    (identity-model.md section 5 Option A).
+    of the four conditions that make up the entire security boundary.
 
     Replaces the AWS module's `cluster_service_accounts` map keys. The AWS
     map's VALUES (the service-account list) become `service_accounts` below.
@@ -64,14 +64,13 @@ variable "service_accounts" {
     The (namespace, name) pairs this module's grants authorise.
 
     Defaults to the single pair the real AWS catalog unit manages today:
-    `hyperswitch/hyperswitch-router-role`. Check sheet section 1 corrects
-    identity-model.md section 1.2 on this point - `uas/uas-role` belongs to the
+    `hyperswitch/hyperswitch-router-role`. `uas/uas-role` belongs to the
     separate `uas` module in the `hyperswitch-infra` repo, not here, and
     `hyperswitch-auth-proxy` likewise.
 
     Every grant is rendered across `service_accounts x cluster_ids`, so adding
     a pair here multiplies this module's statement contribution by the number
-    of grants (check sheet section 10). Watch the 50-per-policy-object budget.
+    of grants. Watch the 50-per-policy-object budget.
   EOT
   type = list(object({
     namespace = string
@@ -100,8 +99,7 @@ variable "kms" {
     boolean. OCI's `oci_kms_vault_replication` "only supports virtual private
     vault", which is the dedicated-HSM-partition tier: a standing cost, and
     `vault_type` is NOT updatable in place. So the DR posture has to be chosen
-    before the first apply, per environment, not patched in later (check sheet
-    section 4.1, SUBSTITUTE).
+    before the first apply, per environment, not patched in later.
 
     Deliberately absent, because OCI has no argument to map them onto:
     `aliases`, `key_administrators`, `key_users`, `key_service_users`, and
@@ -178,14 +176,13 @@ variable "email" {
     was centralised operationally in a separate account. That is an AWS
     organisational choice, not a functional requirement, and OCI documents no
     cross-tenancy "borrow someone else's verified sender" pattern anywhere in
-    the Email service. Check sheet section 4.2.
+    the Email service.
 
     `use_existing_domain_id` / `use_existing_sender_id` exist because
-    `decision-engine` sends from the SAME AWS SES role today: check sheet
-    section 4.2 / decision-engine.md section 4.2 recommend ONE shared verified
-    domain across both modules rather than two independent DNS verifications
-    for the same logical sender. That sharing decision is an oracle gate item
-    and is NOT YET CONSULTED, so both paths are buildable from here.
+    `decision-engine` sends from the SAME AWS SES role today: ONE shared verified
+    domain across both modules avoids two independent DNS verifications
+    for the same logical sender, but that sharing decision is not yet
+    reviewed, so both paths are buildable from here.
 
     See `smtp_credential_vault_secret_id` for the identity fallback.
   EOT
@@ -217,7 +214,7 @@ variable "smtp_credential_vault_secret_id" {
     resource principal" - WORKLOAD IDENTITY IS NOT NAMED, and is not explicitly
     excluded either. SMTP submission uses `oci_identity_smtp_credential`, which
     is bound to an IAM USER, capped at two per user, and is exactly the
-    long-lived static credential identity-model.md section 3.1 rejects.
+    long-lived static credential that is rejected by the identity model.
 
     This module builds the WORKLOAD IDENTITY path as primary and unconditional:
     when `email.enabled` is true it emits a `use email-family` grant conditioned
@@ -248,7 +245,7 @@ variable "secrets" {
     Two OCI grants, not one, and the split is not cosmetic:
       GetSecretValue -> `read secret-bundles` (the VALUE)
       DescribeSecret -> `read secrets`        (the METADATA)
-    `read secrets` alone CANNOT read a secret (identity-model.md section 3.5).
+    `read secrets` alone CANNOT read a secret.
 
     `secret_ids` is empty by default, which renders both grants
     compartment-scoped - the same breadth as AWS's `secret:*` ARN wildcard,
@@ -277,11 +274,11 @@ variable "functions" {
     functions it creates, signs or wires event sources for. So the port grants
     `use functions-family` scoped to a compartment and does not attempt to
     reproduce the account-wide management actions - a least-privilege
-    improvement, recorded as such (check sheet section 4.3).
+    improvement.
 
     RESIDUAL RISK, unresolved: if some out-of-band process (a deploy pipeline
     assuming the same role) really does use those account-wide actions,
-    narrowing breaks it silently. Check sheet section 9 Q4 - ask the
+    narrowing breaks it silently. Ask the
     report-generation pipeline's owner before cutover.
 
     `compartment_id` defaults to this module's own compartment. AWS's
@@ -300,10 +297,10 @@ variable "extra_statements" {
     Raw policy statement strings appended to `policy_statements`.
 
     Replaces BOTH `additional_iam_policies` (a map of JSON documents) AND
-    `assume_role` (check sheet feature 9, verdict NONE - OCI has no role object
+    `assume_role` - OCI has no role object
     and no assume operation, so "this workload may additionally assume role X"
     has nothing to port onto; a same-tenancy equivalent is a second parallel
-    statement naming the second principal, which is what this list is for).
+    statement naming the second principal, which is what this list is for.
 
     Write them PRE-NORMALISED (no spaces around `=`, no space after `,`, none
     inside `{}`) and use `in compartment id <ocid>`, never

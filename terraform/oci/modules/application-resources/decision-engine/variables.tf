@@ -1,10 +1,11 @@
-# decision-engine - OCI port of application-resources/decision-engine.
+# decision-engine - a hybrid role-factory surface with a dedicated bucket
+# and SES grants.
 # A hybrid of `superposition`'s generic role-factory surface plus two of
 # hyperswitch's hardcoded feature-flagged policies (its own bucket, and SES).
 # It creates no `oci_identity_policy` - see locals.tf.
 
 variable "compartment_id" {
-  description = "OCID of the compartment this module's resources live in, and the default location term of every statement it renders. Must be in the same subtree as the shared `oke-workload-identity` policy AND as hyperswitch's KMS key (identity-model.md section 3.4)."
+  description = "OCID of the compartment this module's resources live in, and the default location term of every statement it renders. Must be in the same subtree as the shared `oke-workload-identity` policy AND as hyperswitch's KMS key."
   type        = string
 
   validation {
@@ -67,7 +68,7 @@ variable "kms_key_id" {
     Notable: the GCP catalog unit for this module has NO KMS input at all, even
     though the real AWS catalog unit grants one - a fork between what GCP's
     authors expected this module to need and what AWS actually grants. Carried
-    to the gate (check sheet section 1) rather than silently resolved. Null here
+    forward rather than silently resolved. Null here
     means the grant is not emitted.
   EOT
   type        = string
@@ -102,7 +103,7 @@ variable "bucket" {
     an Origin-Access-Control bucket policy to attach to. Unused on AWS today
     (`[]`), so the blast radius is zero - but if a CDN in front of this bucket
     is ever required it is a new architecture decision needing its own oracle
-    gate pass, not a parameter on this module. Check sheet section 4.1.
+    gate pass, not a parameter on this module.
 
     `force_destroy` is likewise absent: `oci_objectstorage_bucket` has no such
     argument and a non-empty bucket cannot be deleted by the resource.
@@ -111,8 +112,7 @@ variable "bucket" {
     <region>` specifically to dodge S3's global name collisions. OCI bucket
     names are unique only within the tenancy's Object Storage namespace, so the
     region suffix buys nothing - but that is a convention choice that should be
-    made once for the whole OCI module set, not per module (check sheet section
-    9 Q3). The default below drops the region suffix; override `bucket_name` to
+    made once for the whole OCI module set, not per module. The default below drops the region suffix; override `bucket_name` to
     keep it.
   EOT
   type = object({
@@ -149,7 +149,7 @@ variable "bucket_noncurrent_version_expiry_days" {
 
     Set to null to emit no rule and drive everything from `bucket.lifecycle_rules`
     instead. Whether 30 days is right on OCI's pricing tiers rather than AWS's
-    is check sheet section 9 Q2, unanswered.
+    is unanswered.
   EOT
   type        = number
   default     = 30
@@ -163,11 +163,10 @@ variable "email" {
 
     THE SHARING QUESTION, LEFT OPEN ON PURPOSE. This module and `hyperswitch`
     use the SAME cross-account SES role today, which means one logical sender.
-    Check sheet section 4.2 recommends ONE shared `oci_email_email_domain` /
+    ONE shared `oci_email_email_domain` /
     `oci_email_sender` pair across both rather than two independent DNS
     verifications of the same domain - duplicated verification work and a second
-    DNS-record burden for no isolation benefit. That is an oracle gate item
-    (section 8 item 2) and is NOT YET CONSULTED, so both paths are buildable:
+    DNS-record burden for no isolation benefit. Not yet decided, so both paths are buildable:
 
       * `use_existing_domain_id` / `use_existing_sender_id` set  -> share
         hyperswitch's, create nothing here. RECOMMENDED, pending the gate.
@@ -177,7 +176,7 @@ variable "email" {
     The identity path is the same unresolved question hyperswitch carries: the
     workload-identity `use email-family` grant is primary and unconditional,
     and whether OCI Email Delivery's HTTPS `SubmitEmail` endpoint honours a
-    workload principal is check sheet hyperswitch.md section 9 Q1.
+    workload principal is likewise unresolved.
   EOT
   type = object({
     enabled                = optional(bool, true)

@@ -1,4 +1,4 @@
-# oke-workload-identity - the OCI port of AWS `eks-iam` (IRSA). On OCI the grant
+# oke-workload-identity - on OCI the grant
 # IS the identity: a single policy statement names the (cluster, namespace,
 # service_account) tuple in its `where all {}` clause. No role, no ARN, no
 # annotation. THIS MODULE OWNS EXACTLY ONE POLICY OBJECT PER ENVIRONMENT.

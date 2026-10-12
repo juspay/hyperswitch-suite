@@ -20,7 +20,7 @@
 #      compute itself: the docker-server host and the `<tenancy-namespace>/`
 #      username prefix (see outputs.tf image_pull_*).
 # Residual risk: a stale or revoked Auth Token breaks every image pull at once,
-# with no IAM-based fallback. Oracle gate item - NOT YET CONSULTED.
+# with no IAM-based fallback.
 data "oci_objectstorage_namespace" "this" {
   count = var.namespace == null ? 1 : 0
 }
@@ -63,7 +63,7 @@ resource "oci_artifacts_container_repository" "this" {
   # calling the Artifacts API to delete by the same count/age rules. THAT
   # AUTOMATION DOES NOT EXIST YET. Until it does the failure mode is a slowly
   # growing storage bill rather than an outage - precisely why it will go
-  # unnoticed. Oracle gate item - NOT YET CONSULTED.
+  # unnoticed.
 
   # Arguments a reader coming from the AWS module will look for and not find,
   # so their absence is not mistaken for an oversight:
@@ -85,7 +85,6 @@ resource "oci_artifacts_container_repository" "this" {
 # different AWS account), a compartment policy is not sufficient: cross-tenancy
 # access needs Define/Endorse/Admit statements at BOTH tenancy roots - a
 # negotiated trust relationship out of this module's scope.
-# Oracle gate item - NOT YET CONSULTED.
 
 resource "oci_identity_policy" "registry_access" {
   count = length(local.registry_statements) > 0 ? 1 : 0

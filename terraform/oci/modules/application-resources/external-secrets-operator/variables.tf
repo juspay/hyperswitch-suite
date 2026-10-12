@@ -1,5 +1,5 @@
-# external-secrets-operator - OCI port of the AWS module of the same name.
-# On AWS this is the smallest useful instance of IRSA; NONE of that survives
+# external-secrets-operator - On AWS this is the smallest useful instance of
+# IRSA; NONE of that survives
 # structurally. There is no role, no ARN, no assume call and NO service-account
 # annotation - on OCI the grant IS the identity. This module renders the
 # statements and emits them as `policy_statements`; it does NOT create an
@@ -50,7 +50,7 @@ variable "cluster_ids" {
 }
 
 variable "k8s_namespace" {
-  description = "Kubernetes namespace the operator runs in. Half of the `sub` claim on AWS (`system:serviceaccount:<ns>:<name>`), a first-class policy condition here. Flattened from `cluster_service_accounts` to a scalar because the live layer has only ever passed one pair - a capability reduction, and an oracle gate item (check sheet section 8 item 5)."
+  description = "Kubernetes namespace the operator runs in. Half of the `sub` claim on AWS (`system:serviceaccount:<ns>:<name>`), a first-class policy condition here. Flattened from `cluster_service_accounts` to a scalar because the live layer has only ever passed one pair."
   type        = string
   default     = "external-secrets-operator"
 }
@@ -75,8 +75,7 @@ variable "vault_id" {
     SecretStore consumes. The grants are compartment-scoped, not vault-scoped.
 
     This introduces a phase-1 `oci-vault` dependency ahead of a phase-3 unit,
-    which is a dependency-phasing change and an oracle gate item (check sheet
-    section 8 item 3), NOT YET CONSULTED.
+    which is a dependency-phasing change that has not yet been reviewed.
   EOT
   type        = string
 
@@ -107,13 +106,12 @@ variable "secret_ids" {
     `scope_to_project`, and its own comments warn that `scope_to_project = false`
     with an empty secret list grants nothing and fails every ExternalSecret with
     a non-obvious error. Here that state is unreachable: there is no way to
-    configure "no access at all". Oracle gate item (check sheet section 8
-    item 6).
+    configure "no access at all".
 
     Cost: per-secret scoping is cheap in statement TEXT and expensive in
     statement COUNT - 2 grants x len(secret_ids) x len(cluster_ids) statements
     against a 50-per-policy-object cap. Above roughly 20 secrets it does not
-    fit. Check sheet open question 3.
+    fit.
   EOT
   type        = list(string)
   default     = []
@@ -130,8 +128,8 @@ variable "create_workload_mapping" {
     mapping this module's namespace to `vault_compartment_id`.
 
     Required ONLY when the vault's compartment lies outside the cluster's own
-    compartment subtree. With identity-model.md section 4's layout - the cluster
-    in `<env>/platform` and the vault in `<env>/data`, both under the
+    compartment subtree. With the layout where the cluster
+    is in `<env>/platform` and the vault in `<env>/data`, both under the
     environment compartment the policy attaches to - it is not needed, and the
     trap is designed out rather than worked around. Hence default false.
 

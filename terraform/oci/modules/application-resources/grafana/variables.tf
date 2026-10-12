@@ -1,4 +1,4 @@
-# grafana - OCI port of application-resources/grafana.
+# grafana - OCI Database-backed dashboards with observability-data grants.
 # 84 AWS variables collapse to roughly 20, the reduction coming from folding
 # database.md's mapping into ONE `database_config` object. It creates no
 # `oci_identity_policy` - see locals.tf.
@@ -30,7 +30,7 @@ variable "region" {
 }
 
 variable "cluster_ids" {
-  description = "OCIDs of every OKE cluster whose workloads these grants authorise. A list from day one - N clusters means N statements, not N policy objects (identity-model.md section 5 Option A)."
+  description = "OCIDs of every OKE cluster whose workloads these grants authorise. A list from day one - N clusters means N statements, not N policy objects."
   type        = list(string)
 
   validation {
@@ -67,10 +67,8 @@ variable "metrics_read_enabled" {
 
     NOTE THE VERB. `read metrics` is METRIC_INSPECT + METRIC_READ. It is NOT
     `use metrics`, which is METRIC_WRITE and is what a PUBLISHER like
-    `otel-collector` needs. identity-model.md section 3.5 documents only the
-    publish side, because publishing was the only direction its covered modules
-    needed; the read verbs were verified while porting this module and are
-    recorded in that document's own header correction.
+    `otel-collector` needs. The publish side is the only direction most modules
+    need; the read verbs were verified while porting this module.
   EOT
   type        = bool
   default     = true
@@ -106,10 +104,8 @@ variable "datasource_api_key_vault_secret_id" {
     two supported authentication modes: Instance Principal (a dynamic group over
     compute instances, plus a tenancy-root policy) and User Principal (a local
     API-key file). NEITHER NAMES WORKLOAD IDENTITY - though both are OCI-Go-SDK
-    based and the SDK has supported it since the versions identity-model.md
-    section 3.2 lists, so whether the binary implements the code path is
-    undocumented rather than known-absent (check sheet section 9 Q1, the single
-    highest-leverage question on that sheet; answerable by reading the
+    based and the SDK has supported workload identity for a long time, so whether the binary implements the code path is
+    undocumented rather than known-absent (answerable by reading the
     auth-provider selection code in github.com/oracle/oci-grafana-metrics).
 
     RANKED OUTCOMES:
@@ -119,8 +115,8 @@ variable "datasource_api_key_vault_secret_id" {
          external-secrets-operator - the same shape `vector`'s Kafka auth token
          and `otel-collector`'s APM data key already take. This variable.
       3. REJECTED: a dedicated dynamic group over Grafana's own node pool. It
-         trades a credential file for instance-principal access, which is the
-         mechanism identity-model.md section 3.3 documents the blast radius of
+trades a credential file for instance-principal access, which is the
+          mechanism whose blast radius is largest
          in detail, for a workload with no functional need to touch anything
          else on that node.
 
@@ -138,7 +134,7 @@ variable "datasource_api_key_vault_secret_id" {
 }
 
 variable "shared_statements" {
-  description = "Statement strings contributed from a shared source. Replaces `customer_managed_policy_arns` / any `aws_managed_policy_names` beyond feature 2's two. Nothing is attachable on OCI (identity-model.md section 3.6). No live caller today."
+  description = "Statement strings contributed from a shared source. Replaces `customer_managed_policy_arns` / any `aws_managed_policy_names`. Nothing is attachable on OCI. No live caller today."
   type        = list(string)
   default     = []
 }
@@ -171,8 +167,7 @@ variable "database_config" {
     TWO THINGS GRAFANA'S OWN CONFIGURATION HAS TO CHANGE BECAUSE OF THIS, and
     neither is a Terraform input:
 
-      1. TLS IS MANDATORY AND CANNOT BE TURNED OFF (check sheet feature 5,
-         verdict NONE; database.md section 4.11). OCI Database with PostgreSQL
+      1. TLS IS MANDATORY AND CANNOT BE TURNED OFF. OCI Database with PostgreSQL
          permits only `hostssl` entries in pg_hba.conf - "non-SSL connections
          are not supported due to regulatory and compliance requirements" - and
          the TLS protocol parameters are read-only. So `GF_DATABASE_SSL_MODE`

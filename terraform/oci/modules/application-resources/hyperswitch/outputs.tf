@@ -9,20 +9,20 @@ output "policy_statements" {
 
     THIS MODULE CREATES NO POLICY OBJECT. `oci_identity_policy.name` is
     tenancy-unique and non-updatable, and one object per app per live root is
-    132 objects against a hard limit of 100 (identity-model.md section 3.7).
+    132 objects against a hard limit of 100.
     Do not wrap this list in a policy resource in the caller either; hand it to
     `oke-workload-identity`, which owns the single object, enforces the
     50-statement cap and re-validates every `where` condition at plan time.
 
-    Read it, do not skim it: this list is the security boundary in full. Check
-    sheet section 10 expects 7 statements per cluster per service account with
+    Read it, do not skim it: this list is the security boundary in full. Expect
+    7 statements per cluster per service account with
     every feature on (6 when `functions.enabled` is false on a passive stack).
   EOT
   value       = local.policy_statements
 }
 
 output "statement_count" {
-  description = "Number of statements this module contributes, against the shared policy object's hard 50-statement ceiling. Check sheet section 10's budget, computed rather than asserted."
+  description = "Number of statements this module contributes, against the shared policy object's hard 50-statement ceiling."
   value       = length(local.policy_statements)
 }
 
@@ -37,7 +37,7 @@ output "kms_vault_id" {
 }
 
 output "kms_vault_type" {
-  description = "DEFAULT or VIRTUAL_PRIVATE. Surfaced because it is NOT updatable in place and because cross-region replication requires VIRTUAL_PRIVATE - a standing dedicated-HSM cost (check sheet section 4.1)."
+  description = "DEFAULT or VIRTUAL_PRIVATE. Surfaced because it is NOT updatable in place and because cross-region replication requires VIRTUAL_PRIVATE - a standing dedicated-HSM cost."
   value       = local.kms_create ? local.vault_type : null
 }
 
@@ -77,7 +77,7 @@ output "file_uploads_bucket_name" {
 }
 
 output "email_domain_id" {
-  description = "OCID of the verified email domain, whether created here or supplied. `decision-engine` should consume THIS rather than verifying a second domain for the same logical sender (decision-engine.md section 4.2) - a sharing decision that is an oracle gate item and is NOT YET CONSULTED."
+  description = "OCID of the verified email domain, whether created here or supplied. `decision-engine` should consume THIS rather than verifying a second domain for the same logical sender - a sharing decision that is not yet reviewed."
   value       = local.email_domain_id
 }
 
@@ -96,10 +96,10 @@ output "email_uses_static_credential_fallback" {
     TRUE means this deployment is NOT sending mail under workload identity.
 
     It flips only when `smtp_credential_vault_secret_id` is set, i.e. when an
-    operator has provisioned an SMTP credential out of band because check sheet
-    section 9 Q1 resolved against workload identity on the HTTPS send path.
+    operator has provisioned an SMTP credential out of band because workload
+    identity was not available on the HTTPS send path.
     That is a long-lived, user-bound, manually-rotated credential and therefore
-    an accepted regression against identity-model.md section 3.1 - surfaced
+    an accepted regression against the identity model - surfaced
     here, in the plan and in every consumer's outputs, precisely so it cannot be
     taken silently.
   EOT

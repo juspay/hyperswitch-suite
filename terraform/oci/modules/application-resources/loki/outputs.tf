@@ -6,7 +6,7 @@ output "policy_statements" {
     `oci_identity_policy` owned by the `oke-workload-identity` unit. Rendered,
     normalised and sorted.
 
-    THIS MODULE CREATES NO POLICY OBJECT (identity-model.md section 3.7). Hand
+    THIS MODULE CREATES NO POLICY OBJECT. Hand
     this list to `oke-workload-identity`; do not wrap it in a policy resource in
     the caller.
 

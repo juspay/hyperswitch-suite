@@ -1,4 +1,4 @@
-# argocd - the OCI port of the AWS module of the same name. The widest identity
+# argocd - the widest identity
 # in the platform after `vector`. Three reads before changing anything:
 #   1. OCI binds ALL N service accounts here (unlike GCP's 1:1), so
 #      `service_accounts` is a list spanning two namespaces.
@@ -45,8 +45,8 @@ variable "service_accounts" {
 
     Statement cost: len(service_accounts) x len(cluster_ids) x len(grants).
     Five accounts and two grants is 10 statements per cluster for this module
-    alone, against a 50-per-object cap. Watch it. If identity-model.md section 9
-    Q5/Q6 resolve in favour of pattern values or nested `any{}`, `argocd/*` and
+    alone, against a 50-per-object cap. Watch it. If pattern-based
+    subjects are resolved in favour of pattern values or nested `any{}`, `argocd/*` and
     `argo-workflows/*` collapse to two statements per grant.
   EOT
   type = list(object({
@@ -79,14 +79,13 @@ variable "target_compartment_ids" {
     A RENAME. On AWS the deploy-target boundary is another ACCOUNT; here the
     default is another COMPARTMENT. Compartment isolation is weaker: a parent
     compartment's administrator has full powers over its children, and there is
-    no SCP-equivalent a parent cannot override. Oracle gate item (check sheet
-    section 8 item 4), NOT YET CONSULTED.
+    no SCP-equivalent a parent cannot override.
 
     A target outside the cluster's own compartment subtree also needs an
     `oci_containerengine_cluster_workload_mapping` - see
     create_workload_mappings.
 
-    OPEN (check sheet question 2): whether GenerateClusterKubeconfig is backed
+    OPEN: whether GenerateClusterKubeconfig is backed
     by a permission inside `use clusters` or only by `manage cluster-family` was
     not read verbatim from the OKE policy reference. If it needs `manage`,
     ArgoCD's grant widens considerably and point 3 in this file's header gets
@@ -102,7 +101,7 @@ variable "target_compartment_ids" {
 }
 
 variable "target_cluster_verb" {
-  description = "Verb granted on `clusters` in each target compartment. `use` is the intended value and the narrowest that covers kubeconfig generation. Exposed only so that check sheet question 2 can be answered by configuration rather than by editing the module; `manage` is a materially wider grant and should be a deliberate, reviewed act."
+  description = "Verb granted on `clusters` in each target compartment. `use` is the intended value and the narrowest that covers kubeconfig generation. Exposed only so this can be answered by configuration rather than by editing the module; `manage` is a materially wider grant and should be a deliberate, reviewed act."
   type        = string
   default     = "use"
 
@@ -152,8 +151,7 @@ variable "cross_tenancy_targets" {
     attached at the MANAGEMENT TENANCY ROOT, with matching `Define` + `Admit`
     in the target tenancy root. Both sides, root compartment only.
 
-    DEFAULTS TO [] AND SHOULD STAY THERE UNTIL check sheet question 1 IS
-    ANSWERED. Oracle documents this exact construction with
+    DEFAULTS TO [] AND SHOULD STAY THERE UNTIL RESOLVED. Oracle documents this exact construction with
     `request.principal.type = 'nodepool'`; whether `'workload'` is an accepted
     value is not documented either way. It is the one unverified link in
     ArgoCD's chain, and the fallback if it does not work is a static API key for
@@ -163,7 +161,7 @@ variable "cross_tenancy_targets" {
 
     Preferred answer, and the reason this defaults empty: keep deploy targets in
     the SAME tenancy in different compartments (`target_compartment_ids`), which
-    is fully supported. Under identity-model.md section 4's layout that covers
+    is fully supported. Under that layout it covers
     dev -> integ -> sandbox with no gap. It does not cover management -> prod,
     which is a tenancy boundary by design.
   EOT

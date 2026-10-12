@@ -1,8 +1,7 @@
-# OCI Cache (Valkey) - the AWS ElastiCache / GCP Memorystore-for-Valkey analogue.
-# Strategy: DIRECT-RESOURCE (no usable provider registry module exists for this
-# service). One OCI resource replaces two AWS ones: there is no
-# aws_elasticache_subnet_group counterpart (subnet_id is an argument on the
-# cluster), and the AWS security group becomes a module-owned, EMPTY
+# OCI Cache (Valkey). DIRECT-RESOURCE: no usable provider registry module
+# exists for this service. One OCI resource replaces two upstream ones: there
+# is no subnet-group resource (subnet_id is an argument on the cluster), and
+# the security group becomes a module-owned, EMPTY
 # oci_core_network_security_group that the security-last phase unit fills in.
 
 # Module-owned network access-control object. Created EMPTY on purpose: the
@@ -19,8 +18,7 @@ resource "oci_core_network_security_group" "this" {
   freeform_tags = local.common_freeform_tags
 }
 
-# Engine parameters. Count-gated and OFF by default: every live AWS unit uses
-# the stock default.valkey8.cluster.on group, so the first cut creates zero.
+# Engine parameters. Count-gated and OFF by default.
 resource "oci_redis_oci_cache_config_set" "main" {
   count = var.create_config_set ? 1 : 0
 
@@ -55,7 +53,7 @@ resource "oci_redis_redis_cluster" "main" {
   compartment_id = var.compartment_id
   display_name   = local.display_name
 
-  # Engine: one field where AWS has engine + engine_version.
+  # Engine version (single field).
   software_version = var.software_version
 
   # Topology. shard_count is only sent when SHARDED; OCI rejects it otherwise.
@@ -71,8 +69,7 @@ resource "oci_redis_redis_cluster" "main" {
 
   oci_cache_config_set_id = local.config_set_id
 
-  # Create-time restore, mutually exclusive. backup_id ~ AWS snapshot_name;
-  # import_from_object_storage ~ AWS snapshot_arns. Neither applies after create.
+  # Create-time restore, mutually exclusive. Neither applies after create.
   backup_id = var.backup_id
 
   dynamic "import_from_object_storage_details" {
@@ -92,8 +89,7 @@ resource "oci_redis_redis_cluster" "main" {
 
   # Arguments deliberately NOT set because they do not exist on this resource
   # (security-relevant divergences, others in variables.tf):
-  #   transit_encryption - TLS is mandatory on with no off switch; the AWS units
-  #     run transit_encryption_enabled = false, which this module cannot replicate.
+  #   transit_encryption - TLS is mandatory on with no off switch.
   #   at_rest_encryption / kms_key - no argument exists and OCI's at-rest
   #     behaviour for this service is undocumented - unverified, not equivalent.
   #   automatic_failover / multi_az - implicit (node_count > 1 = primary +
@@ -147,16 +143,12 @@ resource "oci_redis_redis_cluster" "main" {
 }
 
 # CROSS-REGION GLOBAL REPLICATION: NONE.
-# This is where aws_elasticache_global_replication_group would have been. It is
-# not here because OCI has no cross-region, continuously-replicating cache
-# primitive - not a weaker one, none. The five AWS outputs
-# global_replication_group_{id,arn,name,suffix}, is_primary_cluster and
-# is_secondary_cluster therefore have no counterpart and are NOT emitted.
+# No cross-region, continuously-replicating cache primitive exists on OCI.
 # The documented mitigation is backup -> export to Object Storage -> cross-region
 # replication -> re-import into a NEW cluster: backup/restore DR, not live
 # replication (RPO bounded by backup frequency, RTO includes provisioning a new
-# cluster, nothing promotes automatically). OUT OF SCOPE here and blocked on the
-# oracle gate - only the first link (backup + export trigger) exists below.
+# cluster, nothing promotes automatically). Not implemented here - only the first
+# link (backup + export trigger) exists below.
 
 # Backup. One resource = one backup, not a schedule. Off by default.
 resource "oci_redis_oci_cache_backup" "main" {
@@ -177,8 +169,7 @@ resource "oci_redis_oci_cache_backup" "main" {
   defined_tags  = var.defined_tags
 }
 
-# AUTH. Native multi-user ACLs where AWS has a single auth_token string.
-# Empty by default - AUTH is unset in every live AWS unit reviewed.
+# AUTH. Native multi-user ACLs. Empty by default - AUTH unset.
 resource "oci_redis_oci_cache_user" "main" {
   for_each = var.cache_users
 

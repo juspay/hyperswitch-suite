@@ -13,7 +13,7 @@ output "policy_statements" {
 
     THIS MODULE CREATES NO POLICY OBJECT (`oci_identity_policy.name` is
     tenancy-unique and non-updatable; per-app objects are unbuildable at this
-    footprint - identity-model.md section 3.7). Hand this list to
+    footprint). Hand this list to
     `oke-workload-identity`; do not wrap it in a policy resource in the caller.
 
     Expect ONE statement per cluster per service account - the `use keys` grant

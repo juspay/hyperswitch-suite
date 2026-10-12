@@ -16,7 +16,7 @@ output "repository_names" {
 }
 
 output "repository_urls" {
-  description = "Map of repository key to full pull path: <ocir-endpoint>/<tenancy-namespace>/<repository>. Note the compartment does NOT appear here (check sheet feature 2)."
+  description = "Map of repository key to full pull path: <ocir-endpoint>/<tenancy-namespace>/<repository>. Note the compartment does NOT appear here."
   value       = { for k, v in oci_artifacts_container_repository.this : k => "${local.registry_url}/${v.display_name}" }
 }
 

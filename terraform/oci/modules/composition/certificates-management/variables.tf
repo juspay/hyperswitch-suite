@@ -1,5 +1,5 @@
 variable "compartment_id" {
-  description = "OCID of the compartment that holds the certificates and, if created here, the root CA. OCI's analogue of the GCP module's project_id; the compartment layout itself is owned by docs/multi-cloud-parity/oci/identity-model.md, this module only consumes the id it is given."
+  description = "OCID of the compartment that holds the certificates and, if created here, the root CA. This module only consumes the id it is given."
   type        = string
 
   validation {
@@ -37,12 +37,10 @@ variable "certificates" {
     the AWS module's `certificates` map so the two are readable side by side
     (`internal-alb`, `envoy-alb`, ...).
 
-    Structurally different from AWS's in two ways, both forced by the target
-    cloud, both recorded in docs/multi-cloud-parity/oci/modules/acm.md:
+Structurally different in two ways, both forced by the target cloud:
 
-      1. All DNS/validation plumbing is GONE. AWS carries `zone_id`,
-         `create_route53_records` and `validation_record_fqdns` because ACM
-         proves domain ownership via a DNS-01-style challenge. OCI has no
+      1. All DNS/validation plumbing is GONE. ACM proves domain ownership via
+         a DNS-01-style challenge. OCI has no
          public issuance path, so there is no ownership proof to automate:
          a private-CA certificate needs none (you already own the
          compartment), and an IMPORTED certificate's challenge - if the
@@ -54,8 +52,7 @@ variable "certificates" {
       2. An issuer axis is NEW. Each entry must declare `config_type` and,
          for the public-facing case, `trust_domain = "public"`.
 
-    `trust_domain` is not cosmetic. acm.md section 4 names it as the residual
-    risk with the largest blast radius on this whole port: shipping a
+    `trust_domain` is not cosmetic. Shipping a
     private-CA certificate on the internet-facing listener is a hard TLS
     failure for every external merchant, not a warning banner. The validation
     below makes that combination un-applyable.
@@ -116,7 +113,7 @@ variable "certificates" {
         c.config_type
       )
     ])
-    error_message = "certificates[*].config_type must be one of ISSUED_BY_INTERNAL_CA, MANAGED_EXTERNALLY_ISSUED_BY_INTERNAL_CA, IMPORTED. There is no publicly-issued option on OCI - see docs/multi-cloud-parity/oci/modules/acm.md section 4."
+    error_message = "certificates[*].config_type must be one of ISSUED_BY_INTERNAL_CA, MANAGED_EXTERNALLY_ISSUED_BY_INTERNAL_CA, IMPORTED. There is no publicly-issued option on OCI."
   }
 
   validation {
@@ -163,7 +160,7 @@ variable "certificates" {
       for k, c in var.certificates : c.renewal_interval == null && c.advance_renewal_period == null
       if c.config_type == "IMPORTED"
     ])
-    error_message = "certificates[*].renewal_interval / advance_renewal_period cannot be set when config_type = IMPORTED. Oracle has no issuer relationship to renew against, so certificate_rules has no effect on an imported certificate. Renewal for imported certificates is a self-managed automation - see docs/multi-cloud-parity/oci/modules/acm.md gap on feature 4."
+    error_message = "certificates[*].renewal_interval / advance_renewal_period cannot be set when config_type = IMPORTED. Oracle has no issuer relationship to renew against, so certificate_rules has no effect on an imported certificate. Renewal for imported certificates is a self-managed automation."
   }
 }
 
@@ -171,7 +168,7 @@ variable "certificates" {
 # Oracle issues. create_root_ca = true -> this module owns a CA; else set
 # default_issuer_ca_id to a shared, separately-owned CA. Neither is imposed.
 variable "create_root_ca" {
-  description = "Create a root certificate authority in this module. Leave false and set default_issuer_ca_id when the platform stands up one shared CA elsewhere. Oracle-gate item 2 in docs/multi-cloud-parity/oci/modules/acm.md - not yet consulted, so neither shape is the default-by-fiat."
+  description = "Create a root certificate authority in this module. Leave false and set default_issuer_ca_id when the platform stands up one shared CA elsewhere."
   type        = bool
   default     = false
 }
@@ -195,7 +192,7 @@ variable "root_ca_common_name" {
 }
 
 variable "root_ca_kms_key_id" {
-  description = "OCID of the Vault (KMS) asymmetric key that backs the root CA's private key. REQUIRED by oci_certificates_management_certificate_authority - there is no Oracle-managed-key shortcut, so a Vault must exist before any CA can be created. This is a real prerequisite the AWS module never had; acm.md open question 3 asks whether Vault is available in ap-mumbai-1."
+  description = "OCID of the Vault (KMS) asymmetric key that backs the root CA's private key. REQUIRED by oci_certificates_management_certificate_authority - there is no Oracle-managed-key shortcut, so a Vault must exist before any CA can be created."
   type        = string
   default     = null
 }
@@ -236,7 +233,7 @@ variable "root_ca_crl_object_storage" {
 }
 
 variable "certificate_create_timeout" {
-  description = "Terraform resource timeout for certificate create/update. The SUBSTITUTE for AWS's wait_for_validation / validation_timeout pair (acm.md feature 10) - OCI has no validation step, so a generic timeout is the only lifecycle control available. 20m is the provider default."
+  description = "Terraform resource timeout for certificate create/update. OCI has no validation step, so a generic timeout is the only lifecycle control available. 20m is the provider default."
   type        = string
   default     = "20m"
 }

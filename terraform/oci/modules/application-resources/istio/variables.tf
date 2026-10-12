@@ -1,4 +1,4 @@
-# istio - OCI port of application-resources/istio.
+# istio - gateway on OKE behind the OCI Cloud Controller Manager.
 # The only module in this batch with no cloud identity - it emits an empty
 # `policy_statements` list. The headline change: `alb-controller` disappears as
 # a concept. Every OKE cluster already runs the OCI Cloud Controller Manager;
@@ -118,9 +118,7 @@ variable "istio_gateway" {
     It restricts configuration to Oracle-"approved" key/value pairs,
     auto-upgrades istiod and the gateway on Oracle's schedule, and is mutually
     exclusive with a standalone Helm install. Direct Helm matches both the AWS
-    and GCP precedents exactly and keeps version and values control. Check sheet
-    section 8 item 4 - a genuine architecture fork, oracle gate NOT YET
-    CONSULTED.
+    and GCP precedents exactly and keeps version and values control.
   EOT
   type = object({
     enabled       = optional(bool, true)
@@ -144,10 +142,9 @@ variable "load_balancer_type" {
     Istio's own Gateway resource and SDS. Both work; they disagree.
 
     `lb` is the default here because it is the shape this stack already
-    operates, and because it keeps certificate lifecycle in one place - whatever
-    `acm.md`'s self-managed-ACME or private-CA path produces, fed into a single
-    Kubernetes Secret - rather than inside the mesh's SDS machinery. Check sheet
-    section 9 Q2 and section 8 item 5, oracle gate NOT YET CONSULTED.
+    operates, and because it keeps certificate lifecycle in one place - a
+    self-managed-ACME or private-CA path feeds a single
+    Kubernetes Secret - rather than inside the mesh's SDS machinery.
   EOT
   type        = string
   default     = "lb"
@@ -164,11 +161,11 @@ variable "tls_secret_ref" {
     certificate, rendered into
     `service.beta.kubernetes.io/oci-load-balancer-tls-secret`.
 
-    NEW, with no AWS counterpart, and this is where `acm.md`'s certificate-trust
+    NEW, with no AWS counterpart, and this is where the certificate-trust
     gap actually lands for this module. AWS's ALB references an ACM certificate
     by ARN; the OCI CCM references a KUBERNETES SECRET, not a
     Certificates-Management OCID - a different attachment mechanism from the
-    OCID-reference pattern `load-balancer.md` established for a STANDALONE
+    OCID-reference pattern established for a STANDALONE
     `oci_load_balancer_load_balancer`, because that is a different resource.
 
     Only meaningful when `load_balancer_type = "lb"`. Null leaves TLS to be
@@ -235,13 +232,12 @@ variable "external_traffic_policy" {
     NodePorts, not pod IPs, and its default health check verifies that a NODE can
     proxy for the Service (kube-proxy's endpoint on 10256) rather than that a
     gateway POD is ready - coarser than AWS's ALB, which health-checks
-    `/healthz/ready` on 15021 against the pods directly (check sheet section 4.2,
-    PARTIAL). `Local` changes the health-check target to a per-node
+    `/healthz/ready` on 15021 against the pods directly. `Local` changes the health-check target to a per-node
     pod-presence check and preserves the client source IP, at the cost of
     uneven traffic distribution.
 
     Neither the AWS nor the GCP module sets this explicitly, so neither is a
-    precedent. Check sheet section 9 Q3, unresolved; null leaves the chart's own
+    precedent; null leaves the chart's own
     default alone rather than asserting one.
   EOT
   type        = string

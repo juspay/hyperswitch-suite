@@ -1,7 +1,7 @@
 # Identity and placement.
 
 variable "compartment_id" {
-  description = "OCID of the compartment every resource in this module is created in. Replaces the implicit AWS account scope; a flat compartment is the deliberate first-cut simplification (prerequisite P5, oci/identity-model.md)."
+  description = "OCID of the compartment every resource in this module is created in. A flat compartment is the deliberate first-cut simplification."
   type        = string
 }
 
@@ -72,8 +72,7 @@ variable "create_nsg" {
   description = <<-EOT
     Whether this module creates its own Network Security Groups.
 
-    NSGs, never security lists - the binding decision in
-    oci/network-security-model.md section 5 (Option A). Created EMPTY: the
+    NSGs, never security lists. Created EMPTY: the
     security-rules unit, in the last stack phase, writes the rules by reading
     nsg_id / nlb_nsg_id from this module's outputs. Do not add
     oci_core_network_security_group_security_rule to this module.
@@ -141,7 +140,7 @@ variable "boot_volume_size_in_gbs" {
 }
 
 variable "boot_volume_kms_key_id" {
-  description = "Customer-managed KMS key for the boot volume. Null uses Oracle-managed encryption, the documented default and the mapping for the AWS launch template's hardcoded ebs.encrypted = true. Default-encrypted behaviour is Tier 2 pending confirmation (check sheet open question)."
+  description = "Customer-managed KMS key for the boot volume. Null uses Oracle-managed encryption. Default-encrypted behaviour is Tier 2 pending confirmation."
   type        = string
   default     = null
 }
@@ -156,9 +155,8 @@ variable "is_preemptible" {
   description = <<-EOT
     Run the pool on preemptible capacity.
 
-    PARTIAL - check sheet feature 5. AWS's mixed_instances_policy blends
-    on-demand and spot inside ONE scaling group with an allocation strategy. An
-    OCI pool is homogeneous: one instance configuration, one capacity type. So
+    A port's mixed-instance blend is not expressible here: an OCI pool is
+    homogeneous, one instance configuration, one capacity type. So
     this is an all-or-nothing switch on the whole fleet, and a cost-optimized
     blend needs a SECOND instantiation of this module with a statically chosen
     size - there is no dynamic, capacity-aware allocation strategy to replace
@@ -207,12 +205,9 @@ variable "scaling_policies" {
   description = <<-EOT
     Autoscaling configuration.
 
-    SUBSTITUTE - check sheet feature 4, identical finding to envoy-proxy's
-    feature 8 and deliberately implemented identically here so the two modules
-    do not drift. AWS uses TargetTrackingScaling: state one target utilization
-    and a managed controller converges on it. OCI's autoscaling configuration
-    supports only `threshold` (alarm-crossing, fixed instance-count delta) and
-    `scheduled` (Quartz cron). There is no target-tracking controller.
+    OCI's autoscaling configuration supports only `threshold` (alarm-crossing,
+    fixed instance-count delta) and `scheduled` (Quartz cron). There is no
+    target-tracking controller.
 
     target_value is kept as the input shape and locals.tf translates each
     enabled signal into a PAIR of threshold rules with a deadband
@@ -224,8 +219,6 @@ variable "scaling_policies" {
     the image - the CloudWatch agent's counterpart, and the same precondition
     the AWS module's memory policy already carries. Without a working Oracle
     Cloud Agent the metric never arrives and the policy is a silent no-op.
-
-    NOT ORACLE-GATED (framework §4.1, check sheet §8 item 2).
   EOT
   type = object({
     cool_down_in_seconds = optional(number, 300)
@@ -280,21 +273,17 @@ variable "enable_pre_termination_hook" {
     Enables the instance pool's lifecycle_management pre_termination hook - a
     grace window before an instance is torn down.
 
-    This is the closest thing OCI has to AWS's `instance_refresh`, and it is
-    NOT close (PARTIAL - check sheet feature 6). AWS declares a whole staged
-    rollout in one block: min_healthy_percentage, checkpoint_percentages,
-    checkpoint_delay, all health-gated and orchestrated by the service. OCI's
-    instance pool has no equivalent at all; this hook only softens an
-    individual instance's termination. A staged, health-gated rollout on OCI is
-    scripted replacement (terminate N, let the pool self-heal from the current
-    instance configuration, wait for backend-set health, repeat) living OUTSIDE
-    Terraform's plan/apply cycle.
+    This is the closest thing OCI has to an instance-refresh hook, and it is
+    NOT close. OCI's instance pool has no staged rollout equivalent at all;
+    this hook only softens an individual instance's termination. A staged,
+    health-gated rollout on OCI is scripted replacement (terminate N, let the
+    pool self-heal from the current instance configuration, wait for
+    backend-set health, repeat) living OUTSIDE Terraform's plan/apply cycle.
 
     That matters more here than on envoy-proxy: a botched rollout on the EGRESS
     path can silently break outbound payment-processor calls until a specific
     downstream integration is exercised, where an ingress mistake is visible
-    immediately. Where the replacement script lives is itself an oracle-gate
-    item (check sheet §8 item 3, not consulted).
+    immediately.
   EOT
   type        = bool
   default     = false
@@ -395,7 +384,7 @@ variable "tcp_idle_timeout" {
 
 variable "tls_termination_mode" {
   description = <<-EOT
-    How the encrypted proxy path is provided. NONE - check sheet feature 3.
+    How the encrypted proxy path is provided. No TLS termination here.
 
     OCI's Network Load Balancer CANNOT TERMINATE TLS AT ALL. This is not a
     partial-feature gap: oci_network_load_balancer_network_load_balancer's
@@ -428,10 +417,9 @@ variable "tls_termination_mode" {
     half-implemented. It is a genuine architecture fork for this module - a
     different load-balancer product, different backend-set resource, different
     health-checker shape and a source-IP behaviour change that Squid's access
-    log and any downstream IP allowlisting depend on. Check sheet §8 item 1
-    routes exactly this choice to the oracle gate, and the gate has NOT been
-    consulted. Shipping an ungated fork silently is the failure mode the gate
-    exists to prevent; failing the plan with this message is not.
+    log and any downstream IP allowlisting depend on, and it has not been
+    reviewed. Shipping it silently is the failure mode; failing the plan with
+    this message is not.
   EOT
   type        = string
   default     = "none"
@@ -443,7 +431,7 @@ variable "tls_termination_mode" {
 
   validation {
     condition     = var.tls_termination_mode != "classic_lb"
-    error_message = "tls_termination_mode = \"classic_lb\" is not implemented. Moving squid-proxy from the Network Load Balancer to the classic Load Balancer is an architecture fork (it trades away L3/L4 passthrough and source-IP preservation) and is an oracle-gate decision under framework §4.1 - see docs/multi-cloud-parity/oci/modules/squid-proxy.md §4 and §8 item 1. The gate has not been consulted. Use \"instance\" for on-node TLS, or \"none\"."
+    error_message = "tls_termination_mode = \"classic_lb\" is not implemented. Moving squid-proxy from the Network Load Balancer to the classic Load Balancer is an architecture fork (it trades away L3/L4 passthrough and source-IP preservation) and is not reviewed. Use \"instance\" for on-node TLS, or \"none\"."
   }
 }
 
@@ -472,7 +460,7 @@ variable "squid_allowlist_content" {
     Contents of allowedlist.txt - the domain allowlist every outbound call from
     the platform is checked against.
 
-    FULL parity (check sheet feature 8), and the one feature in this module
+    Fully parity-shaped, and the one feature in this module
     whose whole point is that changing it does NOT replace an instance: the
     image's 15-minute timer refetches this object and runs
     `squid -k reconfigure`. Changing this variable is a config push, not a
@@ -549,7 +537,6 @@ variable "generate_ssh_key" {
     Whether to generate a break-glass SSH keypair, inject the public half and
     store the private half in OCI Vault.
 
-    SUBSTITUTE - check sheet feature 11, identical to envoy-proxy's feature 13.
     Every oci_vault_secret requires BOTH a vault_id and a KMS key_id; SSM
     Parameter Store's free Standard-tier String type has no counterpart. When
     either is null the key is still generated and injected but nothing is

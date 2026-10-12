@@ -2,7 +2,6 @@ terraform {
   required_version = ">= 1.5.0"
 
   required_providers {
-    # Resources and their verified doc IDs are listed in the check sheet.
     oci = {
       source  = "oracle/oci"
       version = "~> 9.0"

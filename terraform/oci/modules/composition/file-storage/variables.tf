@@ -78,11 +78,11 @@ variable "mount_target_subnet_id" {
   default     = null
 }
 
-# This module owns the mount target NSG (deviation from the check sheet's
-# accept-pre-existing-NSGs proposal): vpc-network strips the VCN default
-# security list to zero rules, so an NSG-less mount target is unreachable and
-# every NFS mount fails. The NSG is created EMPTY - an empty NSG denies
-# everything, so the failure direction is safe.
+# This module owns the mount target NSG (rather than accepting a pre-existing
+# one): vpc-network strips the VCN default security list to zero rules, so an
+# NSG-less mount target is unreachable and every NFS mount fails. The NSG is
+# created EMPTY - an empty NSG denies everything, so the failure direction is
+# safe.
 
 variable "create_nsg" {
   description = "Create an empty NSG for the mount target for security-rules to populate. Requires vcn_id. An empty NSG denies all traffic, so nothing can mount until security-rules adds NFS rules - that is deliberate."
@@ -114,7 +114,7 @@ variable "mount_target_display_name" {
 }
 
 variable "mount_target_hostname_label" {
-  description = "DNS hostname label for the mount target, giving it an FQDN inside the VCN. Optional on OCI, unlike AWS where every mount target always has a DNS name (check sheet output mapping)."
+  description = "DNS hostname label for the mount target, giving it an FQDN inside the VCN. Optional on OCI."
   type        = string
   default     = null
 }

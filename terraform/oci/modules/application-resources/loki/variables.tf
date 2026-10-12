@@ -1,4 +1,5 @@
-# loki - OCI port of application-resources/loki.
+# loki - chunk bucket, the identity that reads and writes it, and an ingress
+# boundary for the query path.
 # The narrowest module in the observability trio: one cluster, one namespace,
 # one service account, one grant. It creates no `oci_identity_policy` - see locals.tf.
 
@@ -29,7 +30,7 @@ variable "region" {
 }
 
 variable "cluster_ids" {
-  description = "OCIDs of every OKE cluster whose workloads this grant authorises. A list from day one - N clusters means N statements, not N policy objects (identity-model.md section 5 Option A)."
+  description = "OCIDs of every OKE cluster whose workloads this grant authorises. A list from day one - N clusters means N statements, not N policy objects."
   type        = list(string)
 
   validation {
@@ -75,10 +76,9 @@ variable "bucket_lifecycle_expiry_days" {
     `time_unit = "DAYS"`) - a SEPARATE resource on OCI rather than an inline
     block on the bucket.
 
-    365 is the value in the ONE live unit this port's check sheet read. Whether
+    365 is the value in the ONE live unit. Whether
     sandbox and prod use the same figure was not confirmed; if they differ, this
-    belongs in stack `values` rather than being taken as a constant (check sheet
-    section 9 Q3). Null emits no lifecycle policy.
+    belongs in stack `values` rather than being taken as a constant. Null emits no lifecycle policy.
   EOT
   type        = number
   default     = 365
@@ -127,9 +127,8 @@ variable "shared_statements" {
   description = <<-EOT
     Statement strings contributed from a shared source, appended to
     `policy_statements`. Replaces `customer_managed_policy_arns` /
-    `aws_managed_policy_names` (check sheet feature 2, SUBSTITUTE - nothing is
-    attachable on OCI; `shared-policy` becomes a statement-text factory,
-    identity-model.md section 3.6).
+    `aws_managed_policy_names` (nothing is
+    attachable on OCI; `shared-policy` becomes a statement-text factory).
 
     NO LIVE CALLER. The one catalog unit reviewed sets neither AWS variable.
     Present for parity, and recorded so a future caller does not assume AWS's

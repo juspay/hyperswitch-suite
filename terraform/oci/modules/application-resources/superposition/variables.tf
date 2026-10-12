@@ -1,5 +1,4 @@
-# superposition - the OCI port of application-resources/superposition.
-# The AWS module is a generic ROLE FACTORY; all three permission surfaces
+# superposition - a generic ROLE FACTORY whose three permission surfaces
 # (managed / customer-managed / inline) collapse into `extra_statements` here,
 # because OCI grants only via authored statements. With create_database=true it
 # instantiates composition/database inline. THIS MODULE CREATES NO
@@ -19,8 +18,7 @@ variable "compartment_id" {
     module's only live grant reaches that key: a policy in a sibling
     compartment cannot refer to it, and a cross-subtree grant would need an
     `oci_containerengine_cluster_workload_mapping` - which is namespace-granular
-    only and therefore strictly coarser than the service-account condition
-    (identity-model.md section 3.4).
+    only and therefore strictly coarser than the service-account condition.
   EOT
   type        = string
 
@@ -47,7 +45,7 @@ variable "region" {
 }
 
 variable "cluster_ids" {
-  description = "OCIDs of every OKE cluster whose workloads these grants authorise. A list from day one - N clusters means N statements, not N policy objects (identity-model.md section 5)."
+  description = "OCIDs of every OKE cluster whose workloads these grants authorise. A list from day one - N clusters means N statements, not N policy objects."
   type        = list(string)
 
   validation {
@@ -95,9 +93,8 @@ variable "kms_key_id" {
     permission at all: it routes encryption through the database layer's own
     CMEK and has no `google_kms_crypto_key_iam_member` anywhere. AWS keeps the
     app-level grant. Neither is obviously the target, and OCI Database with
-    PostgreSQL has no CMEK support at all (database.md section 4.9), which
-    weakens the case for following GCP. Check sheet section 8 item 2 / section 9
-    Q1, oracle gate NOT YET CONSULTED. Null here means the grant is not emitted.
+    PostgreSQL has no CMEK support at all, which
+    weakens the case for following GCP. Null here means the grant is not emitted.
   EOT
   type        = string
   default     = null
@@ -115,7 +112,7 @@ variable "extra_statements" {
       * `customer_managed_policy_arns`  - feature 4, verdict SUBSTITUTE. This is
         the `shared-policy` consumer contract; on OCI `shared-policy` becomes a
         statement-text factory, so what flows in here is strings rather than
-        ARNs (identity-model.md section 3.6).
+        ARNs.
       * `inline_policies`               - feature 5's generic half.
 
     Nothing is lost in capability; what is lost is attach-by-well-known-name.
@@ -141,9 +138,7 @@ variable "create_database" {
     Live AWS behaviour, carried across unchanged: true everywhere except
     `sandbox`, which points at a shared instance out of band.
 
-    The database half is NOT re-derived here. See
-    docs/multi-cloud-parity/oci/modules/database.md (24 features: 9 FULL /
-    8 PARTIAL / 2 SUBSTITUTE / 5 NONE) and data-tier-strategy.md. Four things
+    The database half is NOT re-derived here. Four things
     diverge from Aurora in ways the inputs do not show: TLS is mandatory,
     ap-mumbai-1 has one availability domain, cross-region DR has a 300 s RPO
     floor with manual failover, and restore is forfeited while that DR is on.

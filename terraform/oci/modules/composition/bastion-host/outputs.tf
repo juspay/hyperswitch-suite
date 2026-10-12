@@ -32,8 +32,6 @@ output "bastion_private_endpoint_ip" {
     into this module's nsg_id. Without it every session type fails, and with a
     connectivity error rather than an exposure - NSG rules are allow-only, so
     the failure direction is safe but the debug cycle is wasted.
-
-    Check sheet §3 item 8 / §4 "#8 - Security group".
   EOT
   value       = local.bastion_private_endpoint_ip
 }
@@ -74,7 +72,7 @@ output "connection_guide" {
 }
 
 output "migration_mode_status" {
-  description = "Whether migration mode was CONFIGURED on - recomputed from the variable, not derived from a resource, because OCI Run Command has no Terraform resource in oracle/oci 9.0.0. It therefore cannot tell you whether the grant is live, only what this configuration asked for. PARTIAL, check sheet feature 10."
+  description = "Whether migration mode was CONFIGURED on - recomputed from the variable, not derived from a resource, because OCI Run Command has no Terraform resource in oracle/oci 9.0.0. It therefore cannot tell you whether the grant is live, only what this configuration asked for."
   value       = local.migration_mode_status
 }
 

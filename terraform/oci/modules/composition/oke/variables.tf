@@ -76,10 +76,10 @@ variable "cluster_type" {
 
   # Restricted to "enhanced" on purpose: "basic" silently removes Workload
   # Identity and breaks all twelve identity-bearing application modules with no
-  # plan-time signal. Relaxing this is an oracle-gate change, not a per-env knob.
+  # plan-time signal. Relaxing this is a reviewed change, not a per-env knob.
   validation {
     condition     = lower(var.cluster_type) == "enhanced"
-    error_message = "cluster_type must be 'enhanced'. OKE Workload Identity - the IRSA equivalent every application module in this programme is written against (docs/multi-cloud-parity/oci/identity-model.md) - is available on enhanced clusters only. Oracle, verbatim: \"You can only use workload identities to grant access to OCI resources when using enhanced clusters.\""
+    error_message = "cluster_type must be 'enhanced'. OKE Workload Identity is available on enhanced clusters only. Oracle, verbatim: \"You can only use workload identities to grant access to OCI resources when using enhanced clusters.\""
   }
 }
 
@@ -410,18 +410,18 @@ variable "allow_worker_ssh_access" {
 # named-but-unimplemented inputs so the gap stays visible rather than silently
 # dropped; the validation makes turning it on a hard error.
 variable "create_cross_account_admin_access" {
-  description = "PENDING ORACLE GATE - not implemented. Placeholder for AWS feature 5 (cross-account cluster administration by ArgoCD/Atlantis). Setting this true is a hard error until eks.md gap 4.3 is decided."
+  description = "Not implemented. Placeholder for cross-account cluster administration by ArgoCD/Atlantis. Setting this true is a hard error until the replacement (OIDC federation or a same-tenancy dynamic group) is chosen."
   type        = bool
   default     = false
 
   validation {
     condition     = var.create_cross_account_admin_access == false
-    error_message = "create_cross_account_admin_access is not implemented. AWS's cross-account IAM role (feature 5) has no OCI counterpart; the replacement is an oracle-gate decision between OIDC federation (oidc_token_authentication_config) and a same-tenancy dynamic group, and depends on whether ArgoCD/Atlantis relocate to OCI. See docs/multi-cloud-parity/oci/modules/eks.md gap 4.3 and section 8 item 3."
+    error_message = "create_cross_account_admin_access is not implemented. The replacement is a decision between OIDC federation (oidc_token_authentication_config) and a same-tenancy dynamic group, and depends on whether ArgoCD/Atlantis relocate to OCI."
   }
 }
 
 variable "cross_account_admin_principals" {
-  description = "PENDING ORACLE GATE - not implemented. Placeholder for the principals AWS's cross_account_assume_role_policy trusts."
+  description = "Not implemented. Placeholder for the principals a cross-account admin policy would trust."
   type        = list(string)
   default     = []
 }

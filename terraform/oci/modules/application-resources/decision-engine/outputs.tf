@@ -6,14 +6,14 @@ output "policy_statements" {
     `oci_identity_policy` owned by the `oke-workload-identity` unit. Rendered,
     normalised and sorted.
 
-    THIS MODULE CREATES NO POLICY OBJECT (identity-model.md section 3.7 - `name`
+    THIS MODULE CREATES NO POLICY OBJECT (`name`
     is tenancy-unique and non-updatable, and per-app objects exceed the hard
     100-object tenancy limit at this footprint). Hand this list to
     `oke-workload-identity`.
 
     Expect 3 statements per cluster per service account with everything on:
     `use keys` on hyperswitch's key, `manage objects` on this module's bucket,
-    `use email-family`. identity-model.md section 1.2 estimated 2 - it missed
+    `use email-family`. An older estimate missed
     the KMS grant the real catalog unit has.
   EOT
   value       = local.policy_statements
@@ -60,7 +60,7 @@ output "email_sender_id" {
 }
 
 output "email_domain_is_shared" {
-  description = "True when this module consumes hyperswitch's verified domain rather than owning one. The recommended posture: both modules send as the same logical sender today, so two verified domains would be duplicated DNS verification for no isolation benefit (check sheet section 4.2). Oracle gate item, not yet consulted."
+  description = "True when this module consumes hyperswitch's verified domain rather than owning one. The recommended posture: both modules send as the same logical sender today, so two verified domains would be duplicated DNS verification for no isolation benefit."
   value       = local.email_enabled && !local.email_create
 }
 

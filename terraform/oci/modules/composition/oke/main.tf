@@ -50,8 +50,8 @@ module "oke" {
   # during cutover.
   oidc_discovery_enabled = var.oidc_discovery_enabled
 
-  # PENDING ORACLE GATE: OIDC token authentication. Left off until the
-  # cross-tenancy CI/CD decision lands.
+  # OIDC token authentication left off until the cross-tenancy CI/CD decision
+  # lands.
   oidc_token_auth_enabled = false
 
   control_plane_is_public           = var.control_plane_is_public
@@ -130,7 +130,7 @@ module "oke" {
   # Each of these would have the composition layer run Helm; ArgoCD is its own
   # module and everything else belongs to oke-kubernetes-resources or the app
   # units. cluster_autoscaler_install and karpenter_install are additionally
-  # blocked on an oracle gate for the min/max gap.
+  # blocked pending a decision on the min/max gap.
   argocd_install              = false
   prometheus_install          = false
   gatekeeper_install          = false

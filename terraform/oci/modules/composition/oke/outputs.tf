@@ -201,6 +201,6 @@ output "node_ssh_public_key" {
 #   eks_managed_node_groups_iam_role_arn/_name
 #                                -> feature 17: node permissions come from a
 #                                   dynamic group in the IAM bootstrap.
-#   cross_account_role_arn/_name -> feature 5: pending oracle gate. Deliberately
+#   cross_account_role_arn/_name -> feature 5: pending decision. Deliberately
 #                                   not exported as null, so a consumer wiring
 #                                   it up fails loudly at plan time.

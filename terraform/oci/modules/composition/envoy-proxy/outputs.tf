@@ -81,7 +81,7 @@ output "logs_bucket_name" {
 }
 
 output "object_storage_namespace" {
-  description = "Object Storage namespace both buckets live in. No AWS counterpart - S3 has no namespace concept - but every consumer that fetches a config object needs it."
+  description = "Object Storage namespace both buckets live in. Every consumer that fetches a config object needs it."
   value       = local.namespace
 }
 

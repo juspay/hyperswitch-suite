@@ -1,7 +1,5 @@
-# Output contract. Names follow the OCI concept rather than the AWS one; each
-# output's description says which AWS output it answers for. The AWS
-# global_replication_group_* / is_*_cluster outputs are NOT emitted - there is
-# no corresponding OCI primitive (see the NONE block in main.tf).
+# Output contract. Names follow the OCI concept; the global cluster outputs are
+# NOT emitted - there is no corresponding OCI primitive (see main.tf).
 
 output "cluster_id" {
   description = "OCID of the OCI Cache cluster. Answers for both AWS replication_group_id and replication_group_arn - OCI has no separate ARN concept, the OCID is the globally unique identifier."
@@ -14,7 +12,7 @@ output "display_name" {
 }
 
 output "state" {
-  description = "Lifecycle state of the cluster (e.g. ACTIVE). No AWS counterpart output, but it is the field to check before a consumer treats the cache as usable."
+  description = "Lifecycle state of the cluster (e.g. ACTIVE). The field to check before a consumer treats the cache as usable."
   value       = oci_redis_redis_cluster.main.state
 }
 
@@ -134,17 +132,16 @@ output "oci_cache_config_set_id" {
 }
 
 output "backup_id" {
-  description = "OCID of the module-created backup, or null when create_backup is false (the default). One backup, not a schedule - see check sheet feature 10."
+  description = "OCID of the module-created backup, or null when create_backup is false (the default). One backup, not a schedule."
   value       = one(oci_redis_oci_cache_backup.main[*].id)
 }
 
 output "cache_user_ids" {
-  description = "Map of cache user name -> OCID for users this module created and attached. Empty by default. No AWS counterpart output; the AWS module exposes no user identifiers at all."
+  description = "Map of cache user name -> OCID for users this module created and attached. Empty by default."
   value       = { for k, u in oci_redis_oci_cache_user.main : k => u.id }
 }
 
-# Deliberately NOT emitted: global_replication_group_id/_arn/_name/_suffix,
-# is_primary_cluster, is_secondary_cluster. There is no OCI primitive behind
-# them; emitting nulls named after an AWS DR construct would let a consumer
-# wire up a passive-region pattern that cannot work here. See the NONE block in
-# main.tf.
+# Deliberately NOT emitted: global_replication_group_*, is_primary_cluster,
+# is_secondary_cluster. There is no OCI primitive behind them; emitting nulls
+# named after an AWS DR construct would let a consumer wire up a passive-region
+# pattern that cannot work here. See main.tf.

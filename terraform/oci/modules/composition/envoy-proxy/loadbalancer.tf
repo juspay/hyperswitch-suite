@@ -190,8 +190,8 @@ resource "oci_load_balancer_listener" "mtls" {
 }
 
 # WAF attachment. This module owns the ASSOCIATION only, never the policy
-# content. Gap: AWS's enable_waf_fail_open has no counterpart anywhere on this
-# resource's schema, so fail-open/fail-closed is whatever OCI's default is.
+# content. Gap: fail-open/fail-closed is whatever OCI's default is; there is
+# no explicit toggle on this resource's schema.
 resource "oci_waf_web_app_firewall" "this" {
   count = local.waf_enabled ? 1 : 0
 

@@ -58,9 +58,8 @@ variable "topics" {
                               exists for ONS topics. Unset on AWS today.
       - kms_master_key_id     feature 3, NONE. No CMEK argument on the topic.
                               Unset on AWS today.
-      - policy                feature 6, NONE pending check sheet open question
-                              1 - unlike file-storage and container-registry, no
-                              compartment-level IAM substitute was confirmed for
+      - policy                no confirmed
+                              compartment-level IAM substitute for
                               topic publish/subscribe verbs, so none is offered
                               here rather than guessed at. Unset on AWS today.
       - data_protection_policy

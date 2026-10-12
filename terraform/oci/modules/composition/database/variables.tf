@@ -40,7 +40,7 @@ variable "defined_tags" {
 
 # Engine
 variable "db_version" {
-  description = "PostgreSQL major version. OCI Database with PostgreSQL offers 14, 15, 16 and 17 only. PARTIAL (check sheet feature 20, section 4.13): there is no engine_lifecycle_support equivalent, so an end-of-life engine cannot be kept alive the way AWS's open-source-rds-extended-support does, and aws/live/prod/us-east-1's PG 13.23 is below the floor and cannot be ported as-is. Whether a MINOR version can be pinned here is open question 9.1 - if only majors are selectable the stack cannot hold a certified patch level."
+  description = "PostgreSQL major version. OCI Database with PostgreSQL offers 14, 15, 16 and 17 only. There is no engine extended-support lifecycle, so an end-of-life engine cannot be kept alive; a PG 13.x source needs a major upgrade before porting. Whether a MINOR version can be pinned here is unverified - if only majors are selectable the stack cannot hold a certified patch level."
   type        = string
   default     = "17"
 
@@ -51,7 +51,7 @@ variable "db_version" {
 }
 
 variable "config_overrides" {
-  description = "Engine parameter overrides, config_key -> value. The aws_rds_cluster_parameter_group analogue, collapsed from AWS's five custom_parameter_group_* variables into one map because OCI's override model is flat. NOT every PostgreSQL GUC may be put here: the service splits its variables into user variables (overridable) and system variables (not), and 118 of the 345 keys in the db-version-17 catalogue - including shared_preload_libraries, every ssl_* parameter and every archive_*/recovery_* parameter - are system variables that the API rejects with 400-InvalidParameter. The precondition in configuration.tf checks every key against the live catalogue at PLAN time; see the C10 banner there. NOTE (check sheet feature 14, section 4.11): there is no rds.force_ssl counterpart to put here - see var.tls_note. Extensions are enabled through the OCI-specific oci.admin_enabled_extensions key, NOT through shared_preload_libraries."
+  description = "Engine parameter overrides, config_key -> value, collapsed into one map because OCI's override model is flat. NOT every PostgreSQL GUC may be put here: the service splits its variables into user variables (overridable) and system variables (not), and 118 of the 345 keys in the db-version-17 catalogue - including shared_preload_libraries, every ssl_* parameter and every archive_*/recovery_* parameter - are system variables that the API rejects with 400-InvalidParameter. The precondition in configuration.tf checks every key against the live catalogue at PLAN time. Extensions are enabled through the OCI-specific oci.admin_enabled_extensions key, NOT through shared_preload_libraries."
   type        = map(string)
   default     = {}
 }
@@ -105,7 +105,7 @@ variable "instance_memory_size_in_gbs" {
 }
 
 variable "instance_count" {
-  description = "Number of nodes: one primary plus up to 7 read replicas. Default 2, NOT 1, and deliberately so - see the availability_domain variable and check sheet section 4.3. A single-node system drops the Oracle SLA from 99.99% / RTO < 2 min to 99.9% / RTO < 20 min."
+  description = "Number of nodes: one primary plus up to 7 read replicas. Default 2, NOT 1, and deliberately so - a single-node system drops the Oracle SLA from 99.99% / RTO < 2 min to 99.9% / RTO < 20 min."
   type        = number
   default     = 2
 
@@ -122,7 +122,7 @@ variable "instance_display_names" {
 }
 
 variable "state" {
-  description = "ACTIVE or INACTIVE. INACTIVE stops the db system, which is the closest thing OCI has to Aurora Serverless v2 auto-pause and is worth using as a dev cost lever. It is NOT capacity autoscaling - see check sheet feature 23, section 4.15, verdict NONE: OCI has no ACU model, no auto-pause on idle, and no automatic capacity tracking. AWS's scaling_configuration and serverlessv2_scaling_configuration are dropped outright rather than modelled with a substitute."
+  description = "ACTIVE or INACTIVE. INACTIVE stops the db system, which is worth using as a dev cost lever. It is NOT capacity autoscaling: OCI has no auto-pause on idle and no automatic capacity tracking."
   type        = string
   default     = "ACTIVE"
 
@@ -200,26 +200,14 @@ variable "availability_domain" {
     AD name unsafe to write into a unit's inputs or a root.hcl local, and it is
     why six other OCI composition modules look it up the same way.
 
-    PARTIAL (check sheet feature 5, section 4.3). READ THIS BEFORE ASSUMING HA.
-    ap-mumbai-1 has exactly ONE availability domain - verified against the OCI
-    regions page, and re-verified this session by a real
-    `oci iam availability-domain list` against the dev compartment, which
-    returned one entry. Only Frankfurt, London, Ashburn, Chicago and Phoenix
-    have three. A multi-node db system in a single-AD region spreads its nodes
-    "across all fault domains in the region, irrespective of whether an
-    AD-specific or regional subnet" - that is three FAULT DOMAINS INSIDE ONE AD.
-    A fault-domain spread is NOT AD-level fault tolerance and must not be
-    mistaken for one: AWS ap-south-1 has three AZs and the live AWS unit pins
-    instances to $${region}a and $${region}b, so an AZ loss is survivable by
-    design. In ap-mumbai-1 an AD-scope failure IS a regional failure for this
-    database, and the only layer below it is the DR path in
-    docs/multi-cloud-parity/oci/data-tier-strategy.md.
+    READ THIS BEFORE ASSUMING HA. ap-mumbai-1 has exactly ONE availability
+    domain, so a multi-node db system spreads its nodes across fault domains
+    INSIDE ONE AD - a fault-domain spread is NOT AD-level fault tolerance. An
+    AD-scope failure is therefore a regional failure for this database, and the
+    only layer below it is the DR path (warm standby / backup copy).
 
-    Check sheet open question 9.2 - "is is_regionally_durable = true accepted in
-    ap-mumbai-1, and what does it do there?" - is CLOSED by C13, on the branch
-    the question itself named: rejected outright, so the unit sets false plus a
-    resolved AD. The question predicted the mechanic; only the apply could pick
-    the branch.
+    is_regionally_durable = true is rejected outright in ap-mumbai-1, so leave
+    this null and let the module resolve the (single) AD for you.
   EOT
   type        = string
   default     = null
@@ -227,12 +215,12 @@ variable "availability_domain" {
 
 # Network
 variable "subnet_id" {
-  description = "OCID of the PRIVATE subnet the db system is placed in. Singular - OCI has no db-subnet-group analogue, so AWS's subnet_ids + create_db_subnet_group + db_subnet_group_name all collapse to this. FULL (check sheet feature 15): OCI Database with PostgreSQL endpoints are never directly reachable from the internet and there is no publicly_accessible toggle to get wrong, which is a stronger default than AWS."
+  description = "OCID of the PRIVATE subnet the db system is placed in. Singular - OCI has no subnet-group object. OCI Database with PostgreSQL endpoints are never directly reachable from the internet and there is no publicly_accessible toggle, which is a stronger default than a public-endpoint database."
   type        = string
 }
 
 variable "vcn_id" {
-  description = "OCID of the VCN, required only when create_nsg is true (oci_core_network_security_group takes vcn_id). Not present in the check sheet's variable table - the provider requires it, so it is added rather than the NSG being hardcoded to a network."
+  description = "OCID of the VCN, required only when create_nsg is true (oci_core_network_security_group takes vcn_id). The provider requires it, so it is added rather than the NSG being hardcoded to a network."
   type        = string
   default     = null
 }
@@ -256,7 +244,7 @@ variable "primary_db_endpoint_private_ip" {
 }
 
 variable "is_reader_endpoint_enabled" {
-  description = "Enable the reader endpoint. PARTIAL (check sheet feature 4, section 4.2): it distributes connections evenly across replica nodes and falls back to the primary on a single-node system, but unlike Aurora's purely DNS-based reader endpoint it is CAPPED AT 8 Gbps AGGREGATE. A read-heavy workload tops out with no error, only latency. The instance_endpoints output is the escape hatch - client-side balancing across per-node endpoints bypasses the ceiling."
+  description = "Enable the reader endpoint. It distributes connections evenly across replica nodes and falls back to the primary on a single-node system, but it is CAPPED AT 8 Gbps AGGREGATE. A read-heavy workload tops out with no error, only latency. The instance_endpoints output is the escape hatch - client-side balancing across per-node endpoints bypasses the ceiling."
   type        = bool
   default     = true
 }
@@ -269,14 +257,14 @@ variable "admin_username" {
 }
 
 variable "admin_password" {
-  description = "Admin password. Leave null to have the module generate one (random_password) - there is no manage_master_user_password on OCI, see check sheet section 4.10. Never set this to a literal in a unit; hand in a value only from a caller-owned secret store."
+  description = "Admin password. Leave null to have the module generate one (random_password). Never set this to a literal in a unit; hand in a value only from a caller-owned secret store."
   type        = string
   default     = null
   sensitive   = true
 }
 
 variable "vault_secret" {
-  description = "OCI Vault storage for the generated admin password. create = true writes the password to a new oci_vault_secret and wires the db system to it with password_type = VAULT_SECRET; otherwise the password is passed as PLAIN_TEXT (still generated, never a literal). key_id is required by oci_vault_secret and is not in the check sheet's variable table - the provider mandates it."
+  description = "OCI Vault storage for the generated admin password. create = true writes the password to a new oci_vault_secret and wires the db system to it with password_type = VAULT_SECRET; otherwise the password is passed as PLAIN_TEXT (still generated, never a literal). key_id is required by oci_vault_secret - the provider mandates it."
   type = object({
     create      = bool
     vault_id    = optional(string)
@@ -377,7 +365,7 @@ variable "backup_copy_regions" {
 }
 
 variable "pitr_restore_days" {
-  description = "Point-in-time recovery window in days, to second granularity, restoring into a NEW db system. REQUIRED, no default: on AWS this window came free with backup_retention_period, and defaulting it here is how a database ships without PITR (check sheet section 4.7). Max 35. In-region only - PITR depends on the source db system existing, which a regional failure is exactly what removes."
+  description = "Point-in-time recovery window in days, to second granularity, restoring into a NEW db system. REQUIRED, no default: defaulting it here is how a database ships without PITR. Max 35. In-region only - PITR depends on the source db system existing, which a regional failure is exactly what removes."
   type        = number
 
   validation {
@@ -502,7 +490,7 @@ variable "apply_change_mode_to_stand_alone" {
 
 # Restore
 variable "source_backup_id" {
-  description = "Create this db system from an existing backup. Replaces AWS's snapshot_identifier (aws/live/prod/eu-west-1 really did use it). Mutually exclusive with enable_warm_standby - see check sheet section 4.8."
+  description = "Create this db system from an existing backup. Mutually exclusive with enable_warm_standby."
   type        = string
   default     = null
 }
@@ -575,7 +563,7 @@ variable "query_insight_types" {
 }
 
 variable "enable_service_logs" {
-  description = "Ship engine logs to OCI Logging (service postgresql, category postgresql_database_logs). FULL (check sheet feature 17) as a capability, but configured on separate resources instead of AWS's enabled_cloudwatch_logs_exports argument. Whether the log CONTENT matches AWS's postgresql export is check sheet open question 9.6 and is unverified - if it differs, vector/loki parsing rules change."
+  description = "Ship engine logs to OCI Logging (service postgresql, category postgresql_database_logs), configured on separate resources. Whether the log CONTENT matches what vector/loki parse is unverified - if it differs, those parsing rules change."
   type        = bool
   default     = true
 }
@@ -589,30 +577,25 @@ variable "log_retention_duration" {
 # Protection
 variable "prevent_destroy" {
   description = <<-EOT
-    Declared teardown protection. NONE (check sheet feature 19, section 4.12).
+    Declared teardown protection.
 
-    THE GAP: oci_psql_db_system has NO deletion_protection field. Not renamed,
-    not nested - it does not exist anywhere in provider 9.0.0's schema for this
-    resource (verified this session by dumping the provider's own JSON schema).
-    All seven AWS live roots set deletion_protection = true on the cluster and
-    global_deletion_protection = true on the global cluster; none of that can be
-    reproduced. There is no service-side veto on deleting the payments database.
-    That matters more than it sounds, because the force-new set is not small:
-    db_version, storage_details.system_type, storage_details.availability_domain
-    and network_details.subnet_id are all non-updatable, so an innocuous-looking
-    edit can plan a replace.
+    THE GAP: oci_psql_db_system has NO deletion_protection field - it does not
+    exist anywhere in provider 9.0.0's schema for this resource. There is no
+    service-side veto on deleting the payments database. That matters more than
+    it sounds, because the force-new set is not small: db_version,
+    storage_details.system_type, storage_details.availability_domain and
+    network_details.subnet_id are all non-updatable, so an innocuous-looking edit
+    can plan a replace.
 
     HOW THIS VARIABLE BEHAVES: Terraform forbids a variable in
-    lifecycle.prevent_destroy ("Variables may not be used here" - verified with
-    terraform 1.14 this session), so this flag cannot switch the lifecycle block
-    on and off. The block is therefore hardcoded true on oci_psql_db_system, and
-    this variable is a declared-intent flag: setting it false does NOT weaken
-    the guard, it raises a precondition that tells the operator the real
-    teardown procedure. Mitigation layers (b) and (c) from section 4.12 -
-    backup retention_days surviving deletion, and an IAM policy denying the
-    delete verb on postgres-db-systems outside a break-glass group - are the
-    only controls that survive a wrong terraform apply, and layer (c) is
-    outside this module.
+    lifecycle.prevent_destroy, so this flag cannot switch the lifecycle block on
+    and off. The block is therefore hardcoded true on oci_psql_db_system, and
+    this variable is a declared-intent flag: setting it false does NOT weaken the
+    guard, it raises a precondition that tells the operator the real teardown
+    procedure. The controls that survive a wrong terraform apply are backup
+    retention_days surviving deletion and an IAM policy denying the delete verb
+    on postgres-db-systems outside a break-glass group; the IAM layer is outside
+    this module.
   EOT
   type        = bool
   default     = true

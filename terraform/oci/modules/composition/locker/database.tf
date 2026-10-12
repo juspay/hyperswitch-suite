@@ -172,7 +172,7 @@ resource "oci_psql_db_system" "locker" {
 
     precondition {
       condition     = local.is_standby == (var.database_config.primary_db_system_id != null)
-      error_message = "database_config.enable_warm_standby and .primary_db_system_id must be set together. Warm standby is OFF by default and that default is a decision - 300 s RPO floor, manual-only failover, a second full db system, and restore forfeited. See docs/multi-cloud-parity/oci/data-tier-strategy.md and locker.md section 4.4 before turning it on."
+      error_message = "database_config.enable_warm_standby and .primary_db_system_id must be set together. Warm standby is OFF by default and that default is a decision - 300 s RPO floor, manual-only failover, a second full db system, and restore forfeited. Review before turning it on."
     }
 
     precondition {

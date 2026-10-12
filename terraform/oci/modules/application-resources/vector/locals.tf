@@ -18,7 +18,7 @@ locals {
   cross_region_enabled = coalesce(var.cross_region_read.enabled, false)
 
   # ---------------------------------------------------------------------------
-  # THE GRANT LIST - check sheet section 10.
+  # THE GRANT LIST
   # ---------------------------------------------------------------------------
   grants = concat(
     # 1. s3 PutObject/GetObject/ListBucket/DeleteObject/GetObjectVersion ->

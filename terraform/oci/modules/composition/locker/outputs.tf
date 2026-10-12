@@ -1,12 +1,11 @@
-# Output contract. The AWS module's 31 outputs map mostly mechanically (ARNs to
-# OCIDs), except four groups that disappear with a reason (no VM fleet/ALB, no
+# Output contract. Four groups disappear with a reason (no VM fleet/ALB, no
 # private-key persistence, no KMS alias, no global cluster / subnet-group).
-# Added with no AWS counterpart: vault_id, db_admin_secret_id, db_ca_certificate,
-# workload_grants, encryption_at_rest.
+# Added: vault_id, db_admin_secret_id, db_ca_certificate, workload_grants,
+# encryption_at_rest.
 
 # Key custody
 output "vault_id" {
-  description = "OCID of the card vault's dedicated OCI Vault. No AWS counterpart - a key lives inside a vault on OCI. This is what a caller passes to any other module that must put a secret in the locker's custody boundary."
+  description = "OCID of the card vault's dedicated OCI Vault. A key lives inside a vault on OCI. This is what a caller passes to any other module that must put a secret in the locker's custody boundary."
   value       = local.vault_id
 }
 
@@ -67,7 +66,7 @@ output "db_instance_endpoints" {
 }
 
 output "db_ca_certificate" {
-  description = "PEM CA certificate for the db system. No AWS counterpart is needed there because the live AWS locker unit DISABLES enforced TLS (rds.force_ssl = 0). On OCI TLS is mandatory and cannot be disabled, so every card-vault connection string needs sslmode=require at minimum and this PEM to use verify-ca or verify-full. Distribute it before first apply; discovered later this looks like a network outage."
+  description = "PEM CA certificate for the db system. On OCI TLS is mandatory and cannot be disabled, so every card-vault connection string needs sslmode=require at minimum and this PEM to use verify-ca or verify-full. Distribute it before first apply; discovered later this looks like a network outage."
   value       = try(local.connection.ca_certificate, null)
   sensitive   = false
 }
@@ -142,7 +141,7 @@ output "workload_grants" {
 }
 
 output "k8s_service_account" {
-  description = "The (namespace, service_account) pair the grants above authorise. Audit surface; confirm it against the deployed hyperswitch-card-vault chart (check sheet open question 9.5)."
+  description = "The (namespace, service_account) pair the grants above authorise. Audit surface; confirm it against the deployed hyperswitch-card-vault chart."
   value = {
     namespace       = var.k8s_namespace
     service_account = var.k8s_service_account_name
@@ -164,8 +163,7 @@ output "encryption_at_rest" {
     confirms the same absence in the OCI console's create flow. The AWS locker
     creates its own KMS key and encrypts its dedicated Aurora cluster with it.
 
-    Check sheet feature 17 (PARTIAL), section 4.5, section 10 "Encryption at
-    rest" row (Weaker), open question 9.4. Needs an explicit sign-off from
+    Needs an explicit sign-off from
     whoever owns PCI-DSS scope, separate from the shared database's.
   EOT
   value = {

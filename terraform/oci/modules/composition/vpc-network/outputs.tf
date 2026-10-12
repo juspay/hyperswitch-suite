@@ -48,7 +48,7 @@ output "internet_gateway_id" {
 }
 
 output "nat_gateway_id" {
-  description = "OCID of the NAT gateway, or null when enable_nat_gateway = false. Singular: OCI's NAT gateway is regional and limited to 1 per VCN, so AWS's nat_gateway_ids list has no plural counterpart (check sheet section 4.1)."
+  description = "OCID of the NAT gateway, or null when enable_nat_gateway = false. Singular: OCI's NAT gateway is regional and limited to 1 per VCN."
   value       = try(oci_core_nat_gateway.this[0].id, null)
 }
 
@@ -68,7 +68,7 @@ output "object_storage_service_cidr" {
 }
 
 output "all_services_service_cidr" {
-  description = "Value of the \"All <region> Services in Oracle Services Network\" service CIDR label - the superset that includes Object Storage. Not in the check sheet's output table, but security-rules needs it to express the section 4.5 per-consumer egress allowlist for non-Object-Storage Oracle APIs (the AWS interface-endpoint equivalents). Additive, so no existing consumer breaks."
+  description = "Value of the \"All <region> Services in Oracle Services Network\" service CIDR label - the superset that includes Object Storage. security-rules needs it to express the per-consumer egress allowlist for non-Object-Storage Oracle APIs. Additive, so no existing consumer breaks."
   value       = try(local.all_osn_services[0].cidr_block, null)
 }
 
@@ -88,11 +88,11 @@ output "remote_peering_connection_ids" {
 }
 
 output "default_security_list_id" {
-  description = "OCID of the VCN's default security list, which this module manages down to ZERO rules. Exported so a validation step can assert emptiness: because security-list rules union (OR) with NSG rules, a non-empty default list silently defeats the NSG-only security model and is a release blocker (../../../../../docs/multi-cloud-parity/oci/network-security-model.md section 3.3). New output with no AWS counterpart."
+  description = "OCID of the VCN's default security list, which this module manages down to ZERO rules. Exported so a validation step can assert emptiness: because security-list rules union (OR) with NSG rules, a non-empty default list silently defeats the NSG-only security model and is a release blocker."
   value       = oci_core_default_security_list.this.id
 }
 
 output "management_bastion_security_list_id" {
-  description = "OCID of the dedicated management-subnet / OCI Bastion security list, or null when the management tier is absent. The single LEGITIMATE non-default security list (network-security-model.md section 5.1): the OCI Bastion service VNIC has no NSG support, so its data-plane egress is governed only by this list. Exported so composition/security-rules' guard can assert it is the ONLY non-default list carrying exactly the bastion egress rules."
+  description = "OCID of the dedicated management-subnet / OCI Bastion security list, or null when the management tier is absent. The single legitimate non-default security list: the OCI Bastion service VNIC has no NSG support, so its data-plane egress is governed only by this list. Exported so composition/security-rules' guard can assert it is the ONLY non-default list carrying exactly the bastion egress rules."
   value       = can(local.named_subnets.management.cidr) ? oci_core_security_list.management_bastion[0].id : null
 }

@@ -1,4 +1,5 @@
-# ratelimiter - the OCI port of the AWS module of the same name. Developer notes:
+# ratelimiter - a statement factory plus a pass-through for the dedicated
+# cache's connection details.
 #   1. The dedicated cache is a SECOND `oci-cache-valkey` catalog unit
 #      (name_suffix "ratelimiter"), NOT a nested module - so the security-last
 #      rules unit can reach its nsg_id and cache sizing is a per-env stack value.
@@ -139,7 +140,7 @@ variable "cache_nsg_id" {
 }
 
 variable "cache_software_version" {
-  description = "Engine version the dedicated cache runs. Should match the shared cache's - check sheet open question 5 asks for a stated convention rather than an implicit one; this port's convention is 'same version, fleet-wide'."
+  description = "Engine version the dedicated cache runs. Should match the shared cache's - the stated convention is 'same version, fleet-wide'."
   type        = string
   default     = null
 }

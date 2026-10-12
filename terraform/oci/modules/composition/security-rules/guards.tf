@@ -57,7 +57,7 @@ resource "terraform_data" "no_unauthorized_non_default_security_lists" {
   lifecycle {
     precondition {
       condition     = length(local.unauthorized_non_default_security_lists) == 0
-      error_message = "VCN has non-default security list(s) other than the named allowlist in `allowed_non_default_security_lists`: ${join(", ", local.unauthorized_non_default_security_lists)}. The NSG-only model (network-security-model.md section 5) allows a non-default list only for a resource type with a VNIC but no NSG support, named explicitly. Add it to the allowlist only if so, otherwise remove it - any other non-default list is a fail-open widening of every VNIC in its subnets."
+      error_message = "VCN has non-default security list(s) other than the named allowlist in `allowed_non_default_security_lists`: ${join(", ", local.unauthorized_non_default_security_lists)}. The NSG-only model allows a non-default list only for a resource type with a VNIC but no NSG support, named explicitly. Add it to the allowlist only if so, otherwise remove it - any other non-default list is a fail-open widening of every VNIC in its subnets."
     }
 
     precondition {

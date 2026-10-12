@@ -1,7 +1,7 @@
 # Identity and placement.
 
 variable "compartment_id" {
-  description = "OCID of the compartment every resource in this module is created in. Replaces the implicit AWS account scope; a flat compartment is the deliberate first-cut simplification (prerequisite P5, oci/identity-model.md)."
+  description = "OCID of the compartment every resource in this module is created in. A flat compartment is the deliberate first-cut simplification."
   type        = string
 }
 
@@ -82,13 +82,12 @@ variable "create_nsg" {
   description = <<-EOT
     Whether this module creates its own Network Security Groups.
 
-    NSGs, never security lists - the binding decision in
-    oci/network-security-model.md section 5 (Option A). Created EMPTY on
-    purpose: catalog/units/oci/security-rules, the last stack phase, writes
-    the rules into them by reading nsg_id / lb_nsg_id from this module's
-    outputs. Keeping the object here and the rules there is what breaks the
-    dependency cycle between the proxy tier and everything that talks to it.
-    Do not add oci_core_network_security_group_security_rule to this module.
+    NSGs, never security lists. Created EMPTY on purpose:
+    catalog/units/oci/security-rules, the last stack phase, writes the rules
+    into them by reading nsg_id / lb_nsg_id from this module's outputs. Keeping
+    the object here and the rules there is what breaks the dependency cycle
+    between the proxy tier and everything that talks to it. Do not add
+    oci_core_network_security_group_security_rule to this module.
   EOT
   type        = bool
   default     = true
@@ -158,11 +157,11 @@ variable "boot_volume_kms_key_id" {
     volumes - the AWS module's `ebs_encrypted = true` maps to "leave this
     null", not to a flag.
 
-    Recorded caveat (check sheet section 9 open question 4): the schema
-    confirms this field is optional, but Oracle's own text confirming
-    encryption-on-by-default with a service-managed key was not retrieved
-    first-hand. Treat "encrypted at rest by default" as Tier 2 until that is
-    confirmed against the Block Volume security documentation.
+    Recorded caveat (open): the schema confirms this field is optional, but
+    Oracle's own text confirming encryption-on-by-default with a
+    service-managed key was not retrieved first-hand. Treat "encrypted at rest
+    by default" as Tier 2 until that is confirmed against the Block Volume
+    security documentation.
   EOT
   type        = string
   default     = null
@@ -193,8 +192,7 @@ variable "deployments" {
     oci_core_instance_configuration + oci_core_instance_pool +
     oci_autoscaling_auto_scaling_configuration is created per key.
 
-    HOW `weight` IS HONOURED, AND WHY IT IS NOT WHAT AWS DOES (SUBSTITUTE -
-    check sheet feature 2, section 4):
+    HOW `weight` IS HONOURED, AND WHY IT DIVERGES FROM A SIMPLE PERCENTAGE:
 
     AWS splits traffic with `forward.target_group[].weight` on one listener
     action - two independent target groups, one percentage, flip it and you
@@ -221,7 +219,8 @@ variable "deployments" {
         cannot express 99/1 on a 10-instance fleet;
       * a ramp step changes pool sizes inside the ONE backend set carrying all
         live traffic, instead of resizing an isolated canary target group -
-        a larger blast radius for a botched apply than AWS has;
+        a larger blast radius for a botched apply than an isolated target
+        group;
       * autoscaling then moves the sizes again, so the ratio is a starting
         point, not an invariant.
 
@@ -230,14 +229,13 @@ variable "deployments" {
     all-or-nothing listener flip via var.active_deployment. It has no
     percentage at all but has a clean rollback.
 
-    Both are implemented; NEITHER has passed the oracle gate (framework §4.1,
-    check sheet §8 item 1 - status: not yet consulted). Pick deliberately.
+    Both are implemented; pick deliberately.
 
-    `is_preemptible` is the spot workaround (PARTIAL - check sheet feature 9):
-    OCI has no mixed_instances_policy, a pool is homogeneous in capacity type,
-    so a cost-optimized blend means a second deployment key with
-    is_preemptible = true and a statically chosen size. There is no dynamic
-    allocation strategy and no capacity-aware placement.
+    `is_preemptible` is the spot workaround: OCI has no
+    mixed_instances_policy, a pool is homogeneous in capacity type, so a
+    cost-optimized blend means a second deployment key with is_preemptible =
+    true and a statically chosen size. There is no dynamic allocation strategy
+    and no capacity-aware placement.
   EOT
   type = map(object({
     weight         = number
@@ -272,14 +270,14 @@ variable "deployments" {
 variable "traffic_split_mode" {
   description = <<-EOT
     How traffic is divided between deployments. See var.deployments for the
-    full explanation of why AWS's weighted forward has no OCI counterpart.
+    full explanation of the weighted-split divergence.
 
       "shared_backend_set" - one backend set, every pool registered into it,
                              share is proportional to instance count.
       "listener_cutover"   - one backend set per deployment, listeners point
                              at var.active_deployment. All or nothing.
 
-    Neither has passed the oracle gate. framework §4.1.
+    Pick deliberately; both are implemented.
   EOT
   type        = string
   default     = "shared_backend_set"
@@ -320,13 +318,9 @@ variable "scaling_policies" {
   description = <<-EOT
     Autoscaling configuration, applied to every deployment's pool.
 
-    SUBSTITUTE, and this is the one place the substitution becomes concrete
-    module code (check sheet feature 8, section 4). AWS uses
-    TargetTrackingScaling: state one target utilization and a managed
-    controller converges on it continuously. OCI's
-    oci_autoscaling_auto_scaling_configuration supports exactly two policy
-    types - `threshold` (alarm-crossing: a metric crosses a value, apply a
-    FIXED instance-count delta) and `scheduled` (Quartz cron). There is no
+    OCI's oci_autoscaling_auto_scaling_configuration supports exactly two
+    policy types - `threshold` (alarm-crossing: a metric crosses a value, apply
+    a FIXED instance-count delta) and `scheduled` (Quartz cron). There is no
     target-tracking controller of any kind.
 
     So `target_value` is kept as the input shape for continuity with the AWS
@@ -350,11 +344,10 @@ variable "scaling_policies" {
     AWS module's memory policy already depends on. This module enables the
     plugin in agent_config, but the image must also actually run the Oracle
     Cloud Agent. If it does not, the metric never arrives and the policy is a
-    silent no-op, identical failure mode to the AWS and GCP originals.
+    silent no-op.
 
-    The threshold boundaries below have NOT passed the oracle gate
-    (check sheet §8 item 2). They are a translation of the AWS module's
-    target_value = 70.0, not a load-tested design.
+    The threshold boundaries below are a translation of target_value = 70.0,
+    not a load-tested design.
   EOT
   type = object({
     cool_down_in_seconds = optional(number, 300)
@@ -449,7 +442,7 @@ variable "lb_max_bandwidth_mbps" {
 }
 
 variable "lb_reserved_ip_id" {
-  description = "OCID of a Reserved Public IP to pin the load balancer's address across recreation. OCI load balancers get real IPs, so a plain DNS A record at this address replaces Route 53's ALIAS record entirely - see oci/edge-tier-strategy.md section 3."
+  description = "OCID of a Reserved Public IP to pin the load balancer's address across recreation. OCI load balancers get real IPs, so a plain DNS A record at this address replaces an ALIAS-record alias entirely."
   type        = string
   default     = null
 }
@@ -523,25 +516,21 @@ variable "ssl_certificate_ids" {
     Certificate OCIDs from the Certificates Management service to attach to
     the HTTPS listener.
 
-    PARTIAL (check sheet feature 4, section 4). Two real gaps against ACM,
-    both structural, neither worked around by this module:
+    Two real gaps, both structural, neither worked around by this module:
 
-    (a) The schema's own text says "currently only a single Id may be passed".
-        There is no aws_lb_listener_certificate equivalent - no array of
-        additional SNI certificates on one listener. The mitigation is to use
-        ONE wildcard or SAN certificate covering every hostname served by this
-        load balancer, which removes the need for SNI multi-cert entirely.
+    (a) OCI accepts only a single certificate ID per listener. No array of
+        additional SNI certificates. The mitigation is to use ONE wildcard or
+        SAN certificate covering every hostname served by this load balancer.
         A validation below enforces the single-ID limit rather than letting
         the API reject it at apply time.
 
     (b) OCI's Certificates Management service cannot issue a publicly-trusted
         DV certificate. Its config_type is limited to ISSUED_BY_INTERNAL_CA,
-        MANAGED_EXTERNALLY_ISSUED_BY_INTERNAL_CA and IMPORTED. ACM's free,
-        auto-renewing public certificate has NO OCI counterpart - the edge
+        MANAGED_EXTERNALLY_ISSUED_BY_INTERNAL_CA and IMPORTED. The edge
         certificate has to come from an ACME client run outside Terraform and
         be IMPORTED, and renewal becomes this platform's own scheduled job
-        with a hard-outage failure mode. See oci/edge-tier-strategy.md §4 and
-        §8 item 1. This module only attaches; it does not issue.
+        with a hard-outage failure mode. This module only attaches; it does
+        not issue.
   EOT
   type        = list(string)
   default     = []
@@ -580,10 +569,9 @@ variable "enable_http_redirect" {
 
 variable "mtls_listener" {
   description = <<-EOT
-    Dedicated mTLS listener with client-certificate verification. FULL parity
-    (check sheet feature 5): trusted_certificate_authority_ids is the OCI
-    analogue of ACM's trust-store ARN and verify_depth matches AWS's chain
-    depth control, both confirmed on oci_load_balancer_listener's schema.
+    Dedicated mTLS listener with client-certificate verification:
+    trusted_certificate_authority_ids is the trust store and verify_depth the
+    chain depth control, both confirmed on oci_load_balancer_listener's schema.
   EOT
   type = object({
     enabled                           = optional(bool, false)
@@ -603,12 +591,10 @@ variable "listener_rules" {
     oci_load_balancer_load_balancer_routing_policy attached to the HTTP and
     HTTPS listeners.
 
-    PARTIAL (check sheet feature 6, section 4). Two things to know before
-    reaching for this:
+    Two things to know before reaching for this:
 
-    1. NO SOURCE-IP CONDITION. AWS's listener_rules[*].conditions.source_ip
-       has no routing-layer counterpart on OCI, exactly as it has none on
-       GCP's URL map. Source-IP allow/deny belongs in the WAF policy's
+    1. NO SOURCE-IP CONDITION. OCI has no routing-layer source-IP match.
+       Source-IP allow/deny belongs in the WAF policy's
        request_access_control module, which evaluates BEFORE the routing
        policy - functionally equivalent for an allow/deny decision, but not
        an alternative route target. There is deliberately no source_ip field
@@ -617,12 +603,12 @@ variable "listener_rules" {
 
     2. THE CONDITION VOCABULARY IS NOT FULLY CONFIRMED. Host, path and header
        matching are supported in principle by OCI's condition language, but
-       the exact expression grammar was not verified against a live tenancy
-       (check sheet open question 9.1). The structured fields below generate
-       what the documentation describes; `raw_condition` is the escape hatch
-       that lets an operator paste a known-good expression verbatim and
-       bypass this module's generator entirely. If the generator turns out to
-       be wrong, raw_condition is the fix that needs no module change.
+       the exact expression grammar was not verified against a live tenancy.
+       The structured fields below generate what the documentation describes;
+       `raw_condition` is the escape hatch that lets an operator paste a
+       known-good expression verbatim and bypass this module's generator
+       entirely. If the generator turns out to be wrong, raw_condition is the
+       fix that needs no module change.
 
     target_deployment names a key in var.deployments. Under
     traffic_split_mode = "shared_backend_set" every deployment resolves to
@@ -674,20 +660,16 @@ variable "enable_waf" {
 variable "waf_policy_id" {
   description = <<-EOT
     OCID of an oci_waf_web_app_firewall_policy to attach. Supplied, not
-    created here - exactly mirroring the AWS module, which manages only the
-    aws_wafv2_web_acl_association and takes waf_web_acl_arn as an input.
+    created here.
 
-    The attachment itself is FULL parity (check sheet feature 7):
-    oci_waf_web_app_firewall requires precisely backend_type = "LOAD_BALANCER",
-    load_balancer_id and web_app_firewall_policy_id, a 1:1 structural match.
+    oci_waf_web_app_firewall requires precisely backend_type =
+    "LOAD_BALANCER", load_balancer_id and web_app_firewall_policy_id.
 
     Two recorded gaps that live one layer up from this module:
       * WAF attaches only to the LBaaS load balancer, never to the Network
         Load Balancer. Irrelevant here (this module is LBaaS) and material for
         squid-proxy, which is NLB-fronted.
-      * No fail-open/fail-closed argument was found anywhere on
-        oci_waf_web_app_firewall - AWS's enable_waf_fail_open has no
-        counterpart to set (oci/edge-tier-strategy.md §8 item 8).
+      * No fail-open/fail-closed argument exists on oci_waf_web_app_firewall.
   EOT
   type        = string
   default     = null
@@ -767,14 +749,11 @@ variable "generate_ssh_key" {
     Whether to generate a break-glass SSH keypair, inject the public half into
     the instances and store the private half in OCI Vault.
 
-    SUBSTITUTE (check sheet feature 13). AWS stores this in SSM Parameter
-    Store, whose free Standard-tier String type is a genuinely lighter object
-    than a secret. OCI has no such thing: every oci_vault_secret requires BOTH
-    a vault_id and a KMS key_id, so two prerequisite resources must exist
-    before the first secret can. A Default vault has no creation charge and
-    software-protected keys are free, so the step-up is architectural rather
-    than necessarily monetary - but it is a real prerequisite the AWS module
-    never had.
+    Every oci_vault_secret requires BOTH a vault_id and a KMS key_id, so two
+    prerequisite resources must exist before the first secret can. A Default
+    vault has no creation charge and software-protected keys are free, so the
+    step-up is architectural rather than necessarily monetary - but it is a
+    real prerequisite.
 
     Requires vault_id and vault_key_id. When either is null the keypair is
     still generated and injected (so the instances are reachable) but nothing
