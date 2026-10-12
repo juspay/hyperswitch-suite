@@ -32,6 +32,14 @@ dependency "primary_database" {
   mock_outputs_merge_strategy_with_state = "shallow"
 }
 
+locals {
+  # The parameter-group family must match the engine major version. Deriving it
+  # from engine_version keeps passive stacks (which pin engine_version to their
+  # primary's version) from referencing the wrong family — RDS rejects instance
+  # creation on a family/engine mismatch.
+  aurora_pg_family = "aurora-postgresql${split(".", try(values.engine_version, "17.9"))[0]}"
+}
+
 inputs = {
 
   environment  = include.root.locals.environment.full
@@ -85,12 +93,12 @@ inputs = {
   port                   = 5432
   create_db_subnet_group = true
 
-  db_cluster_parameter_group_name  = "default.aurora-postgresql17"
+  db_cluster_parameter_group_name  = "default.${local.aurora_pg_family}"
   db_instance_parameter_group_name = null
 
   # Custom Parameter Group Configuration - Disable SSL
   create_custom_parameter_group = true
-  custom_parameter_group_family = "aurora-postgresql17"
+  custom_parameter_group_family = local.aurora_pg_family
   # Merge by parameter name so callers can extend or override the defaults.
   custom_parameter_group_parameters = [
     for name, parameter in merge(
@@ -134,7 +142,7 @@ inputs = {
       instance_class                        = try(values.db_instance_class, "db.r6g.large")
       promotion_tier                        = 0
       availability_zone                     = "${include.root.locals.region}a"
-      db_parameter_group_name               = "default.aurora-postgresql17"
+      db_parameter_group_name               = "default.${local.aurora_pg_family}"
       performance_insights_enabled          = true
       performance_insights_retention_period = try(values.performance_insights_retention_period, 7)
       auto_minor_version_upgrade            = true
@@ -149,7 +157,7 @@ inputs = {
       instance_class                        = try(values.db_instance_class, "db.r6g.large")
       promotion_tier                        = 1
       availability_zone                     = "${include.root.locals.region}b"
-      db_parameter_group_name               = "default.aurora-postgresql17"
+      db_parameter_group_name               = "default.${local.aurora_pg_family}"
       performance_insights_enabled          = true
       performance_insights_retention_period = try(values.performance_insights_retention_period, 7)
       auto_minor_version_upgrade            = true
