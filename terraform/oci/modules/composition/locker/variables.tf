@@ -1,31 +1,11 @@
-# =============================================================================
-# composition/locker (OCI) - inputs
-# =============================================================================
-# The AWS module has 22 variables. This one has fewer, and the reductions are
-# deliberate rather than incidental. Dropped with no counterpart, each traced
-# to its check sheet entry:
-#
-#   ami_id, instance_type, instance_count, user_data, locker_subnet_ids,
-#   alb_subnet_ids, alb_listeners, enable_alb_deletion_protection, locker_port
-#       -> features 11/12/13 are N/A under this port's shape: the card vault
-#          runs as an OKE workload, not a VM fleet behind an ALB. See the
-#          header of database.tf. This is an open oracle-gate decision.
-#   key_name, create_key_pair, public_key
-#       -> feature 1's auto-generate branch is the state-exposure problem this
-#          port exists to not reproduce, and with no VM there is nothing to
-#          authenticate to. See versions.tf and secrets.tf.
-#   additional_policy_arns
-#       -> feature 10. There is no attachable policy object on OCI; the escape
-#          hatch is contributing statements to the one shared policy, which the
-#          catalog unit does directly. See identity.tf.
-#
-# Added with no AWS counterpart:
-#   vcn_id, vault.*, k8s_namespace, k8s_service_account_name.
+# composition/locker (OCI) - inputs. Fewer than the AWS module's 22, and the
+# reductions are deliberate: no VM fleet/ALB inputs (features 11-13 N/A), no
+# key generation inputs (feature 1's state-exposure path is not reproduced), and
+# no attachable-policy inputs (feature 10; the escape hatch is contributing
+# statements to the one shared policy). Added with no AWS counterpart:
+# vcn_id, vault.*, k8s_namespace, k8s_service_account_name.
 
-# -----------------------------------------------------------------------------
 # Identity and naming
-# -----------------------------------------------------------------------------
-
 variable "compartment_id" {
   description = "OCID of the compartment every resource in this module is created in. Replaces the AWS module's implicit account scope. Note that a workload-identity grant can only reach the compartment the shared policy is attached to and its descendants, so this must sit at or below that attachment point."
   type        = string
@@ -59,10 +39,7 @@ variable "defined_tags" {
   default     = {}
 }
 
-# -----------------------------------------------------------------------------
 # Network placement
-# -----------------------------------------------------------------------------
-
 variable "vcn_id" {
   description = "OCID of the VCN, from composition/vpc-network's `vcn_id` output. Needed only to create this module's NSG - an NSG is a VCN-scoped object. Replaces the AWS module's vpc_id."
   type        = string
@@ -80,10 +57,7 @@ variable "create_nsg" {
   default     = true
 }
 
-# -----------------------------------------------------------------------------
-# Key custody - AWS's nested terraform-aws-modules/kms/aws
-# -----------------------------------------------------------------------------
-
+# Key custody
 variable "vault" {
   description = <<-EOT
     The OCI Vault holding this module's key and secrets.
@@ -183,10 +157,7 @@ variable "kms_key" {
   }
 }
 
-# -----------------------------------------------------------------------------
 # The database credential
-# -----------------------------------------------------------------------------
-
 variable "db_admin_secret" {
   description = <<-EOT
     Where the card vault database's admin password comes from.
@@ -252,10 +223,7 @@ variable "db_admin_secret" {
   }
 }
 
-# -----------------------------------------------------------------------------
 # The dedicated database
-# -----------------------------------------------------------------------------
-
 variable "create_database" {
   description = "Provision the card vault's OWN dedicated database. The AWS module's create_locker_database, which is true in every real instantiation seen. false leaves this module owning only the vault, key and identity contributions, for a caller pointing the vault at a database managed elsewhere - the same escape hatch GCP's create_database provides."
   type        = bool
@@ -354,10 +322,7 @@ variable "database_config" {
   }
 }
 
-# -----------------------------------------------------------------------------
 # Logging
-# -----------------------------------------------------------------------------
-
 variable "enable_service_logs" {
   description = "Create the log group and ship the database's engine log to OCI Logging. The nested AWS database's enabled_cloudwatch_logs_exports = [\"postgresql\"] equivalent."
   type        = bool
@@ -370,10 +335,7 @@ variable "log_retention_days" {
   default     = 30
 }
 
-# -----------------------------------------------------------------------------
 # Workload identity contributions
-# -----------------------------------------------------------------------------
-
 variable "k8s_namespace" {
   description = "Kubernetes namespace the card-vault workload runs in. Half of the OKE workload identity tuple (cluster, namespace, service account). Default matches the GCP module's."
   type        = string

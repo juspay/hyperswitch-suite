@@ -1,15 +1,7 @@
-###############################################################################
-# Named shared route tables
-#
-# The routing policy, not the subnets, is where the PCI-relevant control lives
-# in the AWS module, and it ports across intact: 12 named tables (13 until
-# correction C7 dropped common-internet-osn), each tier associated with the one
-# that encodes its egress policy. See the catalogue in
-# locals.tf for the AWS name each one replaces and for the feature-12 control
-# on the oke-nodes table (no 0.0.0.0/0 rule at all).
-#
-# Limits: 300 route tables per VCN, 200 rules each - comfortable headroom.
-###############################################################################
+# Named shared route tables - 12 of them (13 until common-internet-osn was
+# dropped), carrying the routing policy each tier associates to. This is where
+# the PCI-relevant control lives: the oke-nodes table has no 0.0.0.0/0 rule.
+# Limits: 300 route tables per VCN, 200 rules each.
 
 resource "oci_core_route_table" "this" {
   for_each = local.route_tables

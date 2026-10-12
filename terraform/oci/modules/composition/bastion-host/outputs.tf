@@ -1,22 +1,3 @@
-###############################################################################
-# Output contract
-#
-# Deliberately ABSENT, each a recorded gap rather than a silent drop:
-#
-#   - iam_role_arn / instance_profile_name: OCI has no per-instance role
-#     object. SUBSTITUTE, owned by oci/identity-model.md, not by this module.
-#   - ssm_document_name / session_preferences_*: aws_ssm_document has no OCI
-#     counterpart at all (check sheet feature 5, PARTIAL). What survives -
-#     session TTL and the run-as OS user - lives on the bastion and session
-#     resources, not on a separate preferences document, so there is no
-#     document id to export.
-#   - ssm_session_log_group_name / ssm_session_log_bucket for SESSION CONTENT:
-#     no managed session-content logging exists (features 3 and 4, verdict
-#     NONE). session_log_bucket_name below is a destination for a SELF-MANAGED
-#     recorder that this module does not create and the platform does not yet
-#     run. Do not read its existence as parity.
-###############################################################################
-
 output "jump_instance_id" {
   description = "OCID of the jump instance."
   value       = oci_core_instance.this.id

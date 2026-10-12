@@ -1,27 +1,6 @@
-# -----------------------------------------------------------------------------
-# ONE policy object. Per environment. Not per app, not per region.
-#
-# There is deliberately no `count` and no `for_each` on this resource, and no
-# `app_name` variable anywhere in the module. That is the structural guarantee:
-# a caller cannot instantiate this module once and get several policy objects,
-# and the only way to add an app's permissions is to contribute STATEMENTS
-# (`workload_grants` / `statements`) into this shared object.
-#
-# The arithmetic behind that, from identity-model.md section 3.7:
-#   * 100 policy objects per tenancy, hard-limited today;
-#   * one object per app per region root at the current AWS footprint is
-#     12 apps x 11 roots = 132 objects - unbuildable;
-#   * `name` and `compartment_id` are both NOT UPDATABLE, so discovering this
-#     after the fact means destroying and recreating every identity in the
-#     tenancy, with a window in which every pod loses access.
-#
-# The cost of the choice is the other limit: 50 statements per policy object,
-# enforced as a precondition below. When an environment outgrows it the fix is
-# a SECOND instantiation of this module with a different environment-scoped
-# name (e.g. `<project>-<env>-workload-identity-data`) splitting the statement
-# set by tier - never a policy object per app. That split is a gate item
-# (framework section 4.6) and must be consulted before it is made.
-# -----------------------------------------------------------------------------
+# ONE policy object per environment - deliberately no count/for_each/app_name.
+# name and compartment_id are both NOT UPDATABLE, so a caller cannot create several
+# objects; apps contribute statements into this shared object.
 
 resource "oci_identity_policy" "workload_identity" {
   compartment_id = var.compartment_id

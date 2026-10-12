@@ -1,35 +1,12 @@
-# -----------------------------------------------------------------------------
-# The renderer.
-#
-# DIVERGENCE, DELIBERATE, RECORDED HERE BECAUSE THIS IS WHERE IT LIVES.
-# identity-model.md section 2.3 requires that policy statement text be rendered
-# in EXACTLY ONE place - `oke-workload-identity/locals.tf` - and suggests CI
-# reject a literal `request.principal` string anywhere else. The reason is
-# sharp: on AWS a copy-pasted trust block that drops a condition fails CLOSED
-# (the assume call is rejected); on OCI a copy-pasted statement that drops a
-# condition fails OPEN, silently, with no error.
-#
-# This module renders statements anyway, because the shared policy object is a
-# SEPARATE TERRAGRUNT UNIT with its own state: text is the only thing that can
-# cross that boundary, and `oke-workload-identity`'s own header describes
-# exactly this ("per-app statements get added here incrementally"). The
-# mitigation is that the aggregation point re-validates: every string handed to
-# `oke-workload-identity.statements` is checked at PLAN time by four
-# preconditions in its main.tf - principal type present, all three other
-# conditions present, cluster pinned to a known OCID, no named compartment. So
-# a dropped condition here fails the plan there. The template below is a
-# character-for-character copy of that module's, so the two cannot disagree
-# about normal form.
-#
-# PREFER `workload_grants` OVER `policy_statements` when wiring this module's
-# output into `oke-workload-identity`: the structured channel is rendered by
-# the canonical renderer and cannot forget a condition at all.
-# -----------------------------------------------------------------------------
+# The renderer. This is a SEPARATE Terragrunt unit with its own state, so it
+# renders text across the boundary rather than owning a policy object. A dropped
+# condition here is caught by oke-workload-identity's plan-time preconditions
+# (fails OPEN on OCI otherwise). Prefer `workload_grants` over `policy_statements`
+# when wiring in - the canonical renderer cannot forget a condition.
 
 locals {
-  # One tuple per (grant x subject x cluster). Enumerated, not collapsed:
-  # pattern values on `request.principal.*` are undocumented (identity-model.md
-  # section 9 Q5), so there is no verified wildcard to collapse them with.
+  # One tuple per (grant x subject x cluster). Enumerated, not collapsed: no
+  # verified wildcard on request.principal.*.
   grant_tuples = flatten([
     for key, g in var.grants : [
       for s in var.subjects : [

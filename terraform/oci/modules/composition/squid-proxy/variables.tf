@@ -1,6 +1,4 @@
-# =============================================================================
-# Identity and placement
-# =============================================================================
+# Identity and placement.
 
 variable "compartment_id" {
   description = "OCID of the compartment every resource in this module is created in. Replaces the implicit AWS account scope; a flat compartment is the deliberate first-cut simplification (prerequisite P5, oci/identity-model.md)."
@@ -52,9 +50,7 @@ variable "defined_tags" {
   default     = {}
 }
 
-# =============================================================================
-# Network
-# =============================================================================
+# Network.
 
 variable "vcn_id" {
   description = "OCID of the VCN. Needed only to create this module's NSGs."
@@ -98,9 +94,7 @@ variable "additional_nlb_nsg_ids" {
   default     = []
 }
 
-# =============================================================================
-# Compute
-# =============================================================================
+# Compute.
 
 variable "image_id" {
   description = <<-EOT
@@ -201,9 +195,7 @@ variable "custom_user_data" {
   default     = null
 }
 
-# =============================================================================
-# Autoscaling
-# =============================================================================
+# Autoscaling.
 
 variable "enable_autoscaling" {
   description = "Whether to attach an oci_autoscaling_auto_scaling_configuration to the pool."
@@ -314,9 +306,7 @@ variable "pre_termination_timeout" {
   default     = 300
 }
 
-# =============================================================================
-# Load balancer (L4)
-# =============================================================================
+# Load balancer (L4).
 
 variable "create_nlb" {
   description = "Whether this module creates the internal Network Load Balancer, its backend set and its listener. False attaches the pool to an existing backend set."
@@ -354,22 +344,11 @@ variable "nlb_preserve_source_destination" {
   default     = false
 }
 
-# 2026-09-05 (oracle-gated, see docs/multi-cloud-parity/oci/build-log.md C24):
-# split out of the variable above, which used to drive BOTH this and the
-# backend-set setting from one bool. They are not the same feature.
-# `oci_network_load_balancer_network_load_balancer.is_preserve_source_destination`
-# is OCI's older, deeper "transparent mode" (bump-in-the-wire): packets reach
-# the backend still addressed to the NLB's own VIP, not the backend's address,
-# and REQUIRES `skip_source_dest_check = true` on the backend instances' VNICs
-# or the OS-level network stack silently drops every packet as spoofed. This
-# module sets no such VNIC attribute anywhere (grep confirms zero hits), so
-# turning this on breaks the proxy at the network layer with no Terraform-side
-# error - a real, previously-live bug (both variables were driven by
-# `nlb_preserve_source_destination = true` before this split; C24 caught it
-# during the pod-NSG connectivity review, not before). Left false by default
-# and not wired to any stack value on purpose: enabling it correctly needs a
-# `skip_source_dest_check` attribute added to compute.tf's instance
-# configuration first, which is a real module change, not a var flip.
+# Split out of nlb_preserve_source_destination (they are not the same feature).
+# This is OCI's deeper bump-in-the-wire mode and REQUIRES
+# skip_source_dest_check = true on the backend VNICs or the OS drops every
+# packet as spoofed; this module sets no such attribute, so enabling it breaks
+# the proxy at the network layer with no Terraform-side error.
 variable "nlb_transparent_mode" {
   description = "Whether the NLB itself runs in IP-transparency / bump-in-the-wire mode (is_preserve_source_destination on the NLB resource, not the backend set). Requires skip_source_dest_check on backend VNICs, which this module does not yet set - do not enable until that lands."
   type        = bool
@@ -468,9 +447,7 @@ variable "tls_termination_mode" {
   }
 }
 
-# =============================================================================
-# Object storage - config delivery, whitelist, log archival
-# =============================================================================
+# Object storage - config delivery, whitelist, log archival.
 
 variable "create_config_bucket" {
   description = "Whether to create the Object Storage bucket carrying squid.conf and allowedlist.txt."
@@ -565,9 +542,7 @@ variable "bucket_kms_key_id" {
   default     = null
 }
 
-# =============================================================================
-# Break-glass SSH key
-# =============================================================================
+# Break-glass SSH key.
 
 variable "generate_ssh_key" {
   description = <<-EOT

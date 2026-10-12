@@ -23,9 +23,8 @@ locals {
   own_nsg_ids = var.create_nsg ? [oci_core_network_security_group.this[0].id] : []
   nsg_ids     = concat(local.own_nsg_ids, var.additional_nsg_ids)
 
-  # cloud-init user-data that creates the non-root review user (secreview-style:
-  # sudo, SSH-key-only), hardens sshd, and opens ufw tcp:22 to exactly the VPN
-  # source ranges.
+  # cloud-init user-data that creates the non-root review user (sudo, SSH-key-only),
+  # hardens sshd, and opens ufw tcp:22 to exactly the VPN source ranges.
   review_user = "secreview"
 
   user_data = templatefile("${path.module}/templates/userdata.sh", {

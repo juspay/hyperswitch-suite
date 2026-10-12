@@ -1,15 +1,5 @@
-# -----------------------------------------------------------------------------
-# Output contract.
-#
-# The AWS module's outputs were `policy_arns` and `policy_names`. `policy_arns`
-# existed for exactly one consumer - `eks-iam`'s `customer_managed_policy_arns`
-# - and that input has no OCI counterpart, so the output has no reader. Both
-# are replaced by statement text (check sheet section 4.4).
-#
-# This module creates no OCI resources. That is intentional and is stated here
-# as well as in the README, because a zero-resource module is easy to mistake
-# for dead code.
-# -----------------------------------------------------------------------------
+# Output contract. AWS's policy_arns / policy_names are replaced by statement
+# text (nothing is attachable). This module creates NO OCI resources.
 
 output "policy_statements" {
   description = <<-EOT

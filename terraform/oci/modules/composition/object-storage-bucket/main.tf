@@ -1,41 +1,5 @@
-# =============================================================================
-# composition/object-storage-bucket - a generic Object Storage bucket
-# =============================================================================
-# WHY A NEW MODULE RATHER THAN REUSING composition/object-storage-backend.
-# That module is not generic and must not be made generic: it hardcodes
-# `versioning = "Enabled"` and `access_type = "NoPublicAccess"` as posture (its
-# own comments say state-recovery requires both), derives the bucket name from
-# `state_bucket_name`, and creates an `oci_identity_policy` granting a named
-# group access to the STATE bucket. Widening it to serve a public asset bucket
-# would mean making its two posture literals into inputs, which is precisely the
-# guarantee the Terraform-state bucket exists to keep.
-#
-# WHAT THIS REPLACES ON THE OTHER CLOUDS. GCP's deleted
-# `apps/hyperswitch-sdk-assets` unit sourced
-# `tfr:///terraform-google-modules/cloud-storage//modules/simple_bucket`
-# directly from the public registry. There is no OCI equivalent worth using -
-# docs/multi-cloud-parity/oci/provider-facts.md records that OCI has essentially
-# one well-maintained registry module (oracle-terraform-modules/oke/oci), so
-# DIRECT-RESOURCE is the default here and REGISTRY-MODULE is the exception.
-# Strategy: DIRECT-RESOURCE.
-#
-# NOT IN THIS MODULE, deliberately:
-#   * no bucket policy - `oci_objectstorage_bucket_policy` does not exist. OCI
-#     IAM is subject-scoped; a grant to a named principal is an
-#     `oci_identity_policy` statement, and in this platform those statements are
-#     concentrated in ONE per-environment policy object owned by the
-#     `oke-workload-identity` unit (100-policy-objects-per-tenancy limit - see
-#     that unit's header). A bucket module that created its own policy object
-#     would be the exact failure that layout exists to prevent.
-#   * no `force_destroy` - the argument does not exist on OCI, and the API
-#     refuses to delete a non-empty bucket. Teardown is
-#     `oci os object bulk-delete --bucket-name <name> --namespace <ns>` first.
-#   * no CORS configuration - there is no CORS resource or argument on
-#     `oci_objectstorage_bucket`, and none is needed: the native Object Storage
-#     endpoint already returns `access-control-allow-origin: *` on every
-#     response (verified live against
-#     objectstorage.ap-mumbai-1.oraclecloud.com, 2026-09-05).
-# =============================================================================
+# A generic Object Storage bucket (DIRECT-RESOURCE strategy). No bucket-policy resource exists on
+# OCI; principal grants are concentrated in the central per-environment policy object, not here.
 
 data "oci_objectstorage_namespace" "this" {
   count = var.namespace == null ? 1 : 0
@@ -46,15 +10,9 @@ data "oci_objectstorage_namespace" "this" {
 locals {
   namespace = coalesce(var.namespace, one(data.oci_objectstorage_namespace.this[*].namespace))
 
-  # The public read URL prefix a browser or a CDN origin would use. Composed
-  # here rather than in the caller so exactly one place knows the shape.
-  #
-  # This endpoint carries a real, publicly-trusted TLS certificate with no
-  # custom domain and no certificate resource anywhere in Terraform - verified
-  # 2026-09-05 against ap-mumbai-1: CN=objectstorage.ap-mumbai-1.oraclecloud.com,
-  # issued by DigiCert Global G2 TLS RSA SHA256 2020 CA1. That is the whole
-  # reason the OCI port of `hyperswitch-sdk-assets` needs no Cloud-CDN-equivalent
-  # and no sslip.io wildcard-cert workaround.
+  # The public read URL prefix a browser or CDN origin would use. Composed here so
+  # exactly one place knows the shape. The endpoint carries a real, publicly-trusted
+  # TLS certificate with no custom domain or certificate resource.
   base_url = "https://objectstorage.${var.region}.oraclecloud.com/n/${local.namespace}/b/${var.bucket_name}/o"
 }
 

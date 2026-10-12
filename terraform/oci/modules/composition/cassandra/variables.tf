@@ -1,7 +1,4 @@
-# =============================================================================
 # Identity and naming
-# =============================================================================
-
 variable "environment" {
   description = "Environment short name (dev, sandbox, prod)."
   type        = string
@@ -29,10 +26,7 @@ variable "tenancy_ocid" {
   default     = null
 }
 
-# =============================================================================
 # Placement
-# =============================================================================
-
 variable "availability_domain" {
   description = <<-EOT
     Availability domain for every node. Null resolves the first AD via
@@ -52,10 +46,7 @@ variable "fault_domains" {
   default     = []
 }
 
-# =============================================================================
 # Network
-# =============================================================================
-
 variable "vcn_id" {
   description = "OCID of the VCN. Needed only to create the module-owned NSG."
   type        = string
@@ -103,10 +94,7 @@ variable "reserved_ip_addresses" {
   default     = null
 }
 
-# =============================================================================
 # Cluster
-# =============================================================================
-
 variable "cluster_name" {
   description = "Cassandra cluster name, passed through to the node bootstrap config unchanged."
   type        = string
@@ -167,10 +155,7 @@ variable "user_data_override" {
   default     = null
 }
 
-# =============================================================================
 # Compute
-# =============================================================================
-
 variable "image_id" {
   description = <<-EOT
     OCID of the custom image the nodes boot from. Replaces ami_id.
@@ -217,10 +202,7 @@ variable "boot_volume_vpus_per_gb" {
   default     = 10
 }
 
-# =============================================================================
 # Storage
-# =============================================================================
-
 variable "data_volume_size_in_gbs" {
   description = "Dedicated data volume size per node, GB. Replaces ebs_volume_size."
   type        = number
@@ -262,10 +244,7 @@ variable "volume_kms_key_id" {
   default     = null
 }
 
-# =============================================================================
 # Hardening and agents
-# =============================================================================
-
 variable "are_legacy_imds_endpoints_disabled" {
   description = <<-EOT
     Disable the legacy /v1 metadata endpoints - the equivalent of
@@ -293,10 +272,7 @@ variable "recovery_action" {
   default     = "RESTORE_INSTANCE"
 }
 
-# =============================================================================
 # SSH
-# =============================================================================
-
 variable "create_key_pair" {
   description = "Generate an SSH key pair for the fleet."
   type        = bool
@@ -325,10 +301,7 @@ variable "vault_secret" {
   default = null
 }
 
-# =============================================================================
 # Logging
-# =============================================================================
-
 variable "enable_logging" {
   description = "Create the OCI Logging log group + custom log. Replaces aws_cloudwatch_log_group."
   type        = bool
@@ -347,10 +320,7 @@ variable "log_retention_days" {
   default     = 30
 }
 
-# =============================================================================
 # Identity
-# =============================================================================
-
 variable "create_identity" {
   description = "Create the dynamic group + policy giving the nodes their instance-principal identity. Requires tenancy_ocid."
   type        = bool
@@ -381,10 +351,7 @@ variable "cluster_tag_value" {
   default     = "cassandra-cluster"
 }
 
-# =============================================================================
-# Seed discovery (SUBSTITUTE - check sheet feature 11, section 4.4)
-# =============================================================================
-
+# Seed discovery
 variable "enable_seed_discovery" {
   description = <<-EOT
     Build the runtime seed-discovery service (OCI Functions behind API Gateway).
@@ -441,10 +408,7 @@ variable "seed_discovery_gateway_endpoint_type" {
   default     = "PRIVATE"
 }
 
-# =============================================================================
 # Tags
-# =============================================================================
-
 variable "freeform_tags" {
   description = "Additional freeform tags, merged over the module's own. The OCI analogue of the AWS `tags` variable."
   type        = map(string)

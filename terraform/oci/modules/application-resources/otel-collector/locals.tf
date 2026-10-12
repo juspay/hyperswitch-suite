@@ -1,17 +1,6 @@
-# -----------------------------------------------------------------------------
-# Grant list and statement renderer.
-#
-# Same divergence as the rest of this wave: the check sheet proposes a nested
-# `../oke-workload-identity` call owning a per-app `oci_identity_policy`; the
-# orchestrator took the one-shared-object-per-environment branch, so this module
-# renders text and creates no policy. Renderer copied character-for-character
-# from `oke-workload-identity/locals.tf`; contributed statements are re-checked
-# by that module's plan-time preconditions.
-#
-# NOTE WHAT IS ABSENT FROM THE GRANT LIST: anything to do with traces. There is
-# no `use apm-domains` here and there must not be. APM ingestion is
-# header-authenticated with a data key, not IAM. See variables.tf header.
-# -----------------------------------------------------------------------------
+# Grant list and statement renderer (canonical copy, re-checked by the shared
+# policy's plan-time preconditions). NOTE WHAT IS ABSENT: anything to do with
+# traces. APM ingestion is header-authenticated with a data key, not IAM.
 
 locals {
   name_prefix = "${var.project_name}-${var.environment}-otel"

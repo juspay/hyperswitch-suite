@@ -1,25 +1,12 @@
-# -----------------------------------------------------------------------------
-# NO `oci_identity_policy`. The identity is `policy_statements` in outputs.tf,
-# contributed to the environment's single shared oke-workload-identity object.
-#
-# What IS here is the half of the job AWS never had to configure: the trace
-# backend and the log push target. On AWS, X-Ray and CloudWatch are ambient -
-# a managed policy on the role is the entire setup. On OCI both are explicit
-# objects, one of them regional, one of them authenticated outside IAM.
-# -----------------------------------------------------------------------------
+# NO `oci_identity_policy` - the identity is policy_statements in outputs.tf,
+# contributed to the shared oke-workload-identity object. What IS here is the
+# half AWS never had to configure: the trace backend and log push target.
 
 # --- Traces -------------------------------------------------------------------
-# APM ingests OTLP spans over HTTP at
-#   https://<data_upload_endpoint>/20200101/opentelemetry/private/v1/traces
-# authenticated by `Authorization: dataKey <key>`. No principal. No policy. This
-# resource produces NO IAM grant, and there is no statement anywhere in this
-# module that mentions APM.
-#
-# Deliberately NOT read here: `data "oci_apm_data_keys"`. It would return the
-# private key and write it to Terraform state in plaintext. The key is not an
-# attribute of this resource either, which is what makes creating the domain in
-# Terraform safe. Place the key into a vault secret out of band and pass its
-# OCID as `apm_data_key_secret_id`.
+# APM ingests OTLP spans over HTTP, authenticated by a `dataKey` header - no
+# principal, no policy, no IAM grant. Deliberately NOT read here:
+# `data "oci_apm_data_keys"` would write the private key to state in plaintext.
+# Place it into a vault secret out of band and pass its OCID instead.
 resource "oci_apm_apm_domain" "this" {
   count = var.create_apm_domain ? 1 : 0
 

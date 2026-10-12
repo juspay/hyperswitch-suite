@@ -1,41 +1,15 @@
-# =========================================================================
-# PLAN-TIME GUARDS
-# =========================================================================
-# terraform_data is a built-in resource (no provider), used purely to hang
-# lifecycle.precondition blocks off. A precondition is a hard plan failure,
-# unlike a `check` block which only warns - and each of these is a condition
-# under which the NSG-only model is quietly not in force.
-# =========================================================================
+# Plan-time guards for the NSG-only model. terraform_data has no provider and
+# hangs lifecycle.precondition off a built-in resource - a precondition is a
+# hard plan failure, unlike a `check` block which only warns.
 
-# -------------------------------------------------------------------------
 # 1. The VCN default security list must be empty.
-#
-# THE FAIL-OPEN RISK, in one place. OCI evaluates security lists and NSGs as
-# a UNION: "a packet is allowed to reach VNIC 1 if ANY rule in ANY of the
-# relevant lists and groups allows the traffic." Rules are allow-only - there
-# is no deny rule and no priority ordering - so an NSG can never narrow what a
-# security list has already opened. The stock default security list carries
-# allow-all egress plus SSH-22 ingress, and any subnet that does not set
-# security_list_ids inherits it. On AWS the equivalent default
-# (aws_default_security_group) is inert unless something is attached to it; on
-# OCI it applies by default. If it is not neutered, every egress rule this
-# module writes is decorative and the whole NSG-only model is fail-open.
-#
-# vpc-network owns the fix (oci_core_default_security_list with zero rule
-# blocks, plus explicit security_list_ids on every subnet). This module owns
-# the assertion, because it is the module whose correctness depends on it.
-#
-# ZPR (Zero Trust Packet Routing) is the only OCI mechanism that ANDs rather
-# than unions, and is therefore the only way to narrow an over-broad NSG. It
-# is deliberately out of scope for the first cut - see network-security-model.md
-# §3.5 - which means this guard is the entire defence for now.
-# -------------------------------------------------------------------------
-# The provider exposes no singular oci_core_security_list DATA source (only the
-# managed resource), so the whole VCN's list set is read and filtered by OCID.
-# That is strictly better for this purpose: it also makes visible any NON-default
-# security list, which the NSG-only model says must not exist at all
-# (network-security-model.md §5.1, "no composition module creates an
-# oci_core_security_list").
+# OCI unions security-list and NSG rules (allow-only, no deny/priority), so the
+# stock allow-all+SSH-22 default list would silently make every NSG egress rule
+# decorative = fail-open. vpc-network neuters it; this module asserts it stayed
+# that way. ZPR is deliberately out of scope, so this guard is the whole defence.
+# OCI has no singular security-list data source, so the full set is read and
+# filtered by OCID - which also surfaces any NON-default list, which must not
+# exist under the NSG-only model.
 data "oci_core_security_lists" "vcn" {
   count = (local.assert_default_sl || local.has_allowed_sl) ? 1 : 0
 
@@ -65,26 +39,16 @@ resource "terraform_data" "default_security_list_is_empty" {
   }
 }
 
-# -------------------------------------------------------------------------
 # 1b. No unauthorized non-default security list.
-#
-# Under the NSG-only model the default list should be the ONLY security list in
-# the VCN, and a second one is a permanent, un-narrowable widening of every VNIC
-# in the subnets it is attached to. The model tolerates a small named allowlist
-# of exceptions (variables.tf `allowed_non_default_security_lists`), each for a
-# resource type with a VNIC but no (or partial) NSG support - verified here:
-#   - `bastion`: vpc-network's dedicated management-bastion list, carrying the
-#     OCI Bastion service's data-plane egress only (0 ingress).
-#   - `redis`: the OCI Cache (Valkey/Redis) service's automatically-created
-#     list for its managed VNICs (single service-port ingress, e.g. 6379).
-#
-# This is a HARD plan failure (precondition), not an advisory `check`, because an
-# unauthorized non-default list silently defeats the NSG-only model exactly as
-# badly as a populated default one does - it unions extra allow rules under every
-# NSG (network-security-model.md section 5.1). Gated on the allowlist being
-# non-empty, so a standalone plan before vpc-network's security-list output
-# exists (or before the Redis cluster creates its list) still plans clean.
-# -------------------------------------------------------------------------
+# Under the NSG-only model the default list should be the ONLY list in the VCN;
+# a second one permanently widens every VNIC in its subnets. A small named
+# allowlist (`allowed_non_default_security_lists`) permits only resource types
+# with a VNIC but no NSG support: `bastion` (vpc-network's management list,
+# egress-only) and `redis` (the OCI Cache/Valkey service's auto-created list,
+# single service-port ingress). This is a HARD precondition, not a `check`,
+# because an unauthorized list defeats the NSG-only model as badly as a
+# populated default does. Gated on the allowlist being non-empty so a standalone
+# plan before vpc-network/Redis exist still plans clean.
 resource "terraform_data" "no_unauthorized_non_default_security_lists" {
   count = local.has_allowed_sl ? 1 : 0
 
@@ -103,12 +67,9 @@ resource "terraform_data" "no_unauthorized_non_default_security_lists" {
   }
 }
 
-# -------------------------------------------------------------------------
 # 2. Every service_cidr_label used must resolve to a real service CIDR.
-#
-# lookup() falls back to a sentinel rather than erroring so the failure is a
-# readable message naming the label, not a raw "key not found".
-# -------------------------------------------------------------------------
+# lookup() falls back to a sentinel so the failure is a readable message naming
+# the label, not a raw "key not found".
 resource "terraform_data" "service_cidr_labels_resolved" {
   count = local.has_service_cidr_rules ? 1 : 0
 
@@ -122,14 +83,9 @@ resource "terraform_data" "service_cidr_labels_resolved" {
   }
 }
 
-# -------------------------------------------------------------------------
 # 3. Per-NSG rule headroom.
-#
-# OCI caps an NSG at 120 rules total (ingress + egress) and the limit is NOT
-# increasable. Because multi-CIDR rules fan out (locals.tf), rule count now
-# scales with the length of address lists like office_ips - so the ceiling is
-# something a config change can walk into. Fail in plan, not at apply.
-# -------------------------------------------------------------------------
+# OCI caps an NSG at 120 rules and the limit is NOT increasable; multi-CIDR
+# rules fan out, so the count scales with address-list length. Fail in plan.
 resource "terraform_data" "nsg_rule_headroom" {
   count = length(local.target_nsg_ids) > 0 ? 1 : 0
 
@@ -143,14 +99,10 @@ resource "terraform_data" "nsg_rule_headroom" {
   }
 }
 
-# -------------------------------------------------------------------------
 # 4. No rule should have an empty selector list.
-#
-# `cidr = []` or `nsg_id = []` passes the exactly-one-selector validation and
-# then fans out to zero resources - an allow that quietly does not exist. It
-# fails closed, so this warns rather than blocks; the usual cause is a stack
-# that has not set `values.ip_list` yet.
-# -------------------------------------------------------------------------
+# `cidr = []` / `nsg_id = []` passes the exactly-one-selector validation and then
+# fans out to zero resources - an allow that quietly does not exist. Fails closed,
+# so this warns rather than blocks; the common cause is a `values.ip_list` not set.
 check "no_empty_selector_lists" {
   assert {
     condition     = length(local.empty_selector_rules) == 0

@@ -1,32 +1,12 @@
-# =============================================================================
-# Output contract
-#
-# Mapped from the AWS module's 17 outputs (check sheet section 5). Nine of them
-# have nothing to emit, each for a reason recorded in main.tf rather than
-# emitted as an empty map:
-#
-#   metric_alarm_arns / metric_alarm_names
-#     feature 2 not carried forward (FULL but unused on AWS).
-#   composite_alarm_arns / composite_alarm_names
-#     feature 3 is SUBSTITUTE - no composite alarm resource exists.
-#   metric_anomaly_alarm_arns / _names
-#   classified_anomaly_alarm_arns / _names / anomaly_alarms_by_classification
-#     features 5 & 6 are NONE - no resource, no output.
-#   log_stream_arns
-#     feature 9 - streams, if ever needed, are their own oci_logging_log
-#     entries, so they appear in `log_ids` rather than as a sub-output.
-#   dashboard_urls
-#     feature 11 not carried forward.
-# =============================================================================
+# Output contract.
+# AWS outputs with no OCI counterpart (metric_alarm/composite/anomaly ARNs, streams,
+# dashboard URLs) are dropped rather than emitted as empty maps.
 
 output "classified_alarm_ocids" {
   description = "Map of \"<alarm>-<severity>\" to alarm OCID. Counterpart of AWS's classified_alarm_arns."
   value       = { for k, v in oci_monitoring_alarm.classified : k => v.id }
 
-  # ---------------------------------------------------------------------------
-  # Plan-time checks. Both are failure modes OCI has and AWS does not, so they
-  # cannot be caught by reading the AWS config across.
-  # ---------------------------------------------------------------------------
+  # Plan-time checks - failure modes OCI has and AWS does not.
   precondition {
     condition     = length(local.alarms_missing_destinations) == 0
     error_message = "These alarms have no destination: ${join(", ", local.alarms_missing_destinations)}. `destinations` is REQUIRED and non-empty on oci_monitoring_alarm - unlike AWS, where an alarm with empty alarm_actions is legal and quietly notifies nobody. Set var.destinations[<severity>] or var.default_destinations to an ONS topic OCID from the `notifications` module."

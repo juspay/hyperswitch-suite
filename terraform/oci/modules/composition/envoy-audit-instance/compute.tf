@@ -1,20 +1,5 @@
-# =============================================================================
-# ONE standalone instance - the audit box
-# =============================================================================
-# A single oci_core_instance, deliberately NOT a pool/configuration/autoscaling
-# chain. This is the security-team's disposable review host from the freshly
-# built hardened Ubuntu 24.04 envoy image.
-#
-# The shape of this resource (source_details from image, create_vnic_details in
-# the VPN-reachable management tier, metadata carrying the review user + the
-# security team's key, instance_options hardening, no public IP) is the
-# bastion-host module's standalone-instance idiom, minus everything the review
-# box does not need.
-#
-# The review user (non-root, sudo, SSH-key-only, ufw limited to tcp:22 from the
-# VPN ranges) is created by templates/userdata.sh at boot, mirroring the GCP
-# `secreview` review-VM pattern. The key is provided at apply time via
-# var.ssh_public_key; it is never baked into the image or the module.
+# The security team's standalone review box from the hardened Envoy image: VPN-reachable
+# private IP only, non-root review user, dedicated key supplied at apply time.
 
 resource "oci_core_instance" "this" {
   compartment_id      = var.compartment_id
@@ -40,16 +25,10 @@ resource "oci_core_instance" "this" {
 
   create_vnic_details {
     subnet_id = var.subnet_id
-    # assign_public_ip is a STRING on oci_core_instance (not the bool it is on
-    # oci_core_instance_configuration) - a real inconsistency in the provider.
-    #
-    # There is no `prohibit_public_ip_on_vnic` argument on a VNIC's
-    # create_vnic_details - that attribute is subnet-level, and the `management`
-    # tier ALREADY sets prohibit_public_ip_on_vnic = true (vpc-network
-    # locals.tf). So the per-VNIC control here is assign_public_ip = "false",
-    # and the subnet-level prohibition is the belt-and-braces underneath it. The
-    # audit instance has no public IP and is reached over the VPN by private IP
-    # only - strictly the envoy tier's stance.
+    # assign_public_ip is a STRING here (not a bool, as on instance_configuration).
+    # No per-VNIC prohibit_public_ip_on_vnic exists - that is subnet-level
+    # (vpc-network management tier sets it true). So assign_public_ip = "false"
+    # plus the subnet-level prohibition = no public IP, VPN-reachable private IP only.
     assign_public_ip = "false"
     nsg_ids          = local.nsg_ids
     display_name     = "${local.display_name}-vnic"
@@ -80,13 +59,11 @@ resource "oci_core_instance" "this" {
   defined_tags  = var.defined_tags
 
   lifecycle {
-    # The image is the boot artefact, not the running state. Replacing this
-    # instance on an image bump is correct and cheap (it holds no data).
+    # The image is the boot artefact, not the running state; replacing on an image bump holds no data.
     ignore_changes = []
 
-    # The terminate-after-audit lifecycle is the whole point of this box. The
-    # operator destroys it after W1; this precondition makes it a deliberate,
-    # explicit action rather than a silent drift surprise.
+    # This box is destroyed after audit; require preserve_boot_volume=false so removal is deliberate,
+    # not a silent drift surprise.
     precondition {
       condition     = var.preserve_boot_volume == false
       error_message = "preserve_boot_volume must stay false: this is a disposable audit instance whose boot volume must be removed on termination. Set true only if you intend to keep it and know the billing consequence."

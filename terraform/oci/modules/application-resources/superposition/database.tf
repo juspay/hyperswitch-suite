@@ -1,25 +1,7 @@
-# =============================================================================
-# Dedicated database (check sheet feature 6, SUBSTITUTE)
-# =============================================================================
-# Nested exactly the way the AWS module nests `composition/database`:
-# `count = var.create_database`, inputs forwarded, a subset of outputs
-# re-exported. Nesting rather than depending on the shared phase-1 `database`
-# unit is not a new decision - it is what AWS already does, and what GCP's
-# AlloyDB port already copied.
-#
-# ONE CONSEQUENCE WORTH STATING: because this database is nested rather than
-# depended-on, it provisions in stack phase 3 alongside the app, not in phase 1
-# with the shared database. Identical to AWS today; not a phasing change.
-#
-# The parity analysis for everything inside this call lives in
-# docs/multi-cloud-parity/oci/modules/database.md and data-tier-strategy.md and
-# is deliberately not restated here. The one superposition-specific point that
-# is NOT visible from those documents: a reviewer auditing this module's
-# identity contribution will see nothing about the database at all, and that is
-# correct. OCI Database with PostgreSQL has no IAM-principal-to-database-user
-# authentication path (database.md section 4.14, verdict NONE), so database
-# access is a network/TLS/credential concern, not an IAM-statement one. The
-# database adds ZERO statements to `policy_statements`.
+# Dedicated database, nested exactly as the AWS module nests composition/database.
+# Provisions in stack phase 3 alongside the app. Database access is a
+# network/TLS/credential concern on OCI (no IAM-principal auth), so this module
+# adds ZERO statements to policy_statements.
 
 module "database" {
   count = var.create_database ? 1 : 0
@@ -71,10 +53,8 @@ module "database" {
   backup_copy_regions   = var.database_config.backup_copy_regions
   pitr_restore_days     = var.database_config.pitr_restore_days
 
-  # Cross-region DR. Aurora Global Database has no counterpart object; this is
-  # Replication with Warm Standby - two independent db systems in a WAL
-  # relationship, 300 s RPO floor, manual failover only, and PITR forfeited
-  # while it is on. Off by default, and that default is a decision.
+  # Cross-region DR: Warm Standby - two independent db systems in a WAL
+  # relationship. Off by default; PITR is forfeited while it is on.
   enable_warm_standby  = var.database_config.enable_warm_standby
   primary_db_system_id = var.database_config.primary_db_system_id
   is_rpo_enforced      = var.database_config.is_rpo_enforced

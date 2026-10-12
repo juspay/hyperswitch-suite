@@ -1,23 +1,15 @@
-# =============================================================================
-# oke - provider requirements
-# =============================================================================
+# oke - provider requirements.
 #
-# Port note (AWS `composition/eks` -> OCI `composition/oke`):
-# The AWS module needs only the `aws` provider. This module needs five, because
-# the registry module it wraps (`oracle-terraform-modules/oke/oci`) declares
-# them: `helm`/`cloudinit`/`random`/`time`/`null` are pulled in by features we
-# deliberately leave switched off (Helm installers, operator cloud-init), but
-# Terraform still requires the provider blocks to resolve.
+# This module needs five extra providers (helm/cloudinit/random/time/null) only
+# because the registry module it wraps declares them; they are pulled in by
+# features we deliberately leave switched off, but Terraform still requires the
+# provider blocks to resolve.
 #
-# `oci.home` is NOT declared as a `configuration_aliases` entry here on purpose.
-# The registry module declares it because its IAM sub-module must write
-# dynamic groups and policies in the tenancy's home region. We pass the default
-# provider into that slot in `main.tf` (`providers = { oci.home = oci }`), which
-# is safe only because `create_iam_resources = false` - see the comment there.
-# Declaring the alias here would force every consuming live root's generated
-# provider block to grow a second `provider "oci" { alias = "home" }`, and
-# root.hcl is hand-written per environment. See gap 4.1 in
-# docs/multi-cloud-parity/oci/modules/eks.md.
+# `oci.home` is deliberately NOT declared as a `configuration_aliases` entry:
+# we pass the default provider into that slot in main.tf
+# (`providers = { oci.home = oci }`), which is safe only because
+# create_iam_resources = false. Declaring the alias here would force every
+# consuming root.hcl to add a second `provider "oci" { alias = "home" }`.
 
 terraform {
   required_version = ">= 1.5.0"

@@ -1,31 +1,4 @@
-# =============================================================================
-# Output contract - 29 AWS outputs become the set below.
-# =============================================================================
-# DELETED WITH NO REPLACEMENT, and deliberately not substituted:
-#
-#   role_arn, role_name, role_id, role_unique_id
-#       Their only consumer was the `eks.amazonaws.com/role-arn` service-account
-#       annotation. OCI needs no annotation at all: the POLICY names the service
-#       account, and the pod side is `serviceAccountName` plus
-#       `automountServiceAccountToken: true` and nothing else. Offering some
-#       OCID as "the new role_arn" would invite someone to annotate a service
-#       account with it and produce charts that look configured while the
-#       identity works by accident (identity-model.md section 6.4).
-#
-#   *_policy_arn (kms_policy_arn, s3_*_policy_arn, ses_policy_arn, ...)
-#       There is no attachable policy object on OCI. `oci_identity_policy` IS
-#       the grant (identity-model.md section 3.6).
-#
-#   oidc_provider_urls / oidc_enabled
-#       No OIDC provider registration exists on the OCI side.
-#
-#   ses_role_arn
-#       The cross-account hop is not ported (email.tf).
-# =============================================================================
-
-# -----------------------------------------------------------------------------
-# THE IDENTITY CONTRACT
-# -----------------------------------------------------------------------------
+# Output contract
 
 output "policy_statements" {
   description = <<-EOT
@@ -58,10 +31,6 @@ output "authorized_workloads" {
   value       = local.authorized_workloads
 }
 
-# -----------------------------------------------------------------------------
-# KMS
-# -----------------------------------------------------------------------------
-
 output "kms_vault_id" {
   description = "OCID of the Vault holding the key. No AWS counterpart - AWS keys live on a regional service with no enclosing object. This is what `oci_kms_vault_replication` targets, and what a passive-region stack reads instead of AWS's `kms_key_arn`."
   value       = one(oci_kms_vault.this[*].id)
@@ -92,10 +61,6 @@ output "kms_replica_enabled" {
   value       = local.kms_replica_create
 }
 
-# -----------------------------------------------------------------------------
-# Object Storage
-# -----------------------------------------------------------------------------
-
 output "object_storage_namespace" {
   description = "The tenancy's Object Storage namespace. No AWS counterpart - S3 bucket names are globally unique, OCI's are unique within this namespace, and every consuming API call needs it explicitly."
   value       = data.oci_objectstorage_namespace.this.namespace
@@ -110,10 +75,6 @@ output "file_uploads_bucket_name" {
   description = "File-uploads bucket name. Replaces AWS s3_file_uploads_bucket_id/_arn."
   value       = one(oci_objectstorage_bucket.file_uploads[*].name)
 }
-
-# -----------------------------------------------------------------------------
-# Email Delivery
-# -----------------------------------------------------------------------------
 
 output "email_domain_id" {
   description = "OCID of the verified email domain, whether created here or supplied. `decision-engine` should consume THIS rather than verifying a second domain for the same logical sender (decision-engine.md section 4.2) - a sharing decision that is an oracle gate item and is NOT YET CONSULTED."
@@ -149,10 +110,6 @@ output "smtp_credential_vault_secret_id" {
   description = "Echo of the Vault secret OCID holding the SMTP fallback credential, for an ExternalSecret to project into the pod. The OCID only - this module never reads, stores or emits the credential value."
   value       = var.smtp_credential_vault_secret_id
 }
-
-# -----------------------------------------------------------------------------
-# Feature echoes and placement
-# -----------------------------------------------------------------------------
 
 output "secrets_enabled" {
   description = "Whether the Vault read grants (`read secret-bundles` + `read secrets`) were emitted."

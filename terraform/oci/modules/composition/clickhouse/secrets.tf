@@ -1,12 +1,8 @@
-# =============================================================================
-# SSH key pair and private-key escrow (check sheet feature 7, FULL)
-# =============================================================================
-# tls_private_key is unchanged - key generation is cloud-agnostic. There is no
-# aws_key_pair object on OCI (the public key is an instance-metadata line), and
-# escrow moves from SSM Parameter Store to OCI Vault, which needs a pre-existing
-# Vault AND KMS key. While either is null nothing is written and the private key
-# exists only in Terraform state, which makes the state backend's encryption
-# load-bearing.
+# SSH key pair and private-key escrow
+# The public key is a line in instance metadata (no key-pair resource), and
+# escrow goes to OCI Vault, which needs a pre-existing Vault AND KMS key. When
+# either is missing the private key lives only in Terraform state, making state
+# encryption load-bearing.
 
 resource "tls_private_key" "clickhouse" {
   count = local.generate_key ? 1 : 0

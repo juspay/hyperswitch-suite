@@ -1,13 +1,4 @@
-# =============================================================================
-# Output contract - 16 AWS outputs become the set below.
-# =============================================================================
-# DELETED WITH NO REPLACEMENT:
-#   role_arn / role_name / role_id  - no role, no annotation to consume one.
-#   s3_policy_arn / ses_policy_arn / attached_policy_arns - nothing attachable.
-#   oidc_provider_urls              - no OIDC registration.
-#   cloudfront-related outputs      - feature 7, verdict NONE (no first-party
-#                                     CDN on OCI).
-# =============================================================================
+# Output contract
 
 output "policy_statements" {
   description = <<-EOT
@@ -43,10 +34,6 @@ output "kms_key_id" {
   value       = var.kms_key_id
 }
 
-# -----------------------------------------------------------------------------
-# Object Storage
-# -----------------------------------------------------------------------------
-
 output "bucket_name" {
   description = "Bucket name. Replaces AWS s3_bucket_id/_arn - OCI addresses a bucket by (namespace, name), so there is no ARN to emit."
   value       = one(oci_objectstorage_bucket.this[*].name)
@@ -62,10 +49,6 @@ output "bucket_lifecycle_policy_id" {
   value       = one(oci_objectstorage_object_lifecycle_policy.this[*].id)
 }
 
-# -----------------------------------------------------------------------------
-# Email Delivery
-# -----------------------------------------------------------------------------
-
 output "email_domain_id" {
   description = "OCID of the verified email domain in effect - hyperswitch's, when shared (the recommended default), or this module's own when email.create is true."
   value       = local.email_domain_id
@@ -80,10 +63,6 @@ output "email_domain_is_shared" {
   description = "True when this module consumes hyperswitch's verified domain rather than owning one. The recommended posture: both modules send as the same logical sender today, so two verified domains would be duplicated DNS verification for no isolation benefit (check sheet section 4.2). Oracle gate item, not yet consulted."
   value       = local.email_enabled && !local.email_create
 }
-
-# -----------------------------------------------------------------------------
-# Placement
-# -----------------------------------------------------------------------------
 
 output "compartment_id" {
   description = "Compartment these resources live in, and the default location term of every statement emitted."

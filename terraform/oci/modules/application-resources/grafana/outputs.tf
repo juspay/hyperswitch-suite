@@ -1,22 +1,4 @@
-# =============================================================================
-# Output contract - 24 AWS outputs become the set below.
-# =============================================================================
-# DELETED WITH NO REPLACEMENT:
-#   role_arn / role_id / role_name / oidc_enabled - no role, no annotation, no
-#     OIDC registration (identity-model.md section 6.4).
-#   attached_policy_arns                          - nothing is attachable.
-#   database_kms_key_arn / _id / _aliases         - oci_psql_db_system has no
-#     customer-managed-key argument at all in provider 9.0.0 (database.md
-#     section 4.9). Emitting nulls named after a capability that does not exist
-#     would let a consumer plan around it.
-#   database_global_cluster_*                     - no global-cluster object,
-#     and cross-region DR is deliberately not wired for this consumer
-#     (database.tf).
-# =============================================================================
-
-# -----------------------------------------------------------------------------
-# THE IDENTITY CONTRACT
-# -----------------------------------------------------------------------------
+# Output contract
 
 output "policy_statements" {
   description = <<-EOT
@@ -82,10 +64,6 @@ output "logs_read_enabled" {
   description = "Whether the `read log-content` + `read log-groups` grants were emitted."
   value       = var.logs_read_enabled
 }
-
-# -----------------------------------------------------------------------------
-# Grafana's own database
-# -----------------------------------------------------------------------------
 
 output "database_created" {
   description = "Whether a dedicated database was provisioned by this module."
@@ -155,10 +133,6 @@ output "database_name" {
   description = "Always null. OCI creates only the default `postgres` database and provider 9.0.0 has no `oci_psql_database` resource, so a `grafana` database is a manual `psql` step (database.md open question 9.4). Emitted explicitly so the gap is visible rather than looking like an unwired value."
   value       = null
 }
-
-# -----------------------------------------------------------------------------
-# Passthrough and placement
-# -----------------------------------------------------------------------------
 
 output "host_domains_map" {
   description = "DNS/ingress metadata, echoed unchanged. Feature 7, FULL - no cloud resource behind it on any cloud, and the GCP precedent has the identical output."

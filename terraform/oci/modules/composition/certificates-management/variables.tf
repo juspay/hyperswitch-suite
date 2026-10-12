@@ -1,7 +1,3 @@
-# =============================================================================
-# Identity / naming
-# =============================================================================
-
 variable "compartment_id" {
   description = "OCID of the compartment that holds the certificates and, if created here, the root CA. OCI's analogue of the GCP module's project_id; the compartment layout itself is owned by docs/multi-cloud-parity/oci/identity-model.md, this module only consumes the id it is given."
   type        = string
@@ -34,10 +30,6 @@ variable "freeform_tags" {
   type        = map(string)
   default     = {}
 }
-
-# =============================================================================
-# Certificates
-# =============================================================================
 
 variable "certificates" {
   description = <<-EOT
@@ -75,17 +67,14 @@ variable "certificates" {
     # ISSUED_BY_INTERNAL_CA | MANAGED_EXTERNALLY_ISSUED_BY_INTERNAL_CA | IMPORTED
     config_type = string
 
-    # "public"   - served to clients outside the tenancy. MUST be IMPORTED.
-    # "internal" - served only to clients the platform configures to trust
-    #              the private CA (service mesh, SSO, internal ALB equivalent).
+    # "public"   - clients outside the tenancy. MUST be IMPORTED.
+    # "internal" - clients configured to trust the private CA.
     trust_domain = optional(string, "internal")
 
-    # ---- ISSUED_BY_INTERNAL_CA ------------------------------------------
+    # ISSUED_BY_INTERNAL_CA
     common_name = optional(string)
-    # type is "DNS" or "IP". Wildcards ("*.internal.example.net") are legal
-    # here - the SAN mechanism is generic X.509 and survives the port intact
-    # (acm.md feature 3, FULL) - but a wildcard private-CA certificate is
-    # still not publicly trusted.
+    # SANs: type "DNS" or "IP". Wildcards legal, but a wildcard private-CA cert
+    # is still not publicly trusted.
     subject_alternative_names = optional(list(object({
       type  = string
       value = string
@@ -97,21 +86,18 @@ variable "certificates" {
     validity_not_after              = optional(string)
     validity_not_before             = optional(string)
 
-    # ---- MANAGED_EXTERNALLY_ISSUED_BY_INTERNAL_CA -----------------------
+    # MANAGED_EXTERNALLY_ISSUED_BY_INTERNAL_CA
     csr_pem = optional(string)
 
-    # ---- IMPORTED --------------------------------------------------------
-    # PEM material produced outside this module. Pass it in from a secret
-    # store; do not commit it. Marked sensitive on the variable as a whole.
+    # IMPORTED - PEM produced outside this module. Pass in from a secret store;
+    # do not commit it.
     certificate_pem            = optional(string)
     cert_chain_pem             = optional(string)
     private_key_pem            = optional(string)
     private_key_pem_passphrase = optional(string)
 
-    # ---- Renewal (CA-issued only; acm.md feature 4, PARTIAL) -------------
-    # ISO 8601 durations, e.g. renewal_interval = "P30D",
-    # advance_renewal_period = "P7D". Oracle renews only certificates Oracle
-    # issued; there is no rotation hook on IMPORTED at all.
+    # Renewal (CA-issued only). ISO 8601 durations, e.g. renewal_interval = "P30D".
+    # Oracle renews only certs Oracle issued; no rotation hook on IMPORTED.
     renewal_interval       = optional(string)
     advance_renewal_period = optional(string)
 
@@ -120,15 +106,9 @@ variable "certificates" {
 
   default = {}
 
-  # NOT marked sensitive at the variable level, deliberately: a sensitive value
-  # cannot be used as a for_each argument, and this map's KEYS are the resource
-  # addresses. The two attributes that actually carry secret material -
-  # private_key_pem and private_key_pem_passphrase - are marked sensitive by
-  # the oracle/oci provider schema itself, so they are redacted from plan
-  # output and from any output derived from them regardless. Supply them from a
-  # secret store (an OCI Vault secret read by the unit), never from a committed
-  # tfvars file.
-
+  # Not marked sensitive at the variable level (a sensitive value can't be a
+  # for_each key); the key material attributes themselves are provider-marked
+  # sensitive. Supply PEMs from a secret store, never a committed tfvars file.
   validation {
     condition = alltrue([
       for k, c in var.certificates : contains(
@@ -144,8 +124,7 @@ variable "certificates" {
     error_message = "certificates[*].trust_domain must be \"public\" or \"internal\"."
   }
 
-  # The guard rail acm.md section 4 asks for, expressed as code rather than as
-  # a paragraph nobody reads at 2am.
+  # Guard: a public trust_domain is only valid on IMPORTED certs (un-applyable).
   validation {
     condition = alltrue([
       for k, c in var.certificates : c.config_type == "IMPORTED"
@@ -178,8 +157,7 @@ variable "certificates" {
     error_message = "certificates[*].csr_pem is required when config_type = MANAGED_EXTERNALLY_ISSUED_BY_INTERNAL_CA."
   }
 
-  # Fail loudly rather than silently dropping the rule: an operator who sets
-  # renewal_interval on an IMPORTED certificate believes renewal is handled.
+  # Fail loudly: renewal_interval on an IMPORTED cert would mislead the operator.
   validation {
     condition = alltrue([
       for k, c in var.certificates : c.renewal_interval == null && c.advance_renewal_period == null
@@ -189,21 +167,9 @@ variable "certificates" {
   }
 }
 
-# =============================================================================
-# Root certificate authority
-# =============================================================================
-# NEW SURFACE, not a port. Neither the AWS nor the GCP module owns a CA: ACM
-# takes `private_authority_arn` as a reference to a CA somebody else made, and
-# GCP's certificate-manager has no CA concept at all. On OCI a private CA is
-# the ONLY way to get a certificate Oracle issues, so something has to own one.
-#
-# Both shapes are supported and neither is imposed:
-#   create_root_ca = true   -> this module owns a root CA (small footprints)
-#   default_issuer_ca_id    -> a shared, separately-owned CA is referenced
-# acm.md oracle-gate item 2 is exactly this choice; it is left open here on
-# purpose rather than decided by a default.
-# =============================================================================
-
+# NEW SURFACE, not a port. On OCI a private CA is the only way to get a cert
+# Oracle issues. create_root_ca = true -> this module owns a CA; else set
+# default_issuer_ca_id to a shared, separately-owned CA. Neither is imposed.
 variable "create_root_ca" {
   description = "Create a root certificate authority in this module. Leave false and set default_issuer_ca_id when the platform stands up one shared CA elsewhere. Oracle-gate item 2 in docs/multi-cloud-parity/oci/modules/acm.md - not yet consulted, so neither shape is the default-by-fiat."
   type        = bool

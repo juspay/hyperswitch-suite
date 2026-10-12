@@ -1,19 +1,9 @@
-# =============================================================================
-# Bucket outputs
-# =============================================================================
-# Mapped from the AWS sibling module's 8 outputs. Two of AWS's have no OCI
-# counterpart and are documented rather than faked:
-#
-#   state_bucket_arn -> OCI has no ARN concept. The bucket's OCID
-#                       (state_bucket_ocid) and the namespace+name pair
-#                       jointly play that role; the backend itself addresses
-#                       the bucket by namespace+name, not by OCID.
-#   lock_table_id /
-#   lock_table_name /
-#   lock_table_arn   -> nothing to output. Locking is built into the native
-#                       `oci` backend (If-None-Match conditional write), so
-#                       there is no lock table resource. See main.tf's closing
-#                       comment and state-backend-decision.md section 1.
+# Bucket outputs. Two AWS outputs have no OCI counterpart and are documented
+# rather than faked:
+#   state_bucket_arn - OCI has no ARN; the OCID plus the namespace+name pair play
+#     that role (the backend addresses the bucket by namespace+name).
+#   lock_table_* - nothing to output: locking is built into the `oci` backend
+#     (If-None-Match conditional write), there is no lock-table resource.
 
 output "state_bucket_name" {
   description = "Name of the Terraform state bucket - the value a root.hcl remote_state.config.bucket needs"
@@ -40,19 +30,13 @@ output "state_bucket_compartment_id" {
   value       = oci_objectstorage_bucket.state.compartment_id
 }
 
-# =============================================================================
 # IAM
-# =============================================================================
-
 output "state_access_policy_id" {
   description = "OCID of the IAM policy granting state-bucket access, or null when no access subject was supplied"
   value       = length(oci_identity_policy.state_access) > 0 ? oci_identity_policy.state_access[0].id : null
 }
 
-# =============================================================================
 # Backend configuration
-# =============================================================================
-
 output "backend_config" {
   description = "Backend configuration object for use by other Terraform/Terragrunt roots"
   value = {

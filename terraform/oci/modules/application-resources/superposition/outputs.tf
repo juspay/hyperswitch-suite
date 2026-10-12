@@ -1,21 +1,5 @@
-# =============================================================================
-# Output contract - 29 AWS outputs become the set below.
-# =============================================================================
-# DELETED WITH NO REPLACEMENT:
-#   role_arn, role_name, role_id, role_unique_id  - no role exists, and no
-#     service-account annotation exists to consume one. Offering an OCID as
-#     "the new role_arn" would invite someone to annotate a service account
-#     with it (identity-model.md section 6.4).
-#   attached_policy_arns / inline_policy_names    - nothing is attachable.
-#   oidc_provider_urls                            - no OIDC registration.
-#   db_global_cluster_id / _arn / _identifier / db_global_writer_endpoint
-#     - no global-cluster object exists on OCI (database.md section 4.4). The
-#       passive side reads `database_db_system_id` instead.
-#   database_kms_key_arn / _id / _aliases         - oci_psql_db_system has no
-#     customer-managed-key argument at all in provider 9.0.0 (database.md
-#     section 4.9, PARTIAL). Emitting nulls named after a capability that does
-#     not exist would let a consumer plan around it.
-# =============================================================================
+# Output contract - 29 AWS outputs collapse to the set below. role_arn,
+# attached/inline policy and global-cluster outputs have no OCI counterpart.
 
 # -----------------------------------------------------------------------------
 # THE IDENTITY CONTRACT

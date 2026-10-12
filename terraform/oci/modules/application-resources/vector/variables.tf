@@ -1,24 +1,4 @@
-# =============================================================================
-# vector - the OCI port of application-resources/vector
-# =============================================================================
-# Check sheet: docs/multi-cloud-parity/oci/modules/vector.md
-# Identity:    docs/multi-cloud-parity/oci/identity-model.md
-#
-# Instantiated ONCE PER LOGICAL LOG STREAM, not once per cluster - AWS has five
-# today (`vector-logging`, `vector-dr`, `vector-dr-consumer`,
-# `vector-hyperswitch-art`, `vector-ucs-deja`), each with its own role, bucket
-# and queue. That shape survives: five instantiations of this module, five sets
-# of statements, one (namespace, service account) pair each.
-#
-# THIS MODULE CREATES NO `oci_identity_policy`. See locals.tf.
-#
-# IT DOES CARRY THE ONE DOCUMENTED EXCEPTION TO THE IDENTITY MODEL. See
-# `auth_token_vault_secret_id` and notification.tf.
-# =============================================================================
-
-# -----------------------------------------------------------------------------
-# Identity and placement
-# -----------------------------------------------------------------------------
+# vector - OCI port of application-resources/vector (one instantiation per log stream)
 
 variable "compartment_id" {
   description = "OCID of the compartment this module's resources live in, and the default location term of every statement it renders. Must be at or below the compartment the shared `oke-workload-identity` policy is attached to."
@@ -90,10 +70,6 @@ variable "k8s_service_account_name" {
   type        = string
 }
 
-# -----------------------------------------------------------------------------
-# Log bucket (check sheet features 3 and 4)
-# -----------------------------------------------------------------------------
-
 variable "create_bucket" {
   description = "Create this stream's own log bucket. AWS: `module.s3_bucket`, `s3.create = true` in the `vector-dr` unit."
   type        = bool
@@ -156,10 +132,6 @@ variable "bucket_read_only" {
   type        = bool
   default     = false
 }
-
-# -----------------------------------------------------------------------------
-# The event pipeline (check sheet feature 5, SUBSTITUTE - section 4.4)
-# -----------------------------------------------------------------------------
 
 variable "create_notification" {
   description = <<-EOT
@@ -321,10 +293,6 @@ variable "kafka_sasl_username" {
   default     = null
 }
 
-# -----------------------------------------------------------------------------
-# Cross-region consumption (check sheet feature 6, PARTIAL)
-# -----------------------------------------------------------------------------
-
 variable "cross_region_read" {
   description = <<-EOT
     Read another region's bucket and stream without creating anything locally.
@@ -354,10 +322,6 @@ variable "cross_region_read" {
   default = {}
 }
 
-# -----------------------------------------------------------------------------
-# Escape hatches
-# -----------------------------------------------------------------------------
-
 variable "shared_statements" {
   description = <<-EOT
     Statement strings contributed from a shared source. Replaces
@@ -384,10 +348,6 @@ variable "extra_statements" {
   type        = list(string)
   default     = []
 }
-
-# -----------------------------------------------------------------------------
-# Tags
-# -----------------------------------------------------------------------------
 
 variable "freeform_tags" {
   description = "Freeform tags merged onto every resource."

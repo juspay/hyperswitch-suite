@@ -1,26 +1,5 @@
-# -----------------------------------------------------------------------------
-# Output contract.
-#
-#   role_arn                          -> NONE. No annotation consumes it.
-#   role_name / role_id               -> owned by the shared policy object.
-#   account_id                        -> NONE, deliberately not remapped to a
-#                                        compartment OCID. Compartments are not
-#                                        billing or trust boundaries; a value
-#                                        that looks like an account identifier
-#                                        and is not one is worse than absence.
-#   region                            -> region
-#   oidc_enabled                      -> NONE. The equivalent assertion is
-#                                        length(authorized_workloads) > 0.
-#   assume_role_principals_enabled    -> cross_tenancy_enabled
-#   aws_managed_policies_enabled      -> NONE. There are none, and the one in
-#                                        use has no IAM counterpart.
-#   customer_managed_policies_enabled -> shared_statements_enabled
-#   inline_policies_enabled           -> additional_grants_enabled
-#   -                                 -> apm_domain_id, apm_data_upload_endpoint,
-#                                        apm_data_key_secret_id, log_group_id,
-#                                        log_id  (all new; the AWS backend
-#                                        needed no configuration at all)
-# -----------------------------------------------------------------------------
+# Output contract. role_* / account_id / oidc_enabled have no OCI counterpart;
+# the APM domain and log-group outputs are new (AWS needed no such config).
 
 output "policy_statements" {
   description = <<-EOT

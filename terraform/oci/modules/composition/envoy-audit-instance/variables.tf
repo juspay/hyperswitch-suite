@@ -1,28 +1,5 @@
-# =============================================================================
-# envoy-audit-instance - ONE standalone audit instance for the hardened Envoy
-# image, out of the pool
-# =============================================================================
-# This is IaC AUTHORING ONLY. Do not plan/apply. It is NOT the envoy-proxy
-# composition module (which creates an instance POOL + load balancer). The
-# security-team audit workflow (docs/hardening/oci-envoy-squid-hardening-workplan.md
-# §6 step 3) launches ONE standalone instance from each freshly-built hardened
-# image, runs the W1 baseline through Run Command, and terminates it after. This
-# module is that single, disposable instance.
-#
-# It deliberately does NOT inherit envoy-proxy's pool/autoscaling/NLB/storage/
-# break-glass/tls surface - none of those exist for a short-lived audit box.
-# What it keeps from the envoy-proxy and bastion-host idioms:
-#   - image_id is REQUIRED with no default and no PLACEHOLDER fallback, so a
-#     plan fails loud if the build has not produced the hardened image OCID yet
-#     (the SAME correctness contract envoy-proxy carries - vm-tier-and-images.md
-#     section 2).
-#   - ssh_public_key is REQUIRED (the security team's dedicated key), matching
-#     the bastion-host pattern of a key coming in at apply time.
-#   - prohibit a public IP (per-VNIC assign_public_ip = false + the management
-#     subnet's own subnet-level prohibit_public_ip_on_vnic = true), so the
-#     security team reaches it over the VPN by private IP only.
-#   - preserve_boot_volume = false so the terminate-after-audit lifecycle
-#     actually removes the boot volume instead of stranding it.
+# envoy-audit-instance - one standalone audit instance for the hardened Envoy image.
+# Hardened-by-default: image_id & ssh_public_key REQUIRED, no public IP, preserve_boot_volume false.
 
 # =============================================================================
 # Identity and placement
@@ -114,11 +91,9 @@ variable "additional_nsg_ids" {
   default     = []
 }
 
-# The source CIDRs that may reach tcp:22 - the VPN and office ranges the repo
-# already defines (values.ip_list.vpn_cidr_blocks + office_ips in the live OCI
-# stack, the same list security-rules and bastion-host consume). Required, so a
-# plan fails loud if the stack has not supplied the real ranges - identical to
-# the image_id contract.
+# The source CIDRs that may reach tcp:22 - the VPN and office ranges the repo already
+# defines (values.ip_list.vpn_cidr_blocks + office_ips). Required so a plan fails loud
+# if the stack has not supplied the real ranges.
 variable "vpn_source_cidrs" {
   description = "CIDR blocks that may reach SSH (tcp:22) on this audit instance. Required, no default: this is the whole security boundary of the box, so an empty or absent list must fail at plan time rather than produce a box nobody reviewed the exposure of. Supply the repo's existing VPN + office ranges (values.ip_list.vpn_cidr_blocks + values.ip_list.office_ips)."
   type        = list(string)

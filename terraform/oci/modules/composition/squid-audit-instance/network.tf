@@ -1,10 +1,5 @@
-# =============================================================================
-# Module-owned access control - the SSH NSG
-# =============================================================================
-# NSG, not a VCN security list - network-security-model.md section 5 Option A.
-# Unlike the pooled squid-proxy module (empty NSG filled cross-unit by
-# security-rules), this audit box writes its OWN SSH ingress rule inline: it is
-# self-contained and not part of the security-rules last-phase fan-in.
+# Module-owned SSH NSG (NSG, not a VCN security list). This audit box writes its own
+# SSH ingress inline instead of joining the cross-unit security-rules fan-in.
 
 resource "oci_core_network_security_group" "this" {
   count = var.create_nsg ? 1 : 0
@@ -17,11 +12,9 @@ resource "oci_core_network_security_group" "this" {
   defined_tags  = var.defined_tags
 }
 
-# SSH ingress, one rule per VPN/office source CIDR - OCI's
-# oci_core_network_security_group_security_rule takes a SINGLE `source` string,
-# so a list fans out into one rule per CIDR exactly as the security-rules unit's
-# module does. The variable is REQUIRED, so a plan cannot silently produce an
-# unreviewed box with an unconstrained or empty source.
+# One SSH ingress rule per VPN/office source CIDR (the rule takes a single `source`
+# string, so a list fans out one rule per CIDR). var.vpn_source_cidrs is REQUIRED so
+# a plan cannot silently produce an unconstrained or empty source.
 resource "oci_core_network_security_group_security_rule" "ssh" {
   for_each = toset(var.vpn_source_cidrs)
 

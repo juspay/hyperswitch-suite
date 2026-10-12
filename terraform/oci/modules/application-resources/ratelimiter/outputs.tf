@@ -1,21 +1,5 @@
-# -----------------------------------------------------------------------------
-# Output contract. 23 AWS outputs collapse to 11.
-#
-#   role_arn / role_name / role_id / role_unique_id -> NONE / owned by the
-#                                shared policy object. No annotation consumes a
-#                                role identifier on OCI.
-#   *_enabled feature flags   -> only the ones that still describe something
-#                                real survive; `oidc_enabled` has no meaning
-#                                without an OIDC provider.
-#   elasticache_*  (8)        -> cache_* below, pass-through from the sibling
-#                                oci-cache-valkey unit.
-#   elasticache_security_group_id / _subnet_group_name -> NONE. There is no
-#                                subnet-group resource on OCI, and the NSG is
-#                                the cache module's own (`cache_nsg_id`).
-#   lb_security_group_*       -> NONE. See variables.tf header point 3.
-#   region / account_id       -> region only. A compartment OCID is not an
-#                                account ID.
-# -----------------------------------------------------------------------------
+# Output contract - 23 AWS outputs collapse to 11. role_* flags and
+# lb_security_group_* have no OCI counterpart; elasticache_* -> cache_* passthrough.
 
 output "policy_statements" {
   description = <<-EOT

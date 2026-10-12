@@ -19,32 +19,21 @@ locals {
 
   namespace = data.oci_objectstorage_namespace.this.namespace
 
-  # ---------------------------------------------------------------------------
-  # NSG membership
-  # ---------------------------------------------------------------------------
-  # Both NSGs are created empty here and filled by the security-rules unit in
-  # the last stack phase. Membership, however, is declared on the CONSUMER
-  # resource (create_vnic_details.nsg_ids on the pool's instance configuration,
-  # network_security_group_ids on the load balancer) - which is why forgetting
-  # to attach is a real failure mode on OCI in a way it is not on AWS. An NSG
-  # with perfect rules and no VNICs in it is silently inert; because NSG rules
-  # are allow-only, the symptom is a connectivity failure, not an exposure.
-  # network-security-model.md section 6 records this as a named risk.
+  # Both NSGs are created empty by network.tf and filled by the security-rules
+  # unit in the last stack phase. Membership is declared on the CONSUMER
+  # resource - an NSG with perfect rules but no VNIC in it is silently inert.
   own_instance_nsg_ids = var.create_nsg ? [oci_core_network_security_group.instances[0].id] : []
   own_lb_nsg_ids       = var.create_nsg ? [oci_core_network_security_group.lb[0].id] : []
 
   instance_nsg_ids = concat(local.own_instance_nsg_ids, var.additional_nsg_ids)
   lb_nsg_ids       = concat(local.own_lb_nsg_ids, var.additional_lb_nsg_ids)
 
-  # ---------------------------------------------------------------------------
-  # Deployments - resolution and sizing
-  # ---------------------------------------------------------------------------
   total_weight = sum([for d in values(var.deployments) : d.weight])
 
   shared_backend_set_mode = var.traffic_split_mode == "shared_backend_set"
 
-  # Highest-weight deployment, used as the cutover default. Sorted by key as a
-  # tiebreak so the choice is deterministic across plans.
+  # Highest-weight deployment, used as the cutover default; sorted by key for a
+  # deterministic tiebreak.
   default_active_deployment = coalesce(
     var.active_deployment,
     [
@@ -53,19 +42,11 @@ locals {
     ][0]
   )
 
-  # Sizing, and this is where var.deployments' `weight` actually lands.
-  #
-  # shared_backend_set mode: there is no settable per-backend weight (backends
-  # are created by the instance pool, and oci_load_balancer_backend_set.backend
-  # is a read-only attribute), so traffic share == instance-count share. The
-  # fleet floor and ceiling (var.min_replicas / var.max_replicas) are therefore
-  # SPLIT across deployments in proportion to weight. ceil() and the max(1, ...)
-  # floor mean a small-weight canary always gets at least one instance, which
-  # is also the granularity limit: 1 instance out of a 10-instance fleet is 10%,
-  # and no finer split than that is expressible.
-  #
-  # listener_cutover mode: no split at all - each deployment is sized in full,
-  # because only one of them is receiving traffic at a time.
+  # In shared_backend_set mode traffic share == instance-count share (per-backend
+  # weight is not settable), so the fleet floor/ceiling is SPLIT across
+  # deployments in proportion to weight, with a max(1, ...) floor so a small
+  # canary always gets at least one instance. In listener_cutover mode each
+  # deployment is sized in full because only one is receiving traffic at a time.
   deployments = {
     for key, d in var.deployments : key => {
       weight         = d.weight
@@ -90,13 +71,10 @@ locals {
     }
   }
 
-  # ---------------------------------------------------------------------------
-  # Backend sets
-  # ---------------------------------------------------------------------------
-  # One shared set, or one per deployment. Names are the resource keys.
+  # One shared set, or one per deployment.
   backend_set_names = local.shared_backend_set_mode ? ["envoy"] : sort(keys(var.deployments))
 
-  # Which backend set each pool registers itself into.
+  # Which backend set each pool registers into.
   pool_backend_set = {
     for key, d in var.deployments : key => local.shared_backend_set_mode ? "envoy" : key
   }
@@ -105,28 +83,20 @@ locals {
 
   load_balancer_id = var.create_lb ? try(oci_load_balancer_load_balancer.this[0].id, null) : var.existing_load_balancer_id
 
-  # When create_lb = false the pools attach to a caller-supplied backend set on
-  # a caller-supplied load balancer. Attachment is skipped entirely if either
-  # is missing, leaving an unregistered pool rather than a plan-time crash.
+  # When create_lb = false the pools attach to a caller-supplied backend set;
+  # attachment is skipped if either id is missing, leaving an unregistered pool
+  # rather than a plan-time crash.
   attach_backend_set_name = var.create_lb ? null : var.existing_backend_set_name
   attach_to_lb            = var.create_lb ? true : (var.existing_load_balancer_id != null && var.existing_backend_set_name != null)
 
   health_check_port = coalesce(var.health_check.port, var.backend_port)
 
-  # ---------------------------------------------------------------------------
-  # Autoscaling - the target-tracking -> threshold translation
-  # ---------------------------------------------------------------------------
-  # See var.scaling_policies for why this exists. Each enabled signal produces
-  # TWO rules with a deadband between them; OCI's threshold policy has no
-  # controller that converges on a target, so the deadband is the module
-  # author's responsibility rather than the service's.
-  #
-  # metric_source = COMPUTE_AGENT means the value comes from the Oracle Cloud
-  # Agent's monitoring plugin on the instance, not from the hypervisor. For
-  # CPU_UTILIZATION either source works; MEMORY_UTILIZATION is agent-only,
-  # which is the same precondition AWS's CloudWatch-agent-backed memory policy
-  # carries. Enabling the memory signal on an image without a working agent
-  # produces a silently inert policy on both clouds.
+  # Each enabled signal produces TWO rules with a deadband between them; OCI's
+  # threshold policy has no controller that converges on a target, so the
+  # deadband is the module author's responsibility. metric_source
+  # COMPUTE_AGENT means the value comes from the monitoring plugin on the
+  # instance; MEMORY_UTILIZATION is agent-only, so a memory signal on an image
+  # without a working agent is a silently inert policy.
   cpu_policy    = var.scaling_policies.cpu_target_tracking
   memory_policy = var.scaling_policies.memory_target_tracking
 
@@ -173,18 +143,14 @@ locals {
     ] : []
   )
 
-  # An autoscaling configuration with a threshold policy and no rules is
-  # rejected, and a scheduled-only configuration is legitimate, so attach one
-  # only when there is something for it to carry.
+  # A threshold policy with no rules is rejected, and a scheduled-only
+  # configuration is legitimate, so attach one only when it carries something.
   autoscaling_enabled = var.enable_autoscaling && (
     length(local.threshold_rules) > 0 || length(var.scheduled_scaling_policies) > 0
   )
 
   autoscaled_deployments = local.autoscaling_enabled ? local.deployments : {}
 
-  # ---------------------------------------------------------------------------
-  # Instance metadata
-  # ---------------------------------------------------------------------------
   ssh_authorized_keys = join("\n", compact(concat(
     var.generate_ssh_key ? [tls_private_key.break_glass[0].public_key_openssh] : [],
     var.ssh_public_keys
@@ -202,11 +168,7 @@ locals {
 
   instance_metadata = merge(var.metadata, local.base_metadata)
 
-  # ---------------------------------------------------------------------------
-  # Buckets
-  # ---------------------------------------------------------------------------
-  # OCI bucket names are unique per namespace per region, NOT globally the way
-  # S3's are, so the AWS module's random-suffix dance is unnecessary here.
+  # Bucket names are unique per namespace per region, not globally as S3's are.
   config_bucket_name = coalesce(var.config_bucket_name, "${local.name_prefix}-config")
   logs_bucket_name   = coalesce(var.logs_bucket_name, "${local.name_prefix}-logs")
 
@@ -215,14 +177,8 @@ locals {
     var.additional_config_files
   )
 
-  # ---------------------------------------------------------------------------
-  # Routing-policy condition generation
-  # ---------------------------------------------------------------------------
-  # OCI's routing-policy condition language, version V1. See
-  # var.listener_rules for the two caveats: no source-IP dimension exists at
-  # this layer, and the exact grammar below is documentation-derived rather
-  # than confirmed against a live tenancy (check sheet open question 9.1).
-  # raw_condition bypasses everything here.
+  # OCI routing-policy condition language, V1; raw_condition bypasses the
+  # generator below.
   listener_rule_conditions = {
     for r in var.listener_rules : r.name => (
       r.raw_condition != null

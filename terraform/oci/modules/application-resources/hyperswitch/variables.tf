@@ -1,19 +1,4 @@
-# =============================================================================
-# hyperswitch - the OCI port of application-resources/hyperswitch
-# =============================================================================
-# Check sheet: docs/multi-cloud-parity/oci/modules/hyperswitch.md
-# Identity:    docs/multi-cloud-parity/oci/identity-model.md
-#
-# THE ONE THING TO KNOW BEFORE READING ANYTHING ELSE: this module creates no
-# `oci_identity_policy`, and there is no `role_arn`. Its identity contribution
-# is the `policy_statements` output, which the caller concatenates into the ONE
-# shared, environment-scoped policy object owned by `oke-workload-identity`.
-# See locals.tf for why, and outputs.tf for the contract.
-# =============================================================================
-
-# -----------------------------------------------------------------------------
-# Identity and placement
-# -----------------------------------------------------------------------------
+# hyperswitch - OCI port of application-resources/hyperswitch
 
 variable "compartment_id" {
   description = <<-EOT
@@ -105,10 +90,6 @@ variable "service_accounts" {
   }
 }
 
-# -----------------------------------------------------------------------------
-# KMS - OCI Vault + key (check sheet features 2 and 3)
-# -----------------------------------------------------------------------------
-
 variable "kms" {
   description = <<-EOT
     Customer-managed encryption key. AWS: `module.kms`
@@ -158,10 +139,6 @@ variable "kms" {
   }
 }
 
-# -----------------------------------------------------------------------------
-# Object Storage - two buckets (check sheet features 4 and 5)
-# -----------------------------------------------------------------------------
-
 variable "dashboard_themes_bucket" {
   description = <<-EOT
     Dashboard-themes bucket. AWS: `module.s3_dashboard_themes`.
@@ -190,10 +167,6 @@ variable "file_uploads_bucket" {
   })
   default = {}
 }
-
-# -----------------------------------------------------------------------------
-# Email Delivery (check sheet feature 6, SUBSTITUTE - and the open question)
-# -----------------------------------------------------------------------------
 
 variable "email" {
   description = <<-EOT
@@ -266,10 +239,6 @@ variable "smtp_credential_vault_secret_id" {
   default     = null
 }
 
-# -----------------------------------------------------------------------------
-# Secrets (check sheet feature 7)
-# -----------------------------------------------------------------------------
-
 variable "secrets" {
   description = <<-EOT
     Read app secrets from OCI Vault. AWS: `aws_iam_policy.secrets_manager_policy`
@@ -294,10 +263,6 @@ variable "secrets" {
   })
   default = {}
 }
-
-# -----------------------------------------------------------------------------
-# Functions (check sheet feature 8, PARTIAL)
-# -----------------------------------------------------------------------------
 
 variable "functions" {
   description = <<-EOT
@@ -330,10 +295,6 @@ variable "functions" {
   default = {}
 }
 
-# -----------------------------------------------------------------------------
-# Escape hatch
-# -----------------------------------------------------------------------------
-
 variable "extra_statements" {
   description = <<-EOT
     Raw policy statement strings appended to `policy_statements`.
@@ -354,10 +315,6 @@ variable "extra_statements" {
   type        = list(string)
   default     = []
 }
-
-# -----------------------------------------------------------------------------
-# Tags
-# -----------------------------------------------------------------------------
 
 variable "freeform_tags" {
   description = "Freeform tags merged onto every resource. The AWS `tags` analogue."

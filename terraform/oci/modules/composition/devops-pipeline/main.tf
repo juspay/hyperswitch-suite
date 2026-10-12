@@ -1,27 +1,6 @@
-# =============================================================================
-# OCI DevOps Build & Deployment Pipeline - for hyperswitch image building
-# =============================================================================
-# Port of Terraform resource wrappers for building hyperswitch images and
-# deploying to OKE. This is the OCI counterpart of AWS CodeBuild + CodePipeline
-# + ECR integration and GCP Cloud Build + Artifact Registry + Deploy.
-#
-# OCI does not have a "CodeBuild" style continuous build pipeline that runs
-# fully in the Terraform module. What OCI offers is the DevOps service:
-#   Project -> Build Pipeline -> (Build Stage -> Deliver Artifact -> Trigger
-#   Deployment) -> Deployment Pipeline -> OKE environment.
-#
-# This module creates the DevOps project, build pipeline, build stages,
-# artifacts, deployment pipeline and the OKE deployment environment so that
-# hyperswitch SDK/router images can be built from source and deployed to OKE.
-#
-# The build_spec.yaml that drives the actual build lives in the referenced
-# code repository (e.g. the hyperswitch repo), NOT here. This module wires the
-# OCI-side shell around it.
-# =============================================================================
+# OCI DevOps project, build & deployment pipelines for hyperswitch image building.
+# The build_spec.yaml that drives the build lives in the source repo, not here.
 
-# =============================================================================
-# DevOps Project - the container for all pipelines and artifacts
-# =============================================================================
 resource "oci_devops_project" "this" {
   compartment_id = var.compartment_id
   name           = "${var.project_name}-${var.environment}-devops"
@@ -31,9 +10,6 @@ resource "oci_devops_project" "this" {
   }
 }
 
-# =============================================================================
-# Build Pipeline
-# =============================================================================
 resource "oci_devops_build_pipeline" "this" {
   project_id   = oci_devops_project.this.id
   display_name = "${var.project_name}-${var.environment}-build-pipeline"
@@ -51,10 +27,6 @@ resource "oci_devops_build_pipeline" "this" {
   }
 }
 
-# =============================================================================
-# Build Pipeline Stages
-# =============================================================================
-# Stage 1: Managed Build - runs the build_spec.yaml from the source repo
 resource "oci_devops_build_pipeline_stage" "managed_build" {
   build_pipeline_id         = oci_devops_build_pipeline.this.id
   display_name              = "build"
@@ -80,7 +52,6 @@ resource "oci_devops_build_pipeline_stage" "managed_build" {
   image = var.build_runner_image
 }
 
-# Stage 2: Deliver Artifacts - push the built Docker image to OCIR
 resource "oci_devops_build_pipeline_stage" "deliver_artifact" {
   build_pipeline_id         = oci_devops_build_pipeline.this.id
   display_name              = "deliver"
@@ -101,7 +72,6 @@ resource "oci_devops_build_pipeline_stage" "deliver_artifact" {
   }
 }
 
-# Stage 3: Trigger Deployment - deploy the new image to OKE
 resource "oci_devops_build_pipeline_stage" "trigger_deploy" {
   count = var.deploy_pipeline_id != null ? 1 : 0
 
@@ -119,9 +89,6 @@ resource "oci_devops_build_pipeline_stage" "trigger_deploy" {
   }
 }
 
-# =============================================================================
-# Deployment Pipeline - deploy the Helm chart / manifests to OKE
-# =============================================================================
 resource "oci_devops_deploy_pipeline" "this" {
   count = var.create_deploy_pipeline ? 1 : 0
 
@@ -130,9 +97,6 @@ resource "oci_devops_deploy_pipeline" "this" {
   description  = "Deploy pipeline for Hyperswitch ${var.environment} to OKE"
 }
 
-# =============================================================================
-# OKE Deployment Environment - the target cluster
-# =============================================================================
 resource "oci_devops_deploy_environment" "oke_cluster" {
   count = var.create_deploy_pipeline ? 1 : 0
 
@@ -144,9 +108,6 @@ resource "oci_devops_deploy_environment" "oke_cluster" {
   cluster_id = var.cluster_id
 }
 
-# =============================================================================
-# Deploy Stage - Apply manifests to the OKE cluster
-# =============================================================================
 resource "oci_devops_deploy_stage" "oke_deploy" {
   count = var.create_deploy_pipeline ? 1 : 0
 
@@ -164,9 +125,6 @@ resource "oci_devops_deploy_stage" "oke_deploy" {
   }
 }
 
-# =============================================================================
-# Container Repository Artifact (for the deliver stage to target)
-# =============================================================================
 resource "oci_devops_deploy_artifact" "container_image" {
   count = var.create_deploy_pipeline ? 1 : 0
 

@@ -12,9 +12,7 @@ locals {
     var.freeform_tags
   )
 
-  # ---------------------------------------------------------------------------
   # Placement
-  # ---------------------------------------------------------------------------
   availability_domain = coalesce(
     var.availability_domain,
     try(data.oci_identity_availability_domains.this[0].availability_domains[0].name, null)
@@ -31,17 +29,13 @@ locals {
     local.fault_domain_count > 0 ? local.fault_domains[i % local.fault_domain_count] : null
   ]
 
-  # ---------------------------------------------------------------------------
   # NSG membership
-  # ---------------------------------------------------------------------------
   nsg_ids = compact(concat(
     var.create_nsg ? [oci_core_network_security_group.cassandra[0].id] : [],
     var.additional_nsg_ids
   ))
 
-  # ---------------------------------------------------------------------------
-  # SSH key pair - OCI has no key-pair object, only instance metadata
-  # ---------------------------------------------------------------------------
+  # SSH key pair
   key_pair_name = coalesce(var.key_name, "${local.name_prefix}-key")
 
   generate_key = var.create_key_pair && var.public_key == null
@@ -59,44 +53,31 @@ locals {
 
   vault_secret_name = coalesce(try(var.vault_secret.secret_name, null), "${local.name_prefix}-ssh-private-key")
 
-  # ---------------------------------------------------------------------------
   # Reserved private IPs and the seed list
-  # ---------------------------------------------------------------------------
   node_ip_addresses = [
     for i in range(var.node_count) :
     try(var.reserved_ip_addresses[i], null)
   ]
 
-  # THE ORDER OF EVALUATION MATTERS HERE, and it is the reason static seed
-  # injection is conditional on pinned addresses.
-  #
-  # The reserved private IP is created ON a VNIC, and the VNIC only exists once
-  # the instance does - so oci_core_private_ip depends on oci_core_instance.
-  # Anything the instance's own user_data reads therefore cannot come from
-  # oci_core_private_ip without a dependency cycle. (AWS had no such problem:
-  # its ENI is created BEFORE the instance and hands the IP over at plan time.)
-  #
-  # Consequence: the check sheet's section 4.4 simplification - "inject the
-  # static reserved-IP seed list directly into each node's user data at apply
-  # time" - works ONLY when the caller pins the addresses through
-  # var.reserved_ip_addresses. Left unpinned, the seed list in user_data is
-  # empty and the node bootstrap must discover its peers some other way (DNS
-  # inside the subnet, or enable_seed_discovery). Pin the addresses.
+  # ORDER OF EVALUATION MATTERS: the reserved IP is created ON a VNIC, which
+  # only exists after the instance - so oci_core_private_ip depends on the
+  # instance. Anything the instance's own user_data reads therefore cannot come
+  # from oci_core_private_ip without a dependency cycle. Static seed injection
+  # works ONLY when the caller pins addresses via var.reserved_ip_addresses;
+  # unpinned, the seed list is empty and bootstrap must discover peers another
+  # way. Pin the addresses.
   seed_ip_addresses = var.reserved_ip_addresses != null ? compact(var.reserved_ip_addresses) : []
 
   static_seeds = join(",", local.seed_ip_addresses)
 
   # Resolved from the created objects. Safe to read in OUTPUTS only - never in
-  # anything an instance depends on, per the cycle note above.
+  # anything an instance depends on (see the cycle note above).
   reserved_ips = oci_core_private_ip.node[*].ip_address
 
   seed_discovery_url = local.seed_discovery_enabled ? "${try(oci_apigateway_deployment.seed_discovery[0].endpoint, "")}${var.seed_discovery_path}" : null
 
-  # seeds_url keeps the AWS output's name and role. Its VALUE changes shape by
-  # default: on AWS it was always an API Gateway invoke URL, here it is a plain
-  # comma-separated address list unless a discovery service or an external URL
-  # was supplied. Consumers that assumed "this is an HTTP endpoint" must be
-  # checked before this module replaces the AWS one.
+  # seeds_url keeps the AWS output's name; its VALUE changes shape by default - a plain
+  # comma-separated list rather than an HTTP endpoint unless discovery is enabled.
   seeds_url_value = try(
     coalesce(
       var.seeds_url,
@@ -106,12 +87,7 @@ locals {
     ""
   )
 
-  # ---------------------------------------------------------------------------
-  # Bootstrap payload - the software-facing contract, unchanged across clouds
-  # ---------------------------------------------------------------------------
-  # Same JSON the AWS module hands the image's first-boot script: the port
-  # changes where the node runs, not what Cassandra is told. Only the envelope
-  # differs (metadata.user_data, base64, read from the OCI IMDS v2 endpoint).
+  # Bootstrap payload.
   default_user_data = jsonencode({
     clusterName       = var.cluster_name
     replicationFactor = var.replication_factor
@@ -132,9 +108,7 @@ locals {
     local.public_key != null ? { ssh_authorized_keys = local.public_key } : {}
   )
 
-  # ---------------------------------------------------------------------------
   # Identity
-  # ---------------------------------------------------------------------------
   create_identity = var.create_identity && var.tenancy_ocid != null
 
   matching_rule = coalesce(
@@ -142,11 +116,8 @@ locals {
     "ALL {instance.compartment.id = '${var.compartment_id}'}"
   )
 
-  # Narrow by default. The AWS role this replaces grants EC2 describe, ENI
-  # create/delete, instance terminate and log write; only the read and log
-  # halves are reproduced, because ENI create/delete has no OCI counterpart
-  # (VNICs are not independently manageable) and instance-terminate is a
-  # capability worth granting explicitly rather than by default.
+  # Narrow by default: only read and log write are reproduced; instance-terminate
+  # is granted explicitly rather than by default.
   default_policy_statements = [
     "Allow dynamic-group ${local.name_prefix}-nodes to inspect instances in compartment id ${var.compartment_id}",
     "Allow dynamic-group ${local.name_prefix}-nodes to read instance-family in compartment id ${var.compartment_id}",
@@ -155,9 +126,7 @@ locals {
 
   policy_statements = length(var.policy_statements) > 0 ? var.policy_statements : local.default_policy_statements
 
-  # ---------------------------------------------------------------------------
   # Seed discovery
-  # ---------------------------------------------------------------------------
   seed_discovery_enabled = var.enable_seed_discovery && var.seeds_url == null
 
   agent_plugins = [

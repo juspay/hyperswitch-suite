@@ -31,9 +31,7 @@ variable "tenancy_ocid" {
   default     = null
 }
 
-# =============================================================================
-# Placement - see README "Availability domains and fault domains"
-# =============================================================================
+# Placement
 
 variable "availability_domain" {
   description = <<-EOT
@@ -116,9 +114,7 @@ variable "assign_private_dns_record" {
   default     = true
 }
 
-# -----------------------------------------------------------------------------
-# Static addressing (SUBSTITUTE - check sheet feature 3, section 4.2)
-# -----------------------------------------------------------------------------
+# Static addressing
 
 variable "broker_reserved_ip_addresses" {
   description = <<-EOT

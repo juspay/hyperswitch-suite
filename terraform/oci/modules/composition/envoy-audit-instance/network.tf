@@ -1,13 +1,5 @@
-# =============================================================================
-# Module-owned access control - the SSH NSG
-# =============================================================================
-# NSG, not a VCN security list - oci/network-security-model.md section 5,
-# Option A. Unlike the pooled envoy-proxy module (whose NSG is created empty
-# and filled cross-unit by security-rules), this audit box writes its OWN SSH
-# ingress rule inline: it is a self-contained disposvable host reached over the
-# VPN, and is deliberately NOT part of the security-rules last-phase NSG
-# fan-in. Wiring a slot for a short-lived review box into that graph would
-# couple its apply order to a unit whose sole job is cross-unit rules.
+# Module-owned SSH NSG (NSG, not a VCN security list). This audit box writes its own
+# SSH ingress inline instead of joining the cross-unit security-rules fan-in.
 
 resource "oci_core_network_security_group" "this" {
   count = var.create_nsg ? 1 : 0
@@ -20,13 +12,9 @@ resource "oci_core_network_security_group" "this" {
   defined_tags  = var.defined_tags
 }
 
-# SSH ingress, one rule per VPN/office source CIDR - OCI's
-# oci_core_network_security_group_security_rule takes a SINGLE `source` string,
-# so a list fans out into one rule per CIDR exactly as the security-rules unit's
-# module does ("one-CIDR-per-rule fan-out"). The rule set as a whole is
-# allow-only (NSGs union, no deny), and var.vpn_source_cidrs is REQUIRED, so a
-# plan cannot silently produce an unreviewed box with an unconstrained or empty
-# source.
+# One SSH ingress rule per VPN/office source CIDR (the rule takes a single `source`
+# string, so a list fans out one rule per CIDR). var.vpn_source_cidrs is REQUIRED so
+# a plan cannot silently produce an unconstrained or empty source.
 resource "oci_core_network_security_group_security_rule" "ssh" {
   for_each = toset(var.vpn_source_cidrs)
 

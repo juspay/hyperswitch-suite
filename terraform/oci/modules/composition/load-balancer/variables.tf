@@ -1,7 +1,4 @@
-# =============================================================================
 # Identity / naming
-# =============================================================================
-
 variable "compartment_id" {
   description = "OCID of the compartment that holds the load balancer and its NSG. OCI's scoping context; the AWS module used vpc_id for both scope and placement, which splits here into compartment_id (ownership) and subnet_ids (placement)."
   type        = string
@@ -47,10 +44,7 @@ variable "freeform_tags" {
   default     = {}
 }
 
-# =============================================================================
 # Placement and shape
-# =============================================================================
-
 variable "subnet_ids" {
   description = <<-EOT
     Subnet OCIDs the load balancer's VNICs live in. Placement is never
@@ -126,10 +120,7 @@ variable "ip_mode" {
   default     = "IPV4"
 }
 
-# =============================================================================
 # Network access control
-# =============================================================================
-
 variable "create_nsg" {
   description = "Create an EMPTY network security group for this load balancer. The counterpart of the AWS module's dedicated aws_security_group (feature 2, required). Empty on purpose: catalog/units/oci/security-rules, the security-last stack phase, writes the rules into it, exactly as it does for the database and oci-cache-valkey modules. Do not add rules here - that reintroduces the dependency cycle the security-last split exists to break."
   type        = bool
@@ -142,10 +133,7 @@ variable "network_security_group_ids" {
   default     = []
 }
 
-# =============================================================================
 # Backend sets and backends
-# =============================================================================
-
 variable "backend_sets" {
   description = <<-EOT
     Map of backend-set name to configuration.
@@ -218,10 +206,7 @@ variable "backend_sets" {
   }
 }
 
-# =============================================================================
 # Listeners
-# =============================================================================
-
 variable "listeners" {
   description = <<-EOT
     Map of listener name to configuration, mirroring the AWS module's
@@ -262,13 +247,9 @@ variable "listeners" {
     # Must name a key of var.backend_sets, or an externally-created set.
     default_backend_set_name = string
 
-    # TLS termination. Exactly one id - see note 2 above.
-    # certificate_ids  -> a Certificates Management OCID, i.e.
-    #                     certificates-management's certificate_ids output.
-    # certificate_name -> a classic oci_load_balancer_certificate, uploaded
-    #                     PEM. The escape hatch for a publicly-trusted cert
-    #                     that nobody wants to put through Certificates
-    #                     Management (see certificates-management's README).
+    # TLS termination - exactly one of the two routes:
+    # certificate_ids  -> a Certificates Management OCID.
+    # certificate_name -> a classic oci_load_balancer_certificate (uploaded PEM).
     certificate_ids                   = optional(string)
     certificate_name                  = optional(string)
     ssl_protocols                     = optional(list(string))
@@ -395,10 +376,7 @@ variable "certificates" {
   default = {}
 }
 
-# =============================================================================
 # Lifecycle
-# =============================================================================
-
 variable "is_delete_protection_enabled" {
   description = "Direct counterpart of AWS's enable_deletion_protection (feature 9, FULL)."
   type        = bool

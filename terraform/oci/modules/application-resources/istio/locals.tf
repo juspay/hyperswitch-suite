@@ -18,44 +18,19 @@ locals {
     var.gateway_nsg_ids,
   ))
 
-  # ---------------------------------------------------------------------------
-  # THE CCM ANNOTATION MAP - the direct replacement for AWS's
-  # `local.ingress_annotations`.
-  #
-  # AWS's `alb.ingress.kubernetes.io/*` prefix becomes `oci.oraclecloud.com/*`
-  # and `service.beta.kubernetes.io/oci-load-balancer-*`. These annotations are
-  # read by the OCI Cloud Controller Manager, which every OKE cluster already
-  # runs - there is no controller to install and no `Ingress` object involved.
-  # ---------------------------------------------------------------------------
+  # The CCM annotation map, read by the OCI Cloud Controller Manager that every
+  # OKE cluster already runs.
   ccm_annotations = merge(
     {
-      # L7 (`lb`) mirrors AWS's ALB. L4 (`nlb`) mirrors GCP. Unresolved fork -
-      # see the variable's own note and check sheet section 8 item 5.
+      # L7 (`lb`) mirrors AWS's ALB; L4 (`nlb`) mirrors GCP. Unresolved fork.
       "oci.oraclecloud.com/load-balancer-type" = var.load_balancer_type
 
-      # -----------------------------------------------------------------------
-      # THE ANNOTATION THAT MUST NOT BE FORGOTTEN, and the reason it is set
-      # unconditionally rather than exposed as a knob.
-      #
-      # This defaults to "All" in the CCM, which means: left alone, the CCM
-      # AUTO-MANAGES VCN SECURITY LIST RULES to wire the load balancer to the
-      # worker NodePort range for free. That is convenient and it is exactly
-      # what network-security-model.md section 5 forbids - that document mandates
-      # NSGs only and a neutered default security list, and OCI security-list and
-      # NSG rules combine with UNION semantics, so CCM-created list rules would
-      # silently widen a posture nothing in Terraform describes.
-      #
-      # Setting it to "None" makes the backend wiring (LB subnet -> worker
-      # NodePorts 30000-32767, LB subnet -> kube-proxy health port 10256) a
-      # hand-authored NSG rule instead of a free one. That rule belongs in
-      # `composition/security-rules`, not here - see network-security.tf.
-      #
-      # THE RISK IS FORGETTING ONE OF THE TWO. Omit this annotation and the CCM
-      # creates security-list rules that should not exist (silent widening).
-      # Omit the `security-rules` addition and the load balancer cannot reach
-      # any node (fails closed - a connectivity bug, not an exposure). Ship them
-      # together.
-      # -----------------------------------------------------------------------
+      # Must be "None": left unset it defaults to "All", and the CCM
+      # auto-manages VCN security-list rules to wire the LB to the worker
+      # NodePort range. Security-list and NSG rules combine with UNION
+      # semantics, so CCM-created list rules would silently widen a posture
+      # nothing in Terraform describes. This annotation makes the backend wiring
+      # a hand-authored NSG rule instead. Ship it together with that rule.
       "service.beta.kubernetes.io/oci-load-balancer-security-list-management-mode" = "None"
     },
 
@@ -67,10 +42,7 @@ locals {
       "oci.oraclecloud.com/reserved-ips" = one(oci_core_public_ip.gateway[*].id)
     } : {},
 
-    # AWS attaches a certificate to the ALB by ACM ARN. The CCM attaches one by
-    # KUBERNETES SECRET reference - a different mechanism, not a renamed field,
-    # and the point at which acm.md's certificate-trust gap becomes concrete for
-    # this module.
+    # The CCM attaches a certificate by Kubernetes SECRET reference, not by ARN.
     var.tls_secret_ref != null && var.load_balancer_type == "lb" ? {
       "service.beta.kubernetes.io/oci-load-balancer-tls-secret" = var.tls_secret_ref
     } : {},
@@ -82,10 +54,9 @@ locals {
     {
       service = merge(
         {
-          # AWS deploys this as ClusterIP behind an Ingress. On OCI the Service
-          # IS the load balancer: the built-in CCM provisions a real OCI Load
-          # Balancer from this line plus the annotations above, with no Helm
-          # chart, no IAM role and no ServiceAccount to create.
+          # On OCI the Service IS the load balancer: the CCM provisions a real
+          # OCI Load Balancer from this plus the annotations above - no Helm
+          # chart, no IAM role, no ServiceAccount.
           type        = "LoadBalancer"
           annotations = local.ccm_annotations
         },

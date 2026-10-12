@@ -1,36 +1,14 @@
-# =============================================================================
-# Engine parameter overrides for the card vault's database
-# =============================================================================
-# Direct analogue of the AWS locker's
-# database_config.create_custom_parameter_group /
-# custom_parameter_group_parameters pair, which nests
-# aws_rds_cluster_parameter_group. OCI's override model is flat -
-# config_key -> overriden_config_value - so the AWS module's five
-# custom_parameter_group_* variables collapse to one map.
+# Engine parameter overrides for the card vault's database, config_key ->
+# overridden value.
 #
-# WHAT IS NOT HERE, AND CANNOT BE (check sheet feature 18, verdict NONE):
-# there is no rds.force_ssl counterpart. The live AWS catalog unit for the
-# LOCKER sets custom_parameter_group_parameters = [{ name = "rds.force_ssl",
-# value = "0" }] on the card vault's own database - i.e. the platform's most
-# security-sensitive database currently permits plaintext PostgreSQL, for
-# reasons not documented anywhere in the AWS module tree. On OCI that is
-# impossible: pg_hba.conf carries only `hostssl` entries, non-SSL connections
-# are rejected unconditionally, and ssl_min/max_protocol_version are read-only.
+# TLS cannot be disabled on OCI (pg_hba.conf carries only hostssl entries), so
+# there is no rds.force_ssl counterpart - the one NONE verdict in this port that
+# is an IMPROVEMENT over AWS, whose live locker allows plaintext. Every card-vault
+# connection string needs sslmode=require at minimum, plus the db_ca_certificate
+# output for verify-ca/verify-full, BEFORE first apply.
 #
-# This is the one NONE verdict in the whole locker port that is an IMPROVEMENT
-# (check sheet section 4.6 and the "Encryption in transit" row of section 10,
-# verdict Stronger). Do not attempt to "match" AWS's current permissiveness -
-# there is no lever, and pulling one would be a regression.
-#
-# The operational consequence is real and must be handled BEFORE first apply:
-# the card-vault application's connection string needs sslmode=require at
-# minimum, and the module's `db_ca_certificate` output distributed for
-# verify-ca/verify-full. Discovered at apply time this looks like a network
-# outage, not a TLS problem.
-#
-# NOTE: configurations are NOT replicated to a warm standby. If DR is ever
-# turned on, the primary's overrides must be a subset of the standby's, and
-# nothing in the service enforces that.
+# Configurations are NOT replicated to a warm standby - if DR is enabled, the
+# primary's overrides must be a subset of the standby's; nothing enforces it.
 
 resource "oci_psql_configuration" "locker" {
   count = local.create_db_configuration ? 1 : 0

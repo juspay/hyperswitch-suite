@@ -1,20 +1,4 @@
-# =============================================================================
-# bastion-host - the jump-host port
-# =============================================================================
-# Renamed from AWS's `jump-host`, following the precedent GCP already set
-# (terraform/gcp/modules/composition/bastion-host/) for the same reason: the
-# module is now a thin wrapper around a specific, named cloud service - OCI's
-# Bastion, just as GCP's wraps IAP tunnelling - not a generic "a box you jump
-# through". Naming it after the AWS module would bury that in every future
-# reader's first impression. Check sheet §5.
-#
-# One instance, not a pool: this module's AWS original is a single
-# ec2-instance, and its access path IS its reason to exist rather than one
-# feature among many.
-
-# -----------------------------------------------------------------------------
-# The jump instance (FULL - check sheet feature 1)
-# -----------------------------------------------------------------------------
+# The jump instance (bastion host access path)
 resource "oci_core_instance" "this" {
   compartment_id      = var.compartment_id
   availability_domain = local.availability_domain
@@ -27,9 +11,7 @@ resource "oci_core_instance" "this" {
     memory_in_gbs = var.shape_memory_in_gbs
   }
 
-  # kms_key_id null = Oracle-managed boot-volume encryption, the mapping for
-  # the AWS module's root_block_device.encrypted = true. Default-encrypted
-  # behaviour is Tier 2 pending confirmation (check sheet open question 5).
+  # kms_key_id null = Oracle-managed boot-volume encryption.
   source_details {
     source_type             = "image"
     source_id               = var.image_id
@@ -39,9 +21,7 @@ resource "oci_core_instance" "this" {
 
   create_vnic_details {
     subnet_id = var.subnet_id
-    # assign_public_ip is a STRING on oci_core_instance (not a bool as it is on
-    # oci_core_instance_configuration) - a real inconsistency in the provider,
-    # not a typo here.
+    # assign_public_ip is a STRING on oci_core_instance - a real provider quirk.
     assign_public_ip = var.assign_public_ip ? "true" : "false"
     nsg_ids          = local.nsg_ids
     display_name     = "${local.display_name}-vnic"
@@ -49,9 +29,7 @@ resource "oci_core_instance" "this" {
     freeform_tags    = local.freeform_tags
   }
 
-  # FULL - check sheet feature 11. templates/userdata.sh ports from AWS with no
-  # logic changes; cloud-init reads it at /opc/v2/instance/metadata/ exactly as
-  # an EC2 instance reads a launch template's user_data.
+  # cloud-init user-data delivered via instance metadata.
   metadata = local.instance_metadata
 
   instance_options {
@@ -62,10 +40,7 @@ resource "oci_core_instance" "this" {
     is_monitoring_disabled = false
     is_management_disabled = false
 
-    # Only needed for Managed SSH sessions, which this module deliberately does
-    # not use - see the session-type comment on oci_bastion_bastion below.
-    # Enabled anyway so an operator who needs Managed SSH is not blocked on a
-    # reboot.
+    # Oracle Bastion plugin enabled so Managed SSH isn't blocked by a reboot.
     dynamic "plugins_config" {
       for_each = var.enable_oracle_cloud_agent_bastion_plugin ? [1] : []
 
@@ -85,53 +60,23 @@ resource "oci_core_instance" "this" {
   defined_tags  = var.defined_tags
 
   lifecycle {
-    # The image is the boot artefact, not the running state. Replacing this
-    # instance on an image bump is correct and cheap (it holds no data), so
-    # nothing is ignored here - unlike the pooled proxy modules, where the
-    # autoscaling service owns the size.
+    # The image is the boot artefact; instance holds no data, so nothing is ignored.
     ignore_changes = []
   }
 }
 
 # -----------------------------------------------------------------------------
-# OCI Bastion (SUBSTITUTE - check sheet feature 2)
+# OCI Bastion service - session broker
 # -----------------------------------------------------------------------------
-# THIS IS NOT SSM SESSION MANAGER WITH A DIFFERENT NAME. Read this before
-# assuming parity, because the differences are concrete:
-#
-#   1. KEYS. Every OCI Bastion session requires an SSH keypair -
-#      key_details.public_key_content is a REQUIRED argument on
-#      oci_bastion_session. SSM needs no key of any kind, ever, under any
-#      configuration.
-#
-#   2. INBOUND RULES. Every session type still needs an inbound rule on the
-#      target from the bastion's private endpoint IP. SSM needs zero, because
-#      its agent only makes outbound calls. See network.tf.
-#
-#   3. SESSION CONTENT LOGGING. None exists. OCI Audit records
-#      CreateSession/DeleteSession - who, when, against which target - and
-#      nothing about what happened inside the session. SSM optionally records a
-#      full replayable transcript. See var.enable_session_recording; the gap is
-#      NONE, not PARTIAL, and the mitigation is self-built tooling.
-#
-#   4. TRANSPORT. SSM brokers a WebSocket data channel; OCI Bastion brokers an
-#      SSH connection. An SSH session is encrypted end to end by SSH itself,
-#      which is a DIFFERENT trust model rather than a strictly weaker one - so
-#      the absence of a KMS-session-encryption knob is arguably moot, unlike
-#      items 1-3, which are losses.
-#
-# What survives: centrally brokered, time-boxed, IAM-gated access to a
-# private-subnet host with no permanently open SSH port to the internet. That
-# outcome is real. The mechanism is not the same one.
-#
-# SESSION TYPE. No oci_bastion_session is created here, deliberately. Sessions
-# are short-lived, per-operator, per-incident objects - Terraform-managing one
-# would mean an operator's SSH public key living in state and a session whose
-# lifetime is an apply rather than an incident. The connection guide output
-# tells operators to create a PORT_FORWARDING session, which is the correct
-# type for a fixed, known jump target: Managed SSH exists to reach ARBITRARY
-# instances without standing SSH access configured on them, and this box's
-# whole purpose is being the one hop operators tunnel THROUGH. Check sheet §4.
+# Security-relevant differences from the AWS/Ssm model:
+#   - Every session requires an SSH keypair (key_details.public_key_content).
+#   - Every session type needs one inbound rule on the target from the
+#     bastion's private endpoint IP - see network.tf.
+#   - No session-content logging exists; OCI Audit records control-plane calls only.
+#   - No oci_bastion_session is created here, deliberately: sessions are
+#     short-lived, per-operator objects, and managing one in Terraform would put
+#     an operator's SSH public key in state. Operators create a PORT_FORWARDING
+#     session via the connection-guide output.
 resource "oci_bastion_bastion" "this" {
   count = var.create_bastion ? 1 : 0
 
@@ -140,16 +85,13 @@ resource "oci_bastion_bastion" "this" {
   name             = replace("${local.display_name}", "-", "_")
   target_subnet_id = local.bastion_target_subnet_id
 
-  # New surface with no AWS counterpart: AWS gates Session Manager on IAM alone
-  # and has no CIDR control over who may start a session. See the variable.
+  # CIDR control over who may start a session.
   client_cidr_block_allow_list = var.bastion_client_cidr_allow_list
 
-  # PARTIAL - a session-LIFETIME cap, not the idle timer AWS's
-  # idleSessionTimeout preference is. No idle-specific control was found.
+  # Session-LIFETIME cap (OCI has no idle-timer control).
   max_session_ttl_in_seconds = var.bastion_max_session_ttl_seconds
 
-  # Lets a port-forwarding session target a hostname rather than only an IP -
-  # which is what makes tunnelling to the data tier's private FQDNs work.
+  # Lets a port-forwarding session target a hostname (data-tier private FQDN).
   dns_proxy_status = var.bastion_dns_proxy_status
 
   freeform_tags = local.freeform_tags
@@ -157,12 +99,8 @@ resource "oci_bastion_bastion" "this" {
 }
 
 # -----------------------------------------------------------------------------
-# Host log group and log (FULL - check sheet feature 6)
+# Host log group and log
 # -----------------------------------------------------------------------------
-# oci_logging_log_group is a compartment-scoped container, directly analogous
-# to aws_cloudwatch_log_group. The AWS module creates two log groups: one for
-# host logs and one for SSM session content. Only the host one has a
-# counterpart here - there is no session content to route anywhere.
 resource "oci_logging_log_group" "this" {
   compartment_id = var.compartment_id
   display_name   = replace("${local.display_name}-logs", "-", "_")
@@ -184,17 +122,10 @@ resource "oci_logging_log" "host" {
 }
 
 # -----------------------------------------------------------------------------
-# Self-managed session-recording archive (NONE - check sheet features 3 and 4)
+# Self-managed session-recording archive
 # -----------------------------------------------------------------------------
-# A DESTINATION, and nothing that writes to it. See var.enable_session_recording
-# for the full accounting; the short version is that OCI has no managed
-# session-content logging to enable, so this bucket is honest scaffolding for a
-# recorder the platform would have to build, deploy through the same cloud-init
-# path used for SSH hardening, and then monitor for silent failure.
-#
-# The lifecycle policy half IS full parity with the AWS module's Glacier
-# lifecycle - ARCHIVE is Glacier's counterpart. Only the thing being archived
-# is the gap.
+# A DESTINATION only - nothing writes to it. No managed session-content logging
+# exists on OCI; this bucket is scaffolding for a self-built recorder.
 resource "oci_objectstorage_bucket" "session_logs" {
   count = var.enable_session_recording ? 1 : 0
 

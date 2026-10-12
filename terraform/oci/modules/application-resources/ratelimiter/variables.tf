@@ -1,70 +1,11 @@
-# -----------------------------------------------------------------------------
-# ratelimiter - the OCI port of the AWS module of the same name.
-#
-# The AWS module is 593 lines and does three things: an IRSA role, a DEDICATED
-# ElastiCache replication group entirely separate from the platform's shared
-# cache, and a load-balancer security group. Each ports differently, and two of
-# the three port to somewhere other than this module.
-#
-# 1. THE DEDICATED CACHE IS REAL AND IS KEPT - BUT AS A SECOND CATALOG UNIT,
-#    NOT AS A NESTED MODULE.
-#
-#    Confirmed: all six AWS live roots that instantiate this module set
-#    `elasticache_config.enabled = true` with their own
-#    `<env>-<project>-ratelimiter` replication group, distinct from the shared
-#    `<env>-<project>-valkey`. Non-sharded, 2 nodes, cache.t3.small - a
-#    deliberately smaller, isolated footprint. The reasoning transfers intact:
-#    rate limiting is availability-sensitive in a different way than the
-#    payments session cache, and isolating it means a maintenance event, a
-#    noisy neighbour or a failover on one cannot take down the other.
-#
-#    ON OCI IT IS A SECOND `oci-cache-valkey` UNIT (`name_suffix =
-#    "ratelimiter"`), NOT a nested `module` block inside this one. Three
-#    reasons, none cosmetic:
-#      (a) The settled network security model puts cross-module NSG rules in a
-#          security-last unit that reads each data-tier module's `nsg_id`
-#          output. A nested module's outputs are not addressable from another
-#          Terragrunt unit; a sibling unit's are.
-#      (b) Cache sizing becomes a stack `value` per environment, which is
-#          exactly where "dev is smaller than prod" belongs. Nested, it would
-#          be a 20-field object threaded through this module's variable surface
-#          for no gain.
-#      (c) A cache create can run to tens of minutes. Nesting it makes every
-#          plan of the rate limiter's identity wait behind it.
-#    This is a divergence from the check sheet's section 5, which proposed a
-#    nested `module "oci-cache-valkey"`. Recorded here because this file is
-#    where a reader would look for the missing module block.
-#
-#    The GCP-side inconsistency the check sheet flags is NOT copied: GCP puts
-#    the shared cache on Valkey-cluster and ratelimiter's dedicated instance on
-#    the older classic Memorystore-for-Redis product. AWS uses the identical
-#    composition module for both, and so does this port - one module,
-#    `oci-cache-valkey`, instantiated twice. Check sheet section 8 item 3 makes
-#    that an oracle gate item; it is NOT CONSULTED, and the default taken here
-#    is the AWS precedent rather than the GCP one.
-#
-# 2. THE IDENTITY GRANTS NOTHING, AND ON OCI THAT MEANS THERE IS NOTHING.
-#    identity-model.md section 1.2 records this module as "1 SA x 0 grants" -
-#    STS only, "the role exists for future use". All three AWS policy inputs
-#    (aws_managed, customer_managed, inline) are empty in every one of the six
-#    live roots. On AWS an empty role is still an object with an ARN. On OCI an
-#    identity IS a set of statements, so zero grants is zero statements is
-#    nothing at all: `policy_statements` is EMPTY by default and that is the
-#    correct, honest output. The pod authenticates to Kubernetes with its
-#    service-account token exactly as before; it simply has no OCI grants,
-#    which is what it has on AWS too.
-#
-# 3. THE LOAD-BALANCER SECURITY GROUP IS NOT PORTED. `create_lb_security_group
-#    = true` in every live root, with `lb_ingress_rules = {}` and
-#    `lb_egress_rules = {}` - a security group enforcing ZERO rules, everywhere.
-#    Reproducing an empty NSG here would port vestigial configuration and would
-#    also put NSG ownership in an app module, which the network security model
-#    puts in vpc-network and the security-last rules unit. Check sheet open
-#    question 3 asks the platform team what that group is actually for; until
-#    it is answered there is nothing functional to replicate.
-#
-# Check sheet: docs/multi-cloud-parity/oci/modules/ratelimiter.md
-# -----------------------------------------------------------------------------
+# ratelimiter - the OCI port of the AWS module of the same name. Developer notes:
+#   1. The dedicated cache is a SECOND `oci-cache-valkey` catalog unit
+#      (name_suffix "ratelimiter"), NOT a nested module - so the security-last
+#      rules unit can reach its nsg_id and cache sizing is a per-env stack value.
+#   2. The identity grants NOTHING ("1 SA x 0 grants"); on OCI an identity IS its
+#      statements, so there is no policy object and `policy_statements` is empty.
+#   3. The load-balancer security group is NOT ported - it enforced zero rules
+#      in every live root.
 
 variable "compartment_id" {
   description = "OCID of the environment compartment. Default location term for any statement this module renders and the attachment point of the consuming shared policy object."
@@ -144,14 +85,10 @@ variable "extra_statements" {
   default     = []
 }
 
-# =============================================================================
-# Dedicated cache - PASS-THROUGH ONLY.
-#
-# These are wired from the second `oci-cache-valkey` unit's outputs by the
-# catalog unit. This module creates no cache; see header point 1. All default to
-# null so the module stays plannable while that unit is unapplied, and so a
-# caller who has not wired it gets nulls rather than a false endpoint.
-# =============================================================================
+# -----------------------------------------------------------------------------
+# Dedicated cache - PASS-THROUGH ONLY. Wired from the second oci-cache-valkey
+# unit's outputs by the catalog unit; this module creates no cache.
+# -----------------------------------------------------------------------------
 
 variable "cache_cluster_id" {
   description = "OCID of the dedicated OCI Cache cluster. Answers for AWS `elasticache_replication_group_id` and `elasticache_replication_group_arn` at once - OCI has no ARN concept, the OCID is the globally unique identifier."
@@ -235,19 +172,3 @@ variable "defined_tags" {
   type        = map(string)
   default     = {}
 }
-
-# -----------------------------------------------------------------------------
-# DELETED rather than accepted as no-ops:
-#   role_path, max_session_duration      - no role.
-#   aws_managed_policy_names             - no managed-policy objects on OCI.
-#   assume_role_principals               - no assume step; cross-tenancy is a
-#                                          tenancy-root Endorse, not an input
-#                                          here, and this module has no
-#                                          cross-boundary requirement.
-#   create_lb_security_group,
-#   lb_ingress_rules, lb_egress_rules    - header point 3.
-#   elasticache_config (24 fields)       - header point 1; the cache is a
-#                                          sibling unit, so its configuration is
-#                                          that unit's `values`, not a nested
-#                                          object threaded through here.
-# -----------------------------------------------------------------------------

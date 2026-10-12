@@ -1,7 +1,4 @@
-# =============================================================================
 # Identity / naming
-# =============================================================================
-
 variable "compartment_id" {
   description = "OCID of the compartment that holds the cluster. This is OCI's scoping context and replaces the AWS module's vpc_id-as-scope: on OCI the VCN is implied by subnet_id, while ownership/quota/policy scope is the compartment. Flat-compartment first cut - every resource this module creates lands in this one compartment."
   type        = string
@@ -50,14 +47,8 @@ variable "display_name" {
   default     = null
 }
 
-# =============================================================================
-# Network placement
-#
-# This module places into pre-existing network objects and creates none of its
-# own. It does not create a subnet, a VCN, an NSG or a security list. That is
-# the vpc-network module's and the network security model's job respectively.
-# =============================================================================
-
+# Network placement - this module places into pre-existing network objects and
+# creates no subnet, VCN, NSG or security list of its own.
 variable "subnet_id" {
   description = <<-EOT
     OCID of the PRIVATE subnet the cluster's nodes get their endpoints in.
@@ -132,10 +123,7 @@ variable "nsg_ids" {
   }
 }
 
-# =============================================================================
 # Engine
-# =============================================================================
-
 variable "software_version" {
   description = <<-EOT
     OCI Cache engine version. One combined field where AWS has two
@@ -159,10 +147,7 @@ variable "software_version" {
   }
 }
 
-# =============================================================================
 # Topology
-# =============================================================================
-
 variable "cluster_mode" {
   description = <<-EOT
     SHARDED or NONSHARDED. Literals confirmed from the oci_redis_redis_cluster
@@ -211,7 +196,7 @@ variable "shard_count" {
   default     = null
 
   validation {
-    # Self-contained (no cross-variable reference, so this holds on Terraform
+    # Self-contained (no cross-variable reference, so it holds on Terraform
     # >= 1.5). The "only when SHARDED" half is enforced as a resource
     # precondition in main.tf.
     condition     = var.shard_count == null || (var.shard_count >= 3 && var.shard_count <= 99 && var.shard_count % 2 == 1)
@@ -261,43 +246,21 @@ variable "node_memory_in_gbs" {
   }
 }
 
-# =============================================================================
 # Encryption
-#
-# IN TRANSIT (check sheet feature 8, PARTIAL): there is deliberately NO
-# transit_encryption_enabled / transit_encryption_mode variable here.
-#
-# OCI Cache is TLS-only and there is no Terraform-level off switch - no
-# argument on oci_redis_redis_cluster resembles it. Oracle:
-# "By default, OCI Cache only supports TLS connections with clusters,
-#  regardless of the client you're connecting from. If your scenario requires
-#  connecting without TLS, contact support."
-#
-# This is the OPPOSITE shape of the AWS module, which defaults
-# transit_encryption_enabled = false and is explicitly set to false in every
-# live AWS unit reviewed (the GCP valkey unit does the same, and says why:
-# hyperswitch's Redis client does not use TLS today).
-#
-# Exposing a toggle that cannot toggle would be a lie in the module's
-# interface, so this module does not have one. The consequence is real and is
-# NOT closed: if the hyperswitch Valkey client cannot negotiate TLS, connections
-# fail outright ("connection reset by peer" per Oracle's docs) rather than
-# degrading. Resolve before any workload is put in front of a cluster, via
-# either (a) confirming the client supports TLS, or (b) an Oracle support
-# request to disable enforcement for the tenancy. Check sheet open question 4.
-#
-# AT REST (check sheet feature 7, PARTIAL): no argument exists either, and
-# whether OCI Cache encrypts at rest by default / supports CMEK via OCI Vault
-# is NOT documented anywhere checked. Check sheet open question 1. There is
-# nothing to plumb, so the AWS at_rest_encryption_enabled / kms_key_id pair
-# has no counterpart variable here - that is an unverified gap, not a
-# confirmed equivalence.
-# =============================================================================
+# IN TRANSIT: deliberately NO transit_encryption_enabled/transit_encryption_mode
+# variable here. OCI Cache is TLS-only with no Terraform-level off switch
+# (Oracle: "By default, OCI Cache only supports TLS connections"). This is the
+# opposite of the AWS module (transit_encryption_enabled = false in every live
+# unit), and exposing a toggle that cannot toggle would be a lie in the module's
+# interface. The consequence is real and NOT closed: if the Valkey client cannot
+# negotiate TLS, connections fail outright rather than degrading. Confirm the
+# client supports TLS, or open an Oracle support request, before pointing a
+# workload at a cluster.
+# AT REST: no argument exists and whether OCI Cache encrypts at rest by default
+# or supports CMEK via Vault is NOT documented anywhere checked - an unverified
+# gap, not a confirmed equivalence, so no at_rest_encryption/kms_key variable.
 
-# =============================================================================
 # Engine parameters (the parameter-group analogue)
-# =============================================================================
-
 variable "oci_cache_config_set_id" {
   description = "OCID of a PRE-EXISTING OCI Cache Config Set to attach. Mutually exclusive with create_config_set. The AWS analogue is parameter_group_name."
   type        = string
@@ -329,10 +292,7 @@ variable "config_set_description" {
   default     = null
 }
 
-# =============================================================================
 # Backup / restore
-# =============================================================================
-
 variable "create_backup" {
   description = <<-EOT
     Create one oci_redis_oci_cache_backup of this cluster.
@@ -400,25 +360,14 @@ variable "import_from_object_storage" {
   default = null
 }
 
-# =============================================================================
 # Maintenance
-#
-# There is deliberately NO maintenance_window variable (check sheet feature 12,
-# PARTIAL). Routine OS/security patching on OCI Cache is Oracle-managed via a
-# blue/green node swap with NO customer-configurable window, unlike AWS's
-# weekly maintenance_window = "mon:04:00-mon:05:00". Nothing to plumb - this is
-# platform behaviour, not a missing argument.
-#
-# Engine version upgrades ARE customer-triggered: software_version is
-# (Updatable), which is arguably tighter control than AWS's
-# auto_minor_version_upgrade auto-apply. Change software_version to upgrade.
-# There is no apply_immediately equivalent either; updates apply when applied.
-# =============================================================================
+# Deliberately NO maintenance_window variable: routine OS/security patching on
+# OCI Cache is Oracle-managed (blue/green node swap) with no customer-configurable
+# window - platform behaviour, not a missing argument. Engine version upgrades ARE
+# customer-triggered: software_version is (Updatable), so change it to upgrade.
+# There is no apply_immediately equivalent; updates apply when applied.
 
-# =============================================================================
-# AUTH / users (check sheet feature 9, FULL)
-# =============================================================================
-
+# AUTH / users
 variable "cache_users" {
   description = <<-EOT
     OCI Cache users to create and attach, keyed by user name.
@@ -463,10 +412,7 @@ variable "cache_user_hashed_passwords" {
   sensitive   = true
 }
 
-# =============================================================================
 # Tagging
-# =============================================================================
-
 variable "freeform_tags" {
   description = "Additional OCI freeform tags, merged over the module's own. The AWS `tags` map and the GCP `labels` map both land here."
   type        = map(string)
@@ -479,10 +425,7 @@ variable "defined_tags" {
   default     = {}
 }
 
-# =============================================================================
 # Timeouts
-# =============================================================================
-
 variable "timeouts" {
   description = "Per-operation timeouts. The provider defaults to 20m for all three; a large sharded cluster create can exceed that, and the check sheet's DR discussion already leans on the create timeout being visible, so it is an input rather than a hidden default."
   type = object({

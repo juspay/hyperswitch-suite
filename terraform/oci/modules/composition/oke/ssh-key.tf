@@ -1,24 +1,11 @@
-# =============================================================================
-# oke - SSH key for worker-node access (AWS feature 18)
-# =============================================================================
-# PARTIAL. eks.md gap 4.7.
+# oke - SSH key for worker-node access. The registry module accepts an
+# already-existing key only, so these two resources are added here targeting
+# OCI Vault (the SSM SecureString analogue).
 #
-# The AWS module generates an RSA keypair with `tls_private_key` when no public
-# key is supplied and writes the private half to SSM Parameter Store as a
-# SecureString. `oracle-terraform-modules/oke/oci` accepts `ssh_public_key` /
-# `ssh_private_key` for an ALREADY-EXISTING key only: it neither generates nor
-# persists one. So the two resources are added here, outside the registry
-# module, targeting OCI Vault - the SSM SecureString analogue named in
-# provider-facts.md's Tier 2 table.
-#
-# HONEST LIMITATION, do not read this as an improvement over AWS. Routing the
-# private key to Vault means the operational retrieval path is Vault rather
-# than Terraform state, but `tls_private_key` still materialises the private key
-# INSIDE Terraform state, exactly as the AWS module does. The state backend's
-# encryption and access control remain the real control. If a key that never
-# touches Terraform state is required, generate it out of band and pass
-# `ssh_public_key` with `create_ssh_key = false`.
-# =============================================================================
+# SECURITY NOTE: routing the private key to Vault does not mean it avoids
+# Terraform state - `tls_private_key` still materialises the private key inside
+# state, so state encryption/access control remain the real control. For a key
+# that never touches state, generate it out of band and pass ssh_public_key.
 
 resource "tls_private_key" "node_pool" {
   count = var.create_ssh_key ? 1 : 0

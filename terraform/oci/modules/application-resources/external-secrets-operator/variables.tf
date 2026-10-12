@@ -1,33 +1,16 @@
-# -----------------------------------------------------------------------------
-# external-secrets-operator - the OCI port of the AWS module of the same name.
-#
-# On AWS this is the smallest useful instance of IRSA: one `aws_iam_role`, one
-# inline policy granting `secretsmanager:GetSecretValue` + `DescribeSecret`, and
-# a `role_arn` the Helm chart annotates onto `external-secrets-sa`. Everything
-# downstream depends on it - application secrets, database credentials and API
-# keys all arrive in the cluster through this one operator.
-#
-# NONE OF THAT SURVIVES STRUCTURALLY. There is no role, no ARN, no assume call
-# and NO SERVICE-ACCOUNT ANNOTATION. On OCI the grant IS the identity: a policy
-# statement naming the (cluster, namespace, service_account) tuple in its
-# `where all {...}` clause. identity-model.md section 6 is the worked example
-# for exactly this module.
-#
-# THIS MODULE CREATES NO `oci_identity_policy`. It renders the statements and
-# emits them as `policy_statements`; the environment's single shared
-# `oke-workload-identity` policy object concatenates them in. One object per
-# environment, not per app - the tenancy limit is 100 policy objects and both
-# `name` and `compartment_id` are non-updatable.
+# external-secrets-operator - OCI port of the AWS module of the same name.
+# On AWS this is the smallest useful instance of IRSA; NONE of that survives
+# structurally. There is no role, no ARN, no assume call and NO service-account
+# annotation - on OCI the grant IS the identity. This module renders the
+# statements and emits them as `policy_statements`; it does NOT create an
+# `oci_identity_policy`.
 #
 # THE SINGLE MOST DANGEROUS DEFAULT IN THE WHOLE PORT lives on the Kubernetes
-# side of this module, not in it: ESO's Oracle provider `principalType` defaults
-# to `InstancePrincipal`. Omit it and the operator authenticates as the WORKER
+# side, not here: ESO's Oracle provider `principalType` defaults to
+# `InstancePrincipal`. Omit it and the operator authenticates as the WORKER
 # NODE, which usually appears to work while granting every pod on that node the
 # same secret access and destroying per-pod audit attribution. See the
 # `secret_store_config` output, which exists to make that impossible to forget.
-#
-# Check sheet: docs/multi-cloud-parity/oci/modules/external-secrets-operator.md
-# -----------------------------------------------------------------------------
 
 variable "compartment_id" {
   description = "OCID of the environment compartment. The default location term in every rendered statement, and the compartment the consuming shared policy object is attached to. Replaces the AWS module's `region` + `aws_account_id` pair: neither region nor account is part of an OCI IAM grant."
@@ -227,22 +210,12 @@ variable "defined_tags" {
   default     = {}
 }
 
-# -----------------------------------------------------------------------------
-# DELETED, not accepted as no-ops, so a reader cannot set one and believe it did
-# something (eks-iam.md section 4.7 makes the same call):
-#
-#   role_path             - no role, no path. OCI's organisational axis is the
-#                           compartment.
-#   max_session_duration  - no role, no session. Credential lifetime becomes the
-#                           projected service-account token lifetime, which OKE
-#                           manages and Terraform does not express. If a
-#                           security standard requires a bounded credential age
-#                           for the component that reads every platform secret,
-#                           that requirement now has to be met on the Kubernetes
-#                           side or not at all.
+# DELETED, not accepted as no-ops (so a reader cannot set one and believe it did
+# something):
+#   role_path             - no role, no path. OCI's organisational axis is the compartment.
+#   max_session_duration  - no role, no session. Credential lifetime must now be
+#                           bounded on the Kubernetes side or not at all.
 #   oidc_audience         - no OIDC provider is registered; there is no `aud`.
-#   aws_account_id        - a compartment OCID is not an account ID and must not
-#                           be presented as one.
-#   role_name / role_description - become the shared policy object's name and
-#                           description, which this module does not own.
-# -----------------------------------------------------------------------------
+#   aws_account_id        - a compartment OCID is not an account ID.
+#   role_name / role_description - become the shared policy object's name and description,
+#                           which this module does not own.

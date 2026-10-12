@@ -1,18 +1,5 @@
-# -----------------------------------------------------------------------------
-# Output contract.
-#
-# The AWS module's headline output, `role_arn`, HAS NO REPLACEMENT HERE and is
-# deliberately not substituted. Its only consumer was the
-# `eks.amazonaws.com/role-arn` service-account annotation, and OCI needs no
-# annotation at all - the policy names the service account, and the pod side is
-# `serviceAccountName` plus `automountServiceAccountToken: true` and nothing
-# else. Offering `policy_id` as "the new role_arn" would invite someone to
-# annotate a service account with it, producing charts that look configured and
-# identities that work by accident.
-#
-# Nothing below is consumable by a workload. These outputs exist for review and
-# audit. (`identity-model.md` section 6.4, `eks-iam.md` section 4.9.)
-# -----------------------------------------------------------------------------
+# Output contract. No role ARN replacement: OCI names the service account, so
+# nothing below is consumable by a workload - these outputs exist for audit.
 
 output "policy_id" {
   description = "OCID of the single workload-identity policy. Audit/reference only - NOT a role ARN, and must not be annotated onto a Kubernetes service account."

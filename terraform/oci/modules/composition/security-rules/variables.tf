@@ -1,20 +1,8 @@
-# =========================================================================
-# SECURITY RULES MODULE VARIABLES (OCI)
-# =========================================================================
-# Port of terraform/aws/modules/composition/security-rules.
-#
-# The input vocabulary is deliberately kept in AWS terms - `from_port`,
-# `to_port`, `protocol = "tcp"` - so the 1496-line live rule set ports
-# mechanically. Every OCI-specific translation (IANA protocol numbers,
-# tcp_options/udp_options/icmp_options, one-CIDR-per-rule fan-out) happens in
-# locals.tf, never in the live layer. See docs/multi-cloud-parity/oci/modules/
-# security-rules.md §5 in hyperswitch-infra.
-#
-# The module never names a consumer (oke, database, oci-cache-valkey, ...).
-# It takes a generic map of (nsg_id, rules) tuples and attaches rules to NSGs
-# it does not own, which is what lets it run last and read every other unit's
-# NSG-id outputs from the catalog unit. That is the whole point of the module.
-# =========================================================================
+# Security-rules module variables (OCI). Input vocabulary kept in AWS terms
+# (from_port/to_port/protocol="tcp") so the AWS rule set ports mechanically;
+# OCI translation happens in locals.tf. The module never names a consumer - it
+# takes a generic map of (nsg_id, rules) and attaches rules to NSGs it does not
+# own, which is what lets it run last after every other unit's NSG outputs.
 
 variable "compartment_id" {
   description = <<-EOT

@@ -1,7 +1,3 @@
-# =============================================================================
-# Identity / naming
-# =============================================================================
-
 variable "compartment_id" {
   description = "OCID of the compartment holding the zones, the private view and any rrsets. OCI's scoping context; replaces nothing in the AWS module, which had no equivalent axis."
   type        = string
@@ -35,10 +31,6 @@ variable "freeform_tags" {
   default     = {}
 }
 
-# =============================================================================
-# Zones and records
-# =============================================================================
-
 variable "zones" {
   description = <<-EOT
     Map of logical zone name to zone configuration, keyed like the AWS
@@ -68,19 +60,17 @@ variable "zones" {
     name = string
 
     # "public"  - oci_dns_zone with no view, resolvable from the internet.
-    # "private" - oci_dns_zone inside a PRIVATE view, resolvable only from
-    #             VCNs whose resolver has that view attached. See resolver.tf.
+    # "private" - oci_dns_zone in a PRIVATE view, resolvable only from VCNs
+    #             whose resolver has that view attached. See resolver.tf.
     type = optional(string, "public")
 
-    # OCI-only. AWS's module has no DNSSEC surface at all, so this is additive
-    # rather than a port. Values: "ENABLED" / "DISABLED"; null leaves Oracle's
-    # default. Meaningless on private zones.
+    # Additive, OCI-only. "ENABLED" / "DISABLED"; null leaves Oracle's default.
+    # Meaningless on private zones.
     dnssec_state = optional(string)
 
     records = optional(map(object({
-      # Relative to the zone. "" or "@" means the zone apex - which on OCI is
-      # a plain A record at the load balancer's reserved IP, not an ALIAS
-      # pseudo-record (route53.md feature 4, PARTIAL).
+      # Relative to the zone. "" or "@" means the zone apex - a plain A record
+      # at the load balancer's reserved IP inside OCI, not an ALIAS.
       name    = string
       type    = string
       ttl     = optional(number, 300)
@@ -108,10 +98,7 @@ variable "zones" {
   }
 }
 
-# =============================================================================
 # VCN resolver attachment - NEW SURFACE, no AWS analogue
-# =============================================================================
-
 variable "vcn_id" {
   description = <<-EOT
     OCID of the VCN whose auto-created DNS Resolver should resolve this

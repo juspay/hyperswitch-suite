@@ -1,10 +1,6 @@
-# =============================================================================
-# Object Storage - the module's own bucket (check sheet feature 6, FULL)
-# =============================================================================
+# Object Storage - the module's own bucket
 
-# Tenancy-wide, read-only singleton. No AWS counterpart: S3 names are globally
-# unique, OCI's are unique within this namespace, and every bucket resource
-# needs it explicitly.
+# Tenancy-wide, read-only singleton; required explicitly by every bucket resource.
 data "oci_objectstorage_namespace" "this" {}
 
 resource "oci_objectstorage_bucket" "this" {
@@ -18,37 +14,23 @@ resource "oci_objectstorage_bucket" "this" {
   access_type  = "NoPublicAccess"
   storage_tier = coalesce(var.bucket.storage_tier, "Standard")
 
-  # Encryption has no toggle to port from the AWS module's `sse_algorithm`:
-  # Object Storage encrypts every object with AES-256 and it "can't be turned
-  # off". AWS chose SSE-S3 (Oracle-managed-key equivalent) for this bucket, so
-  # kms_key_id stays unset and the port matches that choice rather than
-  # silently upgrading it.
+  # Object Storage encrypts every object with AES-256 and it cannot be turned
+  # off, so kms_key_id stays unset (matching the SSE-S3 choice).
 
   freeform_tags = local.freeform_tags
   defined_tags  = var.defined_tags
 
-  # ---------------------------------------------------------------------------
-  # NOT HERE, and their absence is correct rather than incomplete:
-  #
-  #   force_destroy  - no such argument on oci_objectstorage_bucket in provider
-  #     9.0.0; a non-empty bucket cannot be deleted by the resource at all.
-  #     Empty it first: oci os object bulk-delete --bucket-name <n> --namespace <ns>
-  #
-  #   an Origin-Access-Control bucket policy (AWS feature 7, verdict NONE) -
-  #     OCI has no first-party CDN to grant access to. "CDN Interconnect" is a
-  #     third-party Cloudflare peering arrangement, North America only, with no
-  #     Terraform resource. Unused on AWS today, so zero blast radius; a future
-  #     CDN requirement is a new architecture decision, not a parameter here.
-  #     Check sheet section 4.1.
-  # ---------------------------------------------------------------------------
+  # NOT here, and their absence is correct:
+  #   force_destroy - no such argument in provider 9.0.0; a non-empty bucket
+  #     cannot be deleted by the resource (409). Empty it first:
+  #     oci os object bulk-delete --bucket-name <n> --namespace <ns>
+  #   an Origin-Access-Control bucket policy - OCI has no first-party CDN to
+  #     grant access to; a future CDN is a new architecture decision.
 }
 
-# -----------------------------------------------------------------------------
 # Lifecycle rules
-# -----------------------------------------------------------------------------
-# A SEPARATE resource on OCI, unlike AWS's inline `lifecycle_rule` block on the
-# bucket module - a structural difference, not a capability gap. Carries the
-# real AWS unit's 30-day noncurrent-version-expiration rule by default.
+# A separate resource on OCI, unlike AWS's inline `lifecycle_rule` block on the
+# bucket - a structural difference, not a capability gap.
 resource "oci_objectstorage_object_lifecycle_policy" "this" {
   count = local.bucket_create && length(local.lifecycle_rules) > 0 ? 1 : 0
 

@@ -1,25 +1,4 @@
-###############################################################################
-# Output contract
-#
-# Named after the AWS outputs consumers actually read, with OCIDs replacing
-# ARNs. Deliberately ABSENT, each a recorded gap rather than a silent drop:
-#
-#   - lb_dns_name / lb_zone_id: an OCI load balancer has no service-assigned
-#     DNS name at all, only IP addresses. A plain DNS A record at
-#     lb_ip_address (pinned with a Reserved Public IP) is the replacement, and
-#     the Route 53 ALIAS record that AWS needs for the apex-CNAME problem is
-#     not required. edge-tier-strategy.md section 3.
-#   - target_group_arns: replaced by backend_set_names.
-#   - asg_ids / asg_names: replaced by instance_pool_ids.
-#   - iam_role_arn / instance_profile_name: OCI has no per-instance role
-#     object. The fleet becomes a member of a dynamic group matched on
-#     compartment/OCID/tag and IAM policies grant that group verbs. SUBSTITUTE,
-#     and the decision is owned by oci/identity-model.md, not by this module -
-#     which is why nothing identity-shaped is created or exported here yet.
-#     See README "Not yet implemented".
-#   - ssh_key_parameter_name: replaced by ssh_key_vault_secret_id, and null
-#     unless a Vault and a KMS key were supplied.
-###############################################################################
+# Output contract.
 
 output "load_balancer_id" {
   description = "OCID of the load balancer. This is the value oci_waf_web_app_firewall and any external DNS/steering-policy unit needs."

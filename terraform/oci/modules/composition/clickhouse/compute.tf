@@ -1,16 +1,7 @@
-# =============================================================================
-# Keeper tier (check sheet feature 1, SELF-MANAGED)
-# =============================================================================
-# ClickHouse Keeper is ClickHouse's own Raft coordination service - the role
-# ZooKeeper plays for older deployments and KRaft plays for ../kafka.
-#
-# SELF-MANAGED is PARITY: the AWS original runs both tiers on raw EC2. There is
-# no managed alternative to weigh - ClickHouse Cloud is third-party SaaS, not an
-# OCI-native service - so self-managing is the only path on all three clouds.
-# Check sheet section 8 item 1, gate NOT YET CONSULTED.
-#
-# keeper_count = 0 is supported and creates nothing in this tier, matching the
-# AWS module's "use an externally-provided Keeper cluster" path.
+# Keeper tier
+# ClickHouse Keeper is ClickHouse's own Raft coordination service (the role
+# ZooKeeper plays). keeper_count = 0 creates nothing in this tier and uses an
+# externally-provided Keeper cluster.
 
 resource "oci_core_instance" "keeper" {
   count = var.keeper_count
@@ -20,7 +11,6 @@ resource "oci_core_instance" "keeper" {
 
   # One Keeper per fault domain. ap-mumbai-1 has ONE availability domain, so a
   # 3-node Raft quorum survives a rack or host failure but NOT a whole-AD event.
-  # Check sheet section 8 item 5: ORACLE GATE ITEM, NOT YET CONSULTED.
   fault_domain = local.keeper_fault_domain[count.index]
 
   display_name = "${local.name_prefix}-keeper-${count.index}"
@@ -35,10 +25,8 @@ resource "oci_core_instance" "keeper" {
     source_type = "image"
     source_id   = var.keeper_image_id
 
-    # Ephemeral by design (check sheet feature 10): the boot volume is deleted
-    # with the instance by default, already matching AWS's root_block_device
-    # delete_on_termination = true. The persistent data lives on the separately
-    # managed, destroy-protected volumes in storage.tf.
+    # Boot volume is deleted with the instance; the persistent data lives on the
+    # separately managed, destroy-protected volumes in storage.tf.
     boot_volume_size_in_gbs = var.keeper_boot_volume_size_in_gbs
     boot_volume_vpus_per_gb = var.keeper_boot_volume_vpus_per_gb
 
@@ -93,13 +81,9 @@ resource "oci_core_instance" "keeper" {
   }
 }
 
-# =============================================================================
 # Keeper-before-server ordering
-# =============================================================================
-# NOT a port - the AWS module has no equivalent gate. Added because ClickHouse
-# servers that start before the Keeper quorum forms fail their first coordination
-# round, the same class of problem ../kafka's time_sleep.wait_for_controller
-# exists to prevent. Set keeper_startup_delay_seconds = 0 to disable.
+# ClickHouse servers that start before the Keeper quorum forms fail their first
+# coordination round. Set keeper_startup_delay_seconds = 0 to disable.
 
 resource "time_sleep" "wait_for_keeper" {
   count = var.keeper_count > 0 ? 1 : 0
@@ -113,9 +97,7 @@ resource "time_sleep" "wait_for_keeper" {
   }
 }
 
-# =============================================================================
-# Server tier (check sheet feature 2, SELF-MANAGED)
-# =============================================================================
+# Server tier
 
 resource "oci_core_instance" "server" {
   count = var.server_count

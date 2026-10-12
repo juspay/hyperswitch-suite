@@ -1,9 +1,4 @@
-###############################################################################
-# Internet gateway
-#
-# Limit 1 per VCN, documented as not increasable - the same shape as one IGW
-# per VPC on AWS.
-###############################################################################
+# Internet gateway - limit 1 per VCN, not increasable.
 
 resource "oci_core_internet_gateway" "this" {
   count = var.create_internet_gateway ? 1 : 0
@@ -17,23 +12,9 @@ resource "oci_core_internet_gateway" "this" {
   defined_tags  = var.defined_tags
 }
 
-###############################################################################
-# NAT gateway
-#
-# SUBSTITUTE (check sheet feature 6 / section 4.1). AWS runs an appliance fleet
-# - one aws_nat_gateway plus one aws_eip per availability zone, collapsible via
-# single_nat_gateway. OCI's NAT gateway is a REGIONAL, VCN-scoped service with
-# a hard limit of 1 per VCN, so:
-#   - single_nat_gateway and nat_gateway_count have no meaning and are dropped
-#     from the input surface rather than carried as dead variables;
-#   - there is one egress IP, not one per AZ. Simpler to allowlist at a PSP or
-#     bank, but there is no customer-controlled egress redundancy and no
-#     customer-controlled egress bandwidth scaling. If NAT throughput becomes a
-#     ceiling the remedy is a limit-increase request plus a second route table,
-#     not a config change.
-# public_ip_id plays the role aws_eip played: it pins the egress address to a
+# NAT gateway - regional, VCN-scoped, hard limit of 1 per VCN, so there is ONE
+# egress IP rather than one per AZ. `public_ip_id` pins the egress address to a
 # reserved public IP that survives gateway replacement.
-###############################################################################
 
 resource "oci_core_nat_gateway" "this" {
   count = var.enable_nat_gateway ? 1 : 0
@@ -44,45 +25,23 @@ resource "oci_core_nat_gateway" "this" {
 
   public_ip_id = var.nat_reserved_public_ip_id
 
-  # Kill switch with no AWS equivalent: blocks all traffic through the gateway
-  # without destroying it or releasing the reserved IP.
+  # Kill switch: blocks all traffic through the gateway without destroying it
+  # or releasing the reserved IP.
   block_traffic = var.nat_block_traffic
 
   freeform_tags = local.common_freeform_tags
   defined_tags  = var.defined_tags
 }
 
-###############################################################################
-# Service gateway
-#
-# SUBSTITUTE (check sheet features 13 and 14 / section 4.3). This one resource
-# replaces the AWS module's entire vpc-endpoints.tf:
-#   - the S3 GATEWAY endpoint wired into 8 route tables becomes a service
-#     gateway plus one SERVICE_CIDR_BLOCK route rule per table. Same
-#     architecture: route-based, no VNIC, no per-request charge.
-#   - the 19 INTERFACE endpoints (ECR, STS, SSM, KMS, Secrets Manager, ...),
-#     each an ENI with an IP, a security group and an hourly charge, collapse
-#     into the same single regional gateway. What is lost: per-service
-#     granularity - OCI exposes service CIDR LABELS, not service names - and
-#     split-horizon private DNS, so AWS's private_dns_enabled has nothing to
-#     configure (hostnames stay public and are routed privately by destination
-#     CIDR).
-#   - there is nothing to attach a security group to, because a service gateway
-#     has no VNIC. AWS's vpc_endpoint_security_group_id therefore does not
-#     exist in this module's outputs (section 4.5); the equivalent control
-#     inverts to a per-consumer NSG EGRESS rule with
-#     destination_type = "SERVICE_CIDR_BLOCK", owned by composition/security-rules.
-#   - NONE (section 4.6): custom_interface_vpc_endpoints has no counterpart at
-#     all. A service gateway reaches only Oracle Services Network endpoints in
-#     the SAME region; OCI has no customer-addressable PrivateLink equivalent.
-#     The input is deliberately absent rather than accepted-and-ignored. The
-#     two AWS prod roots that populate it (prod/us-west-2,
-#     prod/eu-north-1-auto-generated) cannot migrate until each named
-#     counterparty is routed through the Squid proxy, a DRG remote peering, or
-#     FastConnect / Site-to-Site VPN.
+# Service gateway - one regional gateway replaces the AWS module's whole
+# vpc-endpoints.tf. A route-based target with no VNIC, so there is nothing to
+# attach a security group to (AWS's vpc_endpoint_security_group_id inverts to a
+# per-consumer NSG egress rule to SERVICE_CIDR_BLOCK in composition/security-
+# rules) and no customer-addressable PrivateLink equivalent (`custom_interface_
+# vpc_endpoints` is deliberately absent). OCI exposes service CIDR LABELS, not
+# service names, so per-service granularity is lost.
 #
 # See locals.tf for why the two service CIDR labels are mutually exclusive.
-###############################################################################
 
 data "oci_core_services" "this" {}
 

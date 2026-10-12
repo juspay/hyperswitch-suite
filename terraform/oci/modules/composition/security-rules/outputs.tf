@@ -1,7 +1,4 @@
-# =========================================================================
-# SECURITY RULES OUTPUTS (OCI)
-# =========================================================================
-
+# Security rules outputs (OCI)
 output "ingress_rule_ids" {
   description = "Map of ingress NSG security rule IDs grouped by target NSG OCID"
   value = {
@@ -46,7 +43,6 @@ output "rules_summary" {
     total_egress_rules  = length(local.egress_rules_flat)
     total_rules         = length(local.ingress_rules_flat) + length(local.egress_rules_flat)
 
-    # Selector split - validation rung 5 checks these against the check sheet.
     by_selector = {
       network_security_group = length([for r in local.all_rules_flat : r.key if r.target_type == "NETWORK_SECURITY_GROUP"])
       cidr_block             = length([for r in local.all_rules_flat : r.key if r.target_type == "CIDR_BLOCK"])

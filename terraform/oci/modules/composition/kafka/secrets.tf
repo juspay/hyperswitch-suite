@@ -1,18 +1,8 @@
-# =============================================================================
-# SSH key pair and private-key escrow (check sheet feature 7, FULL)
-# =============================================================================
-# tls_private_key is unchanged from the AWS module - key generation is
-# cloud-agnostic. Two things do change:
-#
-#   * there is no aws_key_pair object. OCI has no key-pair resource at all; the
-#     public key is a line in instance metadata (ssh_authorized_keys), which is
-#     why local.key_pair_name is a label rather than a resource reference.
-#   * escrow moves from SSM Parameter Store (a flat namespace the module writes
-#     into directly) to OCI Vault, which requires a pre-existing Vault AND a
-#     pre-existing KMS key. When either is missing nothing is written and the
-#     private key lives only in Terraform state - so the state backend's
-#     encryption becomes load-bearing. The dev root has vault_id = null today
-#     (check sheet open question 9.2, UNRESOLVED).
+# SSH key pair and private-key escrow
+# The public key is a line in instance metadata (no key-pair resource), and
+# escrow goes to OCI Vault, which needs a pre-existing Vault AND KMS key. When
+# either is missing the private key lives only in Terraform state, making state
+# encryption load-bearing.
 
 resource "tls_private_key" "kafka" {
   count = local.generate_key ? 1 : 0

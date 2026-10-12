@@ -24,12 +24,6 @@ locals {
     }
   }
 
-  # The AWS module's subscription flattening, ported unchanged: the same
-  # merge([for ...]...) over topic x subscription pairs, producing one resource
-  # per pair. Nothing about it is AWS-specific - both clouds model a subscription
-  # as its own object referencing a topic - which is why this is the one piece of
-  # the AWS module that needed no structural change at all.
-  #
   # The leading [{}] is not decoration: `merge()` with zero arguments is an
   # error, and var.topics defaults to {}, so the splat has to be guaranteed at
   # least one element.

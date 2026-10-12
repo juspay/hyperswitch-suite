@@ -1,26 +1,6 @@
-# =============================================================================
-# Outputs
-# =============================================================================
-# The AWS module's 47 outputs collapse to the set below. The reduction is almost
-# entirely the removal of things OCI does not have, not a loss of information -
-# one OCID does the work of AWS's id/arn/resource_id triples.
-#
-# Deleted with no replacement, and why:
-#   global_cluster_id, global_cluster_arn, global_cluster_identifier,
-#   global_writer_endpoint  - there is no global object (section 4.4). The
-#                             passive root now depends on the primary's DB
-#                             SYSTEM OCID, not on a global identifier.
-#   db_subnet_group_name/_id/_arn - no subnet-group concept exists.
-#   storage_encrypted, kms_key_id, module_kms_key_arn, module_kms_key_id,
-#   module_kms_key_aliases  - see the CMEK note on db_system_id below.
-#   availability_zones      - service-placed; not selectable.
-#   database_name           - OCI creates only the default `postgres` database
-#                             and provider 9.0.0 has no oci_psql_database
-#                             resource, so per-app databases (hyperswitch_db,
-#                             superposition_v2) cannot be declared in Terraform.
-#                             GCP hit the identical wall on AlloyDB and left it
-#                             as a manual psql step. Open question 9.4.
-#   cluster_instance_writer_status - derivable from system_role + endpoints.
+# Outputs. The AWS module's 47 outputs collapse to the set below - mostly
+# removal of things OCI does not have (no global object, no subnet-group, no
+# kms module, no per-app database, no per-instance AZ).
 
 output "db_system_id" {
   description = "OCID of the db system. Replaces AWS cluster_id, cluster_arn and cluster_resource_id - one OCID does the work of three identifiers. This is also what a warm standby in another region points at, replacing the global_cluster_id + cluster_arn pair the AWS passive root reads cross-region."
@@ -36,13 +16,10 @@ output "system_role" {
   description = "PRIMARY or STANDBY, as reported by the service. Replaces AWS's is_primary_cluster / is_secondary_cluster booleans with the provider's own discriminator."
   value       = oci_psql_db_system.this.system_role
 
-  # ---------------------------------------------------------------------------
   # Cross-variable guards. These live on an output rather than in variable
   # validation blocks because those cannot reference other variables below
-  # Terraform 1.9 and this module floors at 1.5 - the same reason
-  # gcp/modules/composition/alloydb/outputs.tf puts its preconditions here.
-  # Failing loudly at plan time beats failing mid-apply on a payments database.
-  # ---------------------------------------------------------------------------
+  # Terraform 1.9; failing loudly at plan time beats failing mid-apply on a
+  # payments database.
 
   precondition {
     condition     = var.enable_warm_standby == (var.primary_db_system_id != null)
@@ -69,33 +46,22 @@ output "system_role" {
     error_message = "availability_domain cannot be set when is_regionally_durable = true - the provider forbids the pair: 'If isRegionallyDurable is set to true, availabilityDomain should not be specified.' Leave it null, or set is_regionally_durable = false."
   }
 
-  # C13. THE guard this correction exists to add. The pair above is a provider
-  # schema rule and was always enforced; this one is a REGION property, which
-  # the schema cannot express and which four consecutive clean plans therefore
-  # sailed straight past into a 400 on the real create call:
-  #
-  #   400-InvalidParameter, Invalid isRegionallyDurable: isRegionallyDurable is
-  #   set to true but either the region or the service doesn't support this
-  #   feature. This feature is only supported in 3 AD regions. Please set the
-  #   parameter as false and specify availabilityDomain.
-  #
-  # Threshold is 3 and not 2 because the error text names 3, and because no OCI
-  # region has exactly 2 ADs - a region has 1 or it has 3. If Oracle ever ships
-  # a 2-AD region that accepts the flag, this is the line to relax, with the
-  # citation that justifies relaxing it.
+  # This is the load-bearing REGION-property guard (the pair above is a provider
+  # schema rule and was always enforced). A wrong is_regionally_durable value
+  # sails past four clean plans and fails 400 on the real create call, so this
+  # checks the value against a real availability-domain listing at plan time.
+  # Threshold is 3, not 2, because no OCI region has exactly 2 ADs - a region
+  # has 1 or 3.
   precondition {
     condition     = !var.is_regionally_durable || local.availability_domain_count >= 3
     error_message = "is_regionally_durable = true requires a 3-AD region, and this compartment's region reports ${local.availability_domain_count} availability domain(s): ${join(", ", local.availability_domain_names)}. The API rejects the create with 'This feature is only supported in 3 AD regions. Please set the parameter as false and specify availabilityDomain.' Set is_regionally_durable = false; the module then pins storage to the single AD automatically. NOTE this is not a downgrade - with one AD, regional and AD-local placement put the nodes in the same three fault domains of the same AD either way (section 4.3)."
   }
 
-  # availability_domain is mandatory whenever is_regionally_durable = false
-  # ("If isRegionallyDurable is set to false, availabilityDomain must be
-  # specified"). The caller is NOT required to supply it: local.availability_domain
-  # resolves index 0 of the real listing, because an AD name carries a
-  # tenancy-specific opaque prefix ("Niou:AP-MUMBAI-1-AD-1") and is therefore
-  # unsafe to hardcode in a unit or a root.hcl local. This fires only if the
-  # listing itself came back empty, which means the credential cannot see the
-  # compartment - a much earlier problem than storage placement.
+  # availability_domain is mandatory when is_regionally_durable = false. The
+  # caller is NOT required to supply it: local.availability_domain resolves
+  # index 0 of the real listing (AD names carry a tenancy-scoped opaque prefix,
+  # so they are unsafe to hardcode). This fires only if the listing came back
+  # empty, meaning the credential cannot see the compartment.
   precondition {
     condition     = var.is_regionally_durable || local.availability_domain != null
     error_message = "availability_domain is required when is_regionally_durable = false, and data.oci_identity_availability_domains returned no availability domains for compartment ${var.compartment_id}. Either the compartment OCID is wrong or the credential cannot list availability domains; pass var.availability_domain explicitly to bypass the lookup."

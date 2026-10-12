@@ -1,6 +1,3 @@
-# ---------------------------------------------------------------------------
-# Cluster endpoints
-# ---------------------------------------------------------------------------
 variable "cluster_id" {
   description = "OCID of the OKE cluster. From the oke composition module's cluster_id output. Used both as a readiness gate and for the kubernetes provider's exec credential."
   type        = string
@@ -21,23 +18,10 @@ variable "region" {
   type        = string
 }
 
-# ---------------------------------------------------------------------------
-# Cluster access bindings - the RBAC half of eks.md gap 4.2, SUBSTITUTE
-# ---------------------------------------------------------------------------
-# Analogous to AWS's cluster_access_entries map. A key is the binding name.
-# scope_kind selects whether the grant is cluster-wide or namespace-scoped,
-# mirroring AWS's access_scope.type = "cluster" | "namespace".
-#
-# Each entry is ONE binding with ONE role_ref and one or more subjects. A
-# subject's kind is "User" or "Group", its name is the OCI OCID of that
-# principal (OKE maps the authenticated OCID to the Kubernetes subject OCID).
-# The kind MUST match the OCID prefix (ocid1.user.oc1.. vs ocid1.group.oc1..):
-# a mismatch creates a binding that matches no-one, silently - see the oracle
-# gate verdict for eks.md gap 4.2.
-#
-# The IAM half (may this principal call `oci ce cluster generate-token`, i.e.
-# `Allow group <g> to use clusters ...`) is separate and lives in the phase-0
-# IAM bootstrap, exactly as oci/oke's iam.tf feature 4 dictates.
+# scope_kind: "cluster" (ClusterRoleBinding) or "namespace" (RoleBinding).
+# A subject's kind is "User" or "Group" and the name is that principal's OCID.
+# The kind MUST match the OCID prefix - a mismatch creates a binding matching
+# no-one, silently.
 variable "cluster_access_bindings" {
   description = <<EOT
 Map of cluster access bindings, analogous to AWS's cluster_access_entries.
@@ -77,9 +61,7 @@ Map of cluster access bindings, analogous to AWS's cluster_access_entries.
 
   default = {}
 
-  # --------------------------------------------------------------------
   # scope_kind must be "cluster" or "namespace"
-  # --------------------------------------------------------------------
   validation {
     condition = alltrue([
       for name, b in var.cluster_access_bindings :
@@ -88,9 +70,7 @@ Map of cluster access bindings, analogous to AWS's cluster_access_entries.
     error_message = "Every cluster_access_bindings entry must set scope_kind to \"cluster\" or \"namespace\"."
   }
 
-  # --------------------------------------------------------------------
   # namespace required only when scope_kind = "namespace"; forbidden otherwise
-  # --------------------------------------------------------------------
   validation {
     condition = alltrue([
       for name, b in var.cluster_access_bindings :
@@ -100,11 +80,7 @@ Map of cluster access bindings, analogous to AWS's cluster_access_entries.
     error_message = "A namespace is required when scope_kind = \"namespace\", and must be omitted when scope_kind = \"cluster\"."
   }
 
-  # --------------------------------------------------------------------
-  # role_ref.kind must match scope_kind: Role for RoleBinding only.
-  # ClusterRole is valid in a namespace-scoped binding too (scopes a cluster
-  # role to the namespace) - mirroring AWS edit/view policies.
-  # --------------------------------------------------------------------
+  # role_ref.kind must match scope_kind (ClusterRole valid in namespace scope too)
   validation {
     condition = alltrue([
       for name, b in var.cluster_access_bindings :
@@ -113,9 +89,7 @@ Map of cluster access bindings, analogous to AWS's cluster_access_entries.
     error_message = "role_ref.kind must be \"ClusterRole\", or \"Role\" when scope_kind is \"namespace\"."
   }
 
-  # --------------------------------------------------------------------
-  # kind must be User or Group; api_group defaults to rbac.authorization.k8s.io
-  # --------------------------------------------------------------------
+  # subject kind must be User or Group; api_group defaults to rbac.authorization.k8s.io
   validation {
     condition = alltrue([
       for name, b in var.cluster_access_bindings :
@@ -124,10 +98,7 @@ Map of cluster access bindings, analogous to AWS's cluster_access_entries.
     error_message = "Every subject must be kind \"User\" or \"Group\" (OKE maps OCI IAM User OCIDs and Group OCIDs)."
   }
 
-  # --------------------------------------------------------------------
-  # THE silent trap: kind must match the OCID prefix. A Group binding to a
-  # user OCID (or vice versa) matches no principal and fails silently.
-  # --------------------------------------------------------------------
+  # THE silent trap: kind must match the OCID prefix, or the binding matches no-one.
   validation {
     condition = alltrue([
       for name, b in var.cluster_access_bindings :
@@ -141,9 +112,7 @@ Map of cluster access bindings, analogous to AWS's cluster_access_entries.
   }
 }
 
-# ---------------------------------------------------------------------------
 # Labels/annotations added to every binding
-# ---------------------------------------------------------------------------
 variable "labels" {
   description = "Labels added to every ClusterRoleBinding/RoleBinding metadata (typical freeform_tags analog: project, environment, managed_by)."
   type        = map(string)
@@ -156,12 +125,7 @@ variable "annotations" {
   default     = {}
 }
 
-# ---------------------------------------------------------------------------
-# Cluster Autoscaler (OCI cloudprovider) - in-cluster add-on
-# ---------------------------------------------------------------------------
-# AWS feature 7 parity (eks-kubernetes-resources main.tf). Gate verdict:
-# APPROVED WITH CORRECTIONS (eks.md §8 item 4). Gated off by default -> clean
-# no-op, matching the empty-bindings precedent.
+# Cluster Autoscaler (OCI cloudprovider) - in-cluster add-on, gated off by default.
 variable "enable_cluster_autoscaler" {
   description = "Whether to deploy the Cluster Autoscaler (OCI cloudprovider) as an in-cluster workload. When false (default) no CAS resources are created."
   type        = bool
@@ -188,9 +152,7 @@ enable_cluster_autoscaler = true; an enabled-but-empty map is a hard error
   }))
   default = {}
 
-  # --------------------------------------------------------------------
   # min/max/pool_id all mandatory, min <= max (hard error, not silent skip)
-  # --------------------------------------------------------------------
   validation {
     condition = alltrue([
       for name, p in var.cluster_autoscaler_node_pools :

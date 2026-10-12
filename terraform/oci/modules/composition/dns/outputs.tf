@@ -1,19 +1,3 @@
-###############################################################################
-# Output contract
-#
-# AWS output names are kept wherever the semantics survive. OCIDs replace ARNs,
-# so `zone_arns` has no counterpart and is not emitted - nothing consumes it.
-#
-# Deliberately ABSENT, recorded rather than silently dropped:
-#   - zone_arns: OCI has no ARN. `zone_ids` carries the OCID, and oci_dns_zone
-#     additionally exposes `self` (an API URL) if a stable reference is ever
-#     needed for something other than Terraform.
-#   - record_names: AWS emits the record's `name` attribute separately from its
-#     FQDN because Route 53 normalises one into the other. OCI's rrset carries
-#     only `domain`, already fully qualified, so the two AWS outputs collapse
-#     into `record_domains`.
-###############################################################################
-
 output "zone_ids" {
   description = "Map of logical zone key to OCID. Same name and shape as the AWS output."
   value       = { for k, z in oci_dns_zone.this : k => z.id }

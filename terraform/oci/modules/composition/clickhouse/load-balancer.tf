@@ -1,21 +1,6 @@
-# =============================================================================
-# Internal load-balanced HTTP endpoint (check sheet feature 12, FULL - and 4.5)
-# =============================================================================
-# The direct structural analogue of the AWS module's internal ALB:
-#
-#   aws_lb (internal)               -> oci_load_balancer_load_balancer (is_private)
-#   aws_lb_target_group             -> oci_load_balancer_backend_set
-#   aws_lb_target_group_attachment  -> oci_load_balancer_backend (one per server)
-#   aws_lb_listener                 -> oci_load_balancer_listener
-#
-# ONE PLACE OCI IS LESS CONSTRAINED THAN AWS, and it matters here. AWS's
-# alb_subnet_ids carries a hard `length(...) >= 2` validation because an ALB
-# requires subnets in two distinct Availability Zones. An OCI Load Balancer is
-# compartment-scoped and does not require multiple availability domains - a
-# single-subnet deployment is valid. Given ap-mumbai-1 has exactly one AD, the
-# AWS rule ported literally could NEVER be satisfied there. This is a removed
-# blocker, not a convenience.
-#
+# Internal load-balanced HTTP endpoint
+# OCI allows a single-subnet Load Balancer (AWS required two AZs, which a
+# one-AD region could never satisfy), so load_balancer_subnet_id is singular.
 # The Keeper tier is deliberately NOT load-balanced, matching AWS: Keeper is
 # addressed directly by peer IP.
 
@@ -23,15 +8,12 @@ resource "oci_load_balancer_load_balancer" "this" {
   compartment_id = var.compartment_id
   display_name   = "${local.name_prefix}-lb"
 
-  # Internal, matching aws_lb `internal = true`.
   is_private = true
 
-  # Singular. See var.load_balancer_subnet_id.
   subnet_ids = [var.load_balancer_subnet_id]
 
   shape = var.load_balancer_shape
 
-  # No AWS counterpart: an ALB has no customer-set bandwidth floor or ceiling.
   # Only meaningful for the "flexible" shape.
   dynamic "shape_details" {
     for_each = var.load_balancer_shape == "flexible" ? [1] : []
@@ -41,10 +23,9 @@ resource "oci_load_balancer_load_balancer" "this" {
     }
   }
 
-  # The AWS module creates a dedicated ALB security group. Here the load balancer
-  # joins the SERVER NSG rather than owning a third one - one fewer object for
-  # composition/security-rules to reason about, and the LB's reachability is the
-  # same question as the server tier's.
+  # The load balancer joins the SERVER NSG rather than owning a third one - one
+  # fewer object for security-rules to reason about, and the LB's reachability
+  # is the same question as the server tier's.
   network_security_group_ids = local.server_nsg_ids
 
   freeform_tags = local.freeform_tags
@@ -56,7 +37,6 @@ resource "oci_load_balancer_backend_set" "servers" {
   name             = local.backend_set_name
   policy           = var.backend_set_policy
 
-  # AWS's target group health check on /ping, ported argument for argument.
   health_checker {
     protocol          = "HTTP"
     port              = var.clickhouse_port
@@ -68,12 +48,9 @@ resource "oci_load_balancer_backend_set" "servers" {
   }
 }
 
-# One backend per server, the aws_lb_target_group_attachment equivalent.
-#
-# NOTE the addressing choice: backends register by IP ADDRESS, and the address
-# used is the instance's primary VNIC IP, not its reserved secondary IP. That is
-# deliberate - the reserved IP is a secondary address the guest must configure
-# itself, and a load balancer health check against an address the guest has not
+# One backend per server. Backends register by the PRIMARY VNIC IP, not the
+# reserved secondary one: the reserved IP is a secondary address the guest must
+# configure itself, and a health check against an address the guest has not
 # brought up yet would fail the backend permanently. Cluster PEERING uses the
 # reserved IPs; load-balanced CLIENT traffic uses the primary.
 resource "oci_load_balancer_backend" "servers" {
@@ -96,8 +73,7 @@ resource "oci_load_balancer_listener" "this" {
   port     = each.value.port
   protocol = each.value.protocol
 
-  # certificate_ids takes an OCI Certificates OCID where AWS took an ACM
-  # certificate_arn. Same role, different identifier namespace.
+  # certificate_ids takes an OCI Certificates OCID.
   dynamic "ssl_configuration" {
     for_each = each.value.certificate_id != null ? [each.value.certificate_id] : []
     content {

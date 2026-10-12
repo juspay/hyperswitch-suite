@@ -1,7 +1,4 @@
-# =============================================================================
 # Identity
-# =============================================================================
-
 variable "compartment_id" {
   description = "OCID of the compartment the db system and all its supporting resources are created in. Replaces the implicit AWS account scope. This module does not create compartments - a flat compartment is the deliberate first-cut simplification."
   type        = string
@@ -41,10 +38,7 @@ variable "defined_tags" {
   default     = {}
 }
 
-# =============================================================================
 # Engine
-# =============================================================================
-
 variable "db_version" {
   description = "PostgreSQL major version. OCI Database with PostgreSQL offers 14, 15, 16 and 17 only. PARTIAL (check sheet feature 20, section 4.13): there is no engine_lifecycle_support equivalent, so an end-of-life engine cannot be kept alive the way AWS's open-source-rds-extended-support does, and aws/live/prod/us-east-1's PG 13.23 is below the floor and cannot be ported as-is. Whether a MINOR version can be pinned here is open question 9.1 - if only majors are selectable the stack cannot hold a certified patch level."
   type        = string
@@ -85,24 +79,13 @@ variable "apply_config" {
   }
 }
 
-# =============================================================================
-# Sizing
-# =============================================================================
-# PARTIAL (check sheet feature 2, section 4.1). Aurora lets every cluster
-# instance carry its own class, AZ and promotion_tier; three live AWS roots
-# exploit that (sandbox/ap-south-1 runs a db.r5.large writer beside a
-# db.r5.xlarge reader). On OCI, shape / OCPU / memory are properties of the DB
-# SYSTEM, so every node is identical, and there is no promotion_tier - the
-# operator cannot nominate a failover winner. The AWS cluster_instances map is
-# deliberately dropped rather than faked: size for the largest node the workload
-# needs, or use a second db system for a genuinely different read shape.
+# Sizing: shape / OCPU / memory are properties of the DB SYSTEM, so every node
+# is identical and there is no per-node class, AZ or promotion_tier.
 
-# ONE input, TWO wire formats. This is the ListShapes `id` - the
-# PostgreSQL.-prefixed string that oci_psql_db_system.shape takes.
-# oci_psql_configuration.shape takes the same service record's un-prefixed
-# `shape` field, and the module looks it up rather than deriving it. Do not add
-# a second shape variable and do not pass the un-prefixed form here; see the C9
-# banner in configuration.tf.
+# ONE input, TWO wire formats: this is the ListShapes `id` (PostgreSQL.-prefixed)
+# that oci_psql_db_system.shape takes; oci_psql_configuration.shape takes the
+# same record's un-prefixed `shape`, resolved by the module rather than derived.
+# Do not add a second shape variable or pass the un-prefixed form here.
 variable "shape" {
   description = "Compute shape applied to EVERY node, as a ListShapes `id` (PostgreSQL.-prefixed, e.g. PostgreSQL.VM.Standard.E5.Flex). There is no per-node shape on OCI. The un-prefixed form the engine configuration needs is resolved from the service, not from this string."
   type        = string
@@ -149,10 +132,7 @@ variable "state" {
   }
 }
 
-# =============================================================================
 # Storage
-# =============================================================================
-
 variable "storage_system_type" {
   description = "Storage system type. OCI_OPTIMIZED_STORAGE auto-scales as tables are created and dropped (max 32 TB), which is the intent of AWS's storage_type = aurora-iopt1 with allocated_storage = null. Feeds BOTH oci_psql_db_system.system_type (CreateDbSystemDetails.systemType) and storage_details.system_type (the StorageDetails discriminator) - see the C14 audit note in main.tf for why they are one variable. DbSystemSystemTypeEnum has exactly one member, so this is effectively a constant."
   type        = string
@@ -245,10 +225,7 @@ variable "availability_domain" {
   default     = null
 }
 
-# =============================================================================
 # Network
-# =============================================================================
-
 variable "subnet_id" {
   description = "OCID of the PRIVATE subnet the db system is placed in. Singular - OCI has no db-subnet-group analogue, so AWS's subnet_ids + create_db_subnet_group + db_subnet_group_name all collapse to this. FULL (check sheet feature 15): OCI Database with PostgreSQL endpoints are never directly reachable from the internet and there is no publicly_accessible toggle to get wrong, which is a stronger default than AWS."
   type        = string
@@ -284,10 +261,7 @@ variable "is_reader_endpoint_enabled" {
   default     = true
 }
 
-# =============================================================================
 # Credentials
-# =============================================================================
-
 variable "admin_username" {
   description = "Bootstrap admin username. Matches the AWS live roots' master_username."
   type        = string
@@ -312,15 +286,10 @@ variable "vault_secret" {
   default = null
 }
 
-# =============================================================================
-# Backup and point-in-time recovery
-# =============================================================================
-# PARTIAL (check sheet feature 9, section 4.7). AWS has ONE number:
-# backup_retention_period = 7 is simultaneously the scheduled-backup retention
-# AND the continuous PITR window. On OCI they are two independent policies, and
-# translating backup_retention_period into retention_days alone ships a payments
-# database with NO point-in-time recovery. Both are set here, and
-# pitr_restore_days has no default so it cannot be forgotten.
+# Backup and point-in-time recovery: two independent policies on OCI where AWS
+# had one number, so setting only the scheduled-backup retention ships a
+# database with NO PITR. pitr_restore_days has no default so it cannot be
+# forgotten.
 
 variable "backup_kind" {
   description = "Backup schedule: DAILY, WEEKLY or MONTHLY."
@@ -374,11 +343,9 @@ variable "backup_days_of_the_week" {
   type        = list(string)
   default     = null
 
-  # C12 audit. The enum has exactly seven members and the SDK's
-  # ValidateEnumValue rejects anything else client-side, which is the same
-  # opaque non-HTTP failure class as C11's insight_type. Verified in
-  # psql/weekly_backup_policy.go at provider v9.0.0, and in Oracle's own
-  # acceptance test, which uses `SUNDAY`.
+  # Days are full uppercase enum names (SUNDAY-not-SUN); the SDK rejects anything
+  # else client-side. Note this is NOT the three-letter form
+  # maintenance_window_start uses.
   validation {
     condition = var.backup_days_of_the_week == null || length(setsubtract(
       coalesce(var.backup_days_of_the_week, []),
@@ -393,10 +360,8 @@ variable "backup_days_of_the_month" {
   type        = list(number)
   default     = null
 
-  # C12 audit. psql/monthly_backup_policy.go, and the provider's own markdown,
-  # both state it verbatim: "To ensure that the backup runs monthly, the latest
-  # day of the month that you can use to schedule a backup is the the 28th day."
-  # 29, 30 and 31 do not exist in every month, so they are not schedulable.
+  # The latest schedulable day is the 28th so a monthly backup exists in every
+  # month; 29, 30 and 31 are not schedulable.
   validation {
     condition = var.backup_days_of_the_month == null || alltrue([
       for d in coalesce(var.backup_days_of_the_month, []) : d >= 1 && d <= 28
@@ -449,13 +414,10 @@ variable "maintenance_window_start" {
   type        = string
   default     = null
 
-  # C12 audit. Restricted to the abbreviation Oracle demonstrates, plus the
-  # optional seconds the format spec permits (and truncates). Longer day names
-  # may well work - the spec says "case-insensitive string like mon, tue", which
-  # neither includes nor excludes them - but nothing verified says they do, and
-  # a plan-time rejection naming the verified form is cheaper than a 400 several
-  # minutes into a db-system create. Widen it with a citation if an apply proves
-  # a longer form.
+  # Restricted to the three-letter abbreviation Oracle demonstrates; longer day
+  # names may well work but nothing verified says they do, and a plan-time
+  # rejection naming the verified form is cheaper than a 400 minutes into a
+  # db-system create. Widen only with a citation.
   validation {
     condition = var.maintenance_window_start == null || can(regex(
       "^(?i:mon|tue|wed|thu|fri|sat|sun) ([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$",
@@ -476,13 +438,8 @@ variable "on_demand_backup" {
 }
 
 # =============================================================================
-# Cross-region DR - Replication with Warm Standby (SUBSTITUTE)
-# =============================================================================
-# See the DR banner in locals.tf. Replaces AWS's seven global-cluster variables
-# (create_global_cluster, global_cluster_identifier, global_deletion_protection,
-# enable_global_write_forwarding, use_existing_as_global_primary,
-# source_db_cluster_identifier, replication_source_identifier + source_region)
-# with one OCID and an RPO pair, because there is no global object to name.
+# Cross-region DR - Replication with Warm Standby (SUBSTITUTE). See the DR
+# banner in locals.tf.
 
 variable "enable_warm_standby" {
   description = <<-EOT
@@ -543,10 +500,7 @@ variable "apply_change_mode_to_stand_alone" {
   }
 }
 
-# =============================================================================
 # Restore
-# =============================================================================
-
 variable "source_backup_id" {
   description = "Create this db system from an existing backup. Replaces AWS's snapshot_identifier (aws/live/prod/eu-west-1 really did use it). Mutually exclusive with enable_warm_standby - see check sheet section 4.8."
   type        = string
@@ -563,10 +517,7 @@ variable "source_pitr" {
   default = null
 }
 
-# =============================================================================
 # Observability
-# =============================================================================
-
 variable "query_insights_enabled" {
   description = "Enable Query Insights - the Performance Insights analogue (GA 2026-06-16). Replaces AWS's four performance_insights_* and two monitoring_* variables. Retention is 7 days, the only value the service supports, which happens to match the live performance_insights_retention_period = 7. It is NOT defaulted server-side despite the docs saying so - see query_insight_types and the C14 banner in main.tf."
   type        = bool
@@ -635,10 +586,7 @@ variable "log_retention_duration" {
   default     = 30
 }
 
-# =============================================================================
 # Protection
-# =============================================================================
-
 variable "prevent_destroy" {
   description = <<-EOT
     Declared teardown protection. NONE (check sheet feature 19, section 4.12).

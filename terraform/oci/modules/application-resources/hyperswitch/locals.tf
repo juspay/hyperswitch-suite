@@ -11,21 +11,13 @@ locals {
     var.freeform_tags
   )
 
-  # ---------------------------------------------------------------------------
-  # Feature enablement, mirroring the AWS module's `try(var.x.create, false)`
-  # count-gating pattern one-for-one so a reviewer can diff the two.
-  # ---------------------------------------------------------------------------
   kms_create = coalesce(var.kms.create, true) && var.kms.existing_key_id == null
   kms_key_id = local.kms_create ? one(oci_kms_key.this[*].id) : var.kms.existing_key_id
 
   kms_replica_create = local.kms_create && coalesce(var.kms.create_replica, false)
 
-  # SUBSTITUTE, check sheet section 4.1. `oci_kms_vault_replication` is
-  # documented as "This only supports virtual private vault for now" - the
-  # dedicated-HSM tier, a standing cost even in dev, and `vault_type` is not
-  # updatable in place. So the vault type is forced by the DR posture rather
-  # than being independently settable and silently wrong: asking for a replica
-  # gets a virtual private vault whether or not the caller remembered to say so.
+  # vault_type is forced by the DR posture: replication requires a virtual
+  # private vault and vault_type is not updatable in place.
   vault_type      = (local.vault_needs_vpv ? "VIRTUAL_PRIVATE" : "DEFAULT")
   vault_needs_vpv = coalesce(var.kms.use_virtual_private_vault, false) || coalesce(var.kms.create_replica, false)
 
@@ -52,20 +44,9 @@ locals {
 
   functions_compartment_id = coalesce(var.functions.compartment_id, var.compartment_id)
 
-  # ---------------------------------------------------------------------------
-  # THE GRANT LIST - check sheet section 10, one entry per row of that table.
-  #
-  # `location` is the `in compartment id <ocid>` term. `condition` is an extra
-  # `where all {}` term appended AFTER the four principal conditions, written
-  # pre-normalised.
-  # ---------------------------------------------------------------------------
   grants = concat(
-    # 1. kms:Decrypt + kms:Encrypt + kms:GenerateDataKey + kms:DescribeKey
-    #    -> ONE verb. `use keys` = READ + KEY_ENCRYPT + KEY_DECRYPT + KEY_EXPORT
-    #    + KEY_SIGN + KEY_VERIFY, so four AWS actions collapse into one OCI
-    #    statement. Scoped to this specific key rather than the compartment,
-    #    because a compartment-wide `use keys` would also cover the database
-    #    credential key and any future key in the same compartment.
+    # 1. Four AWS KMS actions collapse into one OCI verb `use keys`, scoped to
+    #    this key rather than the compartment so it does not cover other keys.
     local.kms_key_id != null ? [{
       verb          = "use"
       resource_type = "keys"
@@ -73,12 +54,9 @@ locals {
       condition     = "target.key.id='${local.kms_key_id}'"
     }] : [],
 
-    # 2-3. s3:PutObject/GetObject (+ ListBucket, GetObjectVersion on bucket 2)
-    #      -> `manage objects`, NOT `use objects`. PutObject needs
-    #      OBJECT_CREATE when the object does not yet exist, and only `manage`
-    #      grants it (identity-model.md section 3.5's trap). Version-aware reads
-    #      have no separate verb; they are ordinary reads against a versioned
-    #      bucket.
+    # 2-3. PutObject/GetObject -> `manage objects`, NOT `use objects`: PutObject
+    #      needs OBJECT_CREATE when the object does not yet exist, and only
+    #      `manage` grants it. Version-aware reads are ordinary reads.
     local.dashboard_themes_create ? [{
       verb          = "manage"
       resource_type = "objects"
@@ -93,9 +71,8 @@ locals {
       condition     = "target.bucket.name='${local.file_uploads_bucket_name}'"
     }] : [],
 
-    # 4-5. secretsmanager:GetSecretValue -> `read secret-bundles` (the value);
-    #      secretsmanager:DescribeSecret -> `read secrets` (the metadata).
-    #      Both are needed; neither substitutes for the other.
+    # 4-5. GetSecretValue -> `read secret-bundles` (value); DescribeSecret ->
+    #      `read secrets` (metadata). Both needed; neither substitutes for the other.
     local.secrets_enabled ? flatten([
       for rt in ["secret-bundles", "secrets"] : (
         length(var.secrets.secret_ids) > 0
@@ -115,8 +92,7 @@ locals {
     ]) : [],
 
     # 6. lambda:InvokeFunction -> `use functions-family`, compartment-scoped.
-    #    The account-wide list/create/code-signing actions are deliberately not
-    #    reproduced (check sheet section 4.3, PARTIAL).
+    #    The account-wide list/create/code-signing actions are not reproduced.
     local.functions_enabled ? [{
       verb          = "use"
       resource_type = "functions-family"
@@ -124,17 +100,9 @@ locals {
       condition     = null
     }] : [],
 
-    # 7. ses:SendEmail/SendTemplatedEmail/SendRawEmail/ListTemplates/
-    #    ListVerifiedEmailAddresses -> `use email-family`.
-    #
-    #    UNCONFIRMED, and knowingly so (check sheet section 9 Q1/Q2). The email
-    #    policy reference ties `use approved-senders` / `use email-family` to
-    #    the SmtpSend operation and does not list the HTTPS `SubmitEmail`
-    #    operation in its verb tables at all. This grant is emitted anyway,
-    #    because the workload-identity path is the primary path by decision and
-    #    an untested primary path that is never emitted is a path that never
-    #    gets tested. If it turns out to be the wrong verb, this is the one line
-    #    that changes.
+    # 7. SES send verbs -> `use email-family`. The HTTPS SubmitEmail operation
+    #    is not listed in the email policy reference, but the workload-identity
+    #    grant is emitted anyway as the primary path.
     local.email_enabled ? [{
       verb          = "use"
       resource_type = "email-family"
@@ -143,44 +111,21 @@ locals {
     }] : [],
   )
 
-  # ---------------------------------------------------------------------------
-  # THE STATEMENT RENDERER.
+  # THIS MODULE CREATES NO `oci_identity_policy`, and that is structural: `name`
+  # is tenancy-unique and non-updatable, and one object per app per root exceeds
+  # the hard 100-per-tenancy limit. The platform runs ONE shared policy object
+  # per environment (owned by `oke-workload-identity`); this module contributes
+  # STATEMENTS into it via the `policy_statements` output.
   #
-  # THIS MODULE CREATES NO `oci_identity_policy`, AND THAT IS STRUCTURAL, NOT
-  # STYLISTIC. `oci_identity_policy.name` is unique across the entire tenancy
-  # AND not updatable. One policy object per app per live root at the current
-  # footprint is 12 apps x 11 roots = 132 objects against a hard limit of 100
-  # per tenancy - unbuildable - and discovering that after the first apply means
-  # renaming, which destroys and recreates every identity in the tenancy with a
-  # window in which every pod loses access (identity-model.md section 3.7).
+  # The four `where all {}` conditions ARE the security boundary and are
+  # hard-coded below, not caller-controllable. On AWS a malformed trust policy
+  # fails CLOSED; on OCI a malformed statement fails OPEN (e.g. dropping the
+  # service-account condition grants every pod in the namespace, silently).
+  # `any-user` is narrowed only by request.principal.type='workload'.
   #
-  # So the platform runs ONE shared policy object per environment, owned by the
-  # standalone `oke-workload-identity` module and its catalog unit, and every
-  # app module contributes STATEMENTS into it. This module's contribution is the
-  # `policy_statements` output. Do not "simplify" this by adding a policy
-  # resource here.
-  #
-  # The four `where all {}` conditions ARE the security boundary
-  # (identity-model.md section 3.2). Drop `request.principal.cluster_id` and the
-  # grant covers every cluster in the tenancy; drop
-  # `request.principal.service_account` and it covers every pod in the
-  # namespace. Both are accepted by the API without error: on AWS a malformed
-  # trust policy fails CLOSED, on OCI a malformed statement fails OPEN. The four
-  # conditions are hard-coded into the template below and are not
-  # caller-controllable, and `oke-workload-identity` re-validates every
-  # contributed statement at plan time (its main.tf preconditions).
-  #
-  # `any-user` is the subject because a workload has no group to name. Oracle
-  # recommends against bare `any-user` and is right to - it covers every user,
-  # instance, resource and service principal in the tenancy.
-  # `request.principal.type='workload'` is the only thing that narrows it.
-  #
-  # Text is emitted pre-normalised and sorted: the OCI API rewrites statement
-  # text server-side (collapses whitespace, strips spaces around `=`, lowercases
-  # compartment NAMES) and anything not already in normal form is a permanent,
-  # un-suppressable Terraform diff (oracle/terraform-provider-oci#371). Only
-  # `in compartment id <ocid>` is emitted; OCIDs are not rewritten.
-  # ---------------------------------------------------------------------------
+  # Statement text is pre-normalised and sorted because the OCI API rewrites it
+  # server-side; anything not already in normal form is a permanent Terraform
+  # diff. Only `in compartment id <ocid>` is emitted.
   statement_tuples = flatten([
     for g in local.grants : [
       for sa in var.service_accounts : [
@@ -209,7 +154,6 @@ locals {
   ]))
 
   # Audit surface: the (cluster, namespace, service_account) tuples authorised.
-  # The replacement for the AWS module's `cluster_service_accounts` echo.
   authorized_workloads = distinct(flatten([
     for sa in var.service_accounts : [
       for cluster_id in var.cluster_ids : {

@@ -13,32 +13,11 @@ locals {
     var.freeform_tags
   )
 
-  # ===========================================================================
-  # THE MQL QUERY BUILDER - this module's one genuinely new piece of logic
-  # ===========================================================================
-  # AWS's alarm resource takes five separate typed fields (metric_name, namespace,
-  # period, statistic, threshold) plus comparison_operator. OCI takes ONE string:
-  #
-  #   CpuUtilization[1m]{resourceId = "ocid1.instance..."}.mean() > 85
-  #
-  # The typed variable surface is preserved and rendered here, deliberately. The
-  # alternative - making every caller hand-write MQL - would force a rewrite of
-  # 95 alarm definitions per environment, and would move a class of error
-  # (mistyped metric name, wrong statistic) from a Terraform type check to an
-  # API-time failure.
-  #
-  # KNOWN LIMIT, recorded because it is what check sheet open question 5 asks
-  # about: `terraform validate` checks HCL, not MQL grammar. A syntactically
-  # invalid query passes validate and plan and fails at apply. The builder
-  # constrains the shape of every query it produces, which is the mitigation;
-  # query_override bypasses that and is the only place a malformed query can
-  # originate from a well-typed input.
-  # ===========================================================================
+  # MQL query builder - renders the typed AWS fields into one MQL string.
+  # KNOWN LIMIT: `terraform validate` checks HCL, not MQL grammar; a malformed
+  # query_override fails at apply, and cannot be caught earlier.
 
-  # AWS statistic names -> MQL statistical functions. MQL's documented set is
-  # mean/avg, sum, count, min, max, percentile, rate, first, last, increment,
-  # absent. Anything not in this table passes through verbatim, so an MQL
-  # function name can be given directly.
+  # AWS statistic names -> MQL functions. Anything not listed passes through verbatim.
   mql_statistics = {
     "Average"     = "mean"
     "average"     = "mean"
@@ -51,17 +30,9 @@ locals {
     "SampleCount" = "count"
   }
 
-  # AWS comparison-operator names -> MQL operators. Anything not in this table
-  # passes through, so ">" etc. can be given directly.
-  #
-  # NOTE the two anomaly operators are absent on purpose:
-  # GreaterThanUpperThreshold and LessThanLowerThreshold only mean anything
-  # alongside an ANOMALY_DETECTION_BAND expression, which does not exist here
-  # (features 5 & 6, NONE). Translating them to a plain > or < would silently
-  # turn an anomaly alarm into a static-threshold alarm wearing its name - the
-  # exact failure mode the check sheet warns about. They are left untranslated so
-  # they produce an obviously wrong query rather than a plausibly wrong one, and
-  # classified_anomaly_alarms fails validation before anyone gets here.
+  # AWS comparison operators -> MQL operators. Anything not listed passes through.
+  # The two anomaly operators are omitted on purpose so an anomaly alarm fails
+  # loudly rather than silently becoming a static-threshold alarm.
   mql_operators = {
     "GreaterThanThreshold"          = ">"
     "GreaterThanOrEqualToThreshold" = ">="
@@ -71,7 +42,7 @@ locals {
     "NotEqualToThreshold"           = "!="
   }
 
-  # AWS's period (seconds) -> MQL's [interval] window.
+  # AWS period (seconds) -> MQL [interval].
   mql_intervals = {
     "60"    = "1m"
     "120"   = "2m"
@@ -87,10 +58,7 @@ locals {
     "86400" = "24h"
   }
 
-  # Severity KEY -> OCI alarm severity enum. AWS has no severity field on the
-  # alarm at all: severity lives in the alarm name and in which SNS topic the
-  # alarm routes to. OCI makes it a required first-class enum, so the mapping
-  # has to be stated somewhere - here, once, rather than in 95 alarm entries.
+  # Severity key -> OCI alarm severity enum, stated here once rather than per alarm.
   severity_enum = {
     "sev1" = "CRITICAL"
     "sev2" = "ERROR"
@@ -98,7 +66,6 @@ locals {
     "sev4" = "INFO"
   }
 
-  # Dimension resolution - ported verbatim from the AWS module's `resolve_dims`.
   resolve_dims = {
     for alarm_key, alarm_config in var.classified_metric_alarms :
     alarm_key => length(alarm_config.dimensions) > 0 ? alarm_config.dimensions : (
@@ -106,9 +73,7 @@ locals {
     )
   }
 
-  # `{key = "value", other = "value"}`, or "" when there are no dimensions.
-  # Keys are SORTED: an unstable rendering order would produce a different query
-  # string on every plan and a perpetual diff.
+  # `{key = "value"}` or "" when no dimensions. Keys are SORTED to avoid a perpetual diff.
   mql_dimension_clauses = {
     for alarm_key, dims in local.resolve_dims :
     alarm_key => length(dims) == 0 ? "" : format(
@@ -117,14 +82,7 @@ locals {
     )
   }
 
-  # ===========================================================================
-  # Classified alarm flattening
-  # ===========================================================================
-  # One resource per (alarm, severity) pair. This is the AWS module's own
-  # `classified_alarms_flat` local, structurally unchanged - which is not a
-  # coincidence: routing is per-resource on both clouds, so the same flattening
-  # is forced by the same constraint. Only the per-resource body changes, from
-  # typed fields to a rendered query string.
+  # Classified alarm flattening - one resource per (alarm, severity) pair.
   classified_alarms_flat = merge(concat([{}], [
     for alarm_key, alarm_config in var.classified_metric_alarms : {
       for sev_key, sev_config in alarm_config.severities : "${alarm_key}-${sev_key}" => {
@@ -142,10 +100,7 @@ locals {
           : lookup(local.severity_enum, sev_key, "WARNING")
         )
 
-        # AWS's evaluation_periods x period is a count of consecutive breaching
-        # windows. OCI's pending_duration is one continuous ISO-8601 duration.
-        # Equivalent in intent, derived here so callers keep writing
-        # evaluation_periods.
+        # AWS evaluation_periods x period -> OCI pending_duration (one ISO-8601 duration).
         pending_duration = (
           sev_config.pending_duration != null
           ? sev_config.pending_duration
@@ -186,8 +141,7 @@ locals {
           )
         )
 
-        # AWS merges these onto the alarm as tags; kept for the same reason -
-        # `alarms_by_classification` is built from them and is a real output.
+        # Tag carriers for the real `alarms_by_classification` output.
         additional_tags = {
           classification = alarm_config.classification
           severity       = sev_key
@@ -196,16 +150,12 @@ locals {
     }
   ])...)
 
-  # Ported unchanged from the AWS module: it operates on the flattened map's
-  # keys, not on any AWS-specific resource attribute.
   alarms_by_classification = {
     for key, alarm in local.classified_alarms_flat :
     alarm.classification => key...
   }
 
-  # ===========================================================================
   # Logging
-  # ===========================================================================
   log_groups = {
     for key, cfg in var.log_groups : key => {
       display_name  = cfg.display_name != null ? cfg.display_name : "${local.name_prefix}-${key}"
@@ -224,9 +174,7 @@ locals {
       is_enabled    = cfg.is_enabled
       source        = cfg.source
 
-      # Retention lives on the LOG, not the log group - the reverse of AWS.
-      # Falls back to the parent group's default so the AWS mental model
-      # ("retention is a property of the group") still produces the right answer.
+      # Retention lives on the LOG, not the log group; falls back to the group's default.
       retention_duration = coalesce(
         cfg.retention_duration,
         try(local.log_groups[cfg.log_group_key].retention, 30),
@@ -237,17 +185,14 @@ locals {
     }
   }
 
-  # Alarms whose destinations list came out empty. `destinations` is REQUIRED and
-  # must be non-empty on oci_monitoring_alarm, so this is a plan-time error, not
-  # an alarm that quietly notifies nobody the way an AWS alarm with empty
-  # alarm_actions does. Surfaced through a precondition in outputs.tf.
+  # Alarms whose destinations came out empty - `destinations` is REQUIRED on
+  # oci_monitoring_alarm, surfaced as a plan-time error in outputs.tf.
   alarms_missing_destinations = [
     for key, alarm in local.classified_alarms_flat : key
     if length(alarm.destinations) == 0
   ]
 
-  # Derived pending_durations outside OCI's PT1M..PT1H window. Clamping silently
-  # would change an alarm's meaning, so this is surfaced rather than fixed.
+  # Derived pending_durations outside OCI's PT1H window - surfaced, not silently clamped.
   alarms_with_out_of_range_pending_duration = [
     for key, alarm in local.classified_alarms_flat : key
     if alarm.pending_duration_minutes != null && alarm.pending_duration_minutes > 60

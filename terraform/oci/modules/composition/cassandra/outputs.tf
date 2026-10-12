@@ -1,9 +1,6 @@
-# =============================================================================
-# Outputs
-# =============================================================================
-# AWS names kept verbatim wherever the semantics survive - the outputs are a
-# contract. Where the object does not exist on OCI (ENIs, IAM roles, instance
-# profiles, ARNs) the output is dropped rather than faked.
+# Outputs.
+# AWS names kept verbatim where the semantics survive; objects with no OCI
+# counterpart (ENIs, IAM roles, instance profiles, ARNs) are dropped, not faked.
 
 output "instance_ids" {
   description = "OCIDs of the Cassandra node instances. Replaces instance_ids and instance_arns - OCI has no ARN concept."
@@ -80,10 +77,8 @@ output "ssh_private_key_vault_secret_id" {
   value       = try(oci_vault_secret.ssh_private_key[0].id, null)
 }
 
-# There is no iam_role_arn / iam_role_name / instance_profile_name /
-# instance_profile_arn output: none of those objects exist on OCI, and the
-# binding between instance and permissions is a matching rule rather than an
-# attachment.
+# No iam_role_arn / instance_profile output exists: none of those objects exist on
+# OCI - the instance-permission binding is a matching rule, not an attachment.
 output "dynamic_group_id" {
   description = "OCID of the dynamic group matching this fleet. Partially replaces iam_role_arn / iam_role_name."
   value       = try(oci_identity_dynamic_group.nodes[0].id, null)

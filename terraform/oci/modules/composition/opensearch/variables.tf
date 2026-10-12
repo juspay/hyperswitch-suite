@@ -1,7 +1,4 @@
-# =============================================================================
 # Identity and naming
-# =============================================================================
-
 variable "environment" {
   description = "Environment short name (dev, sandbox, prod)."
   type        = string
@@ -35,13 +32,8 @@ variable "display_name" {
   default     = null
 }
 
-# =============================================================================
-# Network
-# =============================================================================
-# OCI's cluster resource takes compartment context for the VCN and the subnet
-# INDEPENDENTLY of the cluster's own compartment - three compartment arguments
-# where AWS had none, because AWS scoped everything by account plus VPC.
-
+# Network. OCI's cluster resource takes compartment context for the VCN and the
+# subnet INDEPENDENTLY of the cluster's own compartment.
 variable "vcn_id" {
   description = "OCID of the VCN the cluster attaches to."
   type        = string
@@ -90,10 +82,7 @@ variable "nsg_id" {
   default     = null
 }
 
-# =============================================================================
 # Engine
-# =============================================================================
-
 variable "software_version" {
   description = <<-EOT
     OpenSearch engine version, e.g. "2.11.0". Replaces engine_version
@@ -109,10 +98,7 @@ variable "software_version" {
   type        = string
 }
 
-# =============================================================================
-# Data node tier (check sheet feature 1, FULL)
-# =============================================================================
-
+# Data node tier
 variable "data_node_count" {
   description = "Number of data nodes. Replaces cluster_config.instance_count."
   type        = number
@@ -165,10 +151,7 @@ variable "data_node_host_shape" {
   default     = null
 }
 
-# =============================================================================
-# Master (leader) node tier (check sheet feature 2, FULL)
-# =============================================================================
-
+# Master (leader) node tier
 variable "master_node_count" {
   description = <<-EOT
     Number of dedicated master (leader) nodes.
@@ -208,10 +191,7 @@ variable "master_node_host_shape" {
   default     = null
 }
 
-# =============================================================================
-# OpenSearch Dashboards tier (check sheet feature 11, FULL)
-# =============================================================================
-
+# OpenSearch Dashboards tier
 variable "opendashboard_node_count" {
   description = <<-EOT
     Number of OpenSearch Dashboards nodes.
@@ -243,15 +223,10 @@ variable "opendashboard_node_host_shape" {
   default     = null
 }
 
-# =============================================================================
-# Optional node tiers - no AWS counterpart at all
-# =============================================================================
-# AWS's aws_opensearch_domain has one data tier plus an optional master tier and
-# an optional UltraWarm tier. OCI exposes six independently sized tiers. The
-# three below have no AWS analogue and are all opt-in; the AWS module's
-# warm_enabled / warm_type / warm_count have no direct mapping and are dropped
+# Optional node tiers - no AWS counterpart. AWS's one data tier + optional master
+# + UltraWarm does not map onto OCI's six independently sized tiers; the three
+# below are opt-in, and AWS's warm_enabled/warm_type/warm_count are dropped
 # rather than approximated onto search or ml nodes, which are different things.
-
 variable "search_node_count" {
   description = "Number of dedicated search nodes. No AWS counterpart. 0 disables the tier."
   type        = number
@@ -318,10 +293,7 @@ variable "ml_node_storage_gb" {
   default     = null
 }
 
-# =============================================================================
-# Security (check sheet feature 6, FULL)
-# =============================================================================
-
+# Security
 variable "security_mode" {
   description = <<-EOT
     DISABLED, PERMISSIVE or ENFORCING. The equivalent of AWS's
@@ -356,10 +328,7 @@ variable "security_master_user_password_hash" {
   sensitive   = true
 }
 
-# =============================================================================
-# Certificates (check sheet feature 7, FULL)
-# =============================================================================
-
+# Certificates
 variable "certificate_config" {
   description = <<-EOT
     Custom endpoint certificates. Replaces AWS's domain_endpoint_options
@@ -378,10 +347,11 @@ variable "certificate_config" {
   default = null
 }
 
-# =============================================================================
-# Maintenance (SUBSTITUTE - check sheet feature 8, section 4.4)
-# =============================================================================
-
+# Maintenance - a notification channel, not a schedule. AWS's auto_tune_* /
+# auto_software_update_enabled / off_peak_window_* variables have no counterpart;
+# Oracle's control plane decides when, claiming patching/upgrading/backups happen
+# "without downtime". Different guarantee (always-safe) rather than a missing
+# capability; the claim is worth verifying in dev. Oracle gate item, not consulted.
 variable "maintenance_notification_email_ids" {
   description = <<-EOT
     Email addresses notified about maintenance events.
@@ -402,10 +372,7 @@ variable "maintenance_notification_email_ids" {
   default     = []
 }
 
-# =============================================================================
-# Service control-plane authorization (SUBSTITUTE - feature 12, section 4.6)
-# =============================================================================
-
+# Service control-plane authorization (the service-linked-role substitute)
 variable "create_service_policy" {
   description = <<-EOT
     Create the IAM policy letting the OpenSearch control plane attach to this
@@ -436,10 +403,7 @@ variable "service_policy_statements" {
   default     = []
 }
 
-# =============================================================================
 # Tags
-# =============================================================================
-
 variable "freeform_tags" {
   description = "Additional freeform tags, merged over the module's own. The OCI analogue of the AWS `tags` variable."
   type        = map(string)
@@ -452,10 +416,7 @@ variable "defined_tags" {
   default     = {}
 }
 
-# =============================================================================
 # Timeouts
-# =============================================================================
-
 variable "create_timeout" {
   description = "Cluster create timeout. AWS carried the same variable because managed-search provisioning is slow on both clouds."
   type        = string

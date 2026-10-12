@@ -1,21 +1,12 @@
-# =============================================================================
-# oke - derived configuration
-# =============================================================================
+# oke - derived configuration.
 
 locals {
   cluster_name = coalesce(var.cluster_name, format("%s-%s-oke", var.project_name, var.environment))
 
-  # ---------------------------------------------------------------------------
-  # Fault domains - resolved live, never spelled out
-  # ---------------------------------------------------------------------------
-  # See data.tf for why these are looked up and why the intersection (rather
-  # than one AD's set) is the correct list for a managed OKE node pool.
-  #
-  # `values(...)...` expands the per-AD sets into setintersection's arguments.
-  # A region always publishes at least one AD, so the expansion is never empty;
-  # terraform_data.validate asserts the resolved list is non-empty anyway,
-  # because an empty list here would silently become "OKE chooses" rather than
-  # an error.
+  # Fault domains, resolved live. `values(...)...` expands the per-AD sets into
+  # setintersection's arguments; a region always publishes at least one AD.
+  # terraform_data.validate asserts the result is non-empty, because an empty
+  # list here would silently become "OKE chooses" rather than an error.
   fault_domain_names_by_ad = {
     for ad_name, fds in data.oci_identity_fault_domains.this :
     ad_name => toset([for fd in fds.fault_domains : fd.name])
@@ -25,9 +16,7 @@ locals {
     setintersection(values(local.fault_domain_names_by_ad)...)
   ))
 
-  # Per pool: the caller's explicit pin, or every fault domain the region has.
-  # An empty per-pool list is the "spread across all" default, matching
-  # kafka/cassandra/clickhouse's var.fault_domains contract exactly.
+  # An empty per-pool list is the "spread across all" default.
   node_pool_fault_domains = {
     for name, pool in var.node_pools :
     name => length(pool.fault_domains) > 0 ? pool.fault_domains : local.region_fault_domains
@@ -44,29 +33,19 @@ locals {
   )
 
   # With VCN-native pod networking every pod takes an address from a real
-  # subnet. Falling back to the worker subnet is legal and is the registry
-  # module's own default, but it means the worker tier must be sized for
+  # subnet; falling back to the worker subnet means sizing it for
   # nodes + (nodes x max_pods_per_node). See the pod_subnet_id variable.
   pod_subnet_id = var.cni_type == "npn" ? coalesce(var.pod_subnet_id, var.worker_subnet_id) : null
 
-  # OKE records one default service-LB subnet on the cluster; individual
-  # Services override it with the oci.oraclecloud.com/load-balancer-subnet
-  # annotation. There is no AWS-style subnet-tag discovery (vpc-network.md 4.7).
+  # OKE records one default service-LB subnet; Services override it with the
+  # oci.oraclecloud.com/load-balancer-subnet annotation.
   load_balancers = (
     var.public_lb_subnet_id != null && var.internal_lb_subnet_id != null ? "both" :
     var.public_lb_subnet_id != null ? "public" : "internal"
   )
 
-  # ---------------------------------------------------------------------------
-  # Subnets handed to the registry module.
-  #
-  # Every entry is `create = "never"` plus an OCID, or `create = "never"` with
-  # nothing. Nothing here is ever created: composition/vpc-network owns the CIDR
-  # plan, the route tables and the emptied default security list. `bastion` and
-  # `operator` are absent because their components are switched off in main.tf;
-  # `fss` is absent because the key's mere presence is what enables the File
-  # Storage subnet in the registry module.
-  # ---------------------------------------------------------------------------
+  # Subnet OCIDs handed to the registry module. Every entry is
+  # `create = "never"`: composition/vpc-network owns the CIDR plan.
   subnets = merge(
     {
       cp      = { create = "never", id = var.control_plane_subnet_id }
@@ -77,16 +56,9 @@ locals {
     var.public_lb_subnet_id != null ? { pub_lb = { create = "never", id = var.public_lb_subnet_id } } : {},
   )
 
-  # ---------------------------------------------------------------------------
-  # NSGs handed to the registry module.
-  #
-  # A role present in var.nsg_ids is attached by OCID and nothing is created for
-  # it - and, importantly, no baseline rules are written into it either, so the
-  # caller then owns the full OKE rule set for that role. A role absent from
-  # var.nsg_ids is created here with Oracle's own baseline. `security-rules`
-  # (phase 5) adds cross-module rules to whichever NSG ends up in place; on OCI
-  # an NSG rule is a standalone resource, so the two states do not contend.
-  # ---------------------------------------------------------------------------
+  # NSG roles handed to the registry module. A role present in var.nsg_ids is
+  # attached by OCID with no baseline rules written into it; a role absent is
+  # created here with Oracle's own baseline.
   nsg_roles = compact([
     "cp",
     "workers",
@@ -105,21 +77,12 @@ locals {
     { bastion = { create = "never" }, operator = { create = "never" } },
   )
 
-  # ---------------------------------------------------------------------------
-  # Node pools -> the registry module's `worker_pools` shape.
-  #
   # `ignore_initial_pool_size = true` routes the pool to the registry module's
   # `autoscaled_workers` resource, which carries
-  # `lifecycle { ignore_changes = [node_config_details[0].size] }`. That is the
-  # OCI analogue of the AWS module's
-  # `ignore_changes = [scaling_config[0].desired_size]` and is what stops
-  # Terraform reverting the autoscaler's own scaling decisions - Oracle warns
-  # about exactly this ("Terraform might revert changes to the size of a node
-  # pool made by the Kubernetes Cluster Autoscaler").
-  #
-  # It does NOT create a floor or a ceiling. There is none to create - see the
-  # node_pools variable's block comment and eks.md gap 4.5.
-  # ---------------------------------------------------------------------------
+  # `lifecycle { ignore_changes = [node_config_details[0].size] }` - the OCI
+  # analogue of AWS's `ignore_changes = [scaling_config[0].desired_size]`, so
+  # Terraform never reverts the autoscaler's own scaling decisions. It creates
+  # no floor or ceiling - none exists (see the node_pools variable comment).
   worker_pools = {
     for name, pool in var.node_pools : name => {
       create = true
@@ -137,15 +100,10 @@ locals {
       image_type       = pool.image_type
       image_id         = pool.image_id
 
-      # One availability domain in ap-mumbai-1, so the only in-region spread
-      # available is across fault domains within it.
-      #
-      # REAL NAMES ONLY. The registry module passes this straight through to
-      # `oci_containerengine_node_pool.node_config_details.placement_configs
-      # [].fault_domains` with no translation
-      # (`modules/workers/nodepools.tf`: `fault_domains =
-      # try(each.value.placement_fds, null)`), so anything that is not a live
-      # `oci_identity_fault_domains[*].name` is a 400 at apply time.
+      # REAL NAMES ONLY: the registry module passes this straight through to
+      # `oci_containerengine_node_pool.placement_configs[].fault_domains` with
+      # no translation, so anything not a live `oci_identity_fault_domains`
+      # name is a 400 at apply time.
       placement_fds = local.node_pool_fault_domains[name]
 
       node_labels       = pool.node_labels
@@ -161,8 +119,8 @@ locals {
     }
   }
 
-  # Advisory bounds, exported for whichever autoscaler ends up enforcing them.
-  # Nothing in this module or in OCI enforces them. See eks.md gap 4.5.
+  # Advisory bounds, exported for whichever autoscaler enforces them; nothing in
+  # this module or in OCI enforces them.
   autoscaler_bounds = {
     for name, pool in var.node_pools : name => {
       min_size = pool.min_size

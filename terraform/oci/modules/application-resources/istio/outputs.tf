@@ -1,7 +1,4 @@
-# =============================================================================
-# Output contract - the AWS module's 4 outputs, plus what OCI needs and AWS
-# did not.
-# =============================================================================
+# Output contract
 
 output "policy_statements" {
   description = <<-EOT

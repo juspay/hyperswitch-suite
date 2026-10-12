@@ -1,56 +1,25 @@
-# =============================================================================
 # Cluster Autoscaler (OCI cloudprovider) - in-cluster add-on
-# =============================================================================
-# Port of AWS feature 7 (eks-kubernetes-resources main.tf's cluster_autoscaler
-# resources), RE-FLAGGED for OKE. Oracle gate verdict: APPROVED WITH
-# CORRECTIONS (eks.md section 8 item 4 / eks-kubernetes-resources.md section 8
-# item 1, 2026-09-08). Sources verified by the gate: Oracle's standalone
-# "Cluster Autoscaler" docs page, the upstream example
-# cloudprovider/oci/examples/oci-nodepool-cluster-autoscaler-w-principals.yaml,
-# and the pinned registry module's autoscaled_workers resource.
 #
-# KEY DIVERGENCE FROM AWS (the reason this is not a 1:1 port):
-#   AWS: --node-group-auto-discovery=asg:tag=... (automatic ASG discovery).
-#   OKE: static --nodes=<min>:<max>:<pool-OCID> per pool, rendered by
-#        Terraform from the oke module's node_pool_autoscaler_bounds output, so
-#        adding a pool to the oke module re-renders this deployment in the SAME
-#        apply (the "editing args by hand" failure of the static approach
-#        dissolves). Tag-based auto-discovery DOES now exist (CA >=1.30.3/1.32.0,
-#        --node-group-auto-discovery=clusterId:...,compartmentId:...,nodepoolTags:...
-#        min/max are GLOBAL in the discovery string, and it is mutually exclusive
-#        with --nodes) - kept OFF here for per-pool bounds; see the check sheet.
+# Static --nodes=<min>:<max>:<pool-OCID> per pool, rendered from the oke
+# module's node_pool_autoscaler_bounds output, so adding a pool re-renders this
+# deployment in the same apply.
 #
-# IAM half (NOT Kubernetes RBAC - OCI API access): the CAS pod uses the worker
-# node's INSTANCE PRINCIPAL. The phase-0 IAM bootstrap must create a dynamic
-# group matching the dev compartment's instances and attach Oracle's six
-# statements: manage cluster-node-pools, manage instance-family, use subnets,
-# read virtual-network-family, use vnics, inspect compartments (all in the
-# compartment; tenancy HOME region). oke sets create_iam_resources = false, so
-# this dynamic group is NOT auto-created anywhere - it is a bootstrap
-# prerequisite documented here and in the unit. Workload identity is the
-# better-scoped follow-up once oke-workload-identity owns it; NOT used yet.
+# IAM half (OCI API access, not RBAC): the CAS pod uses the worker node's
+# INSTANCE PRINCIPAL. The phase-0 IAM bootstrap must create a dynamic group and
+# attach the six statements (manage cluster-node-pools, manage instance-family,
+# use subnets, read virtual-network-family, use vnics, inspect compartments).
 #
-# Drift: oci_containerengine_node_pool exposes only node_config_details[0].size.
-# The oke module routes enable_autoscaler pools to the registry module's
-# autoscaled_workers resource (ignore_initial_pool_size = true => lifecycle
-# ignore_changes = [node_config_details[0].size]), so a subsequent terragrunt
-# apply will NOT revert the CAS's scale actions. This module must NOT touch
-# pool size at all. That half of feature 12 is implemented in oke; this file is
-# the "external enforcer" half.
-# -----------------------------------------------------------------------------
+# Drift: this module must NOT touch pool size at all - oke routes autoscaler
+# pools to ignore_initial_pool_size so a terragrunt apply does not revert the
+# CAS's scale actions. This file is the "external enforcer" half.
 
 locals {
-  # Stable ordering for --nodes flags (sorted by pool name) so plan diffs are
-  # stable regardless of map iteration order.
+  # Stable ordering for --nodes flags (sorted by pool name) so plan diffs are stable.
   cluster_autoscaler_nodes_flags = var.enable_cluster_autoscaler ? [
     for pool_name in sort(keys(var.cluster_autoscaler_node_pools)) :
     "${var.cluster_autoscaler_node_pools[pool_name].min_size}:${var.cluster_autoscaler_node_pools[pool_name].max_size}:${var.cluster_autoscaler_node_pools[pool_name].pool_id}"
   ] : []
 }
-
-# The cross-variable guard (enable_cluster_autoscaler requires image + non-empty
-# node_pools) is a precondition on terraform_data.cluster_ready in main.tf - a
-# hard plan-time error, not a soft warning. See main.tf.
 
 # -----------------------------------------------------------------------------
 # ServiceAccount (kube-system)
@@ -67,17 +36,13 @@ resource "kubernetes_service_account_v1" "cluster_autoscaler" {
     }
   }
 
-  # No AWS-style IRSA annotation (eks.amazonaws.com/role-arn): OKE auth is the
-  # node's instance principal, not a per-SA role. If/when workload identity
-  # lands (OKE enhanced clusters support it), a sa-annotation binding is added
-  # here - see oke-workload-identity.
+  # No AWS-style IRSA annotation: OKE auth is the node's instance principal, not a per-SA role.
   depends_on = [terraform_data.cluster_ready]
 }
 
 # -----------------------------------------------------------------------------
-# ClusterRole / ClusterRoleBinding (same kubernetes.io/autoscaler template as
-# AWS - the Kubernetes-side permissions are cloud-agnostic; OCI-API access is
-# IAM, not RBAC).
+# ClusterRole / ClusterRoleBinding - Kubernetes-side permissions are cloud-agnostic;
+# OCI-API access is IAM, not RBAC.
 # -----------------------------------------------------------------------------
 resource "kubernetes_cluster_role_v1" "cluster_autoscaler" {
   count = var.enable_cluster_autoscaler ? 1 : 0
@@ -308,10 +273,8 @@ resource "kubernetes_deployment_v1" "cluster_autoscaler" {
           name  = "cluster-autoscaler"
           image = var.cluster_autoscaler_image
 
-          # Oracle's recommended OCI arg set, plus the --nodes flags rendered
-          # from the oke module's output. No --cloud-config, no --cluster-name,
-          # no vertical-mode flags (unsupported on OCI). See the Q1 findings in
-          # the recorded gate verdict.
+          # Oracle's recommended OCI arg set plus the --nodes flags; no --cloud-config,
+          # no --cluster-name, no vertical-mode flags (unsupported on OCI).
           command = concat(
             ["./cluster-autoscaler"],
             [
@@ -334,11 +297,8 @@ resource "kubernetes_deployment_v1" "cluster_autoscaler" {
             )
           )
 
-          # Instance-principal auth: canonical env var + the deprecated alias
-          # Oracle's current doc page and image builds still read. Tighten to
-          # workload identity (OCI_USE_WORKLOAD_IDENTITY=true +
-          # OCI_RESOURCE_PRINCIPAL_VERSION=2.2 + region) when
-          # oke-workload-identity owns it.
+          # Instance-principal auth: canonical env var plus the deprecated alias still read.
+          # Workload identity is the better-scoped follow-up.
           env {
             name  = "OCI_USE_INSTANCE_PRINCIPAL"
             value = "true"

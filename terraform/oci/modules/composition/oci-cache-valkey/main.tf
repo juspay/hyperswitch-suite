@@ -1,28 +1,14 @@
-# =============================================================================
-# OCI Cache (Valkey) - the AWS ElastiCache / GCP Memorystore-for-Valkey analogue
-#
-# Strategy: DIRECT-RESOURCE. `search_modules` for "oci redis cache" and
-# "oracle cache oci" returns zero results, confirming provider-facts.md's Tier 1
-# finding that OCI has no usable registry module here. The GCP sibling wraps
-# terraform-google-modules/memorystore//modules/valkey; there is nothing
-# equivalent to wrap on OCI, so the resources are declared directly.
-#
-# One OCI resource replaces two AWS ones. aws_elasticache_subnet_group has no
-# counterpart - subnet_id is an argument on the cluster itself. aws_security_group
-# is replaced by a module-owned, EMPTY oci_core_network_security_group (below) -
-# the same pattern the sibling `database` module uses: security-rules, the
-# security-last phase unit, writes the actual rules into it. Fixed during
-# assembly 2026-09-03; this module originally created no NSG of its own,
-# unlike every sibling data-tier module - see build-log.md.
-# =============================================================================
+# OCI Cache (Valkey) - the AWS ElastiCache / GCP Memorystore-for-Valkey analogue.
+# Strategy: DIRECT-RESOURCE (no usable provider registry module exists for this
+# service). One OCI resource replaces two AWS ones: there is no
+# aws_elasticache_subnet_group counterpart (subnet_id is an argument on the
+# cluster), and the AWS security group becomes a module-owned, EMPTY
+# oci_core_network_security_group that the security-last phase unit fills in.
 
-# =============================================================================
-# Module-owned network access-control object (mirrors database/network.tf)
-# =============================================================================
-# Created EMPTY on purpose. catalog/units/security-rules - the last stack
-# phase - writes the rules into it, reading nsg_id from this module's output.
-# Do not add rules here; that reintroduces the dependency cycle the
-# security-last split exists to break.
+# Module-owned network access-control object. Created EMPTY on purpose: the
+# security-last stack phase (security-rules) writes the rules into it, reading
+# nsg_id from this module's output. Do not add rules here - that reintroduces
+# the dependency cycle the security-last split exists to break.
 resource "oci_core_network_security_group" "this" {
   count = var.create_nsg ? 1 : 0
 
@@ -33,11 +19,8 @@ resource "oci_core_network_security_group" "this" {
   freeform_tags = local.common_freeform_tags
 }
 
-# -----------------------------------------------------------------------------
 # Engine parameters. Count-gated and OFF by default: every live AWS unit uses
-# the stock default.valkey8.cluster.on group, so the first cut should create
-# zero of these. Check sheet feature 12 / section 5.
-# -----------------------------------------------------------------------------
+# the stock default.valkey8.cluster.on group, so the first cut creates zero.
 resource "oci_redis_oci_cache_config_set" "main" {
   count = var.create_config_set ? 1 : 0
 
@@ -67,9 +50,7 @@ resource "oci_redis_oci_cache_config_set" "main" {
   }
 }
 
-# -----------------------------------------------------------------------------
 # The cluster.
-# -----------------------------------------------------------------------------
 resource "oci_redis_redis_cluster" "main" {
   compartment_id = var.compartment_id
   display_name   = local.display_name
@@ -83,16 +64,15 @@ resource "oci_redis_redis_cluster" "main" {
   node_count         = var.node_count
   node_memory_in_gbs = var.node_memory_in_gbs
 
-  # Network placement. subnet_id is pre-existing and owned by vpc-network;
-  # nsg_ids merges the module-owned NSG (above) with any additional ones.
+  # Network placement. subnet_id is pre-existing (owned by vpc-network);
+  # nsg_ids merges the module-owned NSG with any additional ones.
   subnet_id = var.subnet_id
   nsg_ids   = local.nsg_ids
 
   oci_cache_config_set_id = local.config_set_id
 
   # Create-time restore, mutually exclusive. backup_id ~ AWS snapshot_name;
-  # import_from_object_storage ~ AWS snapshot_arns. Neither is honoured after
-  # creation.
+  # import_from_object_storage ~ AWS snapshot_arns. Neither applies after create.
   backup_id = var.backup_id
 
   dynamic "import_from_object_storage_details" {
@@ -110,47 +90,19 @@ resource "oci_redis_redis_cluster" "main" {
     }
   }
 
-  # NOT SET, because they do not exist on this resource - each one is a
-  # divergence recorded on the check sheet, not an omission:
-  #
-  #   transit_encryption_enabled / transit_encryption_mode  (feature 8, PARTIAL)
-  #     TLS is mandatory-on with no off switch. See the encryption section in
-  #     variables.tf for the full note. The AWS units set this to false today;
-  #     this module cannot replicate that, by necessity rather than by choice.
-  #
-  #   at_rest_encryption_enabled / kms_key_id               (feature 7, PARTIAL)
-  #     No argument exists and OCI's at-rest behaviour for this service is
-  #     undocumented. Unverified, not equivalent.
-  #
-  #   automatic_failover_enabled / multi_az_enabled         (feature 4, FULL)
-  #     Implicit: node_count > 1 always means 1 primary + replicas with
-  #     automatic promotion. Multi-AZ specifically degrades in ap-mumbai-1,
-  #     which has 1 availability domain / 3 fault domains - node isolation is
-  #     fault-domain-level only, and an AD-level event is a region-level event.
-  #     No configuration can mitigate that; it is an accepted regional risk.
-  #
-  #   preferred_cache_cluster_azs / node_group_configuration (feature 17, SUBSTITUTE)
-  #     OCI places nodes across fault/availability domains automatically and
-  #     exposes no lever to pin a shard to a domain or assign explicit slot
-  #     ranges. Less to manage, but no way to force a slot-to-AZ mapping.
-  #     Oracle-gate item, unconsulted.
-  #
-  #   maintenance_window / auto_minor_version_upgrade /
-  #   apply_immediately                                     (feature 12, PARTIAL)
-  #     Routine patching is Oracle-scheduled, blue/green, no window argument.
-  #
-  #   notification_topic_arn                                (feature 15, NONE)
-  #     No SNS-equivalent hook on the resource. Zero blast radius: unset in
-  #     every AWS unit reviewed.
-  #
-  #   log_delivery_configuration                            (feature 16, NONE)
-  #     No slow-log/engine-log delivery argument found. Also unused on AWS.
-  #
-  #   ip_discovery / network_type                           (feature 14, FULL)
-  #     No argument; a private-subnet cluster is ipv4, which is the only mode
-  #     this stack uses.
-  #
-  #   port                                                  6379, not settable.
+  # Arguments deliberately NOT set because they do not exist on this resource
+  # (security-relevant divergences, others in variables.tf):
+  #   transit_encryption - TLS is mandatory on with no off switch; the AWS units
+  #     run transit_encryption_enabled = false, which this module cannot replicate.
+  #   at_rest_encryption / kms_key - no argument exists and OCI's at-rest
+  #     behaviour for this service is undocumented - unverified, not equivalent.
+  #   automatic_failover / multi_az - implicit (node_count > 1 = primary +
+  #     auto-promoting replicas). ap-mumbai-1 has 1 AD / 3 fault domains, so
+  #     isolation is fault-domain-level only; an AD-level event is a regional risk
+  #     no configuration can mitigate.
+  #   az/slot placement, maintenance window, auto-minor-version-upgrade,
+  #   notification_arn, log delivery - no argument exists.
+  #   port - 6379, not settable.
 
   freeform_tags = local.common_freeform_tags
   defined_tags  = var.defined_tags
@@ -163,8 +115,7 @@ resource "oci_redis_redis_cluster" "main" {
 
   lifecycle {
     # Cross-variable rules live here rather than in `validation` blocks so the
-    # module still holds on Terraform >= 1.5 (cross-variable validation needs
-    # >= 1.9). They fail at plan, before anything is created.
+    # module holds on Terraform >= 1.5 (cross-variable validation needs >= 1.9).
     precondition {
       condition     = !local.is_sharded || var.shard_count != null
       error_message = "cluster_mode = \"SHARDED\" requires shard_count to be set (odd, 3-99)."
@@ -195,41 +146,19 @@ resource "oci_redis_redis_cluster" "main" {
   }
 }
 
-# -----------------------------------------------------------------------------
-# CROSS-REGION GLOBAL REPLICATION: NONE. (check sheet feature 13)
-#
+# CROSS-REGION GLOBAL REPLICATION: NONE.
 # This is where aws_elasticache_global_replication_group would have been. It is
 # not here because OCI has no cross-region, continuously-replicating cache
-# primitive - not a weaker one, none. Confirmed by reviewing all 11 resources in
-# the provider's redis service, all 13 OCI Cache release-note entries, and
-# targeted searches that only ever return AWS Global Datastore results.
-#
-# Consequences, stated rather than papered over:
-#   - The AWS is_passive / primary_elasticache_config_path mechanism (live in
-#     prod eu-west-1 -> eu-north-1 and sandbox ap-south-1 -> ap-south-2) has
-#     nothing to attach to on OCI.
-#   - The five AWS outputs global_replication_group_{id,arn,name,suffix},
-#     is_primary_cluster and is_secondary_cluster therefore have no counterpart
-#     and are NOT emitted by outputs.tf. Anything consuming them must change.
-#
-# The documented mitigation is backup -> export to Object Storage ->
-# oci_objectstorage_replication_policy -> re-import into a NEW cluster in the DR
-# region. That is backup/restore DR, not live replication: RPO is bounded by
-# backup frequency instead of sub-second, RTO includes provisioning a brand-new
-# cluster, no stable identity or endpoint carries over, and nothing promotes
-# automatically.
-#
-# It is OUT OF SCOPE for this module per the check sheet, and blocked on the
-# oracle gate (section 8 item 1), which has NOT been consulted. Only the first
-# link of that chain exists here: create_backup +
-# backup_export_to_object_storage_trigger below. Do not build the rest of it in
-# this module before the gate rules.
-# -----------------------------------------------------------------------------
+# primitive - not a weaker one, none. The five AWS outputs
+# global_replication_group_{id,arn,name,suffix}, is_primary_cluster and
+# is_secondary_cluster therefore have no counterpart and are NOT emitted.
+# The documented mitigation is backup -> export to Object Storage -> cross-region
+# replication -> re-import into a NEW cluster: backup/restore DR, not live
+# replication (RPO bounded by backup frequency, RTO includes provisioning a new
+# cluster, nothing promotes automatically). OUT OF SCOPE here and blocked on the
+# oracle gate - only the first link (backup + export trigger) exists below.
 
-# -----------------------------------------------------------------------------
 # Backup. One resource = one backup, not a schedule. Off by default.
-# Check sheet feature 10, PARTIAL.
-# -----------------------------------------------------------------------------
 resource "oci_redis_oci_cache_backup" "main" {
   count = var.create_backup ? 1 : 0
 
@@ -241,18 +170,15 @@ resource "oci_redis_oci_cache_backup" "main" {
   backup_source            = var.backup_source
 
   # Incrementing this pushes the backup into Object Storage - link 2 of the DR
-  # substitute chain described above. Links 3 and 4 are not this module's.
+  # substitute chain. Links 3 and 4 are not this module's.
   export_to_object_storage_trigger = var.backup_export_to_object_storage_trigger
 
   freeform_tags = local.common_freeform_tags
   defined_tags  = var.defined_tags
 }
 
-# -----------------------------------------------------------------------------
 # AUTH. Native multi-user ACLs where AWS has a single auth_token string.
 # Empty by default - AUTH is unset in every live AWS unit reviewed.
-# Check sheet feature 9, FULL.
-# -----------------------------------------------------------------------------
 resource "oci_redis_oci_cache_user" "main" {
   for_each = var.cache_users
 

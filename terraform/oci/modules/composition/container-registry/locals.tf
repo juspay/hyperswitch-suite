@@ -2,14 +2,11 @@ locals {
   name_prefix = "${var.project_name}-${var.environment}"
 
   # The tenancy namespace, either supplied or looked up. Everything URL-shaped
-  # below hangs off this - NOT off the compartment, which never appears in a
-  # pull URL (check sheet feature 2).
+  # hangs off this - NOT the compartment, which never appears in a pull URL.
   namespace = var.namespace != null ? var.namespace : data.oci_objectstorage_namespace.this[0].namespace
 
   ocir_endpoint = var.ocir_endpoint != null ? var.ocir_endpoint : "${var.region}.ocir.io"
 
-  # `<region>.ocir.io/<tenancy-namespace>` - the closest counterpart to AWS's
-  # `registry_url` output (`<account>.dkr.ecr.<region>.amazonaws.com`).
   registry_url = "${local.ocir_endpoint}/${local.namespace}"
 
   freeform_tags = merge(
@@ -37,27 +34,15 @@ locals {
     }
   }
 
-  # ---------------------------------------------------------------------------
-  # IAM statements - the SUBSTITUTE for aws_ecr_repository_policy (feature 6).
-  #
-  # Verbs from Oracle's registry policy reference: `manage repos` covers the
-  # push permissions the AWS document grants (BatchCheckLayerAvailability,
-  # PutImage, UploadLayerPart, CompleteLayerUpload, InitiateLayerUpload) plus
-  # delete; `read repos` is REPOSITORY_READ, the pull half.
-  # (docs.oracle.com/en-us/iaas/Content/Identity/Reference/registrypolicyreference.htm,
-  # cited in identity-model.md section 3.5.)
-  #
-  # Statements are emitted pre-normalised and SORTED: the OCI API rewrites
-  # statement strings server-side (lowercased compartment names, whitespace
-  # stripped) and an unstable order produces a perpetual Terraform diff.
-  # identity-model.md section 4.5 documents this; `compartment id <ocid>` rather
-  # than `compartment <name>` is used for the same reason.
-  #
+  # IAM statements - the substitute for aws_ecr_repository_policy.
+  # Verbs: `manage repos` covers push plus delete (the push half); `read repos`
+  # is REPOSITORY_READ, the pull half. Statements are emitted pre-normalised and
+  # SORTED because the OCI API rewrites statement strings server-side and an
+  # unstable order would produce a perpetual Terraform diff; `compartment id
+  # <ocid>` rather than `compartment <name>` is used for the same reason.
   # One statement per subject, compartment-scoped - deliberately NOT one per
-  # repository. The AWS fleet carries the same document on ~130 repositories;
-  # collapsing that into one statement is the blast-radius improvement the check
-  # sheet's feature 6 note calls out as the silver lining of a forced change.
-  # ---------------------------------------------------------------------------
+  # repository, which is the blast-radius improvement of collapsing ~130
+  # per-repository AWS documents into one.
   registry_statements = sort(concat(
     [for subject in var.push_subjects :
       "Allow ${subject} to manage repos in compartment id ${var.compartment_id}"

@@ -1,16 +1,11 @@
-# =============================================================================
-# Engine log export (check sheet feature 17, FULL)
-# =============================================================================
-# Same capability as AWS's enabled_cloudwatch_logs_exports = ["postgresql"],
-# configured on separate resources instead of as an argument on the db system.
-# Service "postgresql", category "postgresql_database_logs".
+# Engine log export to OCI Logging. Service "postgresql", category
+# "postgresql_database_logs".
 #
 # UNVERIFIED (check sheet open question 9.6): OCI describes the category as
 # capturing "database queries and parameters"; AWS's postgresql export is the
-# full PostgreSQL server log, including connection, error and autovacuum lines.
-# If the content differs, the vector/loki parsing rules change. Diff a sample
-# against a live /aws/rds/cluster/.../postgresql stream before relying on
-# existing alerting.
+# full server log including connection, error and autovacuum lines. If the
+# content differs, the vector/loki parsing rules change - diff a sample against
+# a live stream before relying on existing alerting.
 
 resource "oci_logging_log_group" "this" {
   count = var.enable_service_logs ? 1 : 0

@@ -1,7 +1,3 @@
-# =============================================================================
-# Identity and placement
-# =============================================================================
-
 variable "compartment_id" {
   description = "OCID of the compartment every resource in this module is created in. Replaces the implicit AWS account scope; a flat compartment is the deliberate first-cut simplification (prerequisite P5, oci/identity-model.md)."
   type        = string
@@ -46,10 +42,6 @@ variable "defined_tags" {
   type        = map(string)
   default     = {}
 }
-
-# =============================================================================
-# Network
-# =============================================================================
 
 variable "vcn_id" {
   description = "OCID of the VCN. Needed only to create this module's NSG."
@@ -100,10 +92,6 @@ variable "additional_nsg_ids" {
   type        = list(string)
   default     = []
 }
-
-# =============================================================================
-# Compute
-# =============================================================================
 
 variable "image_id" {
   description = <<-EOT
@@ -195,10 +183,6 @@ variable "enable_oracle_cloud_agent_bastion_plugin" {
   default     = true
 }
 
-# =============================================================================
-# OCI Bastion service
-# =============================================================================
-
 variable "create_bastion" {
   description = "Whether this module creates the OCI Bastion. False when a shared, environment-wide bastion already exists and this module only contributes the jump instance behind it."
   type        = bool
@@ -253,10 +237,6 @@ variable "bastion_dns_proxy_status" {
     error_message = "bastion_dns_proxy_status must be ENABLED or DISABLED."
   }
 }
-
-# =============================================================================
-# Logging
-# =============================================================================
 
 variable "log_retention_days" {
   description = "Retention in days for the host log. oci_logging_log.retention_duration is a straightforward analogue of aws_cloudwatch_log_group.retention_in_days."
@@ -321,10 +301,6 @@ variable "bucket_kms_key_id" {
   default     = null
 }
 
-# =============================================================================
-# Migration mode
-# =============================================================================
-
 variable "enable_migration_mode" {
   description = <<-EOT
     Temporary escape hatch granting remote command execution against the jump
@@ -351,10 +327,6 @@ variable "enable_migration_mode" {
   type        = bool
   default     = false
 }
-
-# =============================================================================
-# Operator convenience
-# =============================================================================
 
 variable "connection_targets" {
   description = <<-EOT

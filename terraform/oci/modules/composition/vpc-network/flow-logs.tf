@@ -1,15 +1,6 @@
-###############################################################################
-# VCN flow logs
-#
-# FULL parity with AWS's aws_flow_log, via a different service. OCI flow logs
-# are Logging-service objects, not VCN objects: a log group holds a log whose
-# source names the VCN. The "vcn" category covers "existing and future VNICs in
-# all subnets in the VCN", so ONE log object replaces AWS's single VPC-level
-# flow log with no per-subnet fan-out. Narrower "subnet", "vnic" and "all"
-# categories exist if scope needs tightening later.
-#
-# Off by default, matching every AWS live root and the GCP unit.
-###############################################################################
+# VCN flow logs - Logging-service objects, not VCN objects. A log group holds a
+# log whose source names the VCN; the "vcn" category covers existing and future
+# VNICs in all subnets, so one log replaces per-subnet fan-out. Off by default.
 
 resource "oci_logging_log_group" "flow_logs" {
   count = var.enable_flow_logs && var.flow_logs_log_group_id == null ? 1 : 0

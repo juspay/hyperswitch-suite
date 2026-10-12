@@ -1,47 +1,14 @@
-# =============================================================================
-# The card vault's database credential, generated INSIDE OCI Vault
-# =============================================================================
-# Check sheet feature 2 is "durable storage of a Terraform-generated private
-# key", verdict SUBSTITUTE. This file is what that feature became, and it is a
-# deliberate redesign rather than a translation - section 4.2 of the sheet, and
-# check sheet section 10's "Secret storage" row, which says in as many words
-# that the port is designed to come out STRONGER than AWS rather than equal.
-#
-# WHAT AWS DOES TODAY, and what is not being copied:
-#   tls_private_key.locker generates an RSA-4096 key; the private half is
-#   written to Terraform state in plaintext (the tls provider has no
-#   field-level state encryption) AND to an SSM SecureString. Confirmed live in
-#   all 8 AWS live roots. The sibling composition/database module has a milder
-#   version of the same problem - random_password.admin puts the database
-#   password in state and accepts it, documenting the state backend as
-#   load-bearing.
-#
-# WHAT THIS MODULE DOES INSTEAD:
-#   OCI Vault generates the secret value server-side. `enable_auto_generation`
-#   plus `secret_generation_context` means Terraform sends a REQUEST for a
-#   secret of a given shape and receives back an OCID and a version number.
-#   The plaintext never becomes a Terraform value, so it cannot reach state, a
-#   plan file, a CI log, or a `terraform show`. There is no
-#   `db_admin_password` output in outputs.tf and there is no variable that
-#   accepts a literal password anywhere in variables.tf - the state-exposure
-#   path is designed out, not documented around.
-#
-#   Consequence to know: the password is not knowable from Terraform. An
-#   operator or an application reads it from Vault (`read secret-bundles`, see
-#   identity.tf), which is the intended retrieval path and the reason
-#   `db_admin_secret_id` is an output.
-#
-# The same mechanism covers the SSH-key question if it ever returns:
-# generation_type = "SSH_KEY" with generation_template RSA_2048/3072/4096
-# produces a keypair with the private half held only by the service. That is
-# strictly better than `ephemeral "tls_private_key"`, which keeps the key out
-# of state but still materialises it inside the Terraform process. This module
-# creates no such secret today because it creates no VM to log in to.
-#
-# Verified: generation_type in {PASSPHRASE, SSH_KEY, BYTES}; PASSPHRASE
-# templates {SECRETS_DEFAULT_PASSWORD, DBAAS_DEFAULT_PASSWORD}; passphrase max
-# 32 characters (30 for the DBAAS template)
-# (docs.oracle.com/en-us/iaas/Content/secret-management/Concepts/manage-secrets.htm).
+# The card vault's database credential, generated INSIDE OCI Vault. This is a
+# deliberate redesign, not a translation: OCI Vault generates the secret value
+# server-side (enable_auto_generation + secret_generation_context), so Terraform
+# sends a REQUEST and receives back an OCID + version number. The plaintext
+# never becomes a Terraform value, so it cannot reach state, a plan file, or a
+# CI log - the state-exposure path is designed out, not documented around.
+# Consequence: the password is not knowable from Terraform; an operator or app
+# reads it from Vault (`read secret-bundles`).
+# The same mechanism covers an SSH key if ever needed (generation_type =
+# "SSH_KEY" produces a keypair held only by the service, stronger than
+# `ephemeral "tls_private_key"`).
 
 resource "oci_vault_secret" "db_admin_password" {
   count = local.create_db_secret ? 1 : 0
@@ -49,11 +16,10 @@ resource "oci_vault_secret" "db_admin_password" {
   compartment_id = var.compartment_id
   vault_id       = local.vault_id
 
-  # Customer-managed key on the CREDENTIAL. Worth stating plainly because it is
-  # the inverse of the database's own story: OCI Vault takes a customer key for
-  # the secret, while oci_psql_db_system takes no customer key for the data at
-  # rest at all (database.tf, feature 17, PARTIAL). Key custody on OCI covers
-  # this module's secrets and not its database storage.
+  # Customer-managed key on the CREDENTIAL - the inverse of the database's own
+  # story: OCI Vault takes a customer key here while oci_psql_db_system takes
+  # none for data at rest. Key custody on OCI covers this module's secrets, not
+  # its database storage.
   key_id = local.key_id
 
   secret_name = local.db_secret_name
@@ -69,9 +35,8 @@ resource "oci_vault_secret" "db_admin_password" {
     passphrase_length   = var.db_admin_secret.passphrase_length
 
     # Forces the stored content to be the bare passphrase rather than the
-    # template default's JSON envelope. oci_psql_db_system reads the secret
-    # bundle verbatim as the password, so an envelope would set a password
-    # nobody can reproduce. Placeholder name is fixed by the service.
+    # template default's JSON envelope; oci_psql_db_system reads the bundle
+    # verbatim as the password. Placeholder name is fixed by the service.
     secret_template = var.db_admin_secret.secret_template
   }
 

@@ -1,12 +1,8 @@
-# =============================================================================
-# SSH key pair and private-key escrow (check sheet feature 7, FULL)
-# =============================================================================
-# tls_private_key is unchanged - key generation is cloud-agnostic. What changes:
-# there is no aws_key_pair object on OCI (the public key is a metadata line), and
-# escrow moves from SSM Parameter Store to OCI Vault, which needs a pre-existing
-# Vault AND KMS key. While either is null nothing is written and the private key
-# exists only in Terraform state - which makes the state backend's encryption
-# load-bearing. Check sheet open question 9.2 on kafka.md, UNRESOLVED.
+# SSH key pair and private-key escrow.
+# No aws_key_pair object on OCI (the public key is a metadata line); escrow moves to
+# OCI Vault, which needs a pre-existing Vault AND KMS key. While either is null nothing
+# is written and the private key exists only in Terraform state - which makes the state
+# backend's encryption load-bearing.
 
 resource "tls_private_key" "cassandra" {
   count = local.generate_key ? 1 : 0

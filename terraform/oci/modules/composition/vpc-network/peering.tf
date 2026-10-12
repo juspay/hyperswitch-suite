@@ -1,26 +1,14 @@
-###############################################################################
-# Peering
-#
-# SUBSTITUTE (check sheet feature 21). AWS covers same-region, cross-region and
-# cross-account peering with ONE aws_vpc_peering_connection plus an accepter
-# resource. OCI splits that into three mechanisms, so the single AWS input pair
-# (vpc_peering_connections / vpc_peering_accepter_connections) cannot survive
-# as one input and is not carried under its AWS name:
+# Peering. AWS covers same-region, cross-region and cross-account peering with
+# ONE resource plus an accepter; OCI splits that into three mechanisms, so the
+# single AWS input pair cannot survive as one input:
 #
 #   same-region   -> Local Peering Gateway, one per side, limit 10 per VCN
 #   cross-region  -> DRG + Remote Peering Connection
-#   cross-tenancy -> either of the above, PLUS IAM policy statements in BOTH
-#                    tenancies. AWS's single peer_owner_id field has no
-#                    counterpart; those policies are out of scope for this
-#                    module and must be authored in the identity layer.
+#   cross-tenancy -> either of the above, PLUS IAM policy statements in both
+#                    tenancies (outside this module's scope)
 #
-# The requester/accepter split also disappears: an LPG is symmetric, and
-# whichever side sets peer_id establishes the connection. That is why there is
-# one local_peering_gateways input and not a requester/accepter pair.
-#
-# The route-expansion logic itself ports with no semantic change - see
-# locals.tf. As on AWS, peer CIDRs must not overlap the VCN's.
-###############################################################################
+# The requester/accepter split disappears: an LPG is symmetric, and whichever
+# side sets peer_id establishes the connection.
 
 locals {
   effective_drg_id = coalesce(

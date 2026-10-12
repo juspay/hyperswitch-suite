@@ -1,16 +1,5 @@
-# -----------------------------------------------------------------------------
-# Output contract.
-#
-#   role_arn                  -> NONE. No annotation and no cluster-secret field
-#                                consumes it. Do not substitute policy_id.
-#   role_name/_id/_unique_id  -> owned by the shared policy object.
-#   oidc_provider_urls        -> NONE. No OIDC provider is registered.
-#   cluster_service_accounts  -> authorized_workloads
-#   region                    -> region
-#   -                         -> target_compartment_ids (new): where ArgoCD may
-#                                deploy, for review and for the cluster
-#                                registration manifests.
-# -----------------------------------------------------------------------------
+# Output contract. role_* and oidc_provider_urls have no OCI counterpart;
+# cluster_service_accounts -> authorized_workloads; target_compartment_ids is new.
 
 output "policy_statements" {
   description = <<-EOT

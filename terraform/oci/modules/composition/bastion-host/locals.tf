@@ -21,17 +21,13 @@ locals {
 
   bastion_target_subnet_id = coalesce(var.bastion_target_subnet_id, var.subnet_id)
 
-  # NSG membership is declared on the CONSUMER (create_vnic_details.nsg_ids),
-  # not on the NSG. See network.tf, and note that this module's NSG is the one
-  # in the whole port that CANNOT be left with zero ingress rules.
+  # NSG membership is declared on the CONSUMER (create_vnic_details.nsg_ids).
+  # This module's NSG is the one NSG in the port that cannot stay zero-ingress.
   own_nsg_ids = var.create_nsg ? [oci_core_network_security_group.this[0].id] : []
   nsg_ids     = concat(local.own_nsg_ids, var.additional_nsg_ids)
 
   session_log_bucket_name = coalesce(var.session_log_bucket_name, "${local.name_prefix}-session-logs")
 
-  # Content ports from the AWS original with no logic changes - only the
-  # delivery mechanism differs (metadata.user_data instead of a launch
-  # template). cloud-init is cloud-init.
   user_data = coalesce(
     var.user_data,
     templatefile("${path.module}/templates/userdata.sh", {
@@ -47,14 +43,10 @@ locals {
 
   bastion_id = var.create_bastion ? try(oci_bastion_bastion.this[0].id, null) : null
 
-  # The one fact network-security-model.md's implementation needs in order to
-  # write the required inbound rule. Null when this module does not own the
-  # bastion - in which case whoever does owns that rule too.
+  # Source of the one required inbound rule on the target; null when not owned here.
   bastion_private_endpoint_ip = var.create_bastion ? try(oci_bastion_bastion.this[0].private_endpoint_ip_address, null) : null
 
-  # Recomputed from the variable, not from a resource. See
-  # var.enable_migration_mode: there is no Terraform-declarable OCI Run Command
-  # resource to derive live state from, so this reports what was CONFIGURED.
+  # Reports what was CONFIGURED, not live state - no Terraform resource for OCI Run Command.
   migration_mode_status = var.enable_migration_mode ? "ENABLED - grant the Run Command policy verb to this host's dynamic group, then REVOKE it when the migration is done. Nothing in terraform plan will remind you." : "DISABLED"
 
   connection_guide = templatefile("${path.module}/templates/connection_guide.tftpl", {

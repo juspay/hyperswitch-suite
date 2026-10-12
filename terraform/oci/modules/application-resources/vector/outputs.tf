@@ -1,21 +1,4 @@
-# =============================================================================
-# Output contract - 23 AWS outputs become the set below.
-# =============================================================================
-# DELETED WITH NO REPLACEMENT:
-#   role_arn / role_id / role_name / oidc_enabled  - no role, no annotation, no
-#     OIDC registration (identity-model.md section 6.4).
-#   s3_policy_arn / sqs_policy_arn / sqs_cross_region_policy_arn - nothing is
-#     attachable on OCI (identity-model.md section 3.6).
-#   sqs_queue_url / sqs_queue_arn / sqs_queue_name - A STREAMING ENDPOINT IS NOT
-#     A QUEUE URL. Emitting one under a queue-shaped name would let a consumer
-#     wire a queue-shaped mental model onto offset-based redelivery, which is
-#     exactly the mistake notification.tf exists to prevent. Use
-#     `kafka_connection`.
-# =============================================================================
-
-# -----------------------------------------------------------------------------
-# THE IDENTITY CONTRACT
-# -----------------------------------------------------------------------------
+# Output contract
 
 output "policy_statements" {
   description = <<-EOT
@@ -47,10 +30,6 @@ output "authorized_workload" {
   value       = local.authorized_workloads
 }
 
-# -----------------------------------------------------------------------------
-# Log bucket
-# -----------------------------------------------------------------------------
-
 output "bucket_name" {
   description = "Log bucket name. Replaces AWS s3_bucket_id/_arn - OCI addresses a bucket by (namespace, name)."
   value       = one(oci_objectstorage_bucket.logs[*].name)
@@ -65,10 +44,6 @@ output "bucket_object_events_enabled" {
   description = "Whether event emission is on for the bucket. Half of what AWS expressed as a single aws_s3_bucket_notification - the other half is the Events rule, which is a separate service."
   value       = one(oci_objectstorage_bucket.logs[*].object_events_enabled)
 }
-
-# -----------------------------------------------------------------------------
-# The event pipeline
-# -----------------------------------------------------------------------------
 
 output "stream_id" {
   description = "OCID of the Streaming stream the Events rule delivers into. No AWS counterpart under this name - it stands in for the SQS queue, with different delivery semantics (notification.tf)."
@@ -156,18 +131,10 @@ output "auth_token_vault_secret_id" {
   value       = var.auth_token_vault_secret_id
 }
 
-# -----------------------------------------------------------------------------
-# Cross-region
-# -----------------------------------------------------------------------------
-
 output "cross_region_read_enabled" {
   description = "Whether cross-region read grants were emitted. PARTIAL: the IAM half is complete, the NETWORK half is not expressible here - Streaming is regional, so a public TLS endpoint or a DRG path must be decided separately (check sheet section 4.5)."
   value       = local.cross_region_enabled
 }
-
-# -----------------------------------------------------------------------------
-# Placement
-# -----------------------------------------------------------------------------
 
 output "app_name" {
   description = "The logical log-stream name, echoed. What distinguishes this instantiation from its four siblings."

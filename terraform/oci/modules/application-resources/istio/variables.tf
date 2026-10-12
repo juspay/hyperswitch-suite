@@ -1,38 +1,10 @@
-# =============================================================================
-# istio - the OCI port of application-resources/istio
-# =============================================================================
-# Check sheet: docs/multi-cloud-parity/oci/modules/istio.md
-# Network:     docs/multi-cloud-parity/oci/network-security-model.md (Option A)
-#
-# THE ONLY MODULE IN THIS BATCH WITH NO CLOUD IDENTITY. identity-model.md
-# section 1.2 row 13 records it plainly: Istio needs no pod identity, "helm
-# only". It emits an empty `policy_statements` list for uniformity with its
-# siblings and nothing else - see outputs.tf.
-#
-# THE HEADLINE CHANGE: `alb-controller` DISAPPEARS AS A CONCEPT.
-#
-#   AWS deploys the gateway Service as `type = ClusterIP` and puts a
-#   `kubernetes_ingress_v1` with `ingress_class_name = "alb"` in front of it.
-#   That class only resolves because a SECOND module - `alb-controller` - is
-#   running the community AWS Load Balancer Controller in the same cluster.
-#   This module is that controller's only consumer in the whole platform.
-#
-#   Every OKE cluster already ships the OCI Cloud Controller Manager. A Service
-#   of `type = LoadBalancer` becomes a working OCI Load Balancer with no Helm
-#   chart, no IAM role and no ServiceAccount to create. So there is NO `Ingress`
-#   object in this module, no `ingress_annotations` variable, and no
-#   `alb-controller` equivalent to build. The AWS `alb.ingress.kubernetes.io/*`
-#   annotation surface becomes `oci.oraclecloud.com/*` and
-#   `service.beta.kubernetes.io/oci-load-balancer-*`.
-#
-#   That is a SIMPLIFICATION - one fewer controller to keep patched - and the
-#   sibling `alb-controller` port is deliberately not built (all five of its
-#   features land on NONE).
-# =============================================================================
-
-# -----------------------------------------------------------------------------
-# Placement
-# -----------------------------------------------------------------------------
+# istio - OCI port of application-resources/istio.
+# The only module in this batch with no cloud identity - it emits an empty
+# `policy_statements` list. The headline change: `alb-controller` disappears as
+# a concept. Every OKE cluster already runs the OCI Cloud Controller Manager;
+# a Service of `type = LoadBalancer` becomes a working OCI Load Balancer with
+# no controller to install. THERE IS NO `Ingress` object in this module, no
+# `ingress_annotations` variable, and no `alb-controller` equivalent.
 
 variable "compartment_id" {
   description = "OCID of the compartment the NSG and reserved IP are created in. New input with no AWS counterpart - every OCI resource is compartment-scoped."
@@ -83,10 +55,6 @@ variable "vcn_id" {
   type        = string
   default     = null
 }
-
-# -----------------------------------------------------------------------------
-# Helm releases (check sheet features 1, 2, 8, 9 - all FULL)
-# -----------------------------------------------------------------------------
 
 variable "create_helm_releases" {
   description = <<-EOT
@@ -164,10 +132,6 @@ variable "istio_gateway" {
   })
   default = {}
 }
-
-# -----------------------------------------------------------------------------
-# Gateway exposure (check sheet features 3, 4, 5, 7)
-# -----------------------------------------------------------------------------
 
 variable "load_balancer_type" {
   description = <<-EOT
@@ -289,19 +253,11 @@ variable "external_traffic_policy" {
   }
 }
 
-# -----------------------------------------------------------------------------
-# Passthrough (check sheet feature 10, FULL)
-# -----------------------------------------------------------------------------
-
 variable "host_domains" {
   description = "Map of logical name to hostname(s) served through this gateway. Echoed unchanged as `host_domains_map`; no cloud resource behind it on any cloud."
   type        = map(list(string))
   default     = {}
 }
-
-# -----------------------------------------------------------------------------
-# Tags
-# -----------------------------------------------------------------------------
 
 variable "freeform_tags" {
   description = "Freeform tags merged onto the OCI resources this module creates. The AWS `tags` / GCP `labels` analogue."
@@ -315,21 +271,12 @@ variable "defined_tags" {
   default     = {}
 }
 
-# =============================================================================
-# DROPPED, with no replacement:
-#
-#   lb_subnet_ids       Check sheet section 4.4, PARTIAL. The OCI equivalent,
-#                       `oci_containerengine_cluster.options.service_lb_subnet_ids`,
-#                       is a CLUSTER-LEVEL field shared by every Service-type
-#                       LoadBalancer in the cluster - there is no per-Service
-#                       subnet-placement annotation in the CCM's documented
-#                       surface. Placement is now `oke`'s responsibility. A real
-#                       narrowing of this module's authority, harmless while the
-#                       stack has one LB-subnet tier per environment.
-#
-#   ingress_annotations No `Ingress` object exists to annotate (feature 3).
-#
+# DROPPED, no replacement:
+#   lb_subnet_ids       The OCI equivalent
+#                       (`oci_containerengine_cluster.options.service_lb_subnet_ids`)
+#                       is a CLUSTER-LEVEL field shared by every Service-type LB;
+#                       placement is now `oke`'s responsibility.
+#   ingress_annotations No `Ingress` object exists to annotate.
 #   eks_cluster_name +  Replaced by `cluster_id`; the data sources disappear
-#   the aws_eks_cluster  because this module configures no Kubernetes provider
-#   data sources        of its own (versions.tf).
-# =============================================================================
+#   aws_eks_cluster     because this module configures no Kubernetes provider.
+#   data sources

@@ -1,20 +1,8 @@
-# -----------------------------------------------------------------------------
-# Grant list and statement renderer.
-#
-# Same divergence as every module in this wave, recorded where it lives: the
-# check sheet (section 5) proposes a nested `../oke-workload-identity` call that
-# owns an `oci_identity_policy` for this app. The orchestrator took the other
-# branch - ONE shared policy object per environment, statements contributed by
-# app modules - because a policy object per app per region root is 132 objects
-# against a hard 100-per-tenancy limit. So this module renders text.
-#
-# The renderer is a character-for-character copy of
-# `oke-workload-identity/locals.tf`, and every string it emits is re-checked at
-# plan time by that module's four preconditions when the orchestrator wires it
-# in. Prefer `workload_grants` over `policy_statements` where the wiring allows:
-# the canonical renderer cannot forget a condition, and on OCI a forgotten
-# condition fails open.
-# -----------------------------------------------------------------------------
+# Grant list and statement renderer. ONE shared policy object per environment,
+# with app modules contributing statements - a per-app policy object is
+# unbuildable at a 100-object tenancy limit. Renderer is the canonical copy
+# from oke-workload-identity; its four plan-time preconditions re-check every
+# string this module emits.
 
 locals {
   name_prefix = "${var.project_name}-${var.environment}-argocd"
@@ -30,20 +18,10 @@ locals {
     var.freeform_tags
   )
 
-  # ---------------------------------------------------------------------------
-  # Grants.
-  #
-  # 1. `use clusters` in each deploy-target compartment - the OCI answer to
-  #    "obtain credentials for the target cluster". On AWS this was implicit in
-  #    the assumed cross-account role; here it is an explicit verb.
-  # 2. `read objects` + `read buckets` in the artefact compartment - the
-  #    substitute for AmazonS3ReadOnlyAccess, compartment-scoped rather than
-  #    account-wide.
-  # 3. Whatever the caller adds.
-  #
-  # Nothing else. In particular NOT `manage all-resources`, which is what
-  # Oracle's own tutorial publishes; see variables.tf header point 2.
-  # ---------------------------------------------------------------------------
+  # Grants: use clusters in each deploy-target compartment (kubeconfig), read
+  # objects/buckets in the artefact compartment (S3-read substitute), plus
+  # caller-added. NOT `manage all-resources` - Oracle's tutorial shorthand that
+  # hands ArgoCD full compartment control.
   deploy_grants = [
     for c in var.target_compartment_ids : {
       verb           = var.target_cluster_verb
@@ -73,12 +51,8 @@ locals {
 
   all_grants = concat(local.deploy_grants, local.artifact_grants, local.extra_grants)
 
-  # ---------------------------------------------------------------------------
-  # Render: one statement per (service account x cluster x grant). Enumerated,
-  # because pattern values on `request.principal.*` are undocumented
-  # (identity-model.md section 9 Q5) - there is no verified wildcard that would
-  # collapse `argocd/*` and `argo-workflows/*`.
-  # ---------------------------------------------------------------------------
+  # Render: one statement per (service account x cluster x grant). Enumerated -
+  # no verified wildcard on request.principal.*.
   grant_tuples = flatten([
     for g in local.all_grants : [
       for sa in var.service_accounts : [
@@ -141,21 +115,9 @@ locals {
     ]
   ])
 
-  # ---------------------------------------------------------------------------
-  # Cross-tenancy. KEPT SEPARATE FROM policy_statements ON PURPOSE.
-  #
-  # `Define` and `Endorse` must be attached at the MANAGEMENT TENANCY ROOT, and
-  # the matching `Define`/`Admit` at the TARGET tenancy root - "cross-tenancy
-  # policies must be defined under the root compartment on both sides". The
-  # shared oke-workload-identity object is attached at the ENVIRONMENT
-  # compartment, which is not the root, so these statements cannot go into it.
-  # Feeding them there would produce a policy the API accepts and that grants
-  # nothing.
-  #
-  # Emitting them as a distinct output rather than creating the policy keeps
-  # this module free of `oci_identity_policy` and leaves the two-root, two-state
-  # wiring where it belongs: the live layer.
-  # ---------------------------------------------------------------------------
+  # Cross-tenancy Define/Endorse. KEPT SEPARATE FROM policy_statements: these
+  # must attach at the MANAGEMENT TENANCY ROOT (and Define/Admit at the target
+  # tenancy root), which the environment-compartment shared object cannot carry.
   cross_tenancy_statements = sort(distinct(flatten([
     for t in var.cross_tenancy_targets : concat(
       ["define tenancy ${t.alias} as ${t.tenancy_ocid}"],

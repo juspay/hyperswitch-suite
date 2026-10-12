@@ -1,15 +1,5 @@
-# =============================================================================
 # Outputs
-# =============================================================================
-# The output surface is a CONTRACT. Where the semantics survive the port, the
-# AWS name is kept verbatim so consuming units do not become translation
-# exercises. Where the underlying object does not exist on OCI (ENIs, IAM roles,
-# instance profiles) the AWS output is dropped rather than faked - see the
-# bottom of this file.
 
-# -----------------------------------------------------------------------------
-# Broker tier
-# -----------------------------------------------------------------------------
 output "broker_instance_ids" {
   description = "OCIDs of the Kafka broker instances. Replaces broker_instance_ids (instance IDs)."
   value       = oci_core_instance.broker[*].id
@@ -39,9 +29,6 @@ output "broker_ips_string_list" {
   value       = join(",", [for ip in local.broker_reserved_ips : "${ip}:9092"])
 }
 
-# -----------------------------------------------------------------------------
-# Controller tier
-# -----------------------------------------------------------------------------
 output "controller_instance_ids" {
   description = "OCIDs of the KRaft controller instances. A list of controller_count entries; AWS's equivalent was always length 1."
   value       = oci_core_instance.controller[*].id
@@ -57,9 +44,6 @@ output "controller_instance_primary_ips" {
   value       = oci_core_instance.controller[*].private_ip
 }
 
-# -----------------------------------------------------------------------------
-# Reserved private IP objects - the static-address mechanism itself
-# -----------------------------------------------------------------------------
 output "broker_reserved_private_ip_ids" {
   description = "OCIDs of the brokers' reserved oci_core_private_ip objects. The closest thing this port has to AWS's broker_eni_ids, and what a replacement runbook re-points."
   value       = oci_core_private_ip.broker[*].id
@@ -70,9 +54,6 @@ output "controller_reserved_private_ip_ids" {
   value       = oci_core_private_ip.controller[*].id
 }
 
-# -----------------------------------------------------------------------------
-# Network security - consumed by composition/security-rules
-# -----------------------------------------------------------------------------
 output "broker_nsg_id" {
   description = "OCID of the module-owned, empty broker NSG. Replaces broker_security_group_id and is the contract the security-last phase writes rules into."
   value       = try(oci_core_network_security_group.broker[0].id, null)
@@ -93,9 +74,6 @@ output "controller_nsg_ids" {
   value       = local.controller_nsg_ids
 }
 
-# -----------------------------------------------------------------------------
-# SSH
-# -----------------------------------------------------------------------------
 output "key_name" {
   description = "Logical key-pair name. Unchanged from AWS in name only - OCI has no key-pair object, so nothing on the cloud side carries this string."
   value       = var.create_key_pair ? local.key_pair_name : var.key_name
@@ -106,13 +84,9 @@ output "ssh_private_key_vault_secret_id" {
   value       = try(oci_vault_secret.ssh_private_key[0].id, null)
 }
 
-# -----------------------------------------------------------------------------
-# Identity
-# -----------------------------------------------------------------------------
-# There is no instance_profile_name output and no iam_role_arn output, because
-# neither object exists on OCI. Nothing replaces them 1:1: the binding between
-# instance and permissions is the dynamic group's matching rule, not an
-# attachment, so the pair below is the whole identity surface.
+# There is no instance_profile / iam_role output: neither object exists on OCI.
+# The binding between instance and permissions is the dynamic group's matching
+# rule, not an attachment.
 output "dynamic_group_id" {
   description = "OCID of the dynamic group matching this fleet's instances. Partially replaces iam_role_arn / iam_role_name."
   value       = try(oci_identity_dynamic_group.nodes[0].id, null)
@@ -128,9 +102,6 @@ output "policy_id" {
   value       = try(oci_identity_policy.nodes[0].id, null)
 }
 
-# -----------------------------------------------------------------------------
-# Placement, for the security-rules and monitoring units
-# -----------------------------------------------------------------------------
 output "availability_domain" {
   description = "Availability domain every node was placed in. Exactly one exists in ap-mumbai-1."
   value       = local.availability_domain

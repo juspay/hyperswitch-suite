@@ -1,21 +1,5 @@
-# =============================================================================
-# squid-audit-instance - ONE standalone audit instance for the hardened Squid
-# image, out of the pool
-# =============================================================================
-# This is IaC AUTHORING ONLY. Do not plan/apply. It is NOT the squid-proxy
-# composition module (which creates an instance POOL + NLB + allowlist buckets).
-# The security-team audit workflow (docs/hardening/oci-envoy-squid-hardening-workplan.md
-# §6 step 3) launches ONE standalone instance from each freshly-built hardened
-# image, runs the W1 baseline through Run Command, and terminates it after. This
-# module is that single, disposable instance.
-#
-# Deliberately minimal, matching the envoy-audit-instance module 1:1 (so the
-# two review boxes do not drift) and the envoy-proxy/failed-open contract:
-#   - image_id is REQUIRED with no default and no PLACEHOLDER fallback.
-#   - ssh_public_key is REQUIRED (the security team's dedicated key).
-#   - No public IP: assign_public_ip = false per-VNIC + the management tier's
-#     subnet-level prohibit_public_ip_on_vnic = true.
-#   - preserve_boot_volume = false so terminate-after-audit removes the volume.
+# squid-audit-instance - one standalone audit instance for the hardened Squid image.
+# Hardened-by-default: image_id & ssh_public_key REQUIRED, no public IP, preserve_boot_volume false.
 
 variable "compartment_id" {
   description = "OCID of the compartment the audit instance is created in. Same flat compartment contract as every other OCI unit."

@@ -11,9 +11,6 @@ locals {
     var.freeform_tags
   )
 
-  # ---------------------------------------------------------------------------
-  # Placement
-  # ---------------------------------------------------------------------------
   availability_domain = coalesce(
     var.availability_domain,
     try(data.oci_identity_availability_domains.this[0].availability_domains[0].name, null)
@@ -25,8 +22,8 @@ locals {
 
   fault_domain_count = length(local.fault_domains)
 
-  # Keepers and servers are offset from one another so a 3-Keeper + 2-server
-  # deployment does not stack keeper-0 and server-0 in the same fault domain.
+  # Keepers and servers are offset so a 3-Keeper + 2-server deployment does not
+  # stack keeper-0 and server-0 in the same fault domain.
   keeper_fault_domain = [
     for i in range(var.keeper_count) :
     local.fault_domain_count > 0 ? local.fault_domains[i % local.fault_domain_count] : null
@@ -37,9 +34,6 @@ locals {
     local.fault_domain_count > 0 ? local.fault_domains[(i + 1) % local.fault_domain_count] : null
   ]
 
-  # ---------------------------------------------------------------------------
-  # NSG membership
-  # ---------------------------------------------------------------------------
   keeper_nsg_ids = compact(concat(
     var.create_nsg ? [oci_core_network_security_group.keeper[0].id] : [],
     var.additional_keeper_nsg_ids
@@ -50,9 +44,7 @@ locals {
     var.additional_server_nsg_ids
   ))
 
-  # ---------------------------------------------------------------------------
-  # SSH key pair - OCI has no key-pair object, only instance metadata
-  # ---------------------------------------------------------------------------
+  # SSH key pair - OCI has no key-pair object; the public key is instance metadata.
   key_pair_name = coalesce(var.key_name, "${local.name_prefix}-key")
 
   generate_key = var.create_key_pair && var.public_key == null
@@ -70,25 +62,14 @@ locals {
 
   vault_secret_name = coalesce(try(var.vault_secret.secret_name, null), "${local.name_prefix}-ssh-private-key")
 
-  # ---------------------------------------------------------------------------
   # Peer address lists and the {{keeper_ips}} / {{server_ips}} substitution
-  # ---------------------------------------------------------------------------
-  # THE SAME CYCLE CONSTRAINT AS ../cassandra/locals.tf, and here it bites harder
-  # because BOTH tiers' user data names BOTH tiers' peers.
-  #
-  # A reserved private IP is created ON a VNIC, and the VNIC only exists once its
-  # instance does, so oci_core_private_ip depends on oci_core_instance. Anything
-  # an instance's own user_data reads therefore cannot come from
-  # oci_core_private_ip. AWS had no such problem: its ENIs are created BEFORE the
-  # instances and hand their IPs over at plan time, which is exactly why the AWS
-  # module can substitute {{keeper_ips}} from aws_network_interface outputs.
-  #
-  # Consequence: PIN keeper_reserved_ip_addresses AND server_reserved_ip_addresses.
-  # Left unpinned, the templates below are rendered with empty peer lists and the
-  # cluster will not form - the module still plans and applies cleanly, which is
-  # the dangerous part. There is no way to make this fail at plan time without
-  # forbidding the unpinned case outright, which would break the "let OCI
-  # allocate" path some environments legitimately want for a single-node dev cut.
+  # A reserved private IP is created ON a VNIC that only exists once its instance
+  # does, so oci_core_private_ip depends on oci_core_instance - anything an
+  # instance's own user_data reads therefore CANNOT come from those IP objects.
+  # AWS had no such cycle (its ENIs predate the instances). Consequence: PIN
+  # keeper_reserved_ip_addresses AND server_reserved_ip_addresses. Unpinned, the
+  # templates below render with empty peer lists and the cluster will not form -
+  # and it still plans/applies cleanly, which is the dangerous part.
   keeper_pinned_ips = var.keeper_reserved_ip_addresses != null ? compact(var.keeper_reserved_ip_addresses) : []
   server_pinned_ips = var.server_reserved_ip_addresses != null ? compact(var.server_reserved_ip_addresses) : []
 
@@ -110,12 +91,8 @@ locals {
   keeper_reserved_ips = oci_core_private_ip.keeper[*].ip_address
   server_reserved_ips = oci_core_private_ip.server[*].ip_address
 
-  # ---------------------------------------------------------------------------
-  # Bootstrap payloads
-  # ---------------------------------------------------------------------------
-  # Same template-substitution mechanism as the AWS module, unchanged - the
-  # software-facing contract does not change across clouds. Only the envelope
-  # differs (metadata.user_data, base64, OCI IMDS v2).
+  # user_data rendered via {{keeper_ips}} / {{server_ips}} substitution; delivered
+  # via metadata.user_data (base64).
   keeper_user_data = var.keeper_user_data_template == null ? null : replace(
     replace(var.keeper_user_data_template, "{{keeper_ips}}", local.keeper_ips_string),
     "{{server_ips}}", local.server_ips_string
@@ -136,9 +113,6 @@ locals {
     local.public_key != null ? { ssh_authorized_keys = local.public_key } : {}
   )
 
-  # ---------------------------------------------------------------------------
-  # Identity
-  # ---------------------------------------------------------------------------
   create_identity = var.create_identity && var.tenancy_ocid != null
 
   matching_rule = coalesce(
@@ -154,13 +128,9 @@ locals {
 
   policy_statements = length(var.policy_statements) > 0 ? var.policy_statements : local.default_policy_statements
 
-  # ---------------------------------------------------------------------------
-  # Load balancer
-  # ---------------------------------------------------------------------------
   backend_set_name = "${replace(local.name_prefix, "-", "_")}_servers"
 
-  # Defaults to a single HTTP listener on clickhouse_port when the caller
-  # supplies none, matching the AWS module's behaviour.
+  # Defaults to a single HTTP listener on clickhouse_port when none supplied.
   listeners = length(var.load_balancer_listeners) > 0 ? var.load_balancer_listeners : [
     {
       name           = "http"

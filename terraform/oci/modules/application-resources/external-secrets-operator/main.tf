@@ -1,28 +1,16 @@
-# -----------------------------------------------------------------------------
-# ONE conditional resource, and NO `oci_identity_policy`.
-#
-# The AWS module's three resources - aws_iam_role, aws_iam_role_policy,
-# aws_iam_role_policy_attachment - have no counterpart here. There is no role to
-# create, no policy document to attach, and nothing on the Kubernetes side to
-# mutate: OCI needs no equivalent of `eks.amazonaws.com/role-arn`. Hence no
-# `provider "kubernetes"` block either, unlike the GCP module on `main` - which
-# additionally cannot plan as committed, because its unit passes neither
-# `cluster_endpoint` nor `cluster_ca_certificate`.
-#
-# The identity itself is `policy_statements` in outputs.tf, concatenated by the
-# orchestrator into the environment's single shared oke-workload-identity policy
-# object.
-# -----------------------------------------------------------------------------
+# ONE conditional resource, and NO `oci_identity_policy`. The AWS module's three
+# resources (role, role-policy, attachment) have no counterpart - there is no
+# annotation to set on the Kubernetes side. The identity itself is
+# `policy_statements` in outputs.tf, concatenated by the orchestrator into the
+# environment's single shared oke-workload-identity policy object.
 
 # Cross-compartment reach. Needed ONLY when the vault's compartment is outside
 # the cluster's own compartment subtree; the recommended layout puts both under
-# the environment compartment, so this is off by default and should stay off.
+# the environment compartment, so this is off by default.
 #
-# Namespace-granular by design - Oracle: "a workload mapping applies to all
-# workloads in the specified namespace on the cluster. Use IAM policy conditions
-# such as request.principal.service_account for finer-grained access." So this
-# resource widens reach; it never narrows it. The service-account condition in
-# the statements remains the only fine-grained control.
+# Namespace-granular by design: a workload mapping applies to ALL workloads in
+# the namespace, so it widens reach and never narrows it. The service-account
+# condition in the statements remains the only fine-grained control.
 resource "oci_containerengine_cluster_workload_mapping" "vault" {
   for_each = var.create_workload_mapping ? toset(var.cluster_ids) : toset([])
 

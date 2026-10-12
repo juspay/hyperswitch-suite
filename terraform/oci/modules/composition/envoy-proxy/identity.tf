@@ -1,13 +1,6 @@
-# =============================================================================
 # Instance-principal identity - lets this fleet read its own config bucket
-# from Object Storage at boot, with no other credential available on a
-# private-subnet instance with no internet route for an API key.
-# =============================================================================
-# Folded in here (2026-09-10, user-requested), replacing a shared
-# `proxy-identity` composition module used by both squid-proxy and
-# envoy-proxy. See squid-proxy/identity.tf for the full design rationale -
-# this file is deliberately kept the same shape so the two do not drift.
-# =============================================================================
+# from Object Storage at boot, with no other credential on a private-subnet,
+# internetless instance.
 
 resource "oci_identity_tag_namespace" "this" {
   compartment_id = var.compartment_id
@@ -34,9 +27,8 @@ resource "oci_identity_dynamic_group" "this" {
   freeform_tags = local.freeform_tags
   defined_tags  = var.defined_tags
 
-  # See squid-proxy/identity.tf for the full reasoning: OCI stamps its own
-  # `Oracle-Tags` defined tags on identity resources at creation, and stripping
-  # them back to an empty map needs a tenancy-root grant this operator lacks.
+  # OCI stamps `Oracle-Tags` defined tags on identity resources at creation;
+  # stripping them needs a tenancy-root grant this operator lacks.
   lifecycle {
     ignore_changes = [defined_tags]
   }
@@ -54,18 +46,15 @@ resource "oci_identity_policy" "this" {
   freeform_tags = local.freeform_tags
   defined_tags  = var.defined_tags
 
-  # See squid-proxy/identity.tf for the full reasoning: OCI stamps its own
-  # `Oracle-Tags` defined tags on identity resources at creation, and stripping
-  # them back to an empty map needs a tenancy-root grant this operator lacks.
+  # See the dynamic-group block above - same Oracle-Tags reasoning.
   lifecycle {
     ignore_changes = [defined_tags]
   }
 }
 
 locals {
-  # Merged into launch_details.defined_tags in compute.tf - ONLY the instance
-  # itself needs this tag; the instance_configuration and instance_pool
-  # resources are not principals a dynamic group can match against.
+  # ONLY the instance itself needs this tag; the instance_configuration and
+  # instance_pool resources are not principals a dynamic group can match.
   identity_defined_tags = {
     "${oci_identity_tag_namespace.this.name}.${oci_identity_tag.component.name}" = local.display_name
   }

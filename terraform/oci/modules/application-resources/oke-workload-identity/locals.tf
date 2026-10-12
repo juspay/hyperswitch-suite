@@ -1,29 +1,8 @@
-# -----------------------------------------------------------------------------
-# The statement renderer.
-#
-# This file is the security boundary of the whole identity port. Every OCI
-# workload grant in the platform is rendered here and nowhere else, for the
-# reason set out in identity-model.md section 2.3: a copy-pasted IRSA block that
-# drops a condition fails closed on AWS, and a copy-pasted OCI statement that
-# drops a condition fails OPEN. CI should reject a literal `request.principal`
-# string appearing in any module other than this one.
-# -----------------------------------------------------------------------------
+# The statement renderer: every OCI workload grant in the platform is rendered
+# here. Drops a condition fails OPEN on OCI, so the principal conditions are
+# hard-coded into the template below.
 
 locals {
-  # ---------------------------------------------------------------------------
-  # Step 1 - render `workload_grants` x `cluster_ids`.
-  #
-  # One statement per (cluster, namespace, service_account, grant) tuple. There
-  # is no confirmed wildcard on `request.principal.*`, so tuples are enumerated
-  # rather than collapsed - see eks-iam.md section 4.2.
-  #
-  # `any-user` is the subject because a workload has no group to name. Oracle
-  # recommends against bare `any-user`, and is right to: it covers every user,
-  # instance principal, resource principal and service principal in the tenancy.
-  # `request.principal.type='workload'` is the ONLY thing that narrows it. That
-  # condition is not optional and is not caller-controlled - it is hard-coded
-  # into the template below.
-  # ---------------------------------------------------------------------------
   grant_tuples = flatten([
     for g in var.workload_grants : [
       for cluster_id in var.cluster_ids : {
@@ -51,19 +30,9 @@ locals {
     ])
   ]
 
-  # ---------------------------------------------------------------------------
-  # Step 2 - bootstrap.
-  #
-  # `oci_identity_policy.statements` is required and an empty policy is not a
-  # thing the API accepts, but this policy object must exist from wave 1 -
-  # before any application module has been ported - so that its tenancy-unique,
-  # NON-UPDATABLE name is claimed once and never has to change.
-  #
-  # This statement is inert: it authorises a service account that does not and
-  # will not exist, to `inspect compartments`, which returns metadata only. It
-  # is emitted only while the composed statement list is empty and vanishes on
-  # the plan that adds the first real grant - no flag to remember to flip.
-  # ---------------------------------------------------------------------------
+  # Bootstrap: the policy object must exist from wave 1 to claim its tenancy-
+  # unique, NON-UPDATABLE name. The inert statement vanishes once a real grant
+  # lands.
   composed_statements = concat(local.rendered_statements, var.statements)
   is_bootstrap_only   = length(local.composed_statements) == 0
 
@@ -78,31 +47,9 @@ locals {
 
   raw_statements = local.is_bootstrap_only ? [local.bootstrap_statement] : local.composed_statements
 
-  # ---------------------------------------------------------------------------
-  # Step 3 - normalisation.
-  #
-  # The OCI API rewrites policy statement text server-side - it collapses
-  # whitespace between keywords and strips spaces inside `where` clauses - which
-  # produces a permanent, un-suppressable Terraform diff if what we send is not
-  # already in normal form (oracle/terraform-provider-oci#371).
-  #
-  # Four rules, applied to everything this module emits, so that contributed
-  # statements written in the readable spaced-out form still land diff-stable:
-  #   1. runs of whitespace collapse to a single space;
-  #   2. spaces around `=` and `!=` are removed;
-  #   3. a space after a comma is removed (condition lists, subject lists and
-  #      resource-type lists all accept the compact form);
-  #   4. spaces just inside `{` and `}` are removed.
-  #
-  # A fifth rule - lowercase compartment NAMES - is designed out rather than
-  # implemented: this module only ever emits `in compartment id <ocid>`, never
-  # `in compartment <name>`, and rejects contributed statements that use a name
-  # (see `statements_with_named_compartment` below). OCIDs are not rewritten.
-  #
-  # `sort` + `distinct` give a stable plan. Never let statement order fall out
-  # of unordered iteration over a map or a set: the resulting list churn is
-  # indistinguishable from a real permission change in a plan diff.
-  # ---------------------------------------------------------------------------
+  # Normalisation: the OCI API rewrites statement text server-side, so anything
+  # not already in normal form produces a permanent diff. sort+distinct for a
+  # stable plan.
   all_statements = sort(distinct([
     for s in local.raw_statements :
     replace(
@@ -114,11 +61,7 @@ locals {
     "/\\{\\s+|\\s+\\}/", "")
   ]))
 
-  # ---------------------------------------------------------------------------
-  # Step 4 - fail-open guards. Evaluated as resource preconditions in main.tf so
-  # they abort the plan rather than the apply.
-  # ---------------------------------------------------------------------------
-
+  # Fail-open guards, evaluated as resource preconditions in main.tf.
   # A statement that says `any-user` without pinning the principal type is a
   # grant to every principal in the tenancy.
   statements_without_principal_type = [
@@ -157,12 +100,8 @@ locals {
     if length(regexall(" in compartment ", s)) > 0 && length(regexall(" in compartment id ", s)) == 0
   ]
 
-  # ---------------------------------------------------------------------------
-  # Step 5 - audit surface: the (cluster, namespace, service_account) tuples
-  # this policy actually authorises, recovered from the final statement text
-  # rather than from the inputs - so contributed statements are covered too, and
-  # so the output cannot drift from what was sent to the API.
-  # ---------------------------------------------------------------------------
+  # Audit surface: the tuples this policy actually authorises, recovered from the
+  # final statement text so the output cannot drift from what was sent.
   authorized_workloads = distinct([
     for s in local.workload_statements : {
       cluster_id      = try(regexall("request\\.principal\\.cluster_id='([^']+)'", s)[0][0], "UNPARSEABLE")

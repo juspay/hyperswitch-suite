@@ -1,20 +1,5 @@
-# =============================================================================
-# Controller tier (check sheet feature 2, SELF-MANAGED)
-# =============================================================================
-# SELF-MANAGED is PARITY here, not a regression: the AWS module is not Amazon
-# MSK, it is raw EC2 running Kafka in KRaft mode, so this is a
-# compute-instance-to-compute-instance port.
-#
-# OCI DOES have a managed alternative AWS's architecture never offered:
-# OCI Streaming with Apache Kafka (oci_managed_kafka_kafka_cluster), GA, 99.9%
-# SLA, 3-broker minimum for PRODUCTION clusters. Adopting it would delete this
-# module's compute, storage and static-addressing surface at a stroke. It is
-# NOT taken here, because self-managing matches both AWS and GCP precedent
-# exactly and is the lowest-risk default - but that is a recorded default, not a
-# decision. Check sheet section 8 item 1: ORACLE GATE ITEM, NOT YET CONSULTED.
-#
-# Controllers are created FIRST and gated by time_sleep below, mirroring the AWS
-# module's ordering.
+# Controller tier
+# Controllers are created FIRST and gated by time_sleep below.
 
 resource "oci_core_instance" "controller" {
   count = var.controller_count
@@ -23,20 +8,14 @@ resource "oci_core_instance" "controller" {
   availability_domain = local.availability_domain
 
   # One controller per fault domain. ap-mumbai-1 has ONE availability domain, so
-  # this is the only fault isolation available in-region: it tolerates a rack or
-  # host failure, NOT a whole-AD event. That is a materially smaller availability
-  # radius than an AWS module spread across three real AZs, and it is a fact
-  # about the region rather than a gap in OCI's Terraform surface. Check sheet
-  # section 8 item 5: ORACLE GATE ITEM, NOT YET CONSULTED.
+  # this tolerates a rack or host failure, NOT a whole-AD event.
   fault_domain = local.controller_fault_domain[count.index]
 
   display_name = "${local.name_prefix}-controller-${count.index}"
   shape        = var.controller_shape
 
-  # Flexible shapes decouple OCPU and memory from the shape name. AWS's single
-  # controller_instance_type string has no counterpart - it becomes three
-  # arguments, and OCPU is a PHYSICAL core (2 vCPUs on an SMT x86 shape), so
-  # copying a vCPU count across as an OCPU count doubles the machine.
+  # Flexible shapes decouple OCPU and memory from the shape name. OCPU is a
+  # PHYSICAL core (2 vCPUs on an SMT x86 shape).
   shape_config {
     ocpus         = var.controller_ocpus
     memory_in_gbs = var.controller_memory_in_gbs
@@ -46,14 +25,12 @@ resource "oci_core_instance" "controller" {
     source_type = "image"
     source_id   = var.controller_image_id
 
-    # Replaces root_block_device. The boot volume is deleted with the instance by
-    # default, matching AWS's delete_on_termination = true.
+    # Boot volume is deleted with the instance by default.
     boot_volume_size_in_gbs = var.controller_boot_volume_size_in_gbs
     boot_volume_vpus_per_gb = var.controller_boot_volume_vpus_per_gb
 
     # Encryption at rest is ALWAYS on with an Oracle-managed key; this only swaps
-    # in a customer key. Nothing here can turn encryption off, which is stricter
-    # than AWS where `encrypted = true` is opt-in.
+    # in a customer key.
     kms_key_id = var.volume_kms_key_id
   }
 
@@ -68,17 +45,15 @@ resource "oci_core_instance" "controller" {
     defined_tags  = var.defined_tags
   }
 
-  # metadata.user_data is base64-encoded cloud-init, read by the guest from
-  # http://169.254.169.254/opc/v2/instance/metadata/. The "v2" path segment is
-  # itself the token-gated metadata service, the IMDSv2 analogue.
+  # metadata.user_data is base64-encoded cloud-init read via the token-gated
+  # IMDSv2-analogue metadata service.
   metadata = local.controller_metadata
 
-  # Direct equivalent of metadata_options.http_tokens = "required" (feature 9).
+  # Disables the legacy /v1 instance metadata endpoints (forces token-gated IMDS).
   instance_options {
     are_legacy_imds_endpoints_disabled = var.are_legacy_imds_endpoints_disabled
   }
 
-  # Equivalent of the AWS module's `monitoring = true` (feature 11).
   agent_config {
     is_monitoring_disabled = !var.enable_monitoring_plugin
     is_management_disabled = false
@@ -102,12 +77,9 @@ resource "oci_core_instance" "controller" {
   lifecycle {
     # Load-bearing for the reserved-private-IP re-pointing in network.tf: the
     # replacement instance and its VNIC must exist before the private IP can be
-    # moved onto it. Destroy-before-create would strand the address.
+    # moved onto it.
     create_before_destroy = true
 
-    # The image OCID moving is a deliberate, reviewed fleet operation, not
-    # something a module default bump should trigger silently. Removed from
-    # ignore_changes only when the image pipeline exists and is versioned.
     ignore_changes = [
       # metadata is rewritten on every apply by base64 encoding; the content is
       # what matters and it is stable.
@@ -117,12 +89,9 @@ resource "oci_core_instance" "controller" {
   }
 }
 
-# =============================================================================
-# Deterministic bootstrap ordering (check sheet feature 12, FULL)
-# =============================================================================
-# Straight carry-over: `time` is not a cloud-scoped provider, so this resource
-# ports byte-for-byte. Brokers that start before the KRaft controller quorum
-# forms fail their first metadata fetch.
+# Deterministic bootstrap ordering
+# Brokers that start before the KRaft controller quorum forms fail their first
+# metadata fetch.
 
 resource "time_sleep" "wait_for_controller" {
   depends_on = [oci_core_instance.controller]
@@ -134,9 +103,7 @@ resource "time_sleep" "wait_for_controller" {
   }
 }
 
-# =============================================================================
-# Broker tier (check sheet feature 1, SELF-MANAGED)
-# =============================================================================
+# Broker tier
 
 resource "oci_core_instance" "broker" {
   count = var.broker_count

@@ -21,15 +21,11 @@ locals {
   # THE GRANT LIST - check sheet section 10.
   # ---------------------------------------------------------------------------
   grants = concat(
-    # 1. s3:PutObject + GetObject + ListBucket + DeleteObject + GetObjectVersion
-    #    -> `manage objects`. Five AWS actions, one OCI verb. `read objects` for
-    #    a consumer-only instantiation; a PRODUCER must have `manage`, because
-    #    PutObject needs OBJECT_CREATE and neither `read` nor `use` grants it
-    #    (identity-model.md section 3.5's trap).
-    #
-    #    Scoped by `target.bucket.name`: five vector instantiations share one
-    #    compartment, and a compartment-wide grant would give each of them the
-    #    other four's logs.
+    # 1. s3 PutObject/GetObject/ListBucket/DeleteObject/GetObjectVersion ->
+    #    `manage objects`. A PRODUCER must have `manage`: PutObject needs
+    #    OBJECT_CREATE, which neither `read` nor `use` grants. Scoped to this
+    #    bucket so five instantiations sharing a compartment do not see each
+    #    other's logs.
     var.create_bucket ? [{
       verb          = var.bucket_read_only ? "read" : "manage"
       resource_type = "objects"
@@ -37,20 +33,10 @@ locals {
       condition     = "target.bucket.name='${local.bucket_name}'"
     }] : [],
 
-    # 2. Consume the event stream.
-    #
-    #    EMITTED, AND KNOWN NOT TO BE SUFFICIENT ON ITS OWN. `use stream-pull`
-    #    is the IAM grant for pulling from a Streaming stream, and it works for
-    #    an OCI-SDK client under workload identity. But Vector does not use the
-    #    OCI SDK for this - it uses its `kafka` source against Streaming's
-    #    Kafka-compatible endpoint, which authenticates with SASL/PLAIN and an
-    #    OCI auth token and consults no `request.principal.*` condition at all.
-    #
-    #    The statement is emitted anyway, because it is correct, because it
-    #    costs one line against a 50-statement budget, and because it is what
-    #    the polling fallback (check sheet section 4.4 option 2) would need if
-    #    the gate rejects the auth token. Do not read its presence as evidence
-    #    that the Kafka path is authorised by it. See notification.tf.
+    # 2. Consume the event stream. `use stream-pull` is correct IAM but does NOT
+    #    authorise Vector's Kafka client, which authenticates with SASL/PLAIN
+    #    over Streaming's Kafka endpoint and consults no request.principal.*
+    #    condition. Emitted for the polling fallback; see notification.tf.
     var.create_notification ? [{
       verb          = "use"
       resource_type = "stream-pull"
@@ -58,10 +44,8 @@ locals {
       condition     = null
     }] : [],
 
-    # 3-4. Cross-region consumption (check sheet feature 6, PARTIAL).
-    #      Ordinary cross-compartment statements; the part that does NOT work
-    #      by IAM alone is the network path, because Streaming is regional
-    #      rather than global like Pub/Sub. See the variable's own note.
+    # 3-4. Cross-region consumption. The IAM half only - Streaming is regional,
+    #      so a network path must be decided separately.
     local.cross_region_enabled && var.cross_region_read.bucket_compartment_id != null ? [{
       verb          = "read"
       resource_type = "objects"
@@ -77,28 +61,19 @@ locals {
     }] : [],
   )
 
-  # ---------------------------------------------------------------------------
-  # THE STATEMENT RENDERER.
+  # THIS MODULE CREATES NO `oci_identity_policy`, and that is structural: `name`
+  # is tenancy-unique and non-updatable, and one object per app per root exceeds
+  # the hard 100-per-tenancy limit. ONE shared policy object per environment
+  # (owned by `oke-workload-identity`) receives statements from every app module.
   #
-  # THIS MODULE CREATES NO `oci_identity_policy`, and that is structural.
-  # `oci_identity_policy.name` is tenancy-unique AND non-updatable; one object
-  # per app per live root is 132 objects against a hard limit of 100
-  # (identity-model.md section 3.7). ONE shared policy object per environment,
-  # owned by `oke-workload-identity`, receives statements from every app module.
+  # The four `where all {}` conditions ARE the security boundary and are
+  # hard-coded below. On AWS a malformed trust policy fails CLOSED; on OCI a
+  # statement missing request.principal.service_account grants every pod in the
+  # namespace and the API accepts it silently - with five near-identical
+  # instantiations this is the widest fan-out in the platform.
   #
-  # This module has the widest fan-out in the platform - five instantiations,
-  # five near-identical statement sets - which makes the asymmetric failure mode
-  # proportionally more dangerous here than anywhere else: on AWS a malformed
-  # trust policy fails CLOSED, on OCI a statement missing
-  # `request.principal.service_account` grants every pod in the namespace and
-  # the API accepts it silently. All four `where all {}` conditions are
-  # hard-coded below and are not caller-controllable, and
-  # `oke-workload-identity` re-validates every contributed statement at plan
-  # time.
-  #
-  # Pre-normalised and sorted (oracle/terraform-provider-oci#371). Only
-  # `in compartment id <ocid>`; compartment NAMES are lowercased server-side.
-  # ---------------------------------------------------------------------------
+  # Pre-normalised and sorted: the API rewrites statement text server-side, so
+  # anything not in normal form is a permanent diff. Only `in compartment id <ocid>`.
   statement_tuples = flatten([
     for g in local.grants : [
       for cluster_id in var.cluster_ids : join("", [
@@ -132,18 +107,10 @@ locals {
     }
   ]
 
-  # ---------------------------------------------------------------------------
-  # Events-rule condition.
-  #
-  # THE BUCKET-NAME FILTER IS NOT OPTIONAL, and this is the residual risk check
-  # sheet section 4.4 ranks second. S3 attaches a notification config TO A
-  # BUCKET. An OCI Events rule is scoped to a COMPARTMENT and its children, so a
-  # rule intended for one bucket fires for EVERY object-storage event in the
-  # compartment subtree unless `data.additionalDetails.bucketName` narrows it.
-  # With five vector buckets plus loki's plus hyperswitch's two in one
-  # compartment, an unfiltered rule is a firehose. Rendered unconditionally
-  # below rather than left to a caller-supplied string.
-  # ---------------------------------------------------------------------------
+  # Events-rule condition. The bucket-name filter is not optional: an OCI Events
+  # rule is scoped to a COMPARTMENT and its children, so without it a rule for
+  # one bucket fires for every object-storage event in the subtree (five vector
+  # buckets plus loki's plus hyperswitch's two here). Rendered unconditionally.
   event_condition = jsonencode(merge(
     {
       eventType = var.event_types

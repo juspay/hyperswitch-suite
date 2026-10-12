@@ -1,18 +1,7 @@
-# -----------------------------------------------------------------------------
-# oke-workload-identity - the OCI port of AWS `eks-iam` (IRSA).
-#
-# On AWS a pod identity is an IAM role: trust policy + attached policies + an
-# ARN the Helm layer annotates onto the service account. None of that exists
-# here. On OCI the grant IS the identity: a single `oci_identity_policy`
-# statement naming the (cluster, namespace, service_account) tuple in its
-# `where all {...}` clause. No role, no ARN, no annotation, no assume call, no
-# dynamic group, no instance principal.
-#   See docs/multi-cloud-parity/oci/identity-model.md sections 3.1-3.2 in
-#   hyperswitch-infra for the mechanism and the rejected alternatives.
-#
-# THIS MODULE OWNS EXACTLY ONE POLICY OBJECT, PER ENVIRONMENT. Read
-# `policy_name` below before changing anything about how it is instantiated.
-# -----------------------------------------------------------------------------
+# oke-workload-identity - the OCI port of AWS `eks-iam` (IRSA). On OCI the grant
+# IS the identity: a single policy statement names the (cluster, namespace,
+# service_account) tuple in its `where all {}` clause. No role, no ARN, no
+# annotation. THIS MODULE OWNS EXACTLY ONE POLICY OBJECT PER ENVIRONMENT.
 
 variable "compartment_id" {
   description = <<-EOT

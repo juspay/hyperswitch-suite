@@ -1,6 +1,4 @@
-# =============================================================================
 # Identity and naming
-# =============================================================================
 
 variable "environment" {
   description = "Environment short name (dev, sandbox, prod)."
@@ -23,9 +21,7 @@ variable "tenancy_ocid" {
   default     = null
 }
 
-# =============================================================================
 # Placement
-# =============================================================================
 
 variable "availability_domain" {
   description = <<-EOT
@@ -43,9 +39,7 @@ variable "fault_domains" {
   default     = []
 }
 
-# =============================================================================
 # Network
-# =============================================================================
 
 variable "vcn_id" {
   description = "OCID of the VCN. Needed only to create the module-owned NSGs."
@@ -123,9 +117,7 @@ variable "server_reserved_ip_addresses" {
   default     = null
 }
 
-# =============================================================================
 # Keeper tier
-# =============================================================================
 
 variable "keeper_count" {
   description = "Number of ClickHouse Keeper nodes. AWS default 3. 0 uses an externally-provided Keeper cluster and creates no Keeper resources at all."
@@ -193,9 +185,7 @@ variable "keeper_data2_volume_vpus_per_gb" {
   default     = 10
 }
 
-# =============================================================================
 # Server tier
-# =============================================================================
 
 variable "server_count" {
   description = "Number of ClickHouse server (query) nodes. AWS default 2."
@@ -262,9 +252,7 @@ variable "server_data2_volume_vpus_per_gb" {
   default     = 10
 }
 
-# =============================================================================
 # Storage
-# =============================================================================
 
 variable "data_volume_attachment_type" {
   description = <<-EOT
@@ -300,9 +288,7 @@ variable "prevent_data_volume_destroy" {
   default     = true
 }
 
-# =============================================================================
-# Load balancer (check sheet feature 12, FULL - and section 4.5)
-# =============================================================================
+# Load balancer
 
 variable "clickhouse_port" {
   description = "ClickHouse HTTP port. Unchanged from AWS."
@@ -372,9 +358,7 @@ variable "backend_set_policy" {
   default     = "ROUND_ROBIN"
 }
 
-# =============================================================================
 # Bootstrap
-# =============================================================================
 
 variable "keeper_user_data_template" {
   description = <<-EOT
@@ -401,9 +385,7 @@ variable "keeper_startup_delay_seconds" {
   default     = 120
 }
 
-# =============================================================================
 # Hardening and agents
-# =============================================================================
 
 variable "are_legacy_imds_endpoints_disabled" {
   description = "Disable the legacy /v1 metadata endpoints - the equivalent of metadata_options.http_tokens = \"required\"."
@@ -423,9 +405,7 @@ variable "recovery_action" {
   default     = "RESTORE_INSTANCE"
 }
 
-# =============================================================================
 # SSH
-# =============================================================================
 
 variable "create_key_pair" {
   description = "Generate an SSH key pair for the fleet."
@@ -455,9 +435,7 @@ variable "vault_secret" {
   default = null
 }
 
-# =============================================================================
 # Identity
-# =============================================================================
 
 variable "create_identity" {
   description = "Create the dynamic group + policy giving the nodes their instance-principal identity. Requires tenancy_ocid."
@@ -485,9 +463,7 @@ variable "policy_statements" {
   default     = []
 }
 
-# =============================================================================
 # Tags
-# =============================================================================
 
 variable "freeform_tags" {
   description = "Additional freeform tags, merged over the module's own. The OCI analogue of the AWS `tags` variable."

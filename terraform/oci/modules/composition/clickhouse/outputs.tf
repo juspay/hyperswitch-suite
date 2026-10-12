@@ -1,9 +1,4 @@
-# =============================================================================
 # Outputs
-# =============================================================================
-# AWS names kept verbatim where the semantics survive. Where the object does not
-# exist on OCI (ENIs, IAM roles, instance profiles, ARNs) the output is dropped
-# rather than faked.
 
 output "keeper_instance_ids" {
   description = "OCIDs of the ClickHouse Keeper instances. Unchanged name."
@@ -85,8 +80,7 @@ output "load_balancer_ip" {
     through which OCI DNS mechanism, is check sheet open question 9.4 and is
     cloud-dns's problem, not this module's.
   EOT
-  # ip_addresses is deprecated in provider 9.0.0; ip_address_details is the
-  # supported replacement and additionally reports is_public per address.
+  # ip_address_details is the supported replacement for the deprecated ip_addresses.
   value = try(oci_load_balancer_load_balancer.this.ip_address_details[0].ip_address, null)
 }
 
@@ -120,8 +114,7 @@ output "ssh_private_key_vault_secret_id" {
   value       = try(oci_vault_secret.ssh_private_key[0].id, null)
 }
 
-# No iam_role_name / iam_role_arn / instance_profile_name / instance_profile_arn:
-# none of those objects exist on OCI.
+# No iam_role / instance_profile outputs - none of those objects exist on OCI.
 output "dynamic_group_id" {
   description = "OCID of the dynamic group matching this fleet."
   value       = try(oci_identity_dynamic_group.nodes[0].id, null)

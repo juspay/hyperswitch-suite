@@ -1,18 +1,4 @@
-# -----------------------------------------------------------------------------
-# Output contract. EVERY output changes (check sheet feature 7, SUBSTITUTE).
-#
-#   role_arn                     -> NONE. No annotation exists to consume it.
-#                                   Do not map it to a policy OCID: a chart that
-#                                   annotates a service account with a policy
-#                                   OCID looks configured and is not.
-#   role_name/role_id/_unique_id -> owned by the shared policy object, which
-#                                   this module does not create. Not re-exported.
-#   oidc_provider_urls           -> NONE. No OIDC provider is registered.
-#   cluster_service_accounts     -> authorized_workloads
-#   secrets_manager_policy_json  -> policy_statements
-#   region                       -> region (unchanged; the SecretStore needs it)
-#   -                            -> vault_id (new, required by the SecretStore)
-# -----------------------------------------------------------------------------
+# Output contract
 
 output "policy_statements" {
   description = <<-EOT

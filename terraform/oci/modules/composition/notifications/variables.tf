@@ -79,12 +79,8 @@ variable "topics" {
       # topic's.
       compartment_id = optional(string)
 
-      # SCHEMA CORRECTION vs. the check sheet. The sheet recorded
-      # `delivery_policy` as computed/read-only on oci_ons_subscription. Against
-      # the oracle/oci 9.0.0 schema it is optional+computed, i.e. settable - a
-      # JSON string carrying backoff retry configuration. Exposed here because it
-      # exists, which narrows (but does not close) feature 5: filter_policy,
-      # raw_message_delivery and redrive_policy still have no counterpart.
+      # delivery_policy is settable (optional+computed) in oracle/oci 9.0.0 - a
+      # JSON string carrying backoff retry configuration only.
       delivery_policy = optional(string)
 
       freeform_tags = optional(map(string), {})
@@ -97,14 +93,11 @@ variable "topics" {
 
   default = {}
 
-  # Full allowed set from the ONS API. EMAIL is the only protocol any AWS live
-  # root uses today. PAGERDUTY and SLACK are native here with no SNS
-  # counterpart - a capability the port makes newly available (check sheet open
-  # question 4), not one it needs.
+  # Full allowed set from the ONS API. EMAIL is the only protocol any live root
+  # uses today; PAGERDUTY and SLACK are native here with no SNS equivalent.
   #
-  # Two SNS protocols have NO entry in this list and cannot be ported: `sqs`
-  # (queue fan-out is not a Notifications concept; OCI Queue is the product for
-  # that) and `lambda` (ORACLE_FUNCTIONS is the nearest analogue and is listed).
+  # Two SNS protocols have NO entry and cannot be ported: `sqs` (queue fan-out
+  # is OCI Queue's job) and `lambda` (ORACLE_FUNCTIONS is the nearest analogue).
   validation {
     condition = alltrue([
       for tk, tv in var.topics : alltrue([

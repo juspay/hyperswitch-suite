@@ -1,6 +1,4 @@
-# =============================================================================
-# Log bucket (check sheet features 3 and 4)
-# =============================================================================
+# Log bucket
 
 data "oci_objectstorage_namespace" "this" {}
 
@@ -15,36 +13,24 @@ resource "oci_objectstorage_bucket" "logs" {
   storage_tier = var.bucket_storage_tier
   access_type  = "NoPublicAccess"
 
-  # ---------------------------------------------------------------------------
-  # This boolean IS the S3-bucket-notification replacement, and it is only half
-  # of it. On AWS, `aws_s3_bucket_notification` both turns emission on and says
-  # where the events go. On OCI those are two different services: this flag
-  # turns event EMISSION on for the bucket, and routing is entirely the Events
-  # service's job (notification.tf). There is no
-  # `oci_objectstorage_bucket_notification` resource, and no per-bucket
-  # destination configuration anywhere.
-  # ---------------------------------------------------------------------------
+  # This boolean is only half of the notification wiring: it turns event
+  # EMISSION on for the bucket. Routing is entirely the Events service's job
+  # (notification.tf); there is no bucket-notification resource.
   object_events_enabled = var.create_notification
 
-  # No `sse_algorithm` / `bucket_key_enabled` to port: Object Storage encrypts
-  # every object with AES-256 and it cannot be turned off. `is_bucket_key_enabled`
-  # only means anything alongside a customer Vault key, which AWS does not use
-  # here either.
+  # Object Storage encrypts every object with AES-256 and it cannot be turned
+  # off, so there is no sse_algorithm to port and kms_key_id is left unset.
 
   freeform_tags = local.freeform_tags
   defined_tags  = var.defined_tags
 
-  # ---------------------------------------------------------------------------
-  # PARTIAL (check sheet section 4.3). `force_destroy = true`, set by the live
-  # `vector-dr` unit, has no counterpart: no such argument exists on
-  # `oci_objectstorage_bucket` in provider 9.0.0, and the API refuses to delete
-  # a bucket containing objects. Omitted rather than accepted and ignored.
-  # Dev-loop teardown becomes:
+  # `force_destroy = true` from the live vector-dr unit has no counterpart:
+  # `oci_objectstorage_bucket` has no such argument in provider 9.0.0 and the
+  # API refuses to delete a bucket containing objects. Teardown is:
   #   oci os object bulk-delete --bucket-name <name> --namespace <namespace>
   #   terraform destroy
-  # A procedure change, not a capability loss - but someone will run
-  # `terraform destroy` expecting AWS's one-step behaviour and get a 409.
-  # ---------------------------------------------------------------------------
+  # A procedure change - someone running `terraform destroy` expecting AWS's
+  # one-step behaviour will get a 409.
 }
 
 resource "oci_objectstorage_object_lifecycle_policy" "logs" {

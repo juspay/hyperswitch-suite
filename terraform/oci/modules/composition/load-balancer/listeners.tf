@@ -1,22 +1,13 @@
-# =============================================================================
-# Listeners, and the pieces they reference
-#
-# Split out of main.tf because this is where three of the four PARTIAL verdicts
-# in load-balancer.md live, and they are easier to keep honest in one file.
-# =============================================================================
+# Listeners, and the pieces they reference (split out of main.tf).
 
-# -----------------------------------------------------------------------------
 # Classic uploaded certificates
-# -----------------------------------------------------------------------------
 # The non-Certificates-Management TLS route. Kept because OCI cannot issue a
-# publicly-trusted certificate at all (see composition/certificates-management),
-# so any real public certificate arrives as PEM from an external ACME client or
-# a purchased CA, and uploading it straight here is a legitimate option.
-#
-# Renewal is self-managed on this path with no Oracle-side safety net, exactly
-# as it is for an IMPORTED Certificates Management certificate. create_before_
-# destroy is set because replacing a certificate a live listener references
-# must not go through a window with no certificate at all.
+# publicly-trusted certificate at all, so any real public certificate arrives as
+# PEM from an external ACME client or a purchased CA, and uploading it straight
+# here is a legitimate option. Renewal is self-managed on this path with no
+# Oracle-side safety net; create_before_destroy is set because replacing a
+# certificate a live listener references must not go through a window with no
+# certificate at all.
 resource "oci_load_balancer_certificate" "this" {
   for_each = var.certificates
 
@@ -32,12 +23,9 @@ resource "oci_load_balancer_certificate" "this" {
   }
 }
 
-# -----------------------------------------------------------------------------
 # Virtual hostnames
-# -----------------------------------------------------------------------------
 # Host-header routing on a shared listener. UNVERIFIED whether this also lifts
-# the one-certificate-per-listener constraint below (load-balancer.md open
-# question 2) - nothing in this module assumes it does.
+# the one-certificate-per-listener constraint below - nothing assumes it does.
 resource "oci_load_balancer_hostname" "this" {
   for_each = var.hostnames
 
@@ -46,24 +34,16 @@ resource "oci_load_balancer_hostname" "this" {
   hostname         = each.value
 }
 
-# -----------------------------------------------------------------------------
 # Rule sets
-# -----------------------------------------------------------------------------
-# VERIFICATION RESULT, closing load-balancer.md open question 1: the
-# oci_load_balancer_rule_set schema DOES carry a redirect action - `action`,
-# `response_code` and a nested `redirect_uri` block (host/path/port/protocol/
-# query) - so AWS's `redirect` listener default action (bare HTTP -> HTTPS) has
-# a real OCI equivalent. It is a separate resource referenced by name from the
-# listener rather than an inline default_action, which is why feature 3 stays
-# PARTIAL rather than becoming FULL.
-#
-# STILL A GAP: AWS's `fixed-response` default action - which the AWS module's
-# own default `listeners` value ships (a static 200 "OK" with no backend) - has
-# no equivalent. The nearest thing in the schema is
-# CONTROL_ACCESS_USING_HTTP_METHODS' `status_code`, which is the rejection code
-# on a method filter, not an arbitrary served response. Replace a
-# fixed-response listener with a trivial always-healthy backend set: one extra
-# backend set, no behaviour change for the caller.
+# VERIFICATION RESULT: the oci_load_balancer_rule_set schema DOES carry a
+# redirect action - `action`, `response_code` and a nested `redirect_uri` block -
+# so AWS's `redirect` listener default action (bare HTTP -> HTTPS) has a real
+# OCI equivalent. It is a separate resource referenced by name from the listener
+# rather than an inline default_action, which is why it is PARTIAL.
+# STILL A GAP: AWS's `fixed-response` default action (a static 200 "OK" with no
+# backend) has no equivalent - the nearest thing is the rejection `status_code`
+# on a method filter. Replace a fixed-response listener with a trivial
+# always-healthy backend set: one extra backend set, no behaviour change.
 resource "oci_load_balancer_rule_set" "this" {
   for_each = var.rule_sets
 
@@ -110,9 +90,7 @@ resource "oci_load_balancer_rule_set" "this" {
   }
 }
 
-# -----------------------------------------------------------------------------
 # Listeners
-# -----------------------------------------------------------------------------
 resource "oci_load_balancer_listener" "this" {
   for_each = var.listeners
 
@@ -121,27 +99,21 @@ resource "oci_load_balancer_listener" "this" {
   port             = each.value.port
   protocol         = each.value.protocol
 
-  # PARTIAL, load-balancer.md feature 3. Forwarding to a backend set is an
-  # OCI listener's ONLY native default action - there is no default_action_type
-  # to choose. A redirect is expressed by attaching a rule set (above); a
-  # fixed response has no equivalent at all.
-  #
+  # Forwarding to a backend set is an OCI listener's ONLY native default action -
+  # there is no default_action_type to choose. A redirect is expressed by
+  # attaching a rule set (above); a fixed response has no equivalent.
   # try(): the backend set is normally one this module created, but a listener
-  # may legitimately point at a set created elsewhere on the same load
-  # balancer, so an unknown name falls through to the literal string rather
-  # than erroring.
+  # may point at a set created elsewhere on the same load balancer, so an unknown
+  # name falls through to the literal string.
   default_backend_set_name = try(
     oci_load_balancer_backend_set.this[each.value.default_backend_set_name].name,
     each.value.default_backend_set_name,
   )
 
-  # PARTIAL, load-balancer.md feature 5. `certificate_ids` is a LIST in the
-  # schema but the provider documents "Currently only a single Id may be
-  # passed", so the variable is a scalar and it is wrapped here - a scalar
-  # variable makes the constraint visible at the call site instead of letting
-  # a caller pass three ids and discover the limit at apply time. AWS's
-  # aws_lb_listener_certificate takes unlimited additional SNI certificates;
-  # that has no counterpart.
+  # `certificate_ids` is a list in the schema but the provider documents "Currently
+  # only a single Id may be passed", so the variable is a scalar and it is wrapped
+  # here - making the constraint visible at the call site instead of discovering
+  # the limit at apply time. AWS's unlimited additional SNI certs have no counterpart.
   dynamic "ssl_configuration" {
     for_each = (each.value.certificate_ids != null || each.value.certificate_name != null) ? [1] : []
 
@@ -162,8 +134,7 @@ resource "oci_load_balancer_listener" "this" {
     }
   }
 
-  # FULL, load-balancer.md feature 11. Per-listener on both clouds; OCI's
-  # ceiling is 7200s against AWS's 4000s.
+  # Per-listener idle timeout on both clouds; OCI's ceiling is 7200s vs AWS's 4000s.
   dynamic "connection_configuration" {
     for_each = each.value.idle_timeout_in_seconds != null ? [1] : []
 

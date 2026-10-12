@@ -1,41 +1,12 @@
-# -----------------------------------------------------------------------------
-# argocd - the OCI port of the AWS module of the same name.
-#
-# Structurally this is external-secrets-operator with a different payload, and
-# it is the widest identity in the platform after `vector`. The live AWS config
-# is much richer than the AWS module's defaults, and the port serves the LIVE
-# shape: FIVE service accounts across TWO namespaces
-# (argocd/{argocd-application-controller, argocd-server, argocd-repo-server} and
-# argo-workflows/{argo-workflows-server, argo-workflows-workflow-controller}),
-# two cross-account target roles, AmazonS3ReadOnlyAccess, and a self-assumption
-# statement.
-#
-# THREE THINGS TO KNOW BEFORE CHANGING ANYTHING HERE.
-#
-# 1. OCI IS BETTER THAN THE GCP PRECEDENT ON THE CENTRAL POINT, AND THAT IS NOT
-#    AN ACCIDENT WORTH LOSING. GCP's Workload Identity is 1:1 GSA<->KSA, so the
-#    GCP module binds only `argocd_service_accounts[0]` and silently leaves
-#    `argocd-server` and the rest unbound - a real parity regression buried in a
-#    variable description. On OCI, N service accounts are N condition sets in
-#    one policy object. All of them are bound. `service_accounts` is therefore a
-#    list of (namespace, name), not a namespace plus a name list, because the
-#    live config spans two namespaces and the AWS module's flat pair cannot
-#    express that either.
-#
-# 2. NEVER `manage all-resources`. Oracle's own ArgoCD-on-OKE tutorial
-#    (docs.oracle.com/en/learn/oke-cluster-argocd) publishes exactly that
-#    statement. It grants ArgoCD full control of the compartment. The AWS module
-#    grants `sts:AssumeRole` on two named roles plus S3 read - far narrower.
-#    Every input below that could carry `all-resources` rejects it at plan time.
-#
-# 3. THIS MODULE CREATES NO `oci_identity_policy`. It renders statements; the
-#    environment's single shared `oke-workload-identity` object concatenates
-#    them. Cross-tenancy Endorse statements are the exception and are emitted on
-#    a SEPARATE output, because they must be attached at the TENANCY ROOT and
-#    the shared object is attached at the environment compartment.
-#
-# Check sheet: docs/multi-cloud-parity/oci/modules/argocd.md
-# -----------------------------------------------------------------------------
+# argocd - the OCI port of the AWS module of the same name. The widest identity
+# in the platform after `vector`. Three reads before changing anything:
+#   1. OCI binds ALL N service accounts here (unlike GCP's 1:1), so
+#      `service_accounts` is a list spanning two namespaces.
+#   2. NEVER `manage all-resources` - Oracle's tutorial shorthand grants full
+#      compartment control; every input that could carry it rejects at plan time.
+#   3. THIS MODULE CREATES NO `oci_identity_policy` - it renders statements for
+#      the shared oke-workload-identity object. Cross-tenancy Endorse statements
+#      are emitted separately (must attach at the tenancy root).
 
 variable "compartment_id" {
   description = "OCID of the environment compartment. Default location term in rendered statements and the attachment point of the consuming shared policy object."
@@ -294,12 +265,3 @@ variable "defined_tags" {
   type        = map(string)
   default     = {}
 }
-
-# -----------------------------------------------------------------------------
-# DELETED rather than accepted as no-ops:
-#   role_path, max_session_duration      - no role, no session, no path.
-#   oidc_audience                        - no OIDC provider is registered.
-#   create_assume_role_policy            - becomes length(target_compartment_ids) > 0.
-#   aws_account_id                       - a compartment OCID is not an account id.
-#   role_name / role_description         - owned by the shared policy object.
-# -----------------------------------------------------------------------------

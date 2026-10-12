@@ -1,12 +1,4 @@
-# =============================================================================
-# Node fleet (check sheet feature 1, SELF-MANAGED)
-# =============================================================================
-# SELF-MANAGED is PARITY, not a regression: the AWS original runs Cassandra on
-# raw EC2 too. Unlike ../kafka there is no managed alternative to weigh - no
-# managed Cassandra-compatible OCI service exists, and third-party managed
-# Cassandra is in retreat industry-wide. Self-managing is the only path on all
-# three clouds. Check sheet section 8 item 1 is a formality-level gate item,
-# NOT YET CONSULTED.
+# Node fleet - self-managed Cassandra, as on AWS (no managed OCI alternative exists).
 
 resource "oci_core_instance" "cassandra" {
   count = var.node_count
@@ -14,20 +6,13 @@ resource "oci_core_instance" "cassandra" {
   compartment_id      = var.compartment_id
   availability_domain = local.availability_domain
 
-  # One node per fault domain. ap-mumbai-1 has ONE availability domain, so this
-  # is the only fault isolation available in-region: it survives a rack or host
-  # failure, NOT a whole-AD event. A 3-node ring with RF=3 therefore has no
-  # AD-level durability story in this region; cross-region (ap-hyderabad-1) is
-  # the only real mitigation and is out of this module's scope.
-  # Check sheet section 8 item 5: ORACLE GATE ITEM, NOT YET CONSULTED.
+  # One node per fault domain - the only in-region fault isolation (ap-mumbai-1 has one AD).
   fault_domain = local.node_fault_domain[count.index]
 
   display_name = "${local.name_prefix}-${count.index}"
   shape        = var.shape
 
-  # AWS's single instance_type becomes three arguments. OCPU is a PHYSICAL core
-  # (two vCPUs on an SMT x86 shape), so copying a vCPU count across as an OCPU
-  # count doubles the machine.
+  # OCPU is a PHYSICAL core (two vCPUs on x86 SMT), so a vCPU count must not be copied across.
   shape_config {
     ocpus         = var.ocpus
     memory_in_gbs = var.memory_in_gbs
@@ -37,14 +22,11 @@ resource "oci_core_instance" "cassandra" {
     source_type = "image"
     source_id   = var.image_id
 
-    # Boot volume is deleted with the instance by default, matching AWS's
-    # root_block_device delete_on_termination = true.
+    # Boot volume is deleted with the instance by default.
     boot_volume_size_in_gbs = var.boot_volume_size_in_gbs
     boot_volume_vpus_per_gb = var.boot_volume_vpus_per_gb
 
-    # Encryption at rest is always on with an Oracle-managed key and there is no
-    # opt-out; this only swaps in a customer key. AWS's `encrypted = true` has no
-    # counterpart to port.
+    # Encryption at rest is always on with an Oracle-managed key; this only swaps in a customer key.
     kms_key_id = var.volume_kms_key_id
   }
 
@@ -59,16 +41,12 @@ resource "oci_core_instance" "cassandra" {
     defined_tags  = var.defined_tags
   }
 
-  # base64 cloud-init, read by the guest from
-  # http://169.254.169.254/opc/v2/instance/metadata/ - the "v2" segment is the
-  # token-gated (IMDSv2-equivalent) service.
+  # base64 cloud-init, read by the guest from the token-gated (IMDSv2-equivalent) OCI metadata service.
   metadata = local.instance_metadata
 
   instance_options {
-    # Equivalent of metadata_options.http_tokens = "required". The AWS module's
-    # instance_metadata_tags = "enabled" has NO counterpart: OCI exposes instance
-    # tags to the guest unconditionally, a wider default than AWS's opt-in. Keep
-    # secrets out of tags on this fleet.
+    # Equivalent of metadata_options.http_tokens = "required". OCI exposes
+    # instance tags to the guest unconditionally - keep secrets out of tags.
     are_legacy_imds_endpoints_disabled = var.are_legacy_imds_endpoints_disabled
   }
 
@@ -94,7 +72,7 @@ resource "oci_core_instance" "cassandra" {
 
   lifecycle {
     # Load-bearing for the reserved-IP re-point in network.tf: the replacement
-    # and its VNIC must exist before the private IP can move onto it.
+    # VNIC must exist before the private IP can move onto it.
     create_before_destroy = true
 
     ignore_changes = [

@@ -28,26 +28,14 @@ variable "compartment_id" {
   }
 }
 
-# Passed through to outputs. AWS's module reads its region back from
-# data.aws_region.current; no OCI File Storage resource exposes a region
-# attribute, so it has to be carried.
+# Region passed through to outputs (no File Storage resource exposes a region
+# attribute, so it has to be carried).
 variable "region" {
   description = "OCI region identifier (e.g. ap-mumbai-1). Output-only."
   type        = string
 }
 
-# =============================================================================
 # Availability domain placement
-# =============================================================================
-# AWS never asks for an AZ here: `mount_targets` is keyed by subnet id and the
-# subnet carries the AZ. OCI makes it explicit on BOTH the file system and the
-# mount target, because OCI subnets are regional and carry no AD (check sheet
-# feature 6, and the same structural fork vpc-network already recorded).
-#
-# ap-mumbai-1 has exactly ONE availability domain. AWS's "one mount target per
-# AZ" high-availability shape therefore has no counterpart here: there is one AD
-# to place into, so there is one mount target. This is not a module limitation
-# and it cannot be worked around from this layer. Check sheet open question 4.
 
 variable "tenancy_ocid" {
   description = "Tenancy OCID used for the availability-domain lookup (null falls back to compartment_id; the ADs data source accepts either but returns the tenancy's list)"
@@ -72,20 +60,11 @@ variable "availability_domain_number" {
   }
 }
 
-# =============================================================================
 # Mount target - the network attachment point
-# =============================================================================
-# Replaces AWS's `mount_targets` map (one entry per subnet/AZ) plus its whole
-# security-group surface (create_security_group, security_group_vpc_id,
-# security_group_ingress_rules, security_group_egress_rules).
-#
-# ONE mount target, not a map. Two reasons, both structural: OCI subnets are
-# regional so there is nothing to fan out across, and mount-target bandwidth is
-# a property of the MOUNT TARGET shared by every file system exported through it
-# (check sheet feature 2, PARTIAL) - which makes "one mount target per file
-# system" the recommended shape, matching this module's actual single-file-system
-# usage. A caller needing a second, independently-throttled mount target
-# instantiates the module again.
+# ONE mount target, not a map: OCI subnets are regional (nothing to fan out
+# across) and bandwidth is a mount-target-level property shared by every file
+# system exported through it. A caller needing a second, independently-throttled
+# mount target instantiates the module again.
 
 variable "create_mount_target" {
   description = "Create a mount target. false requires existing_mount_target_id and existing_export_set_id."
@@ -99,29 +78,12 @@ variable "mount_target_subnet_id" {
   default     = null
 }
 
-# -----------------------------------------------------------------------------
-# DELIBERATE DEVIATION FROM THE CHECK SHEET, recorded rather than silent.
-#
-# efs.md section 5 proposed that this module create no NSG and accept only
-# pre-existing OCIDs. That is not what the sibling wave-1 modules do: `database`
-# and `oci-cache-valkey` both own an empty NSG and let `security-rules` (phase 5)
-# write rules into it - and oci-cache-valkey's unit records that its original
-# no-NSG design was found to be an inconsistency and corrected during assembly.
-#
-# Following the sheet literally here would be worse than inconsistent, it would
-# be broken: vpc-network manages the VCN's default security list down to ZERO
-# rules on purpose, so a mount target with no NSG has no path to it at all and
-# every NFS mount fails. This module therefore owns an empty NSG by default and
-# still accepts additional pre-existing ones.
-#
-# NSGs (never VCN security lists) is settled in
-# hyperswitch-infra/docs/multi-cloud-parity/oci/network-security-model.md. What
-# is NOT settled, and is not decided here, is the specific NFS rule set - that is
-# security-rules' job and is oracle-gate pending (framework.md section 4.3).
-# This module creates the NSG empty; an empty NSG denies everything, so the
-# failure direction is safe.
-# (Check sheet feature 8, FULL - the capability is on the resource.)
-# -----------------------------------------------------------------------------
+# This module owns the mount target NSG (deviation from the check sheet's
+# accept-pre-existing-NSGs proposal): vpc-network strips the VCN default
+# security list to zero rules, so an NSG-less mount target is unreachable and
+# every NFS mount fails. The NSG is created EMPTY - an empty NSG denies
+# everything, so the failure direction is safe.
+
 variable "create_nsg" {
   description = "Create an empty NSG for the mount target for security-rules to populate. Requires vcn_id. An empty NSG denies all traffic, so nothing can mount until security-rules adds NFS rules - that is deliberate."
   type        = bool
@@ -163,14 +125,10 @@ variable "mount_target_ip_address" {
   default     = null
 }
 
-# Feature 2, PARTIAL - the most consequential shape change in this module.
-# AWS ties throughput to the FILE SYSTEM (`throughput_mode = "elastic"` in every
-# live root, which auto-scales per file system with no shared ceiling). OCI ties
-# bandwidth to the MOUNT TARGET, from a fixed tier ladder, shared by every file
-# system exported through it. There is no elastic mode. Upgrading a tier is not
-# a same-day operation: High Performance tiers carry a 30-day billing commitment
-# and cannot be created directly, only upgraded into from Standard.
-# null keeps the Standard tier.
+# AWS ties throughput to the FILE SYSTEM (elastic, auto-scaling); OCI ties it to
+# the MOUNT TARGET, from a fixed tier ladder shared by every file system behind
+# it, with no elastic mode. Upgrade carries a 30-day billing commitment. null
+# keeps the Standard tier.
 variable "mount_target_requested_throughput" {
   description = "Mount-target bandwidth tier in Gbps (e.g. \"1\", \"20\", \"40\"). null = Standard. NOT a per-file-system elastic knob - every file system behind this mount target shares the ceiling. Changing tiers is a capacity-planning action, not a variable flip."
   type        = string
@@ -225,8 +183,7 @@ variable "file_systems" {
   type = map(object({
     display_name = optional(string)
 
-    # Feature 3, FULL. Direct analogue of AWS's kms_key_id. null = Oracle-managed
-    # key; there is no plaintext mode to disable.
+    # Encryption is always on with no plaintext mode; null = Oracle-managed key.
     kms_key_id = optional(string)
 
     # The export path inside the file system, e.g. "/superposition-backup".
@@ -234,12 +191,9 @@ variable "file_systems" {
     # the OKE CSI driver's static volumeHandle.
     path = optional(string)
 
-    # Feature 7, FULL and RICHER than AWS. This composition module has no
-    # NFS-export-options surface at all on AWS - client control there is purely
-    # network-layer security-group rules. Defaults below are set in locals.tf,
-    # NOT left to OCI's own defaults: OCI defaults identity_squash to ROOT,
-    # which is STRICTER than the current AWS behaviour and would be a silent
-    # behaviour change on port.
+    # Export-options defaults are pinned in locals.tf, not inherited from OCI:
+    # OCI defaults identity_squash to ROOT, which is STRICTER than the current
+    # AWS behaviour and would be a silent change on port.
     export_options = optional(list(object({
       source                         = string
       access                         = optional(string)
@@ -248,14 +202,12 @@ variable "file_systems" {
       anonymous_gid                  = optional(string)
       require_privileged_source_port = optional(bool)
       is_anonymous_access_allowed    = optional(bool)
-      # Kerberos auth-type gating (KRB5/KRB5I/KRB5P) with no AWS counterpart.
+      # Kerberos auth-type gating (KRB5/KRB5I/KRB5P).
       allowed_auth = optional(list(string))
     })))
 
-    # Feature 5, SUBSTITUTE. AWS's enable_backup_policy/backup_policy_status
-    # hook the file system into AWS Backup, a cross-service plan/vault system.
-    # OCI's equivalent is a File-Storage-only snapshot policy: same declarative
-    # schedule + retention, no unified cross-service backup view.
+    # Snapshot policy - the backup/retention mechanism; File-Storage-scoped, no
+    # cross-service backup view.
     snapshot_policy = optional(object({
       display_name  = optional(string)
       policy_prefix = optional(string)
@@ -307,8 +259,7 @@ variable "file_systems" {
   }
 }
 
-# Applied to every export that does not set its own export_options. Pinned at
-# the unit level rather than relied on from here - see the unit's comment.
+# Applied to every export that does not set its own export_options.
 variable "default_export_source_cidr" {
   description = "CIDR allowed to mount when a file system defines no export_options of its own. Defaults to the RFC1918 supernet the VCN sits inside; narrow it per environment."
   type        = string

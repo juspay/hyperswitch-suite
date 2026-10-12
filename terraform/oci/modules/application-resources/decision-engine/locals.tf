@@ -13,15 +13,12 @@ locals {
 
   bucket_create = coalesce(var.bucket.create, true)
 
-  # No region suffix. The AWS name carries one only because S3 bucket names are
-  # globally unique across all of AWS; OCI names are unique within the tenancy's
-  # Object Storage namespace, which already provides the isolation the suffix
-  # exists to add. Convention choice, check sheet section 9 Q3.
+  # No region suffix - OCI bucket names are unique within the tenancy's Object
+  # Storage namespace, so the suffix's global-collision purpose is already met.
   bucket_name = coalesce(var.bucket.bucket_name, "${local.name_prefix}-decision-engine")
 
-  # The AWS unit's single lifecycle rule (30-day noncurrent-version expiration)
-  # plus anything the caller adds. On OCI this is a separate resource, not an
-  # inline block on the bucket.
+  # The AWS unit's single 30-day noncurrent-version-expiration rule plus anything
+  # the caller adds. A separate resource on OCI, not an inline block on the bucket.
   noncurrent_version_rules = var.bucket_noncurrent_version_expiry_days == null ? [] : [{
     name               = "expire-noncurrent-versions"
     action             = "DELETE"
@@ -40,17 +37,10 @@ locals {
   email_domain_id = local.email_create ? one(oci_email_email_domain.this[*].id) : var.email.use_existing_domain_id
   email_sender_id = local.email_create ? one(oci_email_sender.this[*].id) : var.email.use_existing_sender_id
 
-  # ---------------------------------------------------------------------------
-  # THE GRANT LIST - check sheet section 10. Three grants.
-  # ---------------------------------------------------------------------------
+  # THE GRANT LIST. Three grants.
   grants = concat(
-    # 1. kms:Decrypt + kms:Encrypt on HYPERSWITCH's key (the module does not own
-    #    one). `use keys` covers both in a single verb. Scoped to the key rather
-    #    than the compartment.
-    #
-    #    identity-model.md section 1.2 estimated 2 grants for this module ("S3
-    #    r/w, SES send") and MISSED this one entirely - the real catalog unit
-    #    has it. Corrected upward, 2 -> 3.
+    # 1. kms:Decrypt + kms:Encrypt on HYPERSWITCH's key (this module owns none).
+    #    `use keys` covers both, scoped to the key rather than the compartment.
     var.kms_key_id != null ? [{
       verb          = "use"
       resource_type = "keys"
@@ -58,11 +48,9 @@ locals {
       condition     = "target.key.id='${var.kms_key_id}'"
     }] : [],
 
-    # 2. s3:PutObject + GetObject + ListBucket + GetObjectVersion + DeleteObject
-    #    + GetBucketLocation -> `manage objects`. SIX AWS actions, one OCI verb:
-    #    create, overwrite, delete and inspect are all part of `manage`, and
-    #    PutObject specifically needs OBJECT_CREATE, which `read`/`use` do not
-    #    grant (identity-model.md section 3.5's trap).
+    # 2. s3 PutObject/GetObject/ListBucket/GetObjectVersion/DeleteObject/GetBucketLocation
+    #    -> `manage objects`: create, overwrite, delete and inspect are all part
+    #    of `manage`, and PutObject needs OBJECT_CREATE, which read/use do not grant.
     local.bucket_create ? [{
       verb          = "manage"
       resource_type = "objects"
@@ -70,16 +58,10 @@ locals {
       condition     = "target.bucket.name='${local.bucket_name}'"
     }] : [],
 
-    # 3. ses:SendEmail etc. -> `use email-family`, and the cross-account
-    #    sts:AssumeRole hop is dropped entirely (no cross-tenancy borrowed
-    #    sender exists on OCI).
-    #
-    #    UNCONFIRMED in the same way hyperswitch's is: the email policy
-    #    reference ties this verb to `SmtpSend` and does not list the HTTPS
-    #    `SubmitEmail` operation in its verb tables at all (hyperswitch.md
-    #    section 9 Q1/Q2). Emitted anyway - the workload-identity path is
-    #    primary by decision, and a primary path that is never emitted is a path
-    #    that never gets tested.
+    # 3. ses:SendEmail etc -> `use email-family`; the cross-account STS hop is
+    #    dropped. UNCONFIRMED in the same way hyperswitch's is: the email policy
+    #    reference ties this verb to SmtpSend and does not list the HTTPS
+    #    SubmitEmail operation. Emitted anyway as the primary workload-identity path.
     local.email_enabled ? [{
       verb          = "use"
       resource_type = "email-family"
@@ -88,26 +70,19 @@ locals {
     }] : [],
   )
 
-  # ---------------------------------------------------------------------------
-  # THE STATEMENT RENDERER.
+  # THIS MODULE CREATES NO `oci_identity_policy`, and that is structural: `name`
+  # is tenancy-unique and non-updatable, and one object per app per root exceeds
+  # the hard 100-per-tenancy limit. ONE shared policy object per environment
+  # (owned by `oke-workload-identity`) receives statements from every app module.
   #
-  # THIS MODULE CREATES NO `oci_identity_policy`, and that is structural.
-  # `oci_identity_policy.name` is tenancy-unique AND non-updatable; one object
-  # per app per live root is 132 objects against a hard limit of 100
-  # (identity-model.md section 3.7). ONE shared policy object per environment,
-  # owned by `oke-workload-identity`, receives statements from every app module.
-  #
-  # The four `where all {}` conditions ARE the security boundary. On AWS a
-  # malformed trust policy fails CLOSED; on OCI a statement missing
-  # `request.principal.cluster_id` grants every cluster in the tenancy and one
-  # missing `request.principal.service_account` grants every pod in the
-  # namespace, silently. All four are hard-coded below, not caller-controllable,
-  # and `oke-workload-identity` re-validates at plan time.
+  # The four `where all {}` conditions ARE the security boundary and are
+  # hard-coded below, not caller-controllable. On AWS a malformed trust policy
+  # fails CLOSED; on OCI a missing request.principal.cluster_id grants every
+  # cluster in the tenancy and one missing service_account grants every pod in
+  # the namespace, silently.
   #
   # Pre-normalised and sorted: the API rewrites statement text server-side, so
-  # anything not already in normal form is a permanent diff
-  # (oracle/terraform-provider-oci#371). Only `in compartment id <ocid>`.
-  # ---------------------------------------------------------------------------
+  # anything not found in normal form is a permanent diff. Only `in compartment id <ocid>`.
   statement_tuples = flatten([
     for g in local.grants : [
       for sa in var.service_accounts : [

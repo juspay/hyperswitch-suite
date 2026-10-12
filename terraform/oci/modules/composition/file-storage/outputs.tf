@@ -1,31 +1,8 @@
-# =============================================================================
-# Output contract
-#
-# Mapped from the AWS module's 13 outputs (check sheet section 5). Absences, each
-# recorded rather than faked:
-#
-#   file_system_arns          -> no ARN concept. file_system_ids (OCIDs) is it.
-#   file_system_dns_names     -> an OCI file system has no DNS name of its own;
-#                                clients address the MOUNT TARGET. See
-#                                mount_target_ip_address / _hostname_label.
-#   access_point_ids /
-#   access_point_arns /
-#   access_point_file_system_arns
-#                             -> feature 9 is SUBSTITUTE; no first-class
-#                                resource exists to output from.
-#
-# ONE DEVIATION FROM THE CHECK SHEET'S PROPOSED MAPPING, recorded here because
-# it changes the output surface:
-#
-#   The sheet proposed deriving mount_target_ip_addresses from private_ip_ids
-#   with "a data \"oci_core_private_ip\" lookup per id". That cannot be written:
-#   private_ip_ids is computed, so a for_each over it is unknown at plan time and
-#   Terraform refuses with "the for_each value depends on resource attributes
-#   that cannot be determined until apply". The mount target's own `ip_address`
-#   attribute carries the address directly, so the indirection is unnecessary as
-#   well as unbuildable. private_ip_ids is still exported for anyone who needs
-#   the full set of three reserved IPs.
-# =============================================================================
+# Output contract. AWS outputs with no OCI equivalent (ARNs, DNS names, access
+# points) are dropped rather than faked. Mount target IPs come from the
+# resource's own ip_address, not a data lookup - the proposed lookup is
+# unbuildable (private_ip_ids is computed, so a for_each over it is unknown at
+# plan time).
 
 output "file_system_ids" {
   description = "Map of file-system key to OCID. Plays the role of both AWS's file_system_ids and file_system_arns."
@@ -41,8 +18,7 @@ output "mount_target_id" {
   description = "OCID of the mount target (created here, or the pre-existing one supplied). Singular, where AWS returns a map keyed by subnet - OCI subnets are regional, so there is one."
   value       = local.mount_target_id
 
-  # Cross-variable checks. Same pattern the sibling `database` module uses:
-  # they belong at plan time, not at minute 20 of an API call.
+  # Cross-variable checks - at plan time, not at minute 20 of an API call.
   precondition {
     condition     = !var.create_mount_target || var.mount_target_subnet_id != null
     error_message = "mount_target_subnet_id is required when create_mount_target = true - an OCI mount target's VNICs must land in a subnet."
@@ -124,9 +100,9 @@ output "snapshot_policy_ids" {
   value       = { for k, v in oci_file_storage_filesystem_snapshot_policy.this : k => v.id }
 }
 
-# New, no AWS counterpart, and the one output the kubernetes-resources layer
-# actually needs: the OKE FSS CSI driver's static-provisioning volumeHandle,
-# `<FileSystemOCID>:<MountTargetIP>:<path>`. accessModes must be ReadWriteMany.
+# The one output the kubernetes-resources layer needs: the OKE FSS CSI driver's
+# static-provisioning volumeHandle, `<FileSystemOCID>:<MountTargetIP>:<path>`.
+# accessModes must be ReadWriteMany.
 output "csi_volume_handles" {
   description = "Map of file-system key to the fss.csi.oraclecloud.com static volumeHandle (<FileSystemOCID>:<MountTargetIP>:<path>)"
   value       = local.csi_volume_handles

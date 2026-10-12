@@ -1,17 +1,9 @@
-# =============================================================================
-# Output contract
-#
-# Mapped from the AWS module's 7 outputs (check sheet section 5). Two have no
-# counterpart and are documented rather than faked:
-#
-#   repository_policies -> feature 6 is SUBSTITUTE. The grant is not attached to
-#                          the repository, so there is nothing per-repository to
-#                          emit. `access_policy_statements` below exposes the
-#                          compartment-level statements instead.
-#   lifecycle_policies  -> feature 7 is NONE. No such mechanism exists in the
-#                          provider. Emitting an empty map here would imply the
-#                          feature is merely unconfigured; it is absent.
-# =============================================================================
+# Output contract. Two AWS outputs have no counterpart here and are documented
+# rather than faked:
+#   repository_policies - the grant is compartment-level, not per-repository, so
+#     nothing per-repository to emit; access_policy_statements covers it.
+#   lifecycle_policies  - no retention mechanism exists in the provider, so an
+#     empty map would imply the feature is merely unconfigured; it is absent.
 
 output "repository_ocids" {
   description = "Map of repository key to OCID. Closest counterpart to AWS's repository_arns - the OCID plays the ARN role."
@@ -43,14 +35,11 @@ output "namespace" {
   value       = local.namespace
 }
 
-# -----------------------------------------------------------------------------
-# Image-pull bootstrap surface - no AWS counterpart, and none is needed there
-# -----------------------------------------------------------------------------
-# These two values are what a cluster-bootstrap step needs to build the
-# `docker-registry` Secret that OKE requires for private pulls (see main.tf's
-# load-bearing comment). Both are non-secret. The third value that Secret needs -
-# the Auth Token itself - is a long-lived credential this module deliberately
-# does not create, does not read and does not output.
+# Image-pull bootstrap surface.
+# These two values are what cluster bootstrap needs to build the `docker-registry`
+# Secret OKE requires for private pulls (see main.tf). Both are non-secret. The
+# third value that Secret needs - the Auth Token itself - is a long-lived
+# credential this module deliberately does not create, read or output.
 output "image_pull_secret_docker_server" {
   description = "The --docker-server value for the OKE imagePullSecret. Non-secret."
   value       = local.ocir_endpoint
@@ -61,9 +50,7 @@ output "image_pull_username_prefix" {
   value       = "${local.namespace}/"
 }
 
-# -----------------------------------------------------------------------------
-# Access-policy surface (feature 6's substitute)
-# -----------------------------------------------------------------------------
+# Access-policy surface (the repository_policy substitute)
 output "access_policy_id" {
   description = "OCID of the compartment-level registry access policy, or null when no push/pull subject was supplied"
   value       = try(oci_identity_policy.registry_access[0].id, null)

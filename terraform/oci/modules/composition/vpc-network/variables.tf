@@ -74,15 +74,10 @@ variable "enable_ipv6" {
 ###############################################################################
 # DHCP options
 #
-# PARTIAL parity (check sheet feature 20 / section 4.9). OCI supports exactly
-# two option types, DomainNameServer and SearchDomain. Deliberately absent
-# relative to AWS:
-#   - no NTP option type at all, so AWS's dhcp_options_ntp_servers has no
-#     counterpart and is NOT carried here as a dead variable. A mandated NTP
-#     source becomes an image-build concern.
-#   - search_domain_names accepts exactly ONE entry (AWS allows several), so
-#     this is a scalar, not a list.
-#   - custom_dns_servers is capped at 3 (AWS allows 4).
+# PARTIAL parity: OCI supports exactly two option types, DomainNameServer and
+# SearchDomain. No NTP option type exists (a mandated NTP source becomes an
+# image-build concern); search_domain_names accepts exactly ONE entry; and
+# custom_dns_servers is capped at 3.
 ###############################################################################
 
 variable "create_dhcp_options" {
@@ -171,13 +166,11 @@ variable "enable_service_gateway_all_services" {
 ###############################################################################
 # Subnet CIDRs - one REGIONAL subnet per tier
 #
-# SUBSTITUTE (check sheet feature 8 / section 4.2). AWS creates each tier once
-# per availability zone (26 subnets across 2 AZs); OCI subnets are regional by
-# Oracle's own recommendation, so each tier is one subnet and every *_subnet_cidrs
-# list collapses to a *_subnet_cidr scalar. There is no availability_zones
-# input. ap-mumbai-1 has exactly ONE availability domain, so no in-region
-# datacentre-failure spread is expressible here at all; fault-domain placement
-# is a compute-module concern and is deliberately not encoded in this module.
+# OCI subnets are regional by Oracle's recommendation, so each tier is one
+# subnet (every *_subnet_cidrs list collapses to a *_subnet_cidr scalar); there
+# is no availability_zones input. ap-mumbai-1 has one availability domain, so
+# no in-region datacentre-failure spread is expressible here; fault-domain
+# placement is a compute-module concern.
 #
 # Tiers dropped relative to AWS: eks-control-plane (the OKE control plane is
 # Oracle-managed; only its API endpoint needs a subnet, see oke-api-endpoint)
@@ -214,52 +207,34 @@ variable "oke_api_endpoint_subnet_cidr" {
   default     = null
 }
 
-# 2026-09-06 (real, live finding): unlike AWS EKS, where the control plane's
-# ENIs can stay in a private subnet even with `cluster_endpoint_public_access
-# = true` (AWS fronts public access through a separate, AWS-managed endpoint
-# outside the customer VPC - confirmed live: worker nodes still resolve the
-# API server to the private ENI IPs even with public access on), OCI ties
-# public reachability directly to this subnet's own public/private nature.
-# `oci_containerengine_cluster.endpoint_config.is_public_ip_enabled = true`
-# is REJECTED outright (400-InvalidParameter, "Invalid subnetId: must be a
-# public subnet if public ip enabled") unless this subnet itself has an
-# Internet Gateway route and allows a public IP on its VNIC - confirmed via a
-# real, live API call, and independently corroborated by Oracle's own OKE
-# networking documentation. There is no OCI equivalent to AWS's decoupled
-# model; this variable is the only way to get AWS-parity kubectl access here.
-# Defaults false (private, matching every environment's existing posture)
-# because this is a per-environment security decision, not a module default.
-#
-# Oracle's own OKE networking docs confirm the requirement this toggle exists
-# to satisfy: "you access the Kubernetes API on the cluster control plane
-# through an endpoint hosted in a subnet of your VCN, which can be a private
-# or public subnet... if you specify a public subnet... you can optionally
-# expose the endpoint to the internet" -
-# https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengclustersnodes.htm
+# 2026-09-06 (real, live finding): unlike AWS, OCI ties public reachability
+# directly to this subnet's own public/private nature.
+# `endpoint_config.is_public_ip_enabled = true` is rejected outright
+# (400-InvalidParameter, "Invalid subnetId: must be a public subnet if public
+# ip enabled") unless this subnet has an Internet Gateway route and allows a
+# public IP on its VNIC. There is no OCI equivalent to AWS's decoupled model.
+# Defaults false because this is a per-environment security decision.
 #
 # NOTE this is a real ForceNew on the underlying subnet
 # (prohibit_public_ip_on_vnic cannot be flipped in place - OCI requires
-# destroy-and-recreate) - flipping this on an environment whose subnet already
-# exists in the OTHER state replaces that subnet. Prefer standing up a second,
-# dedicated public subnet and repointing the oke unit's control_plane_subnet_id
-# at it over flipping this in place on a live environment, unless a brief
-# control-plane-endpoint interruption is acceptable.
+# destroy-and-recreate), so flipping it on a live environment replaces that
+# subnet. Prefer standing up a second, dedicated public subnet and repointing
+# the oke unit's control_plane_subnet_id at it, rather than flipping this on a
+# live environment.
 #
 # This toggle and a Bastion service are complementary, not either/or - Oracle's
-# own recommended PRODUCTION pattern is actually a private cluster reached via
-# the OCI Bastion service regardless of this setting:
-# https://docs.oracle.com/en/solutions/deploy-oke-with-bastion-and-github/index.html
+# recommended production pattern is a private cluster reached via the Bastion
+# service regardless of this setting.
 variable "oke_api_endpoint_is_public" {
   description = "Whether a SECOND, additive OKE API endpoint subnet (oke-api-endpoint-public) is created and made the cluster's active endpoint subnet, matching AWS EKS's cluster_endpoint_public_access = true behaviour. Defaults false. The original private subnet is never touched by this toggle - see C33 in build-log.md for why recreating it in place deadlocks against the cluster's own Oracle-managed Service VNIC. Flip alongside the oke unit's own control_plane_is_public / assign_public_ip_to_control_plane and its control_plane_subnet_id selection."
   type        = bool
   default     = false
 }
 
-# 2026-09-06 (C33): the additive public subnet's own CIDR. Must not overlap
-# any other tier - oke_api_endpoint_subnet_cidr already claims .10.0/24;
-# picking .11.0/24 keeps both subnets alive simultaneously without a
-# renumbering step, which matters because BOTH exist at once whenever the
-# toggle is on (the private one is never destroyed).
+# The additive public subnet's own CIDR. Must not overlap any other tier - it
+# must coexist with the private subnet while the toggle is on (the private one
+# is never destroyed), so pick a distinct block (oke_api_endpoint_subnet_cidr
+# already claims one /24).
 variable "oke_api_endpoint_public_subnet_cidr" {
   description = "CIDR for the additive, public-only OKE API endpoint subnet (oke-api-endpoint-public). Only actually created when oke_api_endpoint_is_public = true - see that variable and locals.tf's all_subnets null-CIDR convention."
   type        = string
@@ -351,17 +326,14 @@ variable "flow_logs_retention_duration" {
 ###############################################################################
 # Peering
 #
-# SUBSTITUTE (check sheet feature 21). AWS covers same-region, cross-region and
-# cross-account with one aws_vpc_peering_connection plus an accepter resource.
-# OCI splits that three ways, so the single vpc_peering_connections /
-# vpc_peering_accepter_connections pair cannot survive as one input:
+# OCI splits AWS's single peering construct three ways, so the AWS input pair
+# cannot survive as one input:
 #   - same-region      -> Local Peering Gateway, one per side, 10 per VCN
 #   - cross-region     -> DRG + Remote Peering Connection
 #   - cross-tenancy    -> either of the above PLUS IAM policy statements in
-#                         both tenancies. AWS's single peer_owner_id field has
-#                         no counterpart and is NOT carried; the policies are
-#                         out of scope for this module.
-# The requester/accepter distinction also disappears: an LPG is symmetric, and
+#                         both tenancies (the peer_owner_id field has no
+#                         counterpart; the policies are out of scope here)
+# The requester/accepter distinction disappears: an LPG is symmetric, and
 # whichever side sets peer_id establishes the connection.
 ###############################################################################
 

@@ -1,40 +1,14 @@
-# -----------------------------------------------------------------------------
 # otel-collector - the OCI port of the AWS module of the same name.
-#
-# THE FINDING THAT MAKES THIS MODULE DIFFERENT FROM THE OTHER ELEVEN:
-# ON OCI THE COLLECTOR NEEDS TWO AUTHENTICATION MECHANISMS, NOT ONE.
-#
-# On AWS the whole story is one managed policy on the IRSA role:
-# `AWSXRayDaemonWriteAccess`. The collector's X-Ray exporter signs requests with
-# the assumed role's credentials, and metrics/logs ride the same identity.
-#
-# OCI splits that in half:
-#
+# THE KEY DIFFERENCE: OCI SPLITS THE AWS MODULE'S ONE IDENTITY INTO THREE:
 #   metrics -> OCI Monitoring  `use metrics`      IAM / workload identity
 #   logs    -> OCI Logging     `use log-content`  IAM / workload identity
-#   TRACES  -> OCI APM         NOT IAM AT ALL.
-#
-# APM ingests OTLP over HTTP authenticated by a header,
-# `Authorization: dataKey <key>` - no principal, no policy, no workload
-# identity. So `AWSXRayDaemonWriteAccess` has NO IAM COUNTERPART, and there is
-# deliberately no input on this module where such a grant could go.
-#
-# THE TRAP: a reader porting mechanically will look for "the OCI equivalent of
-# AWSXRayDaemonWriteAccess", find `use apm-domains` in the APM policy reference,
-# grant it, and believe traces are handled. They are not. Those verbs govern
-# MANAGING APM domains, not UPLOADING to them.
-#
-# CONSEQUENCE, and an oracle gate item that has NOT been consulted (check sheet
-# section 8 item 1): a long-lived credential returns to a platform whose entire
-# identity port exists to remove them. A data key is not rotated by anything
-# automatic. It needs an owner and a rotation interval.
-#
-# THIS MODULE CREATES NO `oci_identity_policy`. It renders statements for the
-# environment's shared oke-workload-identity object, and it owns the two
-# observability backends the AWS side never had to configure at all.
-#
-# Check sheet: docs/multi-cloud-parity/oci/modules/otel-collector.md
-# -----------------------------------------------------------------------------
+#   TRACES  -> OCI APM         NOT IAM AT ALL - `Authorization: dataKey` header.
+# So `AWSXRayDaemonWriteAccess` has NO IAM counterpart; `use apm-domains`
+# governs MANAGING domains, not uploading. THIS MODULE CREATES NO
+# `oci_identity_policy` - it renders statements for the shared object and owns
+# the two observability backends AWS never had to configure.
+# CONSEQUENCE (unresolved oracle gate): a long-lived data key is not rotated by
+# anything automatic - it needs an owner and a rotation interval.
 
 variable "compartment_id" {
   description = "OCID of the environment compartment. Default location term in rendered statements, default home for the APM domain and log group, and the attachment point of the consuming shared policy object. Replaces AWS `region` + the implicit account: neither is part of an OCI IAM grant."
@@ -292,15 +266,3 @@ variable "defined_tags" {
   type        = map(string)
   default     = {}
 }
-
-# -----------------------------------------------------------------------------
-# DELETED rather than accepted as no-ops:
-#   role_path, max_session_duration, force_detach_policies - no role.
-#   aws_managed_policy_names  - no managed-policy objects, AND the only one in
-#                               use (AWSXRayDaemonWriteAccess) has no IAM
-#                               counterpart at all. See this file's header.
-#   role_name / role_description - owned by the shared policy object.
-#   account_id (output)       - a compartment OCID is not an account ID. Mapping
-#                               it would produce a value that looks like an
-#                               account identifier and is not one.
-# -----------------------------------------------------------------------------

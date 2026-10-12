@@ -1,43 +1,10 @@
-# =============================================================================
-# Output contract (check sheet feature 20, FULL)
-# =============================================================================
-# The AWS module exposes 31 outputs. The mapping below is mostly mechanical -
-# ARNs become OCIDs, RDS endpoints become oci_psql_db_system_connection_detail
-# fields - but four groups disappear, each for a reason, and none of them
-# silently:
-#
-#   instance_ids, instance_private_ips, instance_arns, subnet_ids, locker_port,
-#   alb_dns_name, alb_listener_arns, alb_listener_details,
-#   alb_security_group_id, security_group_id
-#       -> features 11/12/13 are N/A under this port's shape (database.tf
-#          header). There is no VM fleet and no ALB. `security_group_id` refers
-#          to the locker INSTANCES' group; the only NSG this module owns is the
-#          database's, exported as nsg_id.
-#   key_name, ssh_private_key_ssm_parameter
-#       -> feature 1/2's generate-and-persist path is not reproduced
-#          (versions.tf, secrets.tf). There is no private key to point at, and
-#          that is the improvement, not an omission.
-#   kms_key_aliases
-#       -> OCI KMS has no alias object.
-#   db_global_cluster_id, db_global_cluster_arn, db_global_cluster_identifier,
-#   db_global_writer_endpoint
-#       -> there is no global cluster object. A passive-region locker reads the
-#          primary's db_system_id instead (feature 16, SUBSTITUTE).
-#   db_subnet_group_id
-#       -> no subnet-group concept.
-#   db_kms_key_arn / db_kms_key_id / db_kms_key_aliases
-#       -> oci_psql_db_system takes NO customer-managed key. Emitting these
-#          would imply the database is encrypted under this module's key, which
-#          it is not (feature 17, PARTIAL). encryption_at_rest below says so in
-#          words instead.
-#
-# Added with no AWS counterpart: vault_id, db_admin_secret_id,
-# db_ca_certificate, workload_grants, encryption_at_rest.
+# Output contract. The AWS module's 31 outputs map mostly mechanically (ARNs to
+# OCIDs), except four groups that disappear with a reason (no VM fleet/ALB, no
+# private-key persistence, no KMS alias, no global cluster / subnet-group).
+# Added with no AWS counterpart: vault_id, db_admin_secret_id, db_ca_certificate,
+# workload_grants, encryption_at_rest.
 
-# -----------------------------------------------------------------------------
 # Key custody
-# -----------------------------------------------------------------------------
-
 output "vault_id" {
   description = "OCID of the card vault's dedicated OCI Vault. No AWS counterpart - a key lives inside a vault on OCI. This is what a caller passes to any other module that must put a secret in the locker's custody boundary."
   value       = local.vault_id
@@ -63,10 +30,7 @@ output "vault_replica_region" {
   value       = try(oci_kms_vault_replication.locker[0].replica_region, null)
 }
 
-# -----------------------------------------------------------------------------
 # Database
-# -----------------------------------------------------------------------------
-
 output "db_system_id" {
   description = "OCID of the card vault's dedicated db system. Replaces AWS's db_cluster_arn and db_cluster_identifier, and is what a passive-region locker's warm standby points at - the replacement for the cross-region db_global_cluster_id + db_cluster_arn pair the AWS passive root reads."
   value       = try(oci_psql_db_system.locker[0].id, null)
@@ -133,10 +97,7 @@ output "db_configuration_id" {
   value       = local.db_configuration_id
 }
 
-# -----------------------------------------------------------------------------
 # Network
-# -----------------------------------------------------------------------------
-
 output "nsg_id" {
   description = "OCID of the module-owned, EMPTY network security group on the card vault's database. Replaces AWS's db_security_group_id, and is the contract composition/security-rules consumes to write this database's ingress rules in the last stack phase. Convention: `nsg_id` singular because this module owns exactly one."
   value       = try(oci_core_network_security_group.locker_database[0].id, null)
@@ -147,10 +108,7 @@ output "subnet_id" {
   value       = var.subnet_id
 }
 
-# -----------------------------------------------------------------------------
 # Logging
-# -----------------------------------------------------------------------------
-
 output "log_group_id" {
   description = "OCID of the card vault's log group. Replaces AWS's aws_cloudwatch_log_group.locker."
   value       = try(oci_logging_log_group.locker[0].id, null)
@@ -161,10 +119,7 @@ output "log_id" {
   value       = try(oci_logging_log.database[0].id, null)
 }
 
-# -----------------------------------------------------------------------------
 # Identity
-# -----------------------------------------------------------------------------
-
 output "workload_grants" {
   description = <<-EOT
     The card-vault pod's OKE workload-identity grants, in exactly the shape
@@ -194,10 +149,7 @@ output "k8s_service_account" {
   }
 }
 
-# -----------------------------------------------------------------------------
 # Disclosure
-# -----------------------------------------------------------------------------
-
 output "encryption_at_rest" {
   description = <<-EOT
     Deliberate, machine-readable disclosure of the port's largest security

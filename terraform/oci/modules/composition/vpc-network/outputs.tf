@@ -1,24 +1,16 @@
-###############################################################################
-# Output contract
-#
-# Every other OCI unit in the stack reads this module. The names below are a
-# contract - security-rules, oke, database and oci-cache-valkey are written
-# against them. OCIDs replace ARNs throughout, so AWS's vpc_arn and every
-# *_subnet_arns output has no counterpart and is not emitted.
+# Output contract. Every other OCI unit reads this module; the names below are
+# a contract. OCIDs replace ARNs throughout, so vpc_arn and every *_subnet_arns
+# output has no counterpart.
 #
 # Deliberately ABSENT, each a recorded gap rather than a silent drop:
-#   - vpc_endpoint_security_group_id: a service gateway has no VNIC, so there
-#     is no NSG to attach and no id to export (check sheet section 4.5). The
-#     live security-rules vpc_endpoint_ingress group of 4 rules has no target
-#     on OCI and inverts to per-consumer NSG egress rules to
-#     SERVICE_CIDR_BLOCK.
+#   - vpc_endpoint_security_group_id: a service gateway has no VNIC, so no NSG
+#     to attach and no id to export. The live security-rules ingress group
+#     inverts to per-consumer NSG egress rules to SERVICE_CIDR_BLOCK.
 #   - nacl_id / nacl_arn: OCI has no object distinct from security lists that
 #     plays the NACL role, and the AWS instance is allow-all in both directions
-#     so it enforces nothing (section 4.4). Not ported; no consumer reads them.
-#   - the 13 per-tier *_subnet_ids / *_subnet_cidr_blocks / *_route_table_id
-#     outputs: collapsed into the three by-tier maps below, following the GCP
-#     precedent.
-###############################################################################
+#     so it enforces nothing. Not ported; no consumer reads them.
+#   - the per-tier *_subnet_ids / *_subnet_cidr_blocks / *_route_table_id
+#     outputs: collapsed into the by-tier maps below.
 
 output "vcn_id" {
   description = "OCID of the VCN. Replaces AWS's vpc_id."

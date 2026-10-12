@@ -1,14 +1,4 @@
-# =============================================================================
-# Output contract - 20 AWS outputs become the set below.
-# =============================================================================
-# DELETED WITH NO REPLACEMENT:
-#   role_arn / role_id / role_name  - no role, and no service-account
-#     annotation to consume one (identity-model.md section 6.4).
-#   oidc_enabled                    - no OIDC provider registration exists.
-#   s3_policy_arn                   - nothing is attachable on OCI.
-#   security_group_enabled          - folded into the `create_nsg` boolean the
-#     caller already set.
-# =============================================================================
+# Output contract
 
 output "policy_statements" {
   description = <<-EOT

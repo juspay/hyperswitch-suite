@@ -1,33 +1,7 @@
-# =============================================================================
-# Output contract.
-#
-# Mapped from the AWS elasticache module's 20 outputs (check sheet section 5).
-# Names follow the OCI concept rather than the AWS one - the same call the GCP
-# port made - so each output says which AWS output it answers for.
-#
-#   AWS output                                        -> here
-#   --------------------------------------------------------------------------
-#   replication_group_id                              -> cluster_id
-#   replication_group_arn                             -> cluster_id (no ARN
-#                                                        concept on OCI; the
-#                                                        OCID is the ARN)
-#   replication_group_primary_endpoint_address        -> primary_endpoint_ip_address
-#                                                        / primary_fqdn
-#   replication_group_reader_endpoint_address         -> replicas_endpoint_ip_address
-#                                                        / replicas_fqdn
-#   replication_group_configuration_endpoint_address  -> discovery_endpoint_ip_address
-#                                                        / discovery_fqdn (sharded only)
-#   replication_group_member_clusters                 -> member_nodes / node_collection
-#   replication_group_port                            -> port (constant 6379)
-#   subnet_group_name, subnet_group_id                -> subnet_id (no subnet-group
-#                                                        resource exists on OCI)
-#   security_group_id/name/arn, all_security_group_ids-> nsg_ids (pass-through;
-#                                                        this module creates none)
-#   connection_info                                   -> connection_info
-#   global_replication_group_id/arn/name/suffix,
-#   is_primary_cluster, is_secondary_cluster          -> NOT EMITTED. Feature 13
-#                                                        is NONE; see main.tf.
-# =============================================================================
+# Output contract. Names follow the OCI concept rather than the AWS one; each
+# output's description says which AWS output it answers for. The AWS
+# global_replication_group_* / is_*_cluster outputs are NOT emitted - there is
+# no corresponding OCI primitive (see the NONE block in main.tf).
 
 output "cluster_id" {
   description = "OCID of the OCI Cache cluster. Answers for both AWS replication_group_id and replication_group_arn - OCI has no separate ARN concept, the OCID is the globally unique identifier."
@@ -169,8 +143,8 @@ output "cache_user_ids" {
   value       = { for k, u in oci_redis_oci_cache_user.main : k => u.id }
 }
 
-# Deliberately NOT emitted: global_replication_group_id, _arn, _name, _suffix,
-# is_primary_cluster, is_secondary_cluster. Feature 13 is NONE - there is no
-# OCI primitive behind them, and emitting nulls named after an AWS DR construct
-# would let a consumer wire up a passive-region pattern that cannot work here.
-# See the NONE block in main.tf.
+# Deliberately NOT emitted: global_replication_group_id/_arn/_name/_suffix,
+# is_primary_cluster, is_secondary_cluster. There is no OCI primitive behind
+# them; emitting nulls named after an AWS DR construct would let a consumer
+# wire up a passive-region pattern that cannot work here. See the NONE block in
+# main.tf.

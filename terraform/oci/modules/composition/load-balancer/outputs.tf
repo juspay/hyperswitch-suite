@@ -1,23 +1,9 @@
-###############################################################################
-# Output contract
-#
-# The AWS module's 18 outputs do not map one-to-one, and the differences are
-# not cosmetic. OCIDs replace ARNs, so every *_arn output disappears. The
-# `alb_` prefix is dropped: this is not an ALB, and carrying the source
-# cloud's noun forward makes every future reader translate twice
-# (skill section 2, naming).
-#
-# Deliberately ABSENT, each recorded rather than silently dropped:
-#   - alb_dns_name / alb_zone_id: an OCI load balancer has a real IP, not a
-#     service-generated hostname sitting in an AWS-owned zone. The pair exists
-#     on AWS purely so a Route 53 ALIAS record can name it. `ip_address` below
-#     replaces both, and the `dns` module points a plain A record at it.
-#   - alb_arn_suffix: an ARN fragment used for CloudWatch metric dimensions.
-#     No ARNs, no CloudWatch; OCI Monitoring keys off the OCID.
-#   - security_group_arn: no ARN. nsg_id carries the OCID.
-#   - the seven route53_* outputs: this module no longer creates DNS at all
-#     (main.tf). Read them from the `dns` module instead.
-###############################################################################
+# Output contract. OCIDs replace ARNs (so every *_arn output is gone) and the
+# `alb_` prefix is dropped - this is an OCI load balancer, not an ALB.
+# Deliberately ABSENT: alb_dns_name/alb_zone_id (the OCI LB has a real IP, not an
+# AWS-hosted hostname; `ip_address` replaces them); alb_arn_suffix (no
+# CloudWatch); security_group_arn (nsg_id carries the OCID); the route53_* set
+# (DNS now lives in the `dns` module).
 
 output "load_balancer_id" {
   description = "OCID of the load balancer. Replaces AWS's alb_arn and alb_id, which collapse into one value here. This is also the whole of what the WAF owner needs - oci_waf_web_app_firewall attaches with load_balancer_id + backend_type = \"LOAD_BALANCER\" (load-balancer.md feature 8)."

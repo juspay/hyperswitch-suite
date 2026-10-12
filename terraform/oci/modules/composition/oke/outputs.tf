@@ -1,16 +1,7 @@
-# =============================================================================
-# oke - outputs
-# =============================================================================
-# The outputs are the contract. Where the semantics survive the port the AWS
-# name is kept; where they do not, the name changes so nobody reads an OCID as
-# an ARN. Mapping table is in eks.md section 5.
-# =============================================================================
+# oke - outputs.
 
-# -----------------------------------------------------------------------------
-# Cluster identity - consumed by oke-kubernetes-resources (phase 2) and by every
-# workload-identity policy statement (identity-model.md: the cluster OCID is one
-# of the four `where` conditions that ARE the security boundary).
-# -----------------------------------------------------------------------------
+# Cluster identity, consumed by oke-kubernetes-resources and every
+# workload-identity policy statement.
 
 output "cluster_id" {
   description = "OCID of the OKE cluster. Replaces AWS `cluster_id`, and also stands in for `cluster_arn` - OCI has OCIDs, not ARNs, so there is no separate ARN output."
@@ -27,9 +18,8 @@ output "cluster_type" {
   value       = lower(var.cluster_type)
 }
 
-# RENAMED from AWS `cluster_endpoint` (singular). OKE exposes several endpoint
-# addresses at once (private_endpoint, public_endpoint, vcn_hostname_endpoint),
-# so the plural map is the honest shape.
+# RENAMED from AWS `cluster_endpoint` (singular): OKE exposes several endpoint
+# addresses at once, so the plural map is the honest shape.
 output "cluster_endpoints" {
   description = "Map of OKE cluster endpoints (private_endpoint, public_endpoint, ...). Replaces AWS `cluster_endpoint`, which was singular."
   value       = module.oke.cluster_endpoints
@@ -65,25 +55,19 @@ output "kubernetes_version" {
 # RENAMED from AWS `cluster_oidc_issuer_url` / `oidc_provider_arn`.
 #
 # READ THIS BEFORE WIRING ANYTHING TO IT. On AWS the OIDC provider is the
-# foundation IRSA is built on and every application module's trust policy
-# references it. On OCI it is NOT the pod-identity mechanism: OKE Workload
-# Identity needs no OIDC registration, only cluster_type = "enhanced". This
-# endpoint exists so that AWS or GCP STS can validate an OKE pod's token - i.e.
-# OKE -> other cloud, which is a migration-cutover path, not the steady state.
-# `oke-workload-identity` should consume `cluster_id`, not this.
+# foundation IRSA is built on. On OCI it is NOT the pod-identity mechanism: OKE
+# Workload Identity needs no OIDC registration, only cluster_type = "enhanced".
+# This endpoint exists so AWS/GCP STS can validate an OKE pod's token during
+# migration cutover - `oke-workload-identity` should consume `cluster_id`, not
+# this.
 output "cluster_oidc_discovery_endpoint" {
   description = "OIDC discovery endpoint. NOT the OCI pod-identity mechanism (that is Workload Identity, keyed on cluster_id) - this is for federating OKE pods INTO AWS/GCP during cutover. Replaces AWS `cluster_oidc_issuer_url`; there is no `oidc_provider_arn` equivalent."
   value       = module.oke.cluster_oidc_discovery_endpoint
 }
 
-# -----------------------------------------------------------------------------
-# Network Security Groups
-# -----------------------------------------------------------------------------
-# RENAMED from AWS `cluster_security_group_id` / `node_security_group_id` /
-# `node_group_security_group_ids`. `security-rules` (phase 5) writes its
-# cross-module rules into these; on OCI an NSG rule is a standalone resource, so
-# it can do that from a different Terraform state without contending with this
-# one. network-security-model.md section 5.
+# Network Security Groups. On OCI an NSG rule is a standalone resource, so a
+# different state (security-rules) can write cross-module rules into these
+# without contending with this one.
 
 output "control_plane_nsg_id" {
   description = "NSG attached to the OKE API endpoint VNIC. Replaces AWS `cluster_security_group_id`."
@@ -115,24 +99,18 @@ output "custom_nsg_ids" {
   value       = try(module.oke.custom_nsg_ids, {})
 }
 
-# -----------------------------------------------------------------------------
-# Node pools
-# -----------------------------------------------------------------------------
+# Node pools.
 
 output "node_pool_ids" {
   description = "Map of node-pool name to OCID. Replaces AWS `eks_managed_node_groups`."
   value       = module.oke.worker_pool_ids
 }
 
-# THIS OUTPUT EXISTS BECAUSE OF A GAP, not because of a feature.
-# `oci_containerengine_node_pool` has no min_size/max_size - only `size`. Unlike
-# an AWS ASG or a GKE node pool, nothing at the compute layer keeps the pool
-# inside a range when the autoscaler is unhealthy. The bounds live ONLY as
-# external configuration, and this output is how they get there: the Cluster
-# Autoscaler on OCI takes an explicit `--nodes=<min>:<max>:<pool-OCID>` flag per
-# pool (there is no ASG-tag auto-discovery equivalent either), so
-# oke-kubernetes-resources renders its flags from this map.
-# See eks.md gap 4.5 and eks-kubernetes-resources.md gap 4.4.
+# THIS OUTPUT EXISTS BECAUSE OF A GAP: `oci_containerengine_node_pool` has no
+# min_size/max_size - only `size`. Nothing at the compute layer keeps a pool
+# inside a range when the autoscaler is unhealthy; the bounds live ONLY as
+# external configuration. This is how they get to the Cluster Autoscaler, which
+# on OCI takes an explicit `--nodes=<min>:<max>:<pool-OCID>` flag per pool.
 output "node_pool_autoscaler_bounds" {
   description = "Per-pool advisory scaling bounds, NOT enforced by OCI or by this module. Shape: { <pool> = { min_size, max_size, pool_id } }. Feed to the Cluster Autoscaler's --nodes=<min>:<max>:<pool-OCID> flags. If no autoscaler consumes this, the pools have no floor and no ceiling."
   value = {
@@ -159,9 +137,7 @@ output "node_pool_names" {
   value       = keys(var.node_pools)
 }
 
-# -----------------------------------------------------------------------------
-# Placement facts downstream modules need
-# -----------------------------------------------------------------------------
+# Placement facts downstream modules need.
 
 output "compartment_id" {
   description = "Compartment the cluster was created in. oke-kubernetes-resources needs it for the Block Volume and File Storage CSI storage-class parameters (`compartmentOcid`); oke-workload-identity needs it as the policy attachment point."
@@ -198,9 +174,7 @@ output "cni_type" {
   value       = var.cni_type
 }
 
-# -----------------------------------------------------------------------------
-# SSH key (AWS feature 18)
-# -----------------------------------------------------------------------------
+# SSH key.
 
 output "node_ssh_private_key_secret_id" {
   description = "OCID of the Vault secret holding the generated node SSH private key. Replaces AWS's SSM parameter name. Null when create_ssh_key is false."
@@ -212,29 +186,21 @@ output "node_ssh_public_key" {
   value       = local.ssh_public_key
 }
 
-# -----------------------------------------------------------------------------
-# Features with no OCI counterpart - documented absences, not omissions
-# -----------------------------------------------------------------------------
-# The AWS module exports these; this one cannot, and a consumer that reaches for
-# them should find this comment rather than a missing-output error with no
-# explanation.
+# Features with no OCI counterpart - documented absences, not omissions. A
+# consumer that reaches for these should find this note rather than a bare
+# missing-output error:
 #
 #   cluster_arn                  -> no ARNs on OCI; use cluster_id (an OCID).
-#   cluster_iam_role_arn         -> feature 3 / gap 4.1: no assumable cluster
-#                                   role exists to export.
+#   cluster_iam_role_arn / _name -> feature 3: no assumable cluster role exists.
 #   ebs_csi_iam_role_arn         -> feature 9: folded into the Block Volume CSI
 #                                   add-on, which authenticates as the
-#                                   OKE-managed control plane. No identity
-#                                   resource, so no output.
+#                                   OKE-managed control plane.
 #   efs_csi_iam_role_arn         -> feature 10: same, for File Storage.
-#   oidc_provider_arn            -> feature 7: OCI Workload Identity registers
-#                                   no provider. Use cluster_id.
+#   oidc_provider_arn            -> feature 7: Workload Identity registers no
+#                                   provider; use cluster_id.
 #   eks_managed_node_groups_iam_role_arn/_name
-#                                -> feature 17 / gap 4.6: node permissions come
-#                                   from a dynamic group in the IAM bootstrap,
-#                                   not a role owned here.
-#   cross_account_role_arn/_name -> feature 5 / gap 4.3: pending oracle gate.
-#                                   Deliberately not exported as a null, so that
-#                                   a consumer wiring it up fails loudly at
-#                                   plan time rather than silently receiving
-#                                   nothing.
+#                                -> feature 17: node permissions come from a
+#                                   dynamic group in the IAM bootstrap.
+#   cross_account_role_arn/_name -> feature 5: pending oracle gate. Deliberately
+#                                   not exported as null, so a consumer wiring
+#                                   it up fails loudly at plan time.

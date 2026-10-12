@@ -1,37 +1,11 @@
-# -----------------------------------------------------------------------------
-# shared-policy - the OCI port of AWS `shared-policy`.
-#
-# READ THIS BEFORE THE VARIABLES. The AWS module is a factory for
-# `aws_iam_policy` objects: forty lines, one `for_each`, N detached permission
-# objects that are attached to roles later and revoked by detaching. The value
-# was never in the module - it was in the fact that an AWS policy is a NOUN,
-# created once with no subject, bound to many roles, and looked up across root
-# boundaries by a stable name (`data "aws_iam_policy" { name = ... }` in
-# aws/live/dev/eu-central-1/apps/hyperswitch-app/main.tf).
-#
-# NONE (check sheet feature 2). OCI HAS NO DETACHED, ATTACHABLE POLICY OBJECT.
-# `oci_identity_policy` IS the grant: its statements name the subject, the verb,
-# the resource type and the location at creation time. There is no unattached
-# state, no attachment resource, no policy ARN, and no singular
-# `data "oci_identity_policy"` source. See identity-model.md section 3.6.
-#
-# So this module creates NOTHING. It is a text factory: it renders shared grants
-# into policy STATEMENT strings which callers concatenate into the single shared
-# `oke-workload-identity` policy object for their environment. There is
-# deliberately no main.tf.
-#
-# THE ALTERNATIVE THAT WAS REJECTED, recorded here because it is the tempting
-# one: create one real policy object per shared grant with a broad subject -
-# `request.principal.type='workload'` + `request.principal.cluster_id` but NO
-# `request.principal.service_account`. That reproduces "one object, many
-# consumers" and keeps revocation cheap, and it grants the permission to EVERY
-# POD IN THE CLUSTER, which is exactly the instance-principal blast radius the
-# whole identity port exists to eliminate (identity-model.md section 3.3).
-# Rejected. This module's renderer cannot express it: `subjects` is required and
-# every rendered statement carries all four conditions.
-#
-# Check sheet: docs/multi-cloud-parity/oci/modules/shared-policy.md
-# -----------------------------------------------------------------------------
+# shared-policy - the OCI port of AWS `shared-policy`. AWS creates detached,
+# attachable `aws_iam_policy` objects; OCI has no such object - `oci_identity_policy`
+# IS the grant. So this module creates NOTHING (no main.tf): it renders shared
+# grants into statement strings for the shared oke-workload-identity object.
+# REJECTED ALTERNATIVE (recorded because tempting): one real policy object per
+# grant with a broad `request.principal.type='workload'` subject but NO
+# service_account condition - that grants the permission to EVERY POD IN THE
+# CLUSTER, exactly the blast radius this port exists to eliminate (rejected).
 
 variable "compartment_id" {
   description = <<-EOT

@@ -1,23 +1,9 @@
-# =============================================================================
-# superposition - the OCI port of application-resources/superposition
-# =============================================================================
-# Check sheet: docs/multi-cloud-parity/oci/modules/superposition.md
-# Identity:    docs/multi-cloud-parity/oci/identity-model.md
-#
-# The AWS module is a GENERIC ROLE FACTORY - not one hardcoded policy in it.
-# Permissions arrive through three surfaces: `aws_managed_policy_names`,
-# `customer_managed_policy_arns` and `inline_policies`. All three collapse into
-# ONE here (`extra_statements`), because OCI has exactly one way to grant
-# anything: an authored statement. There is nothing to attach and no library of
-# canned policies to attach by name (check sheet features 3 and 4).
-#
-# Its second, much larger job is optional and unchanged in spirit: when
-# `create_database = true` it instantiates the whole `composition/database`
-# module inline. That half is documented in
-# docs/multi-cloud-parity/oci/modules/database.md, not here.
-#
-# THIS MODULE CREATES NO `oci_identity_policy`. See locals.tf.
-# =============================================================================
+# superposition - the OCI port of application-resources/superposition.
+# The AWS module is a generic ROLE FACTORY; all three permission surfaces
+# (managed / customer-managed / inline) collapse into `extra_statements` here,
+# because OCI grants only via authored statements. With create_database=true it
+# instantiates composition/database inline. THIS MODULE CREATES NO
+# `oci_identity_policy` - see locals.tf.
 
 # -----------------------------------------------------------------------------
 # Identity and placement
@@ -90,7 +76,7 @@ variable "service_accounts" {
 }
 
 # -----------------------------------------------------------------------------
-# Permissions (check sheet feature 5, FULL)
+# Permissions
 # -----------------------------------------------------------------------------
 
 variable "kms_key_id" {
@@ -143,7 +129,7 @@ variable "extra_statements" {
 }
 
 # -----------------------------------------------------------------------------
-# Dedicated database (check sheet feature 6, SUBSTITUTE)
+# Dedicated database
 # -----------------------------------------------------------------------------
 
 variable "create_database" {

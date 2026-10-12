@@ -1,9 +1,6 @@
-# =============================================================================
-# Outputs
-# =============================================================================
-# AWS names kept where the semantics survive. Where the object does not exist on
-# OCI (ARNs, service-linked roles, CloudWatch log groups) the output is dropped
-# rather than faked - see the notes at the bottom.
+# Outputs. AWS names kept where the semantics survive; where the object does not
+# exist on OCI (ARNs, service-linked roles, CloudWatch log groups) the output is
+# dropped rather than faked - see the notes at the bottom.
 
 output "cluster_id" {
   description = "OCID of the OpenSearch cluster. Replaces domain_id and domain_arn - OCI has no ARN concept."
@@ -101,12 +98,8 @@ output "vcn_id" {
 }
 
 # DROPPED, deliberately, with no substitute:
-#
 #   cloudwatch_log_groups - the cluster resource has NO log_publishing_options
-#     equivalent (confirmed absent from the 9.0.0 schema, not merely unverified),
-#     so there is no per-log-type destination to export. Slow-query and audit
-#     logging are not reachable from Terraform on this service today.
-#     Check sheet feature 9, PARTIAL, section 4.5.
-#
+#     equivalent, so there is no per-log-type destination to export; slow-query
+#     and audit logging are not reachable from Terraform on this service today.
 #   service_linked_role_arn / service_linked_role_name - no such object on OCI;
 #     see service_policy_id above and identity.tf.

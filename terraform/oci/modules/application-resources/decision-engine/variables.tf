@@ -1,20 +1,7 @@
-# =============================================================================
-# decision-engine - the OCI port of application-resources/decision-engine
-# =============================================================================
-# Check sheet: docs/multi-cloud-parity/oci/modules/decision-engine.md
-# Identity:    docs/multi-cloud-parity/oci/identity-model.md
-#
-# A hybrid of its two siblings: `superposition`'s generic role-factory surface
-# PLUS two of `hyperswitch`'s hardcoded feature-flagged policies (its own
-# bucket, and SES). The SES policy JSON is byte-for-byte the same shape as
-# hyperswitch's and uses the SAME cross-account role today.
-#
-# THIS MODULE CREATES NO `oci_identity_policy`. See locals.tf.
-# =============================================================================
-
-# -----------------------------------------------------------------------------
-# Identity and placement
-# -----------------------------------------------------------------------------
+# decision-engine - OCI port of application-resources/decision-engine.
+# A hybrid of `superposition`'s generic role-factory surface plus two of
+# hyperswitch's hardcoded feature-flagged policies (its own bucket, and SES).
+# It creates no `oci_identity_policy` - see locals.tf.
 
 variable "compartment_id" {
   description = "OCID of the compartment this module's resources live in, and the default location term of every statement it renders. Must be in the same subtree as the shared `oke-workload-identity` policy AND as hyperswitch's KMS key (identity-model.md section 3.4)."
@@ -71,10 +58,6 @@ variable "service_accounts" {
   }
 }
 
-# -----------------------------------------------------------------------------
-# Permissions (check sheet features 3, 4, 5)
-# -----------------------------------------------------------------------------
-
 variable "kms_key_id" {
   description = <<-EOT
     OCID of hyperswitch's KMS key, read cross-module exactly as the AWS unit
@@ -103,10 +86,6 @@ variable "extra_statements" {
   type        = list(string)
   default     = []
 }
-
-# -----------------------------------------------------------------------------
-# Object Storage (check sheet feature 6, FULL - and feature 7, NONE)
-# -----------------------------------------------------------------------------
 
 variable "bucket" {
   description = <<-EOT
@@ -176,10 +155,6 @@ variable "bucket_noncurrent_version_expiry_days" {
   default     = 30
 }
 
-# -----------------------------------------------------------------------------
-# Email Delivery (check sheet feature 8, SUBSTITUTE)
-# -----------------------------------------------------------------------------
-
 variable "email" {
   description = <<-EOT
     Transactional email. Replaces the AWS `ses` object entirely - no role to
@@ -219,10 +194,6 @@ variable "email" {
     error_message = "email.domain_name and email.sender_address are both required when email.create is true. Prefer use_existing_domain_id, pointed at hyperswitch's domain - the two modules send as the same logical sender today."
   }
 }
-
-# -----------------------------------------------------------------------------
-# Tags
-# -----------------------------------------------------------------------------
 
 variable "freeform_tags" {
   description = "Freeform tags merged onto every resource. The AWS `tags` analogue."

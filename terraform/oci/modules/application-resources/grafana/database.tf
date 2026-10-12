@@ -1,47 +1,15 @@
-# =============================================================================
-# Grafana's own database (check sheet features 4, 5, 6)
-# =============================================================================
-# Nested, not depended-on - exactly as the AWS module nests `composition/database`
-# and the GCP module nests `composition/alloydb`. The consequence: this database
-# provisions in stack phase 3 alongside Grafana rather than in phase 1 with the
-# standalone `database` unit. Identical to AWS today, so not a phasing change -
-# but it does mean this module inherits every one of database.md section 8's
-# gate items a SECOND time, for a second independently-provisioned db system.
+# Grafana's own database
+# Nested, not depended-on - it provisions in stack phase 3 alongside Grafana,
+# not in phase 1 with the standalone `database` unit.
 #
-# The 24-feature parity mapping is database.md's and is inherited wholesale
-# rather than re-derived. Two of its findings change GRAFANA's own configuration
-# and are therefore called out on `database_config` in variables.tf: TLS is
-# mandatory (GF_DATABASE_SSL_MODE), and there is no per-app database.
-#
-# CROSS-REGION DR IS NOT WIRED, AND THAT IS A RECOMMENDATION THIS PORT MAKES
-# RATHER THAN A LIMITATION IT HIT (check sheet section 4.5, SUBSTITUTE).
-#
-#   AWS exposes `database_create_global_cluster` plus six siblings, all
-#   passed straight through, all UNSET in the one live unit reviewed. On OCI
-#   there is no global-cluster object at all; the analogue is Replication with
-#   Warm Standby - a WAL-streaming relationship between two independent db
-#   systems, 300 s minimum enforceable RPO, manual-only failover, and mutually
-#   exclusive with point-in-time restore while active.
-#
-#   The reason not to build it is specific to THIS consumer, not to the
-#   technology: Grafana's database holds dashboards, users and alert-rule
-#   definitions. Operationally inconvenient to lose; not payment data, and not
-#   on the request path. OCI's PostgreSQL service caps at EIGHT db systems per
-#   tenancy per region (database.md open question 9.8), and every warm-standby
-#   relationship consumes a second slot in the DR region for one primary.
-#   Spending one of eight on a dashboards database while the payments database
-#   competes for the same budget is the wrong default. A lost Grafana is
-#   recovered by re-provisioning against a routine backup.
-#
-#   So `enable_warm_standby`, `primary_db_system_id`, `is_rpo_enforced` and
-#   `rpo_in_seconds` are NOT exposed on `database_config` - the "carrying dead
-#   knobs" principle. Reintroducing them later is mechanical (they exist on the
-#   composition module) but not free, and it competes for the same eight-per-
-#   region ceiling at exactly the moment capacity is tightest. Oracle gate item
-#   (check sheet section 8 item 3), NOT YET CONSULTED.
-#
-#   Cross-region BACKUP COPY remains available and is the cheap half of DR:
-#   `database_config.backup_copy_regions`.
+# CROSS-REGION DR IS NOT WIRED, and that is a recommendation, not a limitation:
+# OCI PostgreSQL caps at EIGHT db systems per tenancy per region and every
+# warm-standby relationship consumes a second slot. Grafana's database holds
+# dashboards and alert rules - not payment data, not on the request path - so
+# spending one of eight on it is the wrong default; a lost Grafana is recovered
+# from a routine backup. `enable_warm_standby` and its siblings are therefore
+# NOT exposed on `database_config`. Cross-region BACKUP COPY remains available
+# via `database_config.backup_copy_regions`.
 
 module "database" {
   count = var.create_database ? 1 : 0

@@ -1,22 +1,7 @@
-# =============================================================================
-# grafana - the OCI port of application-resources/grafana
-# =============================================================================
-# Check sheet: docs/multi-cloud-parity/oci/modules/grafana.md
-# Identity:    docs/multi-cloud-parity/oci/identity-model.md
-# Database:    docs/multi-cloud-parity/oci/modules/database.md - NOT restated
-#              here; that document's 24-feature mapping is inherited wholesale.
-#
-# 84 AWS variables become roughly 20 here, and almost the whole reduction is
-# database.md's own ~70-to-~34 finding plus collapsing that surface into ONE
-# object instead of ~70 flattened `database_*` variables - the same call the GCP
-# precedent made.
-#
-# THIS MODULE CREATES NO `oci_identity_policy`. See locals.tf.
-# =============================================================================
-
-# -----------------------------------------------------------------------------
-# Identity and placement
-# -----------------------------------------------------------------------------
+# grafana - OCI port of application-resources/grafana.
+# 84 AWS variables collapse to roughly 20, the reduction coming from folding
+# database.md's mapping into ONE `database_config` object. It creates no
+# `oci_identity_policy` - see locals.tf.
 
 variable "compartment_id" {
   description = "OCID of the compartment this module's resources live in, and the location term of every statement it renders. Must be at or below the compartment the shared `oke-workload-identity` policy is attached to."
@@ -70,10 +55,6 @@ variable "k8s_service_account_name" {
   type        = string
   default     = "grafana"
 }
-
-# -----------------------------------------------------------------------------
-# Observability datasources (check sheet feature 2, SUBSTITUTE - section 4.2)
-# -----------------------------------------------------------------------------
 
 variable "metrics_read_enabled" {
   description = <<-EOT
@@ -156,10 +137,6 @@ variable "datasource_api_key_vault_secret_id" {
   }
 }
 
-# -----------------------------------------------------------------------------
-# Escape hatches (check sheet feature 3, SUBSTITUTE)
-# -----------------------------------------------------------------------------
-
 variable "shared_statements" {
   description = "Statement strings contributed from a shared source. Replaces `customer_managed_policy_arns` / any `aws_managed_policy_names` beyond feature 2's two. Nothing is attachable on OCI (identity-model.md section 3.6). No live caller today."
   type        = list(string)
@@ -171,10 +148,6 @@ variable "extra_statements" {
   type        = list(string)
   default     = []
 }
-
-# -----------------------------------------------------------------------------
-# Dedicated database (check sheet features 4, 5, 6)
-# -----------------------------------------------------------------------------
 
 variable "create_database" {
   description = <<-EOT
@@ -251,19 +224,11 @@ variable "database_config" {
   default = {}
 }
 
-# -----------------------------------------------------------------------------
-# Passthrough (check sheet feature 7, FULL)
-# -----------------------------------------------------------------------------
-
 variable "host_domains" {
   description = "DNS/ingress metadata, echoed unchanged as `host_domains_map`. No cloud resource behind it on any cloud; trivially portable, and the GCP precedent has the identical output."
   type        = map(string)
   default     = {}
 }
-
-# -----------------------------------------------------------------------------
-# Tags
-# -----------------------------------------------------------------------------
 
 variable "freeform_tags" {
   description = "Freeform tags merged onto every resource."

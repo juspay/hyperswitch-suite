@@ -1,6 +1,4 @@
-# =============================================================================
-# Identity and placement
-# =============================================================================
+# Identity and placement.
 
 variable "compartment_id" {
   description = "OCID of the compartment every resource in this module is created in. Replaces the implicit AWS account scope; a flat compartment is the deliberate first-cut simplification (prerequisite P5, oci/identity-model.md)."
@@ -62,9 +60,7 @@ variable "defined_tags" {
   default     = {}
 }
 
-# =============================================================================
-# Network
-# =============================================================================
+# Network.
 
 variable "vcn_id" {
   description = "OCID of the VCN. Needed only to create this module's NSGs; the pool itself is placed by subnet."
@@ -110,9 +106,7 @@ variable "additional_lb_nsg_ids" {
   default     = []
 }
 
-# =============================================================================
-# Compute - image, shape, deployments
-# =============================================================================
+# Compute - image, shape, deployments.
 
 variable "image_id" {
   description = <<-EOT
@@ -314,9 +308,7 @@ variable "custom_user_data" {
   default     = null
 }
 
-# =============================================================================
-# Autoscaling
-# =============================================================================
+# Autoscaling.
 
 variable "enable_autoscaling" {
   description = "Whether to attach an oci_autoscaling_auto_scaling_configuration to each pool. False leaves each pool at a static size."
@@ -412,9 +404,7 @@ variable "scheduled_scaling_policies" {
   default = []
 }
 
-# =============================================================================
-# Load balancer
-# =============================================================================
+# Load balancer.
 
 variable "create_lb" {
   description = "Whether this module creates the load balancer, its backend sets and its listeners. False attaches the pools to an existing backend set via existing_load_balancer_id / existing_backend_set_name."
@@ -520,9 +510,7 @@ variable "idle_timeout_in_seconds" {
   default     = 60
 }
 
-# =============================================================================
-# TLS
-# =============================================================================
+# TLS.
 
 variable "enable_https_listener" {
   description = "Whether to create the HTTPS listener. Requires ssl_certificate_ids."
@@ -607,9 +595,7 @@ variable "mtls_listener" {
   default = {}
 }
 
-# =============================================================================
-# Routing rules
-# =============================================================================
+# Routing rules.
 
 variable "listener_rules" {
   description = <<-EOT
@@ -677,9 +663,7 @@ variable "listener_rules" {
   }
 }
 
-# =============================================================================
-# WAF
-# =============================================================================
+# WAF.
 
 variable "enable_waf" {
   description = "Whether to attach a WAF policy to the load balancer."
@@ -709,9 +693,7 @@ variable "waf_policy_id" {
   default     = null
 }
 
-# =============================================================================
-# Object storage - config delivery and log archival
-# =============================================================================
+# Object storage - config delivery and log archival.
 
 variable "create_config_bucket" {
   description = "Whether to create the Object Storage bucket that carries envoy.yaml and friends."
@@ -778,9 +760,7 @@ variable "bucket_kms_key_id" {
   default     = null
 }
 
-# =============================================================================
-# Break-glass SSH key
-# =============================================================================
+# Break-glass SSH key.
 
 variable "generate_ssh_key" {
   description = <<-EOT

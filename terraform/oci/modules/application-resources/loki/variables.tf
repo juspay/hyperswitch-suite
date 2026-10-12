@@ -1,21 +1,6 @@
-# =============================================================================
-# loki - the OCI port of application-resources/loki
-# =============================================================================
-# Check sheet: docs/multi-cloud-parity/oci/modules/loki.md
-# Identity:    docs/multi-cloud-parity/oci/identity-model.md
-# Network:     docs/multi-cloud-parity/oci/network-security-model.md (Option A)
-#
+# loki - OCI port of application-resources/loki.
 # The narrowest module in the observability trio: one cluster, one namespace,
-# one service account, one grant. Its whole job is a chunk bucket and the
-# identity that reads and writes it, plus an ingress boundary for the query
-# path.
-#
-# THIS MODULE CREATES NO `oci_identity_policy`. See locals.tf.
-# =============================================================================
-
-# -----------------------------------------------------------------------------
-# Identity and placement
-# -----------------------------------------------------------------------------
+# one service account, one grant. It creates no `oci_identity_policy` - see locals.tf.
 
 variable "compartment_id" {
   description = "OCID of the compartment this module's resources live in, and the location term of every statement it renders. Must be at or below the compartment the shared `oke-workload-identity` policy is attached to."
@@ -70,10 +55,6 @@ variable "k8s_service_account_name" {
   default     = "loki"
 }
 
-# -----------------------------------------------------------------------------
-# Chunk bucket (check sheet features 3 and 4)
-# -----------------------------------------------------------------------------
-
 variable "create_bucket" {
   description = "Create the chunk bucket. AWS: `module.s3_bucket` (`terraform-aws-modules/s3-bucket/aws ~>5.0`), `create = true` in the one live unit reviewed."
   type        = bool
@@ -115,10 +96,6 @@ variable "bucket_storage_tier" {
   default     = "Standard"
 }
 
-# -----------------------------------------------------------------------------
-# Ingress boundary (check sheet feature 6, FULL - but the rules move phase)
-# -----------------------------------------------------------------------------
-
 variable "create_nsg" {
   description = <<-EOT
     Create the module-owned Network Security Group for Loki's query-path load
@@ -146,10 +123,6 @@ variable "nsg_display_name" {
   default     = null
 }
 
-# -----------------------------------------------------------------------------
-# Escape hatches
-# -----------------------------------------------------------------------------
-
 variable "shared_statements" {
   description = <<-EOT
     Statement strings contributed from a shared source, appended to
@@ -171,10 +144,6 @@ variable "extra_statements" {
   type        = list(string)
   default     = []
 }
-
-# -----------------------------------------------------------------------------
-# Tags
-# -----------------------------------------------------------------------------
 
 variable "freeform_tags" {
   description = "Freeform tags merged onto every resource."

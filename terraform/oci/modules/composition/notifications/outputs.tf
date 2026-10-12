@@ -1,16 +1,4 @@
-# =============================================================================
-# Output contract
-#
-# Mapped from the AWS module's 7 outputs (check sheet section 5). One absence:
-#
-#   topic_policies -> feature 6 is NONE. There is no topic policy object, so
-#                     there is nothing to emit. An empty map here would suggest
-#                     the feature exists and is unconfigured.
-#
-# The monitoring module consumes `topic_ocids` as its per-severity
-# `destinations`. That is this module's whole reason to exist, so the name is a
-# contract - the AWS side reads the same values as `sns_topic_arns`.
-# =============================================================================
+# The monitoring module consumes `topic_ocids` as its per-severity `destinations`; keep the name stable.
 
 output "topic_ocids" {
   description = "Map of topic key to OCID. Counterpart of AWS's topic_arns, and what the monitoring module's `destinations` takes. Note oci_monitoring_alarm allows ONE destination per destination service, so pass a single-element list."

@@ -1,24 +1,4 @@
-###############################################################################
-# Output contract
-#
-# Named after the AWS outputs consumers actually read, with OCIDs replacing
-# ARNs. Deliberately ABSENT, each a recorded gap rather than a silent drop:
-#
-#   - nlb_dns_name / nlb_zone_id: an OCI NLB has no service-assigned DNS name,
-#     only IP addresses. Every OKE workload's proxy environment variable points
-#     at nlb_ip_address, which is why nlb_reserved_ip_id exists.
-#   - tls_listener_arn: there is no TLS listener to have an id for. OCI's NLB
-#     cannot terminate TLS at all (check sheet feature 3, verdict NONE) - see
-#     tls_termination_mode below, which reports what IS terminating TLS rather
-#     than leaving a reader to infer it from a missing output.
-#   - target_group_arn: replaced by backend_set_name.
-#   - asg_id / asg_name: replaced by instance_pool_id.
-#   - iam_role_arn / instance_profile_name: OCI has no per-instance role
-#     object; the fleet becomes a member of a dynamic group and policies grant
-#     that group verbs. SUBSTITUTE, owned by oci/identity-model.md, not by this
-#     module - which is why nothing identity-shaped is created here yet.
-#   - ssh_key_parameter_name: replaced by ssh_key_vault_secret_id.
-###############################################################################
+# Output contract.
 
 output "nlb_id" {
   description = "OCID of the Network Load Balancer."

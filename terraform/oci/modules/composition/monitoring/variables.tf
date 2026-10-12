@@ -1,7 +1,3 @@
-# =============================================================================
-# General configuration
-# =============================================================================
-
 variable "environment" {
   description = "Environment name (dev, integ, prod, sandbox)"
   type        = string
@@ -35,10 +31,7 @@ variable "compartment_id" {
   }
 }
 
-# Where the METRIC BEING EVALUATED lives. A distinction AWS never has to make:
-# a CloudWatch alarm and the metric it watches are always in the same account
-# and region. On OCI the alarm can sit in one compartment and read metrics
-# emitted in another. null collapses the two, which is the flat first-cut layout.
+# Where the METRIC BEING EVALUATED lives - may differ from compartment_id. null = same.
 variable "metric_compartment_id" {
   description = "OCID of the compartment the evaluated metrics are emitted in (null = same as compartment_id). No AWS counterpart."
   type        = string
@@ -51,19 +44,8 @@ variable "metric_compartment_id_in_subtree" {
   default     = false
 }
 
-# =============================================================================
-# Alarm notification routing (feature 7)
-# =============================================================================
-# Replaces AWS's `sns_topic_arns` map (severity -> ARN). Same keying, different
-# value type: oci_monitoring_alarm.destinations is a REQUIRED list, and Oracle
-# limits it to one destination per supported destination service (Notifications,
-# Streaming). Combined with per-severity alarm splitting (feature 4), this
-# reproduces AWS's severity-keyed routing exactly.
-#
-# AWS's ok_actions and insufficient_data_actions have NO counterpart: an OCI
-# alarm has one destination list used for both firing and reset notifications,
-# and there is no separate "insufficient data" action at all. See main.tf.
-
+# Alarm notification routing.
+# oci_monitoring_alarm.destinations is a REQUIRED list, limited to one destination per service.
 variable "destinations" {
   description = "Map of severity key (sev1, sev2, ...) to a list of destination OCIDs - ONS topic OCIDs from the `notifications` module. Replaces AWS's sns_topic_arns."
   type        = map(list(string))
@@ -76,15 +58,7 @@ variable "default_destinations" {
   default     = []
 }
 
-# =============================================================================
-# Classified multi-severity alarms (feature 4) - the module's dominant use
-# =============================================================================
-# 95 alarm definitions producing 203 resources in prod/us-east-1 alone. The AWS
-# variable shape is preserved deliberately: whoever writes 95 entries of this per
-# environment understands it, and forcing them to hand-write raw MQL strings
-# instead would be a large migration cost for no benefit. The module renders MQL
-# internally (locals.tf) from the same typed fields.
-
+# Classified multi-severity alarms - the module's dominant use.
 variable "dimension_map" {
   description = <<-EOT
     Flat map of named dimension sets, referenced by alarms via dimension_key.
@@ -131,59 +105,42 @@ variable "classified_metric_alarms" {
     # Seconds, as on AWS. Rendered into MQL's [interval] window.
     period = optional(number, 60)
 
-    # AWS statistic names (Average, Sum, Minimum, Maximum, SampleCount) are
-    # accepted and translated; MQL function names (mean, sum, min, max, count,
-    # rate, percentile) pass through.
+    # AWS statistic names (Average, Sum, ...) are translated; MQL function names pass through.
     statistic = optional(string, "Average")
 
-    # Argument for statistics that take one, e.g. "0.9" with statistic =
-    # "percentile". No AWS counterpart - AWS spells percentiles as the statistic
-    # itself ("p90").
+    # Argument for statistics that take one, e.g. "0.9" with statistic = "percentile".
     statistic_argument = optional(string)
 
     # Optional MQL .groupBy(...) / .grouping() suffix, e.g. "groupBy(resourceId)".
-    # No AWS counterpart.
     grouping = optional(string)
 
     resource_group = optional(string)
 
-    # Escape hatch. When set, the module uses this MQL string verbatim for every
-    # severity of this alarm and ignores metric_name/statistic/period/dimensions
-    # AND the severity's threshold/comparison_operator. Exists because MQL is
-    # strictly more expressive than the typed fields above in ways this module
-    # does not attempt to model (join queries, absent(), rate()). Use sparingly:
-    # a raw query bypasses every consistency guarantee the builder provides.
+    # Escape hatch: a raw MQL string used verbatim, bypassing the typed fields and
+    # every consistency guarantee the builder provides. Use sparingly.
     query_override = optional(string)
 
     severities = map(object({
       threshold = number
 
-      # AWS comparison-operator names (GreaterThanThreshold, ...) are accepted
-      # and translated to MQL operators; MQL operators (>, >=, <, <=, ==, !=)
-      # pass through.
+      # AWS comparison-operator names are translated to MQL operators; MQL operators pass through.
       comparison_operator = optional(string, "GreaterThanThreshold")
 
       description = string
 
-      # AWS's evaluation_periods x period becomes OCI's pending_duration, a
-      # single ISO-8601 duration. Derived unless pending_duration is set.
+      # AWS evaluation_periods x period becomes OCI pending_duration (one ISO-8601 duration).
       evaluation_periods = optional(number, 5)
       pending_duration   = optional(string)
 
-      # OCI alarm severity enum: CRITICAL | ERROR | WARNING | INFO. Derived from
-      # the severity KEY (sev1 -> CRITICAL, sev2 -> ERROR, sev3 -> WARNING,
-      # sev4 -> INFO) unless set. AWS has no alarm-severity field at all - the
-      # severity lives only in the alarm name and the SNS topic it routes to.
+      # OCI severity enum: CRITICAL | ERROR | WARNING | INFO, derived from the severity KEY.
       oci_severity = optional(string)
 
-      # AWS's actions_enabled.
       is_enabled = optional(bool, true)
 
       # Override the per-severity destination lookup for this one alarm.
       destinations = optional(list(string))
 
-      # Renotify while still firing. No AWS counterpart (CloudWatch notifies on
-      # state transition only). null = notify once per transition.
+      # Renotify while still firing; null = notify once per transition.
       repeat_notification_duration = optional(string)
     }))
   }))
@@ -206,13 +163,7 @@ variable "classified_metric_alarms" {
   }
 }
 
-# =============================================================================
-# Classified anomaly alarms (features 5 & 6) - PLACEHOLDER, INTENTIONALLY UNUSABLE
-# =============================================================================
-# This variable accepts nothing. It exists so that anyone porting the AWS
-# `classified_anomaly_alarms` input hits a loud, explanatory failure instead of
-# quietly getting a static-threshold alarm that looks like the anomaly alarm it
-# replaced. See main.tf for the full gap write-up.
+# Classified anomaly alarms - intentionally unusable placeholder.
 variable "classified_anomaly_alarms" {
   description = "NOT IMPLEMENTABLE on OCI - features 5 & 6 are NONE. MQL has no anomaly-band, standard-deviation or moving-baseline function. Populating this variable fails validation on purpose; pick one of the two fallback paths in main.tf explicitly instead."
   type        = any
@@ -224,10 +175,7 @@ variable "classified_anomaly_alarms" {
   }
 }
 
-# =============================================================================
-# Logging (features 8, 9, 10)
-# =============================================================================
-
+# Logging
 variable "log_groups" {
   description = <<-EOT
     Map of log-group key to configuration. Note the retention split: AWS puts
@@ -241,8 +189,7 @@ variable "log_groups" {
     display_name = optional(string)
     description  = optional(string)
 
-    # Days. OCI accepts 30-day increments up to 180. AWS's log groups all use 30
-    # in this fleet, comfortably inside that ceiling (check sheet open question 4).
+    # Days; OCI accepts 30-day increments up to 180.
     default_retention_duration = optional(number, 30)
 
     freeform_tags = optional(map(string), {})
@@ -281,9 +228,7 @@ variable "logs" {
     # Days; falls back to the log group's default_retention_duration.
     retention_duration = optional(number)
 
-    # Required when log_type = "SERVICE". `resource` is the OCID of the emitting
-    # resource, `service` and `category` come from Oracle's per-service logging
-    # reference.
+    # Required when log_type = "SERVICE". `resource` is the OCID of the emitting resource.
     source = optional(object({
       service     = string
       resource    = string
@@ -321,10 +266,7 @@ variable "logs" {
   }
 }
 
-# =============================================================================
 # Alarm defaults
-# =============================================================================
-
 variable "alarm_resolution" {
   description = "MQL evaluation resolution. Pinned rather than left to the provider default - see main.tf."
   type        = string
@@ -342,10 +284,7 @@ variable "alarm_message_format" {
   }
 }
 
-# =============================================================================
 # Tagging
-# =============================================================================
-
 variable "freeform_tags" {
   description = "Freeform tags merged onto every alarm, log group and log (AWS `tags` analogue)"
   type        = map(string)

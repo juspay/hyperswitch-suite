@@ -15,20 +15,12 @@ locals {
 
   nsg_display_name = coalesce(var.nsg_display_name, "${local.name_prefix}-loki-nsg")
 
-  # ---------------------------------------------------------------------------
-  # THE GRANT LIST - check sheet section 10. One grant, and that is the whole
-  # identity surface of this module.
-  #
-  # AWS: s3:PutObject + GetObject + ListBucket + DeleteObject + GetObjectVersion
-  # -> `manage objects`, NOT `use objects`. PutObject needs OBJECT_CREATE when
-  # the object does not yet exist, and only `manage` grants it
-  # (identity-model.md section 3.5's documented trap). Five AWS actions, one
-  # OCI verb.
-  #
-  # Scoped by `target.bucket.name` rather than left compartment-wide, so a
-  # compromised Loki cannot read `vector`'s or `hyperswitch`'s buckets in the
-  # same compartment.
-  # ---------------------------------------------------------------------------
+  # THE GRANT LIST. One grant - s3 PutObject/GetObject/ListBucket/DeleteObject/
+  # GetObjectVersion -> `manage objects`, NOT `use objects`: PutObject needs
+  # OBJECT_CREATE when the object does not yet exist, and only `manage` grants
+  # it. Scoped by `target.bucket.name` rather than left compartment-wide so a
+  # compromised Loki cannot read vector's or hyperswitch's buckets in the same
+  # compartment.
   grants = var.create_bucket ? [{
     verb          = "manage"
     resource_type = "objects"
@@ -36,32 +28,18 @@ locals {
     condition     = "target.bucket.name='${local.bucket_name}'"
   }] : []
 
-  # ---------------------------------------------------------------------------
-  # THE STATEMENT RENDERER.
+  # THIS MODULE CREATES NO `oci_identity_policy`, and that is structural: `name`
+  # is tenancy-unique and non-updatable, and one object per app per root exceeds
+  # the hard 100-per-tenancy limit. ONE shared policy object per environment
+  # (owned by `oke-workload-identity`) receives statements from every app module.
   #
-  # THIS MODULE CREATES NO `oci_identity_policy`, and that is structural.
-  # `oci_identity_policy.name` is tenancy-unique AND non-updatable; one object
-  # per app per live root is 12 apps x 11 roots = 132 objects against a hard
-  # limit of 100 per tenancy (identity-model.md section 3.7). ONE shared policy
-  # object per environment, owned by `oke-workload-identity`, receives
-  # statements from every app module. This module's contribution is the
-  # `policy_statements` output.
+  # The four `where all {}` conditions ARE the security boundary and are
+  # hard-coded below, not caller-controllable. On AWS a malformed trust policy
+  # fails CLOSED; on OCI a statement missing request.principal.service_account
+  # grants every pod in the namespace and the API accepts it silently.
   #
-  # The four `where all {}` conditions ARE the security boundary
-  # (identity-model.md section 3.2). This module's residual risk is lower than
-  # most of its family - one service account, one grant, no fan-out to get
-  # wrong - but the failure mode is the same and it is asymmetric: on AWS a
-  # malformed trust policy fails CLOSED, on OCI a statement missing
-  # `request.principal.service_account` grants every pod in the namespace and
-  # the API accepts it without error. All four conditions are hard-coded below
-  # and are not caller-controllable; `oke-workload-identity` re-validates every
-  # contributed statement at plan time.
-  #
-  # Pre-normalised and sorted, because the API rewrites statement text
-  # server-side and anything not already in normal form is a permanent
-  # Terraform diff (oracle/terraform-provider-oci#371). Only
-  # `in compartment id <ocid>` is emitted; compartment NAMES get lowercased.
-  # ---------------------------------------------------------------------------
+  # Pre-normalised and sorted: the API rewrites statement text server-side, so
+  # anything not in normal form is a permanent diff. Only `in compartment id <ocid>`.
   statement_tuples = flatten([
     for g in local.grants : [
       for cluster_id in var.cluster_ids : join("", [

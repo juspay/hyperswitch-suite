@@ -1,12 +1,6 @@
-# -----------------------------------------------------------------------------
-# Naming, tags, and a statement renderer that renders nothing by default.
-#
-# The renderer is present and is the same character-for-character copy of
-# `oke-workload-identity/locals.tf` the rest of this wave uses, so that a grant
-# added later goes through the same normalisation and the same four hard-coded
-# `where` conditions. It is not dead code waiting for a rewrite; it is the same
-# code, exercised with an empty grant list.
-# -----------------------------------------------------------------------------
+# Naming, tags, and a statement renderer that renders nothing by default - the
+# same canonical copy used across this wave, so a future grant goes through the
+# same normalisation and same four hard-coded `where` conditions.
 
 locals {
   name_prefix = "${var.project_name}-${var.environment}-ratelimiter"
@@ -95,12 +89,9 @@ locals {
 
   cache_configured = var.cache_cluster_id != null
 
-  # TLS is hardcoded true and is NOT a reflection of configuration. OCI Cache
-  # accepts TLS connections only and offers no Terraform-level off switch, which
-  # is the OPPOSITE of the AWS module (transit_encryption_enabled = false in
-  # every live unit) and of the GCP valkey unit. A consumer reading this must
-  # not carry the AWS default across in their head: if the client cannot
-  # negotiate TLS the connection is reset, it does not degrade.
+  # TLS is hardcoded true - NOT a reflection of configuration. OCI Cache accepts
+  # TLS only and offers no off switch; if the client cannot negotiate TLS the
+  # connection is reset, it does not degrade.
   cache_connection_info = {
     primary_endpoint = var.cache_primary_endpoint_ip_address
     primary_fqdn     = var.cache_primary_fqdn
