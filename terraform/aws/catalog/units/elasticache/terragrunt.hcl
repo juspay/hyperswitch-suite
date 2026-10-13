@@ -26,7 +26,7 @@ dependency "elasticache_primary" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/elasticache?ref=elasticache-v0.1.6"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/elasticache?ref=elasticache-v0.1.7"
 }
 
 locals {
@@ -81,6 +81,11 @@ inputs = {
   network_type = "ipv4"
 
   # Security
+  # Optional regional CMK: pass an existing key or opt into creation via values.kms.
+  # Secondary clusters inherit encryption flags, but need their regional key.
+  kms_key_id = try(values.kms_key_id, null)
+  kms        = try(values.kms, {})
+
   at_rest_encryption_enabled = true
   transit_encryption_enabled = false
 
