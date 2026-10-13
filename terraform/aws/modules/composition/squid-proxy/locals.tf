@@ -45,9 +45,21 @@ locals {
   # config_files templating - same placeholder substitution as userdata_content,
   # applied to every uploaded config file's content (e.g. vector.toml's
   # {{loki_endpoint}} Loki sink URL, so it can be region-coded by the caller
-  # instead of hardcoded per-region in a static file).
+  # instead of hardcoded per-region in a static file). Callers can supply further
+  # {{key}} placeholders through config_files_vars; unknown placeholders are left as-is.
+  config_files_vars = merge({ loki_endpoint = var.loki_endpoint }, var.config_files_vars)
+
+  # Split on "{{" and resolve each segment's leading "key}}" against config_files_vars,
+  # since HCL has no fold to chain replace() over a map.
   config_files_content = {
-    for key, path in var.config_files : key => replace(file(path), "{{loki_endpoint}}", var.loki_endpoint)
+    for key, path in var.config_files : key => join("", [
+      for i, part in split("{{", file(path)) :
+      i == 0 ? part : (
+        can(local.config_files_vars[regex("^([A-Za-z0-9_-]+)}}", part)[0]])
+        ? "${local.config_files_vars[regex("^([A-Za-z0-9_-]+)}}", part)[0]]}${substr(part, length(regex("^([A-Za-z0-9_-]+)}}", part)[0]) + 2, -1)}"
+        : "{{${part}"
+      )
+    ])
   }
 
   # IAM role selection - use created or existing
