@@ -102,7 +102,7 @@ resource "aws_elasticache_replication_group" "main" {
   transit_encryption_mode    = local.is_secondary_cluster ? null : var.transit_encryption_mode
   auth_token                 = local.is_secondary_cluster ? null : var.auth_token
   auth_token_update_strategy = local.is_secondary_cluster ? null : var.auth_token_update_strategy
-  kms_key_id                 = local.is_secondary_cluster ? null : var.kms_key_id
+  kms_key_id                 = local.kms_key_arn
   # Maintenance & Backup
   maintenance_window        = local.is_secondary_cluster ? null : var.maintenance_window
   snapshot_window           = local.is_secondary_cluster ? null : var.snapshot_window
@@ -144,6 +144,14 @@ resource "aws_elasticache_replication_group" "main" {
     Name = local.elasticache_replication_group_id
   })
   lifecycle {
+    precondition {
+      condition     = !local.kms_create || (var.kms_key_id == null && var.kms.existing_key_arn == null)
+      error_message = "Choose KMS key creation or an existing key, not both."
+    }
+    precondition {
+      condition     = local.is_secondary_cluster || var.at_rest_encryption_enabled || (var.kms_key_id == null && !local.kms_create && var.kms.existing_key_arn == null)
+      error_message = "Standalone and primary clusters using a KMS key require at_rest_encryption_enabled = true."
+    }
     ignore_changes = [
       engine_version, # Prevent unwanted version upgrades
     ]

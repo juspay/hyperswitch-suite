@@ -107,3 +107,18 @@ output "is_secondary_cluster" {
   description = "Whether this cluster is a secondary/replica cluster in the global replication group"
   value       = local.is_secondary_cluster
 }
+
+output "kms_key_arn" {
+  description = "Configured encryption key reference, or the created key ARN. Null when using the service default."
+  value       = local.kms_key_arn
+}
+
+output "module_kms_key_arn" {
+  description = "ARN of the key created by this module, if enabled."
+  value       = local.kms_create ? module.kms[0].key_arn : null
+}
+
+output "module_kms_key_id" {
+  description = "ID of the key created by this module, if enabled."
+  value       = local.kms_create ? module.kms[0].key_id : null
+}
