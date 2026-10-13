@@ -1,3 +1,34 @@
+## Customer-managed encryption keys
+
+Pass `kms_key_id` (legacy input) or `kms = { existing_key_arn = "..." }` to
+use an existing key in the replication group's region. Alternatively:
+
+```hcl
+kms = {
+  create              = true
+  enable_key_rotation = true
+  # Optional for a new multi-region key:
+  multi_region = true
+}
+```
+
+To create a regional replica of an existing multi-region KMS key, set
+`kms.create = true`, `kms.create_replica = true`, and `kms.primary_key_arn`.
+Creation cannot be combined with an existing key. The new key uses the KMS
+module's default account policy; key administrators, users, service users and
+owners can be supplied through the corresponding `kms` lists. The deployment
+role needs the appropriate KMS usage/grant permissions.
+
+Standalone/primary clusters require `at_rest_encryption_enabled = true` when
+using a customer-managed key. Secondary clusters keep encryption flags unset
+because they inherit them from the global datastore; only the regional KMS key
+is passed. The primary must use compatible customer-managed encryption.
+Changing an existing replication group's key requires replacement; review the
+plan before rollout. This module change does not update catalog unit inputs.
+
+Outputs `kms_key_arn`, `module_kms_key_arn`, and `module_kms_key_id` expose the
+selected key and optional module-created key. Key creation defaults to off.
+
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
