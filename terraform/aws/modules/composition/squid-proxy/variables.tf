@@ -202,6 +202,12 @@ variable "loki_endpoint" {
   default     = ""
 }
 
+variable "config_files_vars" {
+  description = "Extra values substituted for {{key}} placeholders in config_files content (e.g. { vpc_cidr = \"10.1.0.0/16\" } for squid.conf's localnet ACL). Placeholders with no matching key are left unresolved."
+  type        = map(string)
+  default     = {}
+}
+
 variable "enable_detailed_monitoring" {
   description = "Enable detailed CloudWatch monitoring"
   type        = bool
