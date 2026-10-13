@@ -240,6 +240,8 @@ resource "aws_iam_instance_profile" "envoy_profile" {
 
 # Security Group for Load Balancer (Only create if creating new ALB)
 module "lb_security_group" {
+  revoke_rules_on_delete = true
+
   count   = var.create_lb ? 1 : 0
   source  = "terraform-aws-modules/security-group/aws"
   version = "~> 5.0"
@@ -274,6 +276,8 @@ resource "aws_security_group_rule" "lb_default_egress_to_asg" {
 
 # Security Group for Envoy ASG Instances
 module "asg_security_group" {
+  revoke_rules_on_delete = true
+
   source  = "terraform-aws-modules/security-group/aws"
   version = "~> 5.0"
 

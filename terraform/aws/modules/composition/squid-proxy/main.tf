@@ -285,6 +285,8 @@ data "aws_subnet" "lb_subnets" {
 # =========================================================================
 
 resource "aws_security_group" "asg" {
+  revoke_rules_on_delete = true
+
   name        = "${local.name_prefix}-asg-sg"
   description = "Security group for Squid proxy ASG instances"
   vpc_id      = var.vpc_id
@@ -315,6 +317,8 @@ resource "aws_security_group" "asg" {
 # a duplicate ingress/egress rule for it in a consuming security-rules unit.
 # =========================================================================
 resource "aws_security_group" "nlb" {
+  revoke_rules_on_delete = true
+
   count = var.create_nlb ? 1 : 0
 
   name        = "${local.name_prefix}-nlb-sg"
