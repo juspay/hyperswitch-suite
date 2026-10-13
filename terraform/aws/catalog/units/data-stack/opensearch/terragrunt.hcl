@@ -15,7 +15,7 @@ dependency "vpc_network" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/opensearch?ref=opensearch-v0.1.0"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/opensearch?ref=opensearch-v0.1.1"
 }
 
 inputs = {
