@@ -230,6 +230,8 @@ module "jump_iam_role" {
 # Security Group for Jump Host
 # =========================================================================
 module "jump_sg" {
+  revoke_rules_on_delete = true
+
   source  = "terraform-aws-modules/security-group/aws"
   version = "~> 5.0"
 

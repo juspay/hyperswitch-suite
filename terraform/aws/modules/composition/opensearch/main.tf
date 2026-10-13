@@ -28,6 +28,8 @@ resource "aws_iam_service_linked_role" "opensearch" {
 ################################################################################
 
 resource "aws_security_group" "this" {
+  revoke_rules_on_delete = true
+
   count = var.create_security_group ? 1 : 0
 
   name        = local.security_group_name

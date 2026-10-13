@@ -37,6 +37,8 @@ resource "aws_ssm_parameter" "locker_private_key" {
 # SECURITY - LOCKER SECURITY GROUP
 # =========================================================================
 resource "aws_security_group" "locker" {
+  revoke_rules_on_delete = true
+
   name        = "${local.name_prefix}-sg"
   description = "Security group for locker instance"
   vpc_id      = var.vpc_id
@@ -61,6 +63,8 @@ resource "aws_security_group_rule" "locker_ingress_from_alb" {
 # SECURITY - ALB SECURITY GROUP
 # =========================================================================
 resource "aws_security_group" "alb" {
+  revoke_rules_on_delete = true
+
   name        = "${local.name_prefix}-alb-sg"
   description = "Security group for locker Application Load Balancer"
   vpc_id      = var.vpc_id
