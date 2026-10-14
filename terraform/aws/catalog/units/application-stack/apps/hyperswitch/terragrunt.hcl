@@ -29,7 +29,7 @@ dependency "hyperswitch-primary" {
 
 # Replica dashboard buckets (composition/s3); gated on the *_s3_config_path values.
 dependency "dashboard_bucket" {
-  config_path = try(values.dashboard_s3_config_path, "")
+  config_path = try(values.dashboard_s3_config_path, null)
   enabled     = try(values.dashboard_s3_config_path, null) != null
 
   mock_outputs = {
@@ -40,7 +40,7 @@ dependency "dashboard_bucket" {
 }
 
 dependency "file_uploads_bucket" {
-  config_path = try(values.file_uploads_s3_config_path, "")
+  config_path = try(values.file_uploads_s3_config_path, null)
   enabled     = try(values.file_uploads_s3_config_path, null) != null
 
   mock_outputs = {
