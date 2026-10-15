@@ -83,33 +83,90 @@ Before you deploy these modules you need:
     either as plaintext or KMS-encrypted base64.
   - Redis/Valkey: an endpoint (configuration endpoint for cluster mode, primary
     endpoint for standalone), an optional AUTH token, and TLS setting.
-- **Lambda layers.** The Aurora stress functions use a `psycopg2` layer; the
+- **Lambda layers.** The Aurora functions use a `psycopg2` layer and the
   ElastiCache stress functions use a `redis-py` layer. Publish these with the
-  `lambda-layer` module and pass the ARNs in via `lambda_layers`.
+  `lambda-layer` module and pass the ARNs to the `lambda_layers` variable of
+  each module. See [Lambda layers](#lambda-layers) below for how to build the
+  zip and pass it in.
 - **A jump host.** An SSM-managed EC2 instance with outbound access to the
   Lambdas. FIS uses `aws-ssm:send-command` to invoke the stress Lambdas. Its
   instance ARN is passed to `fis-experiments`.
 - **AWS account and region** where all resources live.
 
-## Quick wiring example
+## Lambda layers
 
-The four modules are usually instantiated together. A minimal wire-up:
+The stress and fault-injection Lambdas depend on additional Python packages that
+are not in the Lambda Python runtime image, so you must publish them as Lambda
+layers and pass the layer ARNs into the modules.
+
+| Module | Functions that need a layer | Layer |
+|--------|-----------------------------|-------|
+| `aurora-fault-injection` | `fault_injection` handlers (crash/disk/replica) and `stress_test` (cpu/memory/connection/cleanup) | `psycopg2` |
+| `elasticache-stress-test` | `cpu_stress`, `memory_stress`, `mixed_workload`, `connection_exhaustion`, `cleanup`, `connection_orchestrator` | `redis-py` (the `redis` package, with cluster support) |
+| `elasticache-stress-test` | `failover` | none — uses only `boto3`, which is built into the runtime |
+
+For a Python Lambda layer the zip must contain the installed package under a
+top-level `python/` directory. Build it from an Amazon Linux 2 / 2023 compatible
+environment so the compiled extensions match the Lambda runtime:
+
+```bash
+# psycopg2 layer
+mkdir -p python
+pip install psycopg2-binary --target python
+zip -r psycopg2.zip python
+
+# redis-py layer (manylinux wheels, no compilation needed for the pure-Python parts)
+mkdir -p python
+pip install redis --target python
+zip -r redis-py.zip python
+```
+
+Then publish each zip with the `lambda-layer` module and pass the resulting ARN
+to the relevant module via the `lambda_layers` variable. Because
+`lambda_layers` is a list, you can also reference a layer published
+independently (for example an account-wide `psycopg2` layer) instead of
+deploying one with this module:
 
 ```hcl
-# 1. Publish the shared layer(s) your functions need
 module "psycopg2_layer" {
   source       = "./terraform/aws/modules/composition/lambda-layer"
   layer_name   = "psycopg2"
-  zip_path     = "${path.module}/psycopg2.zip"  # pre-built zip
+  zip_path     = "${path.module}/psycopg2.zip"  # built as above
 }
 
 module "redis_py_layer" {
   source       = "./terraform/aws/modules/composition/lambda-layer"
   layer_name   = "redis-py"
-  zip_path     = "${path.module}/redis-py.zip"  # pre-built zip
+  zip_path     = "${path.module}/redis-py.zip"  # built as above
 }
 
-# 2. Aurora stress + fault injection Lambdas
+# Existing layers published outside this module can be referenced by ARN directly:
+variable "existing_redis_py_layer_arn" {
+  type    = string
+  default = ""
+}
+
+locals {
+  redis_layers = var.existing_redis_py_layer_arn != ""
+    ? [var.existing_redis_py_layer_arn]
+    : [module.redis_py_layer.layer_arn]
+}
+```
+
+See the [lambda-layer](./lambda-layer/README.md) module README for the full
+input list (`zip_path`, `source_hash`, `compatible_runtimes`, `license_info`).
+
+## Quick wiring example
+
+The four modules are usually instantiated together. A minimal wire-up (the
+`psycopg2_layer` and `redis_py_layer` modules are defined in the
+[Lambda layers](#lambda-layers) section above):
+
+```hcl
+# Layer modules (psycopg2_layer, redis_py_layer) are defined in the
+# "Lambda layers" section above and referenced here.
+
+# 1. Aurora stress + fault injection Lambdas
 module "aurora_fault_injection" {
   source = "./terraform/aws/modules/composition/aurora-fault-injection"
 
@@ -124,7 +181,7 @@ module "aurora_fault_injection" {
   lambda_layers           = [module.psycopg2_layer.layer_arn]
 }
 
-# 3. ElastiCache stress + failover Lambdas
+# 2. ElastiCache stress + failover Lambdas
 module "elasticache_stress_test" {
   source = "./terraform/aws/modules/composition/elasticache-stress-test"
 
@@ -135,10 +192,10 @@ module "elasticache_stress_test" {
   lambda_subnet_ids        = var.lambda_subnet_ids
   lambda_security_group_id = var.lambda_security_group_id
   redis_replication_group_id = aws_elasticache_replication_group.this.id
-  lambda_layers            = [module.redis_py_layer.layer_arn]
+  lambda_layers            = local.redis_layers
 }
 
-# 4. FIS experiments + stop conditions
+# 3. FIS experiments + stop conditions
 module "fis_experiments" {
   source = "./terraform/aws/modules/composition/fis-experiments"
 

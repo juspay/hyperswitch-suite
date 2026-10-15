@@ -112,7 +112,7 @@ variable "network_latency_target_service_names" {
 }
 
 variable "network_latency_target_environment_tag" {
-  description = "Value of the Environment tag used to filter network latency targets. Defaults to var.environment. Set to environment.short if your live instances use the short environment code (e.g., sbx)."
+  description = "Value of the Environment tag used to filter network latency targets. Defaults to var.environment. Set to environment.short if your live instances use the short environment code (e.g., dev, stg)."
   type        = string
   default     = ""
 }
@@ -258,7 +258,7 @@ variable "enable_stress_alarms" {
 # ============================================================================
 
 variable "redis_cluster_id" {
-  description = "Elasticache CacheClusterId (per-node cluster ID, NOT replication group ID) for Redis stress test CloudWatch alarm dimensions. E.g., sbx-test-redis-0001-001. Leave empty to skip Redis stress alarms."
+  description = "Elasticache CacheClusterId (per-node cluster ID, NOT replication group ID) for Redis stress test CloudWatch alarm dimensions. E.g., my-redis-0001-001. Leave empty to skip Redis stress alarms."
   type        = string
   default     = ""
 }
@@ -286,7 +286,7 @@ variable "enable_redis_stress_alarms" {
 # ============================================================================
 
 variable "redis_replication_group_id" {
-  description = "ElastiCache Redis replication group ID for failover experiments and replica-lag alarm dimension (e.g., sbx-test-redis). Leave empty to skip the replica-lag stop-condition alarm."
+  description = "ElastiCache Redis replication group ID for failover experiments and replica-lag alarm dimension (e.g., my-redis). Leave empty to skip the replica-lag stop-condition alarm."
   type        = string
   default     = ""
 }

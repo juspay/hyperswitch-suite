@@ -13,7 +13,7 @@ Pre-flight checks (any failure returns statusCode 400):
   d. No node replacement/failover already in progress (status must be available).
 
 Environment variables:
-  REDIS_REPLICATION_GROUP_ID  - Replication group ID (default ``sbx-test-redis``)
+  REDIS_REPLICATION_GROUP_ID  - Replication group ID (required, no default)
   REDIS_NODE_GROUP_ID         - Node group / shard ID (default ``0001``)
   AWS_REGION                  - AWS region (auto-set by Lambda)
 """
@@ -38,7 +38,7 @@ MAX_REPLICA_LAG_SECONDS = 30
 def _get_config() -> Dict[str, str]:
     """Read configuration from environment variables with sensible defaults."""
     return {
-        "replication_group_id": os.environ.get("REDIS_REPLICATION_GROUP_ID", "sbx-test-redis"),
+        "replication_group_id": os.environ.get("REDIS_REPLICATION_GROUP_ID", ""),
         "node_group_id": os.environ.get("REDIS_NODE_GROUP_ID", "0001"),
         "region": os.environ.get("AWS_REGION", os.environ.get("AWS_DEFAULT_REGION", "")),
     }
@@ -176,6 +176,17 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             "statusCode": 400,
             "body": json.dumps({
                 "error": "AWS_REGION environment variable is not set",
+            }),
+        }
+
+    if not replication_group_id:
+        return {
+            "statusCode": 400,
+            "body": json.dumps({
+                "replication_group_id": replication_group_id,
+                "node_group_id": node_group_id,
+                "error": "REDIS_REPLICATION_GROUP_ID environment variable is not set",
+                "failover_initiated": False,
             }),
         }
 
