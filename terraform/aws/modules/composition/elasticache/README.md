@@ -45,7 +45,9 @@ selected key and optional module-created key. Key creation defaults to off.
 
 ## Modules
 
-No modules.
+| Name | Source | Version |
+|------|--------|---------|
+| <a name="module_kms"></a> [kms](#module\_kms) | terraform-aws-modules/kms/aws | 4.2.0 |
 
 ## Resources
 
@@ -83,7 +85,8 @@ No modules.
 | <a name="input_global_replication_group_id"></a> [global\_replication\_group\_id](#input\_global\_replication\_group\_id) | (Optional) The ID of the global replication group to which this replication group should belong. If not provided, will be auto-generated | `string` | `null` | no |
 | <a name="input_ip_discovery"></a> [ip\_discovery](#input\_ip\_discovery) | (Optional) The IP version to advertise in the discovery protocol. Valid values are ipv4 or ipv6 | `string` | `"ipv4"` | no |
 | <a name="input_is_secondary_region"></a> [is\_secondary\_region](#input\_is\_secondary\_region) | Whether this is a secondary region in a global replication setup (attaches to existing global replication group) | `bool` | `false` | no |
-| <a name="input_kms_key_id"></a> [kms\_key\_id](#input\_kms\_key\_id) | (Optional) The ARN of the key that you wish to use if encrypting at rest. Can be specified only if at\_rest\_encryption\_enabled = true | `string` | `null` | no |
+| <a name="input_kms"></a> [kms](#input\_kms) | Optional customer-managed encryption key configuration. Creates a regional key (or multi-region replica) when create is true; otherwise uses existing\_key\_arn. Legacy kms\_key\_id takes precedence over existing\_key\_arn. | <pre>object({<br/>    create                  = optional(bool, false)<br/>    existing_key_arn        = optional(string)<br/>    description             = optional(string)<br/>    multi_region            = optional(bool, false)<br/>    create_replica          = optional(bool, false)<br/>    primary_key_arn         = optional(string)<br/>    deletion_window_in_days = optional(number, 30)<br/>    enable_key_rotation     = optional(bool, true)<br/>    aliases                 = optional(list(string), [])<br/>    key_administrators      = optional(list(string), [])<br/>    key_users               = optional(list(string), [])<br/>    key_service_users       = optional(list(string), [])<br/>    key_owners              = optional(list(string), [])<br/>  })</pre> | `{}` | no |
+| <a name="input_kms_key_id"></a> [kms\_key\_id](#input\_kms\_key\_id) | (Optional) Existing regional KMS key ARN. Primary/standalone clusters require at\_rest\_encryption\_enabled = true; secondary clusters inherit that flag from the global datastore. | `string` | `null` | no |
 | <a name="input_log_delivery"></a> [log\_delivery](#input\_log\_delivery) | Engine/slow log delivery. Set create\_log\_groups to also create the CloudWatch log groups named as destinations. | <pre>object({<br/>    configuration = list(object({<br/>      destination      = string<br/>      destination_type = string<br/>      log_format       = string<br/>      log_type         = string<br/>    }))<br/>    create_log_groups        = optional(bool, false)<br/>    log_group_retention_days = optional(number, 30)<br/>  })</pre> | <pre>{<br/>  "configuration": []<br/>}</pre> | no |
 | <a name="input_maintenance_window"></a> [maintenance\_window](#input\_maintenance\_window) | (Optional) Specifies the weekly time range for maintenance. Format: ddd:hh24:mi-ddd:hh24:mi (24H Clock UTC). Minimum 60 minute period | `string` | `"sun:05:00-sun:06:00"` | no |
 | <a name="input_multi_az_enabled"></a> [multi\_az\_enabled](#input\_multi\_az\_enabled) | (Optional) Specifies whether to enable Multi-AZ Support. If true, automatic\_failover\_enabled must also be enabled | `bool` | `true` | no |
@@ -127,6 +130,9 @@ No modules.
 | <a name="output_global_replication_group_suffix"></a> [global\_replication\_group\_suffix](#output\_global\_replication\_group\_suffix) | User-specified suffix for the Global Replication Group (may differ from actual AWS-generated ID) |
 | <a name="output_is_primary_cluster"></a> [is\_primary\_cluster](#output\_is\_primary\_cluster) | Whether this cluster is the primary cluster in the global replication group |
 | <a name="output_is_secondary_cluster"></a> [is\_secondary\_cluster](#output\_is\_secondary\_cluster) | Whether this cluster is a secondary/replica cluster in the global replication group |
+| <a name="output_kms_key_arn"></a> [kms\_key\_arn](#output\_kms\_key\_arn) | Configured encryption key reference, or the created key ARN. Null when using the service default. |
+| <a name="output_module_kms_key_arn"></a> [module\_kms\_key\_arn](#output\_module\_kms\_key\_arn) | ARN of the key created by this module, if enabled. |
+| <a name="output_module_kms_key_id"></a> [module\_kms\_key\_id](#output\_module\_kms\_key\_id) | ID of the key created by this module, if enabled. |
 | <a name="output_replication_group_arn"></a> [replication\_group\_arn](#output\_replication\_group\_arn) | ARN of the ElastiCache Replication Group |
 | <a name="output_replication_group_configuration_endpoint_address"></a> [replication\_group\_configuration\_endpoint\_address](#output\_replication\_group\_configuration\_endpoint\_address) | Address of the configuration endpoint for the replication group |
 | <a name="output_replication_group_id"></a> [replication\_group\_id](#output\_replication\_group\_id) | ID of the ElastiCache Replication Group |

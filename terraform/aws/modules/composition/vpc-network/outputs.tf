@@ -308,12 +308,18 @@ output "nacl_arn" {
 ###################
 output "gateway_vpc_endpoint_ids" {
   description = "Map of Gateway VPC Endpoint IDs"
-  value       = { for k, v in module.gateway_vpc_endpoints : k => v.vpc_endpoint_id }
+  value = {
+    for k, v in module.vpc_endpoints.endpoints : k => v.id
+    if contains(keys(local.enabled_gateway_endpoints), k)
+  }
 }
 
 output "interface_vpc_endpoint_ids" {
   description = "Map of Interface VPC Endpoint IDs"
-  value       = { for k, v in module.interface_vpc_endpoints : k => v.vpc_endpoint_id }
+  value = {
+    for k, v in module.vpc_endpoints.endpoints : k => v.id
+    if contains(keys(local.enabled_interface_endpoints), k)
+  }
 }
 
 output "vpc_endpoint_security_group_id" {
@@ -323,7 +329,10 @@ output "vpc_endpoint_security_group_id" {
 
 output "custom_interface_vpc_endpoint_ids" {
   description = "Map of custom interface VPC endpoint IDs"
-  value       = { for k, m in module.custom_interface_vpc_endpoints : k => m.endpoints[k].id }
+  value = {
+    for k, v in module.vpc_endpoints.endpoints : k => v.id
+    if contains(keys(var.custom_interface_vpc_endpoints), k)
+  }
 }
 
 output "vpc_peering_connection_ids" {
