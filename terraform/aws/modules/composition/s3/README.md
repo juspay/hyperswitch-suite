@@ -37,6 +37,30 @@ replication are not re-replicated), so there is no ping-pong. Important caveats:
 - **Symmetric KMS.** When using SSE-KMS, both `kms_key_arn` (source region) and
   `replication_configuration.kms_key_arn` (replica region) must be set.
 
+## Upgrading a pre-existing one-way deployment
+
+The replication IAM role/policy changed from a `count` index to a per-direction
+`for_each` key (`[0]` → `["fwd"]`). The forward role name is unchanged, so this is
+a pure state rename with no resource replacement. Fresh deployments need nothing.
+A stack that already applied the one-way version should add a one-time `moved`
+block in the **consuming** configuration (the migration lives with the state, not
+in this library module) before `apply`:
+
+```hcl
+moved {
+  from = module.<this_module>.aws_iam_role.replication[0]
+  to   = module.<this_module>.aws_iam_role.replication["fwd"]
+}
+
+moved {
+  from = module.<this_module>.aws_iam_role_policy.replication[0]
+  to   = module.<this_module>.aws_iam_role_policy.replication["fwd"]
+}
+```
+
+Equivalently, run `terraform state mv` for the two addresses once. Without this,
+the forward replication role/policy is destroyed and recreated on upgrade.
+
 ## Example
 
 ```hcl
