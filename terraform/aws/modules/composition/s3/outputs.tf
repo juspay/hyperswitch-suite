@@ -24,11 +24,21 @@ output "replica_bucket_arn" {
 }
 
 output "replication_role_arn" {
-  description = "ARN of the IAM role used for replication (null when replication is disabled)"
-  value       = try(aws_iam_role.replication[0].arn, null)
+  description = "ARN of the forward (source -> replica) replication IAM role (null when replication is disabled)"
+  value       = try(aws_iam_role.replication["fwd"].arn, null)
+}
+
+output "replication_role_arns" {
+  description = "Map of replication direction (fwd/rev) to IAM role ARN for all active directions"
+  value       = { for k, role in aws_iam_role.replication : k => role.arn }
 }
 
 output "replication_enabled" {
   description = "Whether cross-region replication is configured"
   value       = local.replication_enabled
+}
+
+output "bidirectional_replication_enabled" {
+  description = "Whether two-way (replica -> source) replication is configured"
+  value       = local.bidirectional
 }
