@@ -201,6 +201,7 @@ locals {
     } },
     { for k, v in var.custom_interface_vpc_endpoints : k => {
       service_name        = v.service_name
+      service_region      = v.service_region
       private_dns_enabled = v.private_dns_enabled
       subnet_ids          = lookup(local.endpoint_subnet_ids, v.subnet_tier, module.eks_workers_subnets[*].subnet_id)
       tags = merge(
