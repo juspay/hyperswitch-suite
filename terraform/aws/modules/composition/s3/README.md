@@ -18,6 +18,25 @@ alias, whose region comes from `replication_configuration.region`. The default
 (source-region) provider is supplied by the consuming layer (for Terragrunt roots,
 the generated `provider.tf` from `root.hcl`).
 
+## Bi-directional (two-way) replication
+
+Set `replication_configuration.bidirectional = true` to also replicate the
+replica bucket back to the source, making the two buckets a mirrored pair. This
+adds a second replication rule on the replica bucket and a second, direction-scoped
+IAM role (`rev`). `replica_modifications` is enabled on both rules so metadata
+changes sync both ways, and `delete_marker_replication` keeps deletes in sync.
+
+S3 prevents infinite replication loops natively (objects that arrived via
+replication are not re-replicated), so there is no ping-pong. Important caveats:
+
+- **Not a multi-writer store.** Conflict resolution is last-writer-wins by
+  timestamp. Use this for active/passive with failback, not concurrent writes to
+  the same key in both regions.
+- **No back-fill.** Only objects written after the config is applied are
+  replicated; pre-existing objects need an S3 Batch Replication job.
+- **Symmetric KMS.** When using SSE-KMS, both `kms_key_arn` (source region) and
+  `replication_configuration.kms_key_arn` (replica region) must be set.
+
 ## Example
 
 ```hcl
@@ -32,6 +51,20 @@ module "payment_files" {
     enabled     = true
     region      = "ap-south-2"
     bucket_name = "hyperswitch-sandbox-payment-files-replica" # optional; derived when omitted
+  }
+}
+
+# Two-way (mirrored) variant
+module "payment_files_mirrored" {
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/s3?ref=s3-v0.1.0"
+
+  environment = "sandbox"
+  region      = "ap-south-1"
+
+  replication_configuration = {
+    enabled       = true
+    region        = "ap-south-2"
+    bidirectional = true
   }
 }
 ```
