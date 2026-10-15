@@ -211,3 +211,31 @@
 | <a name="output_vpc_peering_connection_ids"></a> [vpc\_peering\_connection\_ids](#output\_vpc\_peering\_connection\_ids) | Map of VPC peering connection IDs (requester side) |
 | <a name="output_vpc_secondary_cidr_blocks"></a> [vpc\_secondary\_cidr\_blocks](#output\_vpc\_secondary\_cidr\_blocks) | List of secondary CIDR blocks of the VPC |
 <!-- END_TF_DOCS -->
+
+## Peering route keys and upgrades
+
+Peering routes selected through `route_tables` groups use stable logical table
+names in their Terraform instance keys, e.g.
+`peer-to-primary-eks-workers-10.63.0.0-22`. AWS route-table and peering IDs are
+stored only in resource arguments, so new or replaced tables can be planned.
+Optional NAT tables are selected using `enable_nat_gateway` and the number of
+availability zones. The `all` group takes precedence over other selectors.
+Explicit route-table IDs are still supported and retain their ID-based keys;
+these IDs and peer CIDRs must be known at plan time.
+
+When upgrading from ID-based group keys, migrate existing route addresses before
+applying to avoid deleting and recreating otherwise unchanged routes. For example,
+run this in the consuming Terraform working directory (or use `terragrunt state mv`):
+
+```sh
+terraform state mv \
+  'aws_route.peering_routes["peer-to-primary-rtb-0123456789abcdef0-10.63.0.0-22"]' \
+  'aws_route.peering_routes["peer-to-primary-eks-workers-10.63.0.0-22"]'
+```
+
+Use the actual peer name, route-table ID, logical table name and destination CIDR
+from your state. Apply the same migration to `aws_route.accepter_peering_routes`.
+Use `module.<name>.` prefixes when the composition is called as a child module.
+A fixed `moved` block cannot cover every deployment because old keys contain
+AWS-assigned IDs. Review the full plan after migration: changing the primary VPC
+CIDR can still replace the VPC and its dependent resources.
