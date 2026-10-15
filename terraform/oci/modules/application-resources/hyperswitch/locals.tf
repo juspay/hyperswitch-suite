@@ -34,10 +34,10 @@ locals {
   )
 
   email_enabled = coalesce(var.email.enabled, true)
-  email_create  = local.email_enabled && coalesce(var.email.create, true) && var.email.use_existing_domain_id == null
-
-  email_domain_id = local.email_create ? one(oci_email_email_domain.this[*].id) : var.email.use_existing_domain_id
-  email_sender_id = local.email_create ? one(oci_email_sender.this[*].id) : var.email.use_existing_sender_id
+  # The domain/sender objects now live in the shared email-delivery module; the
+  # module resolves created-vs-supplied internally and re-exposes the OCIDs.
+  email_domain_id = module.email-delivery.email_domain_id
+  email_sender_id = module.email-delivery.email_sender_id
 
   secrets_enabled   = coalesce(var.secrets.enabled, true)
   functions_enabled = coalesce(var.functions.enabled, true)

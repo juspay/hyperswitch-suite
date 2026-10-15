@@ -32,10 +32,13 @@ locals {
   lifecycle_rules = concat(local.noncurrent_version_rules, var.bucket.lifecycle_rules)
 
   email_enabled = coalesce(var.email.enabled, true)
-  email_create  = local.email_enabled && coalesce(var.email.create, false) && var.email.use_existing_domain_id == null
+  # Only for the `email_domain_is_shared` output and the `use email-family`
+  # grant below; the domain/sender resources themselves now live in the shared
+  # email-delivery module, which resolves created-vs-supplied internally.
+  email_create = local.email_enabled && coalesce(var.email.create, false) && var.email.use_existing_domain_id == null
 
-  email_domain_id = local.email_create ? one(oci_email_email_domain.this[*].id) : var.email.use_existing_domain_id
-  email_sender_id = local.email_create ? one(oci_email_sender.this[*].id) : var.email.use_existing_sender_id
+  email_domain_id = module.email-delivery.email_domain_id
+  email_sender_id = module.email-delivery.email_sender_id
 
   # THE GRANT LIST. Three grants.
   grants = concat(

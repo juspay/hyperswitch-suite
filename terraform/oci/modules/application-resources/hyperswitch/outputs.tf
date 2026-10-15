@@ -78,12 +78,12 @@ output "file_uploads_bucket_name" {
 
 output "email_domain_id" {
   description = "OCID of the verified email domain, whether created here or supplied. `decision-engine` should consume THIS rather than verifying a second domain for the same logical sender - a sharing decision that is not yet reviewed."
-  value       = local.email_domain_id
+  value       = module.email-delivery.email_domain_id
 }
 
 output "email_sender_id" {
   description = "OCID of the approved sender. AWS's ses.role_arn has no counterpart - there is no role, and the sender is a first-class object in this tenancy rather than an identity borrowed from another account."
-  value       = local.email_sender_id
+  value       = module.email-delivery.email_sender_id
 }
 
 output "email_sender_address" {
@@ -103,7 +103,7 @@ output "email_uses_static_credential_fallback" {
     here, in the plan and in every consumer's outputs, precisely so it cannot be
     taken silently.
   EOT
-  value       = local.email_uses_static_credential_fallback
+  value       = module.email-delivery.email_uses_static_credential_fallback
 }
 
 output "smtp_credential_vault_secret_id" {

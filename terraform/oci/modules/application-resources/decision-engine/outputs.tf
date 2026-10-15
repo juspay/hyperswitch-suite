@@ -51,12 +51,12 @@ output "bucket_lifecycle_policy_id" {
 
 output "email_domain_id" {
   description = "OCID of the verified email domain in effect - hyperswitch's, when shared (the recommended default), or this module's own when email.create is true."
-  value       = local.email_domain_id
+  value       = module.email-delivery.email_domain_id
 }
 
 output "email_sender_id" {
   description = "OCID of the approved sender in effect."
-  value       = local.email_sender_id
+  value       = module.email-delivery.email_sender_id
 }
 
 output "email_domain_is_shared" {

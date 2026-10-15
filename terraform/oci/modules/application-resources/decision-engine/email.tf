@@ -1,41 +1,22 @@
-# Email Delivery
-# Mechanically identical to hyperswitch's email.tf (the cross-account STS hop
-# disappears; a DNS-verified domain plus an approved sender are real objects).
+# Email Delivery - delegated to the shared email-delivery module.
 #
-# THE decision-engine-specific point: this module and `hyperswitch` send as the
-# same logical sender. Sharing hyperswitch's domain/sender is therefore the
-# default - set `email.use_existing_domain_id`/`use_existing_sender_id` from
-# that module's outputs, and create nothing here (`create` defaults to false).
-# Owning a second verified domain for one logical sender is duplicated DNS
-# verification for no isolation benefit. The create path stays written so
-# flipping to it is a `values` change. This module exposes no SMTP fallback of
-# its own - that belongs with the shared sender identity in `hyperswitch`.
+# Mechanically identical to hyperswitch's email-delivery call (the cross-account
+# STS hop disappears; a DNS-verified domain plus an approved sender are real
+# objects).
+#
+# The decision-engine-specific point: this module and `hyperswitch` send as the
+# same logical sender. `email.create` therefore defaults to FALSE here - set
+# `email.use_existing_domain_id`/`use_existing_sender_id` from hyperswitch's
+# outputs and this module creates nothing. This module exposes no SMTP fallback
+# of its own - that belongs with the shared sender identity in hyperswitch.
 
-resource "oci_email_email_domain" "this" {
-  count = local.email_create ? 1 : 0
-
-  compartment_id = var.compartment_id
-  name           = var.email.domain_name
-
-  freeform_tags = local.freeform_tags
-  defined_tags  = var.defined_tags
-}
-
-resource "oci_email_sender" "this" {
-  count = local.email_create ? 1 : 0
+module "email-delivery" {
+  source = "../email-delivery"
 
   compartment_id = var.compartment_id
-  email_address  = var.email.sender_address
+  region         = var.region
+  freeform_tags  = local.freeform_tags
+  defined_tags   = var.defined_tags
 
-  freeform_tags = local.freeform_tags
-  defined_tags  = var.defined_tags
-
-  depends_on = [oci_email_email_domain.this]
-
-  lifecycle {
-    precondition {
-      condition     = var.email.domain_name == null || endswith(lower(var.email.sender_address), "@${lower(var.email.domain_name)}")
-      error_message = "email.sender_address must be an address under email.domain_name. OCI approved senders live under a verified domain in the same tenancy."
-    }
-  }
+  email = var.email
 }
