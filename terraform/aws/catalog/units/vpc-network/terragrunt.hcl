@@ -4,7 +4,7 @@ include "root" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/vpc-network?ref=feature/update-vpc-network-module-ref"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/vpc-network?ref=0d5804a204c18f9015dc802a4372d34f2fe46a19"
 }
 
 # Passive-side only: sources the primary region's VPC id/cidr for vpc_peering_connections.
