@@ -76,12 +76,13 @@ resource "oci_objectstorage_object_lifecycle_policy" "logs" {
 }
 
 # OCI executes lifecycle-policy rules through the regional Object Storage
-# service principal; it must be authorized to archive/delete objects on behalf
-# of the bucket. Created with the default (regional) provider - unlike the
-# home-region identity resources - because the objectstorage principal is
-# itself regional.
+# service principal (objectstorage-<region>), so the allow statement names that
+# regional principal. The policy OBJECT itself is a tenancy-wide identity
+# resource and is still created in the home region, like every other policy.
 resource "oci_identity_policy" "logs_lifecycle" {
   count = var.create_logs_bucket ? 1 : 0
+
+  provider = oci.home
 
   compartment_id = var.compartment_id
   name           = "${local.name_prefix}-logs-lifecycle"
