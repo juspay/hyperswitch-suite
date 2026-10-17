@@ -156,7 +156,7 @@ inputs = {
     custom_parameter_group_parameters  = null
 
     cluster_instances = try(values.cluster_instances, {
-      intance_a = {
+      instance-a = {
         instance_class                        = try(values.db_instance_class, "db.r6g.large")
         promotion_tier                        = 0
         availability_zone                     = "${include.root.locals.region}a"

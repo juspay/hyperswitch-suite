@@ -92,6 +92,7 @@ inputs = {
   # Create own bucket, or reference an existing one when wired (create=false).
   # Passive region → the in-region replica; primary → the source bucket.
   s3_dashboard_themes = {
+    bucket_name        = try(values.s3_dashboard_themes_bucket_name, null)
     create             = try(values.dashboard_s3_config_path, null) == null
     bucket_arn         = try(values.is_passive, false) ? try(dependency.dashboard_bucket.outputs.replica_bucket_arn, null) : try(dependency.dashboard_bucket.outputs.source_bucket_arn, null)
     versioning_enabled = try(values.s3_dashboard_themes_versioning_enabled, true)
@@ -99,6 +100,7 @@ inputs = {
   }
 
   s3_file_uploads = {
+    bucket_name        = try(values.s3_file_uploads_bucket_name, null)
     create             = try(values.file_uploads_s3_config_path, null) == null
     bucket_arn         = try(values.is_passive, false) ? try(dependency.file_uploads_bucket.outputs.replica_bucket_arn, null) : try(dependency.file_uploads_bucket.outputs.source_bucket_arn, null)
     versioning_enabled = try(values.s3_file_uploads_versioning_enabled, true)
