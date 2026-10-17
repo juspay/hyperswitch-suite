@@ -74,3 +74,28 @@ resource "oci_objectstorage_object_lifecycle_policy" "logs" {
     is_enabled  = true
   }
 }
+
+# OCI executes lifecycle-policy rules through the regional Object Storage
+# service principal; it must be authorized to archive/delete objects on behalf
+# of the bucket. Created with the default (regional) provider - unlike the
+# home-region identity resources - because the objectstorage principal is
+# itself regional.
+resource "oci_identity_policy" "logs_lifecycle" {
+  count = var.create_logs_bucket ? 1 : 0
+
+  compartment_id = var.compartment_id
+  name           = "${local.name_prefix}-logs-lifecycle"
+  description    = "Authorize regional Object Storage service to execute the lifecycle policy on the ${local.display_name} logs bucket."
+
+  statements = [
+    "allow service objectstorage-${var.region} to manage object-family in compartment id ${var.compartment_id} where target.bucket.name = '${local.logs_bucket_name}'",
+  ]
+
+  freeform_tags = local.freeform_tags
+  defined_tags  = var.defined_tags
+
+  # See identity.tf - same Oracle-Tags stamping reasoning for identity resources.
+  lifecycle {
+    ignore_changes = [defined_tags]
+  }
+}
