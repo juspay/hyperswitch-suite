@@ -3,6 +3,10 @@
 # internetless instance.
 
 resource "oci_identity_tag_namespace" "this" {
+  # Tag namespaces are tenancy-wide and must be created in the tenancy's home
+  # region; OCI rejects create/update/delete from any other region.
+  provider = oci.home
+
   compartment_id = var.compartment_id
   name           = "${local.name_prefix}-identity"
   description    = "Defined-tag namespace for the ${local.display_name} fleet's instance-principal identity matching."
@@ -12,6 +16,9 @@ resource "oci_identity_tag_namespace" "this" {
 }
 
 resource "oci_identity_tag" "component" {
+  # Defined tags belong to the home region with their namespace.
+  provider = oci.home
+
   tag_namespace_id = oci_identity_tag_namespace.this.id
   name             = "component"
   description      = "Marks an instance as a member of the ${local.display_name} fleet, for dynamic-group matching."

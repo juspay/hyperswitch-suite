@@ -206,8 +206,11 @@ locals {
   routing_policy_enabled = var.create_lb && length(var.listener_rules) > 0
   routing_policy_name    = "${replace(local.name_prefix, "-", "_")}_rules"
 
-  redirect_rule_set_name = "${replace(local.name_prefix, "-", "_")}_https_redirect"
-  http_redirect_enabled  = var.create_lb && var.enable_http_redirect && var.enable_https_listener
+  # OCI caps rule-set names at 32 chars; a long prefix + "_https_redirect" can
+  # overflow it, so truncate the prefix and keep the fixed suffix.
+  redirect_rule_set_suffix = "_https_redirect"
+  redirect_rule_set_name   = "${substr(replace(local.name_prefix, "-", "_"), 0, 32 - length(local.redirect_rule_set_suffix))}${local.redirect_rule_set_suffix}"
+  http_redirect_enabled    = var.create_lb && var.enable_http_redirect && var.enable_https_listener
 
   https_listener_enabled = var.create_lb && var.enable_https_listener && length(var.ssl_certificate_ids) > 0
   mtls_listener_enabled  = var.create_lb && var.mtls_listener.enabled
