@@ -108,8 +108,11 @@ All notable changes to Hyperswitch will be documented here.
 This version of the Hyperswitch App server is compatible with the following versions of the other components:
 
 - Control Center: [v1.38.10](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.38.10)
+- Web Client: [v0.134.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.134.0)
 - Card Vault: [v0.9.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.9.0)
-- Key Manager: [v0.1.14](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.14)
+- WooCommerce Plugin: [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)
+- Encryption Service: [v0.1.14](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.14)
+- Superposition: [v0.115.0](https://github.com/juspay/superposition/releases/tag/v0.115.0)
 - Hyperswitch Prism: [v0.6.0](https://github.com/juspay/hyperswitch-prism/releases/tag/v0.6.0)
 
 #### Database Migration Changes
@@ -895,6 +898,7 @@ index 34842b56da..42c58b4366 100644
 This version of the Hyperswitch Control Center is compatible with the following versions of other components:
 
 - App Server Version: [v1.128.0](https://github.com/juspay/hyperswitch/releases/tag/v1.128.0)
+- Web Client Version: [v0.134.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.134.0)
 - Card Vault Version: [v0.9.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.9.0)
 - Key Manager: [v0.1.14](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.14)
 
@@ -964,6 +968,17 @@ This version of the Hyperswitch Control Center is compatible with the following 
 #### Refactors
 
 - **domain:** Remove legacy amount mirrors ([#2450](https://github.com/juspay/hyperswitch-prism/pull/2450))
+
+#### Compatibility
+This version of the Hyperswitch Prism is compatible with the following versions of other components:
+
+- App Server Version: [v1.128.0](https://github.com/juspay/hyperswitch/releases/tag/v1.128.0)
+- Web Client Version: [v0.134.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.134.0)
+- Card Vault Version: [v0.9.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.9.0)
+- Key Manager: [v0.1.14](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.14)
+- Superposition: [v0.115.0](https://github.com/juspay/superposition/releases/tag/v0.115.0)
+
+**Full Changelog**: https://github.com/juspay/hyperswitch-control-center/compare/v1.38.8...v1.38.9
 
 **Full Changelog:** [`v0.5.0...v0.6.0`](https://github.com/juspay/hyperswitch-prism/compare/v0.5.0...v0.6.0)
 
