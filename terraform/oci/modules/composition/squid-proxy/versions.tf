@@ -3,8 +3,9 @@ terraform {
 
   required_providers {
     oci = {
-      source  = "oracle/oci"
-      version = "~> 9.0"
+      source                = "oracle/oci"
+      version               = "~> 9.0"
+      configuration_aliases = [oci, oci.home]
     }
 
     # tls_private_key generates the break-glass keypair here; OCI has no

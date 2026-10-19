@@ -8,6 +8,7 @@
 # hence var.tenancy_ocid.
 
 resource "oci_identity_tag_namespace" "this" {
+  provider       = oci.home
   compartment_id = var.compartment_id
   name           = "${local.name_prefix}-identity"
   description    = "Defined-tag namespace for the ${local.display_name} fleet's instance-principal identity matching."
@@ -17,12 +18,14 @@ resource "oci_identity_tag_namespace" "this" {
 }
 
 resource "oci_identity_tag" "component" {
+  provider         = oci.home
   tag_namespace_id = oci_identity_tag_namespace.this.id
   name             = "component"
   description      = "Marks an instance as a member of the ${local.display_name} fleet, for dynamic-group matching."
 }
 
 resource "oci_identity_dynamic_group" "this" {
+  provider       = oci.home
   compartment_id = var.tenancy_ocid
   name           = "${local.name_prefix}-fleet"
   description    = "Squid-proxy fleet instances (${local.display_name}), matched by defined tag - freeform tags are not matchable. Grants instance-principal access to fetch this fleet's config/allowlist at boot."
@@ -41,6 +44,7 @@ resource "oci_identity_dynamic_group" "this" {
 }
 
 resource "oci_identity_policy" "this" {
+  provider       = oci.home
   compartment_id = var.compartment_id
   name           = "${local.name_prefix}-identity"
   description    = "Instance-principal read access for the ${local.display_name} fleet to its own config bucket. GetObject only - no bucket listing, no write."
