@@ -138,7 +138,7 @@ inputs = {
   create_security_group = true
 
   cluster_instances = try(values.cluster_instances, {
-    instance_a = {
+    instance-a = {
       instance_class                        = try(values.db_instance_class, "db.r6g.large")
       promotion_tier                        = 0
       availability_zone                     = "${include.root.locals.region}a"
@@ -153,7 +153,7 @@ inputs = {
         managed_by = "hyperswitch"
       }
     }
-    instance_b = {
+    instance-b = {
       instance_class                        = try(values.db_instance_class, "db.r6g.large")
       promotion_tier                        = 1
       availability_zone                     = "${include.root.locals.region}b"
