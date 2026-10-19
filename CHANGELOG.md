@@ -2,6 +2,986 @@
 
 All notable changes to Hyperswitch will be documented here.
 
+## Hyperswitch Suite v1.23
+
+### [Hyperswitch App Server v1.128.0 (2026-10-15)](https://github.com/juspay/hyperswitch/releases/tag/v1.128.0)
+
+#### Docker Images
+
+- `v1.128.0` (with AWS SES support): `docker pull docker.juspay.io/juspaydotin/hyperswitch-router:v1.128.0`
+
+- `v1.128.0-standalone` (without AWS SES support): `docker pull docker.juspay.io/juspaydotin/hyperswitch-router:v1.128.0-standalone`
+
+#### Features
+
+- **Generic:** [FRM] Implementing FRM framework flows ([#13987](https://github.com/juspay/hyperswitch/pull/13987))
+- **blocklist:** Clone blocklist entries across business profiles ([#14283](https://github.com/juspay/hyperswitch/pull/14283))
+- **config:** Allow any countries and currencies for datatrans ([#14358](https://github.com/juspay/hyperswitch/pull/14358))
+- **connect:** [stripe] pass error_on_requires_action for MIT payments ([#14308](https://github.com/juspay/hyperswitch/pull/14308))
+- **connector:**
+  - Add pm filter and feature matrix for worldpay raft, etisalat, merchante ([#14220](https://github.com/juspay/hyperswitch/pull/14220))
+  - Register PayNearMe, JP Morgan Orbital, Saferpay, D24 WebPay, Global Payments Heartland and Pay.com as UCS-routed connectors ([#14075](https://github.com/juspay/hyperswitch/pull/14075))
+  - [Shift4] enable card and wallet mandates with connector customer creation for UCS recurring ([#14210](https://github.com/juspay/hyperswitch/pull/14210))
+  - [ELAVON PG] enable Elavon Payment Gateway routing via UCS ([#13975](https://github.com/juspay/hyperswitch/pull/13975))
+  - [Revolv3] MITs for Applepay and Googlepay using Decrypted payload + NTID ([#14400](https://github.com/juspay/hyperswitch/pull/14400))
+- **connector/core:** Implement Trustly returning user flow ([#14465](https://github.com/juspay/hyperswitch/pull/14465))
+- **core:**
+  - Propagate device_manufacturer_identifier for Apple Pay decrypted flow ([#14169](https://github.com/juspay/hyperswitch/pull/14169))
+  - Prefer business profile FRM routing configuration with merchant account fallback ([#14365](https://github.com/juspay/hyperswitch/pull/14365))
+  - Add surcharge_percentage in surcharge details in payment response ([#14354](https://github.com/juspay/hyperswitch/pull/14354))
+  - Add support for decrypted wallet persistent storage in pm-modular service ([#14456](https://github.com/juspay/hyperswitch/pull/14456))
+  - Add surcharge_percentage in surcharge_details in eligibility response ([#14620](https://github.com/juspay/hyperswitch/pull/14620))
+- **disputes:** Add platform disputes list and filter endpoints ([#12946](https://github.com/juspay/hyperswitch/pull/12946))
+- **offers:** Send up to 9-digit card BIN to Offer Engine ([#14259](https://github.com/juspay/hyperswitch/pull/14259))
+- **payment:** Spawn async task for modular pm update ([#14148](https://github.com/juspay/hyperswitch/pull/14148))
+- **payouts:**
+  - Add pre FRM support for payouts ([#14189](https://github.com/juspay/hyperswitch/pull/14189))
+  - Add payment method modular fetch to payouts ([#14376](https://github.com/juspay/hyperswitch/pull/14376))
+  - Check card payouts against the blocklist before the connector call ([#14420](https://github.com/juspay/hyperswitch/pull/14420))
+- **platform:**
+  - Implement platform refund list ([#12615](https://github.com/juspay/hyperswitch/pull/12615))
+  - Implement platform payment list ([#12483](https://github.com/juspay/hyperswitch/pull/12483))
+- **prism:** Bump prism version to bring latest changes ([#14298](https://github.com/juspay/hyperswitch/pull/14298))
+- **redis_interface:** Add TLS connection support for redis cache ([#14623](https://github.com/juspay/hyperswitch/pull/14623))
+- **revenue-recovery:** Add A/B monitoring implementation ([#14285](https://github.com/juspay/hyperswitch/pull/14285))
+- **revenue_recovery:** [chargebee] populate card info from payment_method_details for wallet payment methods ([#14323](https://github.com/juspay/hyperswitch/pull/14323))
+- **router:**
+  - Allow profile-level users to access blocklist routes ([#14291](https://github.com/juspay/hyperswitch/pull/14291))
+  - [Stripe] add support to store and return rapid_dispute_resolution details in dispute additional_details from dispute webhooks ([#14337](https://github.com/juspay/hyperswitch/pull/14337))
+  - Enhance conflicted payment handling ([#14288](https://github.com/juspay/hyperswitch/pull/14288))
+  - Add config-based disablement of integrity checks for amount mismatches ([#14429](https://github.com/juspay/hyperswitch/pull/14429))
+  - [Stripe] forward error_on_requires_action to UCS ([#14572](https://github.com/juspay/hyperswitch/pull/14572))
+- **routing:**
+  - Move dynamic routing decisions to the Decision Engine ([#14204](https://github.com/juspay/hyperswitch/pull/14204))
+  - Preferred-connector routing for interac — pin the customer's last successful connector ([#14412](https://github.com/juspay/hyperswitch/pull/14412))
+- **ucs:** Add connector_decline_threshold and make kill switch logs alertable ([#14395](https://github.com/juspay/hyperswitch/pull/14395))
+- **user:** Return Offer Engine credential source in user info ([#14422](https://github.com/juspay/hyperswitch/pull/14422))
+- **vault:** Route HyperswitchVault calls through an optional egress proxy ([#13434](https://github.com/juspay/hyperswitch/pull/13434))
+- Add merchant alert read permission ([#14344](https://github.com/juspay/hyperswitch/pull/14344))
+
+#### Bug Fixes
+
+- **authentication:** Added highest common supported version for 3ds server ([#14305](https://github.com/juspay/hyperswitch/pull/14305))
+- **connector:**
+  - [REDSYS] Preserve required fields across authentication steps ([#14417](https://github.com/juspay/hyperswitch/pull/14417))
+  - [worldpayxml] enable webhook source verification ([#14619](https://github.com/juspay/hyperswitch/pull/14619))
+- **core:**
+  - Schedule Payment Sync Workflow in Process Tracker after PaymentsCapture ([#14330](https://github.com/juspay/hyperswitch/pull/14330))
+  - Update existing PAYMENTS_SYNC process tracker instead of creating duplicate ([#14359](https://github.com/juspay/hyperswitch/pull/14359))
+  - Defer bank redirect payment method creation until terminal status ([#14391](https://github.com/juspay/hyperswitch/pull/14391))
+  - Donot attempt step-up for GooglePay PAN_ONLY when authentication type is No3ds ([#14470](https://github.com/juspay/hyperswitch/pull/14470))
+- **disputes:** Handle concurrent duplicate dispute webhook insert ([#14489](https://github.com/juspay/hyperswitch/pull/14489))
+- **events:** Attribute payment_id for SDK-auth /client payment-methods-list events ([#13845](https://github.com/juspay/hyperswitch/pull/13845))
+- **payment_methods:** Skip vault delete for PMs never stored in vault ([#14252](https://github.com/juspay/hyperswitch/pull/14252))
+- **payments:** Sum connector latency across retry attempts ([#14333](https://github.com/juspay/hyperswitch/pull/14333))
+- **payouts:** Restrict client confirm fields ([#14621](https://github.com/juspay/hyperswitch/pull/14621))
+- **router:** Populate card_network for wallet payment attempts ([#13955](https://github.com/juspay/hyperswitch/pull/13955))
+- **scheduler:** Reuse redis consumer across polls ([#13690](https://github.com/juspay/hyperswitch/pull/13690))
+- **superposition:** Validate proxy org and workspace headers against configured scope ([#14332](https://github.com/juspay/hyperswitch/pull/14332))
+- **ucs:**
+  - Send capture_method and read network_txn_link_id on SetupRecurring ([#14313](https://github.com/juspay/hyperswitch/pull/14313))
+  - Adapt to optional mandate fields ([#14312](https://github.com/juspay/hyperswitch/pull/14312))
+  - Shared keepalive gRPC channel, fatal build errors, real health check, transport failure class ([#14273](https://github.com/juspay/hyperswitch/pull/14273))
+  - Map not-supported UCS errors to IR_19 instead of IR_00 ([#14377](https://github.com/juspay/hyperswitch/pull/14377))
+  - Record request rejections as payment failures ([#14187](https://github.com/juspay/hyperswitch/pull/14187))
+  - Forward browser info during tokenization ([#14459](https://github.com/juspay/hyperswitch/pull/14459))
+- Install rustls CryptoProvider before GCP KMS client construction ([#14215](https://github.com/juspay/hyperswitch/pull/14215))
+
+#### Performance
+
+- **merchant_connector_account:** Cache MCA list queries via scope supersets ([#14188](https://github.com/juspay/hyperswitch/pull/14188))
+
+#### Refactors
+
+- **api_models:** Remove deny_unknown_fields from v2 customers and payment_methods DTOs ([#14287](https://github.com/juspay/hyperswitch/pull/14287))
+- **card_issuer:** List all card issuers ([#14349](https://github.com/juspay/hyperswitch/pull/14349))
+- **payments:** Optimize get_trackers in create flow ([#14455](https://github.com/juspay/hyperswitch/pull/14455))
+- **routing:** Remove the DE-vs-HS shadow diff and its kill switch ([#14167](https://github.com/juspay/hyperswitch/pull/14167))
+- **storage:** Find_config_by_key -> find_config_by_key_optional ([#14131](https://github.com/juspay/hyperswitch/pull/14131))
+- **storage_impl:**
+  - Move Conversion impl for MCA to storage_impl crate ([#11809](https://github.com/juspay/hyperswitch/pull/11809))
+  - Move Conversion impl for payment_attempt to storage_impl crate ([#11810](https://github.com/juspay/hyperswitch/pull/11810))
+- **ucs:** Move rollout proxy http/https URLs to comparison service env config ([#14222](https://github.com/juspay/hyperswitch/pull/14222))
+
+#### Compatibility
+
+This version of the Hyperswitch App server is compatible with the following versions of the other components:
+
+- Control Center: [v1.38.10](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.38.10)
+- Web Client: [v0.134.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.134.0)
+- Card Vault: [v0.9.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.9.0)
+- WooCommerce Plugin: [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)
+- Encryption Service: [v0.1.14](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.14)
+- Superposition: [v0.115.0](https://github.com/juspay/superposition/releases/tag/v0.115.0)
+- Hyperswitch Prism: [v0.6.0](https://github.com/juspay/hyperswitch-prism/releases/tag/v0.6.0)
+
+#### Database Migration Changes
+
+```sql
+-- DB Difference between v1.127.0 and v1.128.0
+ALTER TABLE payment_attempt
+    ADD COLUMN IF NOT EXISTS active_frm_id VARCHAR(64);
+
+ALTER TABLE payout_attempt
+    ADD COLUMN IF NOT EXISTS active_frm_id VARCHAR(64);
+
+-- Existing fraud_check records are associated at the payment level. Backfill
+-- every attempt for that payment with the frm_id.
+UPDATE payment_attempt
+SET active_frm_id = fraud_check.frm_id
+FROM fraud_check
+WHERE payment_attempt.payment_id = fraud_check.payment_id
+  AND payment_attempt.merchant_id = fraud_check.merchant_id
+  AND payment_attempt.active_frm_id IS NULL;
+-- Add payout support to fraud_check while preserving the existing payment flow.
+ALTER TABLE fraud_check
+    ADD COLUMN IF NOT EXISTS payout_id VARCHAR(64);
+
+-- payment_id is part of the existing primary key. Replace the primary key
+-- before making payment_id nullable.
+ALTER TABLE fraud_check
+    DROP CONSTRAINT fraud_check_pkey;
+
+ALTER TABLE fraud_check ADD PRIMARY KEY (frm_id);
+
+ALTER TABLE fraud_check
+    ALTER COLUMN payment_id DROP NOT NULL;
+
+-- This index duplicates the original primary key index and is not useful.
+DROP INDEX IF EXISTS frm_id_index;
+ALTER TABLE batch_blocklist_jobs
+ADD COLUMN IF NOT EXISTS metadata JSONB;
+-- Your SQL goes here
+ALTER TABLE dispute ADD COLUMN IF NOT EXISTS additional_details JSONB;
+-- Remove blocklist entries that predate profile scoping. Every such entry has already been copied
+-- to each business profile of its merchant by the backfill in
+-- 2026-08-19-100000_backfill_blocklist_profile_id, so the NULL profile_id rows are no longer needed.
+DELETE FROM blocklist WHERE profile_id IS NULL;
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS preferred_connectors JSONB;
+```
+
+#### Configuration Changes
+
+```patch
+diff --git a/config/deployments/env_specific.toml b/config/deployments/env_specific.toml
+index 6b52abee56..1513169618 100644
+--- a/config/deployments/env_specific.toml
++++ b/config/deployments/env_specific.toml
+@@ -228,20 +228,22 @@ redis_expiry = 900          # Redis expiry time in milliseconds
+ http_url = "http://proxy_http_url"              # Proxy all HTTP traffic via this proxy
+ https_url = "https://proxy_https_url"           # Proxy all HTTPS traffic via this proxy
+ bypass_proxy_hosts = "localhost, cluster.local" # A comma-separated list of domains or IP addresses that should not use the proxy. Whitespace between entries would be ignored.
+
+ # Redis credentials
+ [redis]
+ host = "127.0.0.1"
+ port = 6379
+ # username = "default" # Optional ACL username for authenticated Redis (Redis 6+ / Redis Cloud); requires `password`
+ # password = ""        # Optional password for authenticated Redis (AUTH); leave unset for unauthenticated Redis
++# tls_enabled = true   # Connect over TLS (`rediss://`); the server certificate is verified against the platform's trusted CA roots
++# tls_ca_certificate_path = "/path/to/redis_ca.pem"    # When set, the server certificate is verified against the CA certificate(s) in this PEM file; when unset, against the platform's trusted CA roots
+ pool_size = 5 # Number of connections to keep open
+ reconnect_max_attempts = 5 # Maximum number of reconnection attempts to make before failing. Set to 0 to retry forever.
+ reconnect_delay = 5 # Delay between reconnection attempts, in milliseconds
+ default_ttl = 300 # Default TTL for entries, in seconds
+ default_hash_ttl = 900 # Default TTL for hashes entries, in seconds
+ use_legacy_version = false # RESP protocol for fred crate (set this to true if using RESPv2 or redis version < 6)
+ stream_read_count = 1 # Default number of entries to read from stream if not provided in stream read options
+ auto_pipeline = true # Whether or not the client should automatically pipeline commands across tasks when possible.
+ broadcast_channel_capacity = 32   # The default capacity used when creating tokio broadcast channels
+ unresponsive_check_interval = 2   # The frequency at which the client checks for unresponsive connections. In seconds. This value should usually be less than half of `unresponsive_timeout` and always more than 1 ms.
+@@ -468,21 +470,24 @@ base_url = "http://localhost:8080" # base url to call hyperswitch vault service
+ [clone_connector_allowlist]
+ connector_names = "connector_names"     # Comma-separated list of cloneable connector names
+
+ [clone_connector_allowlist.payment_method_types]
+ payment_method = "payment_method_types" # <payment_method> = comma-separated cloneable payment_method_types
+
+ [grpc_client.unified_connector_service]
+ base_url = "http://localhost:8000"      # Unified Connector Service Base URL
+ connection_timeout = 10                 # Connection Timeout Duration in Seconds
+ request_timeout = 35                    # Per-RPC Request Timeout in Seconds
+-ucs_only_connectors = "imerchantsolutions, paytm, phonepe, hyperpg, revolv3, fiservcommercehub, absa_sanlam, interpayments, payconex, dlocal, barclaycard, jpmorgan, datatrans, tsys_transit, givepayments, tesouro, citigate, ilixium, moneris, elavon, worldpayraft, globalpay, rapyd, etisalat, merchante"    # Comma-separated list of connectors that use UCS only
++keep_alive_interval = 30                # HTTP/2 PING keepalive interval in Seconds on the shared channel
++keep_alive_timeout = 20                 # Time in Seconds to wait for a keepalive PING acknowledgement before the connection is treated as dead
++tcp_keepalive = 60                      # TCP keepalive idle time in Seconds on the shared channel
++ucs_only_connectors = "imerchantsolutions, paytm, phonepe, hyperpg, revolv3, fiservcommercehub, absa_sanlam, interpayments, payconex, dlocal, barclaycard, jpmorgan, datatrans, tsys_transit, givepayments, tesouro, citigate, ilixium, moneris, elavon, worldpayraft, globalpay, rapyd, paynearme, jpmorgan_orbital, saferpay, d24, etisalat, globalpayments_heartland, paydotcom, merchante, nsure, elavon_pg, trustly"    # Comma-separated list of connectors that use UCS only
+ ucs_psync_disabled_connectors = "cashtocode, trustly"    # Comma-separated list of connectors to disable UCS PSync call
+
+ [revenue_recovery]
+ # monitoring threshold -  120 days
+ monitoring_threshold_in_seconds = 10368000
+ retry_algorithm_type = "cascading"
+ redis_ttl_in_seconds=3888000
+ default_retry_hour_utc = 12 # fallback hour-of-day (UTC, 0-23) the mathmodel retries at when a cluster has no hour-of-day history
+```
+
+```patch
+diff --git a/config/deployments/sandbox.toml b/config/deployments/sandbox.toml
+index a802f9fac2..9bebf8db54 100644
+--- a/config/deployments/sandbox.toml
++++ b/config/deployments/sandbox.toml
+@@ -1,17 +1,18 @@
+ # Whether saving a payment method is supported by all, some, or none of the connectors
+ # eligible for it. Returned in the PML response so the SDK can decide whether to show the
+ # "save my details" checkbox ("supported" | "partially_supported" | "unsupported").
+ [customer_acceptance_support]
+ card.credit = "supported"
+ card.debit = "supported"
+ bank_redirect.open_banking = "partially_supported"
++bank_redirect.trustly = "partially_supported"
+
+ # Bank redirect configs for allowed banks
+ [bank_config]
+ eps.adyen.banks = "bank_austria,bawag_psk_ag,dolomitenbank,easybank_ag,erste_bank_und_sparkassen,hypo_tirol_bank_ag,posojilnica_bank_e_gen,raiffeisen_bankengruppe_osterreich,schoellerbank_ag,sparda_bank_wien,volksbank_gruppe,volkskreditbank_ag"
+ eps.stripe.banks = "arzte_und_apotheker_bank,austrian_anadi_bank_ag,bank_austria,bankhaus_carl_spangler,bankhaus_schelhammer_und_schattera_ag,bawag_psk_ag,bks_bank_ag,brull_kallmus_bank_ag,btv_vier_lander_bank,capital_bank_grawe_gruppe_ag,dolomitenbank,easybank_ag,erste_bank_und_sparkassen,hypo_alpeadriabank_international_ag,hypo_noe_lb_fur_niederosterreich_u_wien,hypo_oberosterreich_salzburg_steiermark,hypo_tirol_bank_ag,hypo_vorarlberg_bank_ag,hypo_bank_burgenland_aktiengesellschaft,marchfelder_bank,oberbank_ag,raiffeisen_bankengruppe_osterreich,schoellerbank_ag,sparda_bank_wien,volksbank_gruppe,volkskreditbank_ag,vr_bank_braunau"
+ ideal.adyen.banks = "abn_amro,asn_bank,bunq,ing,knab,n26,nationale_nederlanden,rabobank,regiobank,revolut,sns_bank,triodos_bank,van_lanschot,yoursafe"
+ ideal.stripe.banks = "abn_amro,asn_bank,bunq,handelsbanken,ing,knab,moneyou,rabobank,regiobank,revolut,sns_bank,triodos_bank,van_lanschot"
+ ideal.multisafepay.banks = "abn_amro, asn_bank, bunq, handelsbanken, nationale_nederlanden, n26, ing, knab, rabobank, regiobank, revolut, sns_bank,triodos_bank, van_lanschot, yoursafe"
+ online_banking_czech_republic.adyen.banks = "ceska_sporitelna,komercni_banka,platnosc_online_karta_platnicza"
+ online_banking_fpx.adyen.banks = "affin_bank,agro_bank,alliance_bank,am_bank,bank_islam,bank_muamalat,bank_rakyat,bank_simpanan_nasional,cimb_bank,hong_leong_bank,hsbc_bank,kuwait_finance_house,maybank,ocbc_bank,public_bank,rhb_bank,standard_chartered_bank,uob_bank"
+@@ -62,111 +63,123 @@ cashtocode.base_url = "https://cluster05.api-test.cashtocode.com"
+ celero.base_url = "https://sandbox.gotnpgateway.com"
+ checkbook.base_url = "https://api.sandbox.checkbook.io"
+ checkout.base_url = "https://api.sandbox.checkout.com/"
+ citigate.base_url = "https://gw-test.cgate.tech"
+ chargebee.base_url = "https://$.chargebee.com/api/"
+ coinbase.base_url = "https://api.commerce.coinbase.com"
+ coingate.base_url = "https://api-sandbox.coingate.com"
+ cryptopay.base_url = "https://business-sandbox.cryptopay.me"
+ cybersource.base_url = "https://apitest.cybersource.com/"
+ cybersourcedecisionmanager.base_url = "https://apitest.cybersource.com/"
++d24.base_url = "https://api-stg.directa24.com"
+ datatrans.base_url = "https://api.sandbox.datatrans.com/"
+ datatrans.secondary_base_url = "https://pay.sandbox.datatrans.com/"
+ deutschebank.base_url = "https://testmerch.directpos.de/rest-api"
+ digitalvirgo.base_url = "https://dcb-integration-service-sandbox-external.staging.digitalvirgo.pl"
+ dlocal.base_url = "https://sandbox.dlocal.com/"
+ dummyconnector.base_url = "http://localhost:8080/dummy-connector"
+ dwolla.base_url = "https://api-sandbox.dwolla.com"
+ ebanx.base_url = "https://sandbox.ebanxpay.com/"
+ elavon.base_url = "https://api.demo.convergepay.com/VirtualMerchantDemo/"
++# Elavon Payment Gateway (EPG), Elavon's JSON REST gateway. Distinct from the
++# `elavon` entry above, which is Elavon Converge (an XML API).
++elavon_pg.base_url = "https://api.sandbox.elavonpayments.com"
+ envoy.base_url = "https://test.envoytx.com/"
+ etisalat.base_url = "https://demo-ipg.ctdev.comtrust.ae:2443"
+ facilitapay.base_url = "https://sandbox-api.facilitapay.com/api/v1"
+ finix.base_url = "https://finix.sandbox-payments-api.com"
+ fiserv.base_url = "https://cert.api.fiservapps.com/"
+ fiservcommercehub.base_url = "https://connect-cert.fiservapis.com/ch/"
+ fiservemea.base_url = "https://prod.emea.api.fiservapps.com/sandbox"
+ fiuu.base_url = "https://sandbox.merchant.razer.com/"
+ flexiti.base_url = "https://onlineapi.flexiti.fi/flexiti/online-api/"
+ fiuu.secondary_base_url="https://sandbox.merchant.razer.com/"
+ fiuu.third_base_url="https://api.merchant.razer.com/"
+ forte.base_url = "https://sandbox.forte.net/api/v3"
+ getnet.base_url = "https://api-test.getneteurope.com/engine/rest"
+ gigadat.base_url = "https://interac.express-connect.com/"
+ givepayments.base_url = "https://api-sandbox.givepayments.com"
+ globalpay.base_url = "https://apis.sandbox.globalpay.com/ucp/"
++globalpayments_heartland.base_url = "https://cert.api2.heartlandportico.com/Hps.Exchange.PosGateway/PosGatewayService.asmx"
+ globepay.base_url = "https://pay.globepay.co/"
+ gocardless.base_url = "https://api-sandbox.gocardless.com"
+ gotyme_sanlam.base_url = "sbx"
+ gpayments.base_url = "https://{{merchant_endpoint_prefix}}-test.api.as1.gpayments.net"
+ helcim.base_url = "https://api.helcim.com/"
+ hipay.base_url = "https://stage-secure-gateway.hipay-tpp.com/rest/"
+ hyperpg.base_url = "https://sandbox.hyperpg.in"
+ hipay.secondary_base_url = "https://stage-secure2-vault.hipay-tpp.com/rest/"
+ hipay.third_base_url = "https://stage-api-gateway.hipay.com/"
+ hyperwallet.base_url = "https://uat-api.paylution.com"
+ iatapay.base_url = "https://sandbox.iata-pay.iata.org/api/v1"
+ ilixium.base_url = "https://prprocessing.ilixium.com/platform/ili"
+ imerchantsolutions.base_url = "https://imerchantsolutions.com/api"
+ inespay.base_url = "https://apiflow.inespay.com/san/v21"
+ interpayments.base_url = "https://api-test.interpayments.com/v1"
+ itaubank.base_url = "https://sandbox.devportal.itau.com.br/"
+ jpmorgan.base_url = "https://api-mock.payments.jpmorgan.com/api/v2"
+ juspaythreedsserver.base_url = "http://localhost:8000"
+ katapult.base_url = "https://sandbox.katapult.com/api/v3"
+ jpmorgan.secondary_base_url="https://id.payments.jpmorgan.com"
++# JP Morgan Orbital (Chase Paymentech Orbital Gateway JSON API v4). Distinct from the
++# `jpmorgan` entry above, which is the JPMorgan Payments API v2.
++jpmorgan_orbital.base_url = "https://orbitalvar1.chasepaymentech.com/gwapi/v4/gateway"
+ klarna.base_url = "https://api{{klarna_region}}.playground.klarna.com/"
+ loonio.base_url = "https://integration.loonio.ca/"
+ merchante.base_url = "https://cert.merchante-solutions.com/mes-api/tridentApi"
+ mifinity.base_url = "https://demo.mifinity.com/"
+ mollie.base_url = "https://api.mollie.com/v2/"
+ mollie.secondary_base_url = "https://api.cc.mollie.com/v1/"
+ moneris.base_url = "https://api.sb.moneris.io"
+ mpgs.base_url = "https://test-gateway.mastercard.com"
+ multisafepay.base_url = "https://testapi.multisafepay.com/"
+ nexinets.base_url = "https://apitest.payengine.de/v1"
+ nexixpay.base_url = "https://xpaysandbox.nexigroup.com/api/phoenix-0.0/psp/api/v1"
+ payconex.base_url = "https://cert.payconex.net"
++paydotcom.base_url = "https://api.pay.com/"
+ nmi.base_url = "https://secure.nmi.com/"
+ nomupay.base_url = "https://payout-api.sandbox.nomupay.com"
+ noon.base_url = "https://api-test{{region}}.noonpayments.com/"
+ nordea.base_url = "https://api.nordeaopenbanking.com"
+ noon.key_mode = "Test"
+ novalnet.base_url = "https://payport.novalnet.de/v2"
++nsure.base_url = "https://sandbox.nsureapi.com"
+ nuvei.base_url = "https://ppp-test.nuvei.com/"
+ opayo.base_url = "https://pi-test.sagepay.com/"
+ opennode.base_url = "https://dev-api.opennode.com"
+ paybox.base_url = "https://preprod-ppps.paybox.com/PPPS.php"
+ paybox.secondary_base_url="https://preprod-tpeweb.paybox.com/"
+ payeezy.base_url = "https://api-cert.payeezy.com/"
+ payjustnow.base_url = "https://sandbox-checkout.payjustnow.io/v2"
+ payjustnowinstore.base_url = "https://sandbox.payjustnow.com/api"
+ payload.base_url = "https://api.payload.com"
+ payme.base_url = "https://sandbox.payme.io/"
++paynearme.base_url = "https://api.paynearme-sandbox.com/json-api"
+ payone.base_url = "https://payment.preprod.payone.com/"
+ paypal.base_url = "https://api-m.sandbox.paypal.com/"
+ paysafe.base_url = "https://api.test.paysafe.com/paymenthub/"
+ paystack.base_url = "https://api.paystack.co"
+ paytm.base_url = "https://securegw-stage.paytm.in/"
+ payu.base_url = "https://secure.snd.payu.com/"
+ peachpayments.base_url = "https://apitest.bankint.ppay.io/v/1"
+ phonepe.base_url = "https://api.phonepe.com/apis/hermes/"
+ placetopay.base_url = "https://test.placetopay.com/rest/gateway"
+ plaid.base_url = "https://sandbox.plaid.com"
+ powertranz.base_url = "https://staging.ptranz.com/api/"
+ prophetpay.base_url = "https://ccm-thirdparty.cps.golf/"
+ rapyd.base_url = "https://sandboxapi.rapyd.net"
+ razorpay.base_url = "https://api.razorpay.com/"
+ recurly.base_url = "https://v3.recurly.com"
+ redsys.base_url = "https://sis-t.redsys.es:25443"
+ revolv3.base_url = "https://api-sandbox.revolv3.com"
+ riskified.base_url = "https://sandbox.riskified.com/api"
++saferpay.base_url = "https://test.saferpay.com/api"
+ sanlam_payshield.base_url = "sbx"
+ santander.base_url = "https://trust-pix-h.santander.com.br/"
+ santander.secondary_base_url = "https://trust-open-h.api.santander.com.br/"
+ shift4.base_url = "https://api.shift4.com/"
+ sift.base_url = "https://api.sift.com/v205"
+ silverflow.base_url = "https://api-sbx.silverflow.co/v1"
+ signifyd.base_url = "https://api.signifyd.com/"
+ square.base_url = "https://connect.squareupsandbox.com/"
+ square.secondary_base_url = "https://pci-connect.squareupsandbox.com/"
+ stax.base_url = "https://apiprod.fattlabs.com/"
+@@ -252,26 +265,26 @@ supported_connectors = "adyen"
+ adyen = "Star,Pulse,Accel,Nyce"
+
+ [frm]
+ enabled = true
+
+ [zero_mandates.supported_payment_methods]
+ bank_debit.ach = { connector_list = "gocardless,adyen,payload" }
+ bank_debit.becs = { connector_list = "gocardless,adyen" }
+ bank_debit.bacs = { connector_list = "gocardless" }
+ bank_debit.sepa = { connector_list = "gocardless,adyen" }
+-card.credit.connector_list = "checkout,stripe,adyen,zift,authorizedotnet,cybersource,datatrans,worldpay,nmi,bankofamerica,wellsfargo,bamboraapac,nexixpay,novalnet,paypal,archipel,tesouro,mollie,fiservcommercehub,imerchantsolutions,peachpayments,tsys_transit"
+-card.debit.connector_list = "checkout,stripe,adyen,zift,authorizedotnet,cybersource,datatrans,worldpay,nmi,bankofamerica,wellsfargo,bamboraapac,nexixpay,novalnet,paypal,archipel,tesouro,mollie,fiservcommercehub,imerchantsolutions,peachpayments,tsys_transit"
++card.credit.connector_list = "checkout,stripe,adyen,zift,authorizedotnet,cybersource,datatrans,worldpay,nmi,bankofamerica,wellsfargo,bamboraapac,nexixpay,novalnet,paypal,archipel,tesouro,mollie,fiservcommercehub,imerchantsolutions,peachpayments,tsys_transit,shift4"
++card.debit.connector_list = "checkout,stripe,adyen,zift,authorizedotnet,cybersource,datatrans,worldpay,nmi,bankofamerica,wellsfargo,bamboraapac,nexixpay,novalnet,paypal,archipel,tesouro,mollie,fiservcommercehub,imerchantsolutions,peachpayments,tsys_transit,shift4"
+ pay_later.klarna.connector_list = "adyen"
+-wallet.apple_pay.connector_list = "aci,checkout,stripe,adyen,cybersource,bankofamerica,novalnet,nuvei,authorizedotnet,nmi,tesouro,worldpaymodular,worldpayxml,imerchantsolutions,datatrans,moneris"
++wallet.apple_pay.connector_list = "aci,checkout,stripe,adyen,cybersource,bankofamerica,novalnet,nuvei,authorizedotnet,nmi,tesouro,worldpaymodular,worldpayxml,imerchantsolutions,datatrans,moneris,shift4,revolv3"
+ wallet.samsung_pay.connector_list = "aci,cybersource"
+-wallet.google_pay.connector_list = "aci,checkout,stripe,adyen,cybersource,bankofamerica,novalnet,nuvei,authorizedotnet,nmi,tesouro,worldpaymodular,worldpayxml,imerchantsolutions,datatrans,moneris"
++wallet.google_pay.connector_list = "aci,checkout,stripe,adyen,cybersource,bankofamerica,novalnet,nuvei,authorizedotnet,nmi,tesouro,worldpaymodular,worldpayxml,imerchantsolutions,datatrans,moneris,shift4,revolv3"
+ wallet.paypal.connector_list = "adyen,novalnet"
+ wallet.momo.connector_list = "adyen"
+ wallet.kakao_pay.connector_list = "adyen"
+ wallet.go_pay.connector_list = "adyen"
+ wallet.gcash.connector_list = "adyen"
+ wallet.dana.connector_list = "adyen"
+ wallet.twint.connector_list = "adyen"
+ wallet.vipps.connector_list = "adyen"
+ bank_redirect.ideal.connector_list = "adyen"
+ bank_redirect.bancontact_card.connector_list = "adyen"
+@@ -279,26 +292,26 @@ bank_redirect.trustly.connector_list = "adyen"
+ bank_redirect.open_banking_uk.connector_list = "adyen"
+ bank_transfer.pix_automatico_push = { connector_list = "santander" }
+ bank_transfer.pix_automatico_qr = { connector_list = "santander" }
+ network_token.network_token.connector_list = "peachpayments"
+
+ [mandates.supported_payment_methods]
+ bank_debit.ach = { connector_list = "gocardless,adyen,stripe,payload" }
+ bank_debit.becs = { connector_list = "gocardless,stripe,adyen" }
+ bank_debit.bacs = { connector_list = "stripe,gocardless" }
+ bank_debit.sepa = { connector_list = "gocardless,adyen,stripe,deutschebank" }
+-card.credit.connector_list = "aci,checkout,stripe,adyen,authorizedotnet,cybersource,datatrans,globalpay,worldpay,multisafepay,nmi,nexinets,noon,bankofamerica,braintree,nuvei,payme,wellsfargo,bamboraapac,elavon,fiuu,nexixpay,novalnet,paybox,paypal,xendit,moneris,archipel,worldpayvantiv,payload,paysafe,finix,tesouro,mollie,airwallex,peachpayments,fiservcommercehub,imerchantsolutions,givepayments,tsys_transit"
+-card.debit.connector_list = "aci,checkout,stripe,adyen,authorizedotnet,cybersource,datatrans,globalpay,worldpay,multisafepay,nmi,nexinets,noon,bankofamerica,braintree,nuvei,payme,wellsfargo,bamboraapac,elavon,fiuu,nexixpay,novalnet,paybox,paypal,xendit,moneris,archipel,worldpayvantiv,payload,paysafe,finix,tesouro,mollie,airwallex,peachpayments,fiservcommercehub,imerchantsolutions,givepayments,tsys_transit"
++card.credit.connector_list = "aci,checkout,stripe,adyen,authorizedotnet,cybersource,datatrans,globalpay,worldpay,multisafepay,nmi,nexinets,noon,bankofamerica,braintree,nuvei,payme,wellsfargo,bamboraapac,elavon,fiuu,nexixpay,novalnet,paybox,paypal,xendit,moneris,archipel,worldpayvantiv,payload,paysafe,finix,tesouro,mollie,airwallex,peachpayments,fiservcommercehub,imerchantsolutions,givepayments,tsys_transit,shift4"
++card.debit.connector_list = "aci,checkout,stripe,adyen,authorizedotnet,cybersource,datatrans,globalpay,worldpay,multisafepay,nmi,nexinets,noon,bankofamerica,braintree,nuvei,payme,wellsfargo,bamboraapac,elavon,fiuu,nexixpay,novalnet,paybox,paypal,xendit,moneris,archipel,worldpayvantiv,payload,paysafe,finix,tesouro,mollie,airwallex,peachpayments,fiservcommercehub,imerchantsolutions,givepayments,tsys_transit,shift4"
+ pay_later.klarna.connector_list = "adyen,aci"
+-wallet.apple_pay.connector_list = "aci,checkout,stripe,adyen,braintree,cybersource,noon,bankofamerica,nexinets,novalnet,nuvei,authorizedotnet,wellsfargo,worldpaymodular,worldpayvantiv,finix,nmi,tesouro,worldpayxml,payme,imerchantsolutions,datatrans,moneris"
++wallet.apple_pay.connector_list = "aci,checkout,stripe,adyen,braintree,cybersource,noon,bankofamerica,nexinets,novalnet,nuvei,authorizedotnet,wellsfargo,worldpaymodular,worldpayvantiv,finix,nmi,tesouro,worldpayxml,payme,imerchantsolutions,datatrans,moneris,shift4,revolv3"
+ wallet.samsung_pay.connector_list = "aci,cybersource"
+-wallet.google_pay.connector_list = "aci,checkout,stripe,adyen,cybersource,bankofamerica,noon,globalpay,multisafepay,novalnet,nuvei,authorizedotnet,wellsfargo,worldpaymodular,worldpayvantiv,finix,nmi,tesouro,worldpayxml,imerchantsolutions,datatrans,moneris"
++wallet.google_pay.connector_list = "aci,checkout,stripe,adyen,cybersource,bankofamerica,noon,globalpay,multisafepay,novalnet,nuvei,authorizedotnet,wellsfargo,worldpaymodular,worldpayvantiv,finix,nmi,tesouro,worldpayxml,imerchantsolutions,datatrans,moneris,shift4,revolv3"
+ wallet.paypal.connector_list = "adyen,globalpay,nexinets,novalnet,paypal,authorizedotnet"
+ wallet.momo.connector_list = "adyen"
+ wallet.kakao_pay.connector_list = "adyen"
+ wallet.go_pay.connector_list = "adyen"
+ wallet.gcash.connector_list = "adyen"
+ wallet.dana.connector_list = "adyen"
+ wallet.twint.connector_list = "adyen"
+ wallet.vipps.connector_list = "adyen"
+ network_token.network_token.connector_list = "peachpayments"
+
+@@ -921,20 +934,32 @@ crypto_currency = { country = "AL, AD, AT, BE, BA, BG, HR, CZ, DK, EE, FI, FR, D
+
+ [pm_filters.paystack]
+ eft = { country = "NG, ZA, GH, KE, CI", currency = "NGN, GHS, ZAR, KES, USD" }
+
+ [pm_filters.santander]
+ pix_qr = { country = "BR", currency = "BRL" }
+ boleto = { country = "BR", currency = "BRL" }
+ pix_automatico_qr = { country = "BR", currency = "BRL" }
+ pix_automatico_push = { country = "BR", currency = "BRL" }
+
++[pm_filters.worldpayraft]
++credit = { country = "US", currency = "USD" }
++debit = { country = "US", currency = "USD" }
++
++[pm_filters.etisalat]
++credit = { country = "AE,BH,KW,OM,QA,SA,EG", currency = "AED,BHD,KWD,OMR,QAR,SAR,EGP,USD,EUR" }
++debit = { country = "AE,BH,KW,OM,QA,SA,EG", currency = "AED,BHD,KWD,OMR,QAR,SAR,EGP,USD,EUR" }
++
++[pm_filters.merchante]
++credit = { country = "US", currency = "USD" }
++debit = { country = "US", currency = "USD" }
++
+ [pm_filters.calida]
+ bluecode = { country = "AT,BE,BG,HR,CY,CZ,DK,EE,FI,FR,DE,GR,HU,IE,IT,LV,LT,LU,MT,NL,PL,PT,RO,SK,SI,ES,SE,IS,LI,NO", currency = "EUR" }
+
+ [pm_filters.boku]
+ dana = { country = "ID", currency = "IDR" }
+ gcash = { country = "PH", currency = "PHP" }
+ go_pay = { country = "ID", currency = "IDR" }
+ kakao_pay = { country = "KR", currency = "KRW" }
+ momo = { country = "VN", currency = "VND" }
+
+@@ -947,24 +972,24 @@ google_pay = { country = "EG,ZA,BH,CY,HK,IN,ID,IL,JP,JO,KW,MY,PK,PH,SA,SG,KR,TW,
+ [pm_filters.paypal]
+ credit = { country = "DZ,AO,BJ,BW,BF,BI,CM,CV,TD,KM,CI,CD,DJ,EG,ER,ET,GA,GM,GN,GW,KE,LS,MG,MW,ML,MR,MU,MA,MZ,NA,NE,NG,CG,RW,SH,ST,SN,SC,SL,SO,ZA,SZ,TZ,TG,TN,UG,ZM,ZW,AI,AG,AR,AW,BS,BB,BZ,BM,BO,BR,VG,CA,KY,CL,CO,CR,DM,DO,EC,SV,FK,GL,GD,GT,GY,HN,JM,MX,MS,NI,PA,PY,PE,KN,LC,PM,VC,SR,TT,TC,US,UY,VE,AM,AU,BH,BT,BN,KH,CN,CK,FJ,PF,HK,IN,ID,IL,JP,JO,KZ,KI,KW,KG,LA,MY,MV,MH,FM,MN,NR,NP,NC,NZ,NU,NF,OM,PW,PG,PH,PN,QA,WS,SA,SG,SB,KR,LK,TW,TJ,TH,TO,TM,TV,AE,VU,VN,WF,YE,AL,AD,AT,AZ,BY,BE,BA,BG,HR,CY,CZ,DK,EE,FO,FI,FR,GE,DE,GR,HU,IS,IE,IT,LV,LI,LT,LU,MK,MT,MD,MC,ME,NL,NO,PL,PT,RO,RU,SM,RS,SK,SI,ES,SJ,SE,CH,UA,GB,VA", currency = "AUD,BRL,CAD,CNY,CZK,DKK,EUR,HKD,HUF,ILS,JPY,MYR,MXN,TWD,NZD,NOK,PHP,PLN,GBP,SGD,SEK,CHF,THB,USD" }
+ debit = { country = "DZ,AO,BJ,BW,BF,BI,CM,CV,TD,KM,CI,CD,DJ,EG,ER,ET,GA,GM,GN,GW,KE,LS,MG,MW,ML,MR,MU,MA,MZ,NA,NE,NG,CG,RW,SH,ST,SN,SC,SL,SO,ZA,SZ,TZ,TG,TN,UG,ZM,ZW,AI,AG,AR,AW,BS,BB,BZ,BM,BO,BR,VG,CA,KY,CL,CO,CR,DM,DO,EC,SV,FK,GL,GD,GT,GY,HN,JM,MX,MS,NI,PA,PY,PE,KN,LC,PM,VC,SR,TT,TC,US,UY,VE,AM,AU,BH,BT,BN,KH,CN,CK,FJ,PF,HK,IN,ID,IL,JP,JO,KZ,KI,KW,KG,LA,MY,MV,MH,FM,MN,NR,NP,NC,NZ,NU,NF,OM,PW,PG,PH,PN,QA,WS,SA,SG,SB,KR,LK,TW,TJ,TH,TO,TM,TV,AE,VU,VN,WF,YE,AL,AD,AT,AZ,BY,BE,BA,BG,HR,CY,CZ,DK,EE,FO,FI,FR,GE,DE,GR,HU,IS,IE,IT,LV,LI,LT,LU,MK,MT,MD,MC,ME,NL,NO,PL,PT,RO,RU,SM,RS,SK,SI,ES,SJ,SE,CH,UA,GB,VA", currency = "AUD,BRL,CAD,CNY,CZK,DKK,EUR,HKD,HUF,ILS,JPY,MYR,MXN,TWD,NZD,NOK,PHP,PLN,GBP,SGD,SEK,CHF,THB,USD" }
+ paypal = { country = "DZ,AO,BJ,BW,BF,BI,CM,CV,TD,KM,CI,CD,DJ,EG,ER,ET,GA,GM,GN,GW,KE,LS,MG,MW,ML,MR,MU,MA,MZ,NA,NE,NG,CG,RW,SH,ST,SN,SC,SL,SO,ZA,SZ,TZ,TG,TN,UG,ZM,ZW,AI,AG,AR,AW,BS,BB,BZ,BM,BO,BR,VG,CA,KY,CL,CO,CR,DM,DO,EC,SV,FK,GL,GD,GT,GY,HN,JM,MX,MS,NI,PA,PY,PE,KN,LC,PM,VC,SR,TT,TC,US,UY,VE,AM,AU,BH,BT,BN,KH,CN,CK,FJ,PF,HK,IN,ID,IL,JP,JO,KZ,KI,KW,KG,LA,MY,MV,MH,FM,MN,NR,NP,NC,NZ,NU,NF,OM,PW,PG,PH,PN,QA,WS,SA,SG,SB,KR,LK,TW,TJ,TH,TO,TM,TV,AE,VU,VN,WF,YE,AL,AD,AT,AZ,BY,BE,BA,BG,HR,CY,CZ,DK,EE,FO,FI,FR,GE,DE,GR,HU,IS,IE,IT,LV,LI,LT,LU,MK,MT,MD,MC,ME,NL,NO,PL,PT,RO,RU,SM,RS,SK,SI,ES,SJ,SE,CH,UA,GB,VA", currency = "AUD,BRL,CAD,CNY,CZK,DKK,EUR,HKD,HUF,ILS,JPY,MYR,MXN,TWD,NZD,NOK,PHP,PLN,GBP,SGD,SEK,CHF,THB,USD" }
+ eps = { country = "DZ,AO,BJ,BW,BF,BI,CM,CV,TD,KM,CI,CD,DJ,EG,ER,ET,GA,GM,GN,GW,KE,LS,MG,MW,ML,MR,MU,MA,MZ,NA,NE,NG,CG,RW,SH,ST,SN,SC,SL,SO,ZA,SZ,TZ,TG,TN,UG,ZM,ZW,AI,AG,AR,AW,BS,BB,BZ,BM,BO,BR,VG,CA,KY,CL,CO,CR,DM,DO,EC,SV,FK,GL,GD,GT,GY,HN,JM,MX,MS,NI,PA,PY,PE,KN,LC,PM,VC,SR,TT,TC,US,UY,VE,AM,AU,BH,BT,BN,KH,CN,CK,FJ,PF,HK,IN,ID,IL,JP,JO,KZ,KI,KW,KG,LA,MY,MV,MH,FM,MN,NR,NP,NC,NZ,NU,NF,OM,PW,PG,PH,PN,QA,WS,SA,SG,SB,KR,LK,TW,TJ,TH,TO,TM,TV,AE,VU,VN,WF,YE,AL,AD,AT,AZ,BY,BE,BA,BG,HR,CY,CZ,DK,EE,FO,FI,FR,GE,DE,GR,HU,IS,IE,IT,LV,LI,LT,LU,MK,MT,MD,MC,ME,NL,NO,PL,PT,RO,RU,SM,RS,SK,SI,ES,SJ,SE,CH,UA,GB,VA", currency = "AUD,BRL,CAD,CNY,CZK,DKK,EUR,HKD,HUF,ILS,JPY,MYR,MXN,TWD,NZD,NOK,PHP,PLN,GBP,SGD,SEK,CHF,THB,USD" }
+ giropay = { currency = "EUR" }
+ ideal = { currency = "EUR" }
+ sofort = { country = "DZ,AO,BJ,BW,BF,BI,CM,CV,TD,KM,CI,CD,DJ,EG,ER,ET,GA,GM,GN,GW,KE,LS,MG,MW,ML,MR,MU,MA,MZ,NA,NE,NG,CG,RW,SH,ST,SN,SC,SL,SO,ZA,SZ,TZ,TG,TN,UG,ZM,ZW,AI,AG,AR,AW,BS,BB,BZ,BM,BO,BR,VG,CA,KY,CL,CO,CR,DM,DO,EC,SV,FK,GL,GD,GT,GY,HN,JM,MX,MS,NI,PA,PY,PE,KN,LC,PM,VC,SR,TT,TC,US,UY,VE,AM,AU,BH,BT,BN,KH,CN,CK,FJ,PF,HK,IN,ID,IL,JP,JO,KZ,KI,KW,KG,LA,MY,MV,MH,FM,MN,NR,NP,NC,NZ,NU,NF,OM,PW,PG,PH,PN,QA,WS,SA,SG,SB,KR,LK,TW,TJ,TH,TO,TM,TV,AE,VU,VN,WF,YE,AL,AD,AT,AZ,BY,BE,BA,BG,HR,CY,CZ,DK,EE,FO,FI,FR,GE,DE,GR,HU,IS,IE,IT,LV,LI,LT,LU,MK,MT,MD,MC,ME,NL,NO,PL,PT,RO,RU,SM,RS,SK,SI,ES,SJ,SE,CH,UA,GB,VA", currency = "AUD,BRL,CAD,CNY,CZK,DKK,EUR,HKD,HUF,ILS,JPY,MYR,MXN,TWD,NZD,NOK,PHP,PLN,GBP,SGD,SEK,CHF,THB,USD" }
+
+ [pm_filters.datatrans]
+-credit = { country = "AL,AD,AM,AT,AZ,BY,BE,BA,BG,CH,CY,CZ,DE,DK,EE,ES,FI,FR,GB,GE,GR,HR,HU,IE,IS,IT,KZ,LI,LT,LU,LV,MC,MD,ME,MK,MT,NL,NO,PL,PT,RO,RU,SE,SI,SK,SM,TR,UA,VA",  currency = "BHD,BIF,CHF,DJF,EUR,GBP,GNF,IQD,ISK,JPY,JOD,KMF,KRW,KWD,LYD,OMR,PYG,RWF,TND,UGX,USD,VND,VUV,XAF,XOF,XPF" }
+-debit = { country = "AL,AD,AM,AT,AZ,BY,BE,BA,BG,CH,CY,CZ,DE,DK,EE,ES,FI,FR,GB,GE,GR,HR,HU,IE,IS,IT,KZ,LI,LT,LU,LV,MC,MD,ME,MK,MT,NL,NO,PL,PT,RO,RU,SE,SI,SK,SM,TR,UA,VA",  currency = "BHD,BIF,CHF,DJF,EUR,GBP,GNF,IQD,ISK,JPY,JOD,KMF,KRW,KWD,LYD,OMR,PYG,RWF,TND,UGX,USD,VND,VUV,XAF,XOF,XPF" }
+-apple_pay = { country = "AL,AD,AM,AT,AZ,BY,BE,BA,BG,CH,CY,CZ,DE,DK,EE,ES,FI,FR,GB,GE,GR,HR,HU,IE,IS,IT,KZ,LI,LT,LU,LV,MC,MD,ME,MK,MT,NL,NO,PL,PT,RO,RU,SE,SI,SK,SM,TR,UA,VA",  currency = "BHD,BIF,CHF,DJF,EUR,GBP,GNF,IQD,ISK,JPY,JOD,KMF,KRW,KWD,LYD,OMR,PYG,RWF,TND,UGX,USD,VND,VUV,XAF,XOF,XPF" }
+-google_pay = { country = "AL,AD,AM,AT,AZ,BY,BE,BA,BG,CH,CY,CZ,DE,DK,EE,ES,FI,FR,GB,GE,GR,HR,HU,IE,IS,IT,KZ,LI,LT,LU,LV,MC,MD,ME,MK,MT,NL,NO,PL,PT,RO,RU,SE,SI,SK,SM,TR,UA,VA",  currency = "BHD,BIF,CHF,DJF,EUR,GBP,GNF,IQD,ISK,JPY,JOD,KMF,KRW,KWD,LYD,OMR,PYG,RWF,TND,UGX,USD,VND,VUV,XAF,XOF,XPF" }
++credit = { }
++debit = { }
++apple_pay = { }
++google_pay = { }
+
+ [pm_filters.payme]
+ credit = { country = "US,CA,IL,GB", currency = "ILS,USD,EUR" }
+ debit = { country = "US,CA,IL,GB", currency = "ILS,USD,EUR" }
+ apple_pay = { country = "US,CA,IL,GB", currency = "ILS,USD,EUR" }
+
+ [pm_filters.paysafe]
+ apple_pay = {country = "AF,AX,AL,DZ,AS,AD,AO,AI,AQ,AG,AR,AM,AW,AU,AT,AZ,BS,BH,BD,BB,BY,BE,BZ,BJ,BM,BT,BO,BQ,BA,BW,BV,BR,IO,BN,BG,BF,BI,KH,CM,CA,CV,KY,CF,TD,CL,CN,CX,CC,CO,KM,CG,CD,CK,CR,CI,HR,CU,CW,CY,CZ,DK,DJ,DM,DO,EC,EG,SV,GQ,ER,EE,ET,FK,FO,FJ,FI,FR,GF,PF,TF,GA,GM,GE,DE,GH,GI,GR,GL,GD,GP,GU,GT,GG,GN,GW,GY,HT,HM,HN,HK,HU,IS,IN,ID,IR,IQ,IE,IM,IL,IT,JM,JP,JE,JO,KZ,KE,KI,KP,KR,KW,KG,LA,LV,LB,LS,LR,LY,LI,LT,LU,MO,MK,MG,MW,MY,MV,ML,MT,MH,MQ,MR,MU,YT,MX,FM,MD,MC,MN,ME,MS,MA,MZ,MM,NA,NR,NP,NC,NZ,NI,NE,NG,NU,NF,MP,NO,OM,PK,PW,PS,PA,PG,PY,PE,PH,PN,PL,PT,PR,QA,RE,RO,RU,RW,BL,SH,KN,LC,MF,VC,WS,SM,ST,SA,SN,RS,SC,SL,SG,SX,SK,SI,SB,SO,ZA,GS,SS,ES,LK,PM,SD,SR,SJ,SZ,SE,CH,SY,TW,TJ,TZ,TH,NL,TL,TG,TK,TO,TT,TN,TR,TM,TC,TV,UG,UA,AE,GB,US,UM,UY,UZ,VU,VA,VE,VN,VG,VI,WF,EH,YE,ZM,ZW", currency = "ARS,AUD,AZN,BHD,BOB,BAM,BRL,BGN,CAD,CLP,CNY,COP,CRC,HRK,CZK,DKK,DOP,XCD,EGP,ETB,EUR,FJD,GEL,GTQ,HTG,HNL,HKD,HUF,INR,IDR,JMD,JPY,JOD,KZT,KES,KRW,KWD,LBP,LYD,MWK,MUR,MXN,MDL,MAD,ILS,NZD,NGN,NOK,OMR,PKR,PAB,PYG,PEN,PHP,PLN,GBP,QAR,RON,RUB,RWF,SAR,RSD,SGD,ZAR,LKR,SEK,CHF,SYP,TWD,THB,TTD,TND,TRY,UAH,AED,UYU,USD,VND" }
+ google_pay = {country = "AF,AX,AL,DZ,AS,AD,AO,AI,AQ,AG,AR,AM,AW,AU,AT,AZ,BS,BH,BD,BB,BY,BE,BZ,BJ,BM,BT,BO,BQ,BA,BW,BV,BR,IO,BN,BG,BF,BI,KH,CM,CA,CV,KY,CF,TD,CL,CN,CX,CC,CO,KM,CG,CD,CK,CR,CI,HR,CU,CW,CY,CZ,DK,DJ,DM,DO,EC,EG,SV,GQ,ER,EE,ET,FK,FO,FJ,FI,FR,GF,PF,TF,GA,GM,GE,DE,GH,GI,GR,GL,GD,GP,GU,GT,GG,GN,GW,GY,HT,HM,HN,HK,HU,IS,IN,ID,IR,IQ,IE,IM,IL,IT,JM,JP,JE,JO,KZ,KE,KI,KP,KR,KW,KG,LA,LV,LB,LS,LR,LY,LI,LT,LU,MO,MK,MG,MW,MY,MV,ML,MT,MH,MQ,MR,MU,YT,MX,FM,MD,MC,MN,ME,MS,MA,MZ,MM,NA,NR,NP,NC,NZ,NI,NE,NG,NU,NF,MP,NO,OM,PK,PW,PS,PA,PG,PY,PE,PH,PN,PL,PT,PR,QA,RE,RO,RU,RW,BL,SH,KN,LC,MF,VC,WS,SM,ST,SA,SN,RS,SC,SL,SG,SX,SK,SI,SB,SO,ZA,GS,SS,ES,LK,PM,SD,SR,SJ,SZ,SE,CH,SY,TW,TJ,TZ,TH,NL,TL,TG,TK,TO,TT,TN,TR,TM,TC,TV,UG,UA,AE,GB,US,UM,UY,UZ,VU,VA,VE,VN,VG,VI,WF,EH,YE,ZM,ZW", currency = "ARS,AUD,AZN,BHD,BOB,BAM,BRL,BGN,CAD,CLP,CNY,COP,CRC,HRK,CZK,DKK,DOP,XCD,EGP,ETB,EUR,FJD,GEL,GTQ,HTG,HNL,HKD,HUF,INR,IDR,JMD,JPY,JOD,KZT,KES,KRW,KWD,LBP,LYD,MWK,MUR,MXN,MDL,MAD,ILS,NZD,NGN,NOK,OMR,PKR,PAB,PYG,PEN,PHP,PLN,GBP,QAR,RON,RUB,RWF,SAR,RSD,SGD,ZAR,LKR,SEK,CHF,SYP,TWD,THB,TTD,TND,TRY,UAH,AED,UYU,USD,VND" }
+
+@@ -998,20 +1023,21 @@ stripe.payment_method = "bank_transfer"
+ bankofamerica = { payment_method = "card" }
+ cybersource = { payment_method = "card" }
+ barclaycard = { payment_method = "card" }
+ nmi.payment_method = "card"
+ payme.payment_method = "card"
+ deutschebank = { payment_method = "bank_debit" }
+ paybox = { payment_method = "card" }
+ nexixpay = { payment_method = "card" }
+ redsys = { payment_method = "card" }
+ worldpayxml = { payment_method = "card,wallet" }
++paydotcom = { payment_method = "card" }    # Pay.com gateway 3DS settles on CompleteAuthorize; the card must be restorable
+
+ #tokenization configuration which describe token lifetime and payment method for specific connector
+ [tokenization]
+ braintree = { long_lived_token = false, payment_method = "card,wallet" }
+ checkout = { long_lived_token = false, payment_method = "wallet", apple_pay_pre_decrypt_flow = "network_tokenization", google_pay_pre_decrypt_flow = "network_tokenization" }
+ datatrans = { long_lived_token = false, payment_method = "wallet", payment_method_type = { type = "enable_only", list = "google_pay" } }
+ gocardless = { long_lived_token = true, payment_method = "bank_debit" }
+ hipay = { long_lived_token = false, payment_method = "card" }
+ mollie = { long_lived_token = false, payment_method = "card" }
+ payme = { long_lived_token = false, payment_method = "card" }
+@@ -1065,21 +1091,21 @@ billing_connectors_which_requires_dispute_record_back_call = "chargebee"
+ [authentication_providers]
+ click_to_pay = {connector_list = "adyen, cybersource, trustpay"}
+
+ [authentication_service_enabled_connectors]
+ connector_list = "juspaythreedsserver, ctp_mastercard, ctp_visa"
+
+ [list_dispute_supported_connectors]
+ connector_list = "worldpayvantiv"
+
+ [grpc_client.unified_connector_service]
+-ucs_only_connectors = "imerchantsolutions, paytm, phonepe, hyperpg, revolv3, fiservcommercehub, absa_sanlam, interpayments, payconex, dlocal, barclaycard, jpmorgan, datatrans, tsys_transit, givepayments, citigate, ilixium, moneris, elavon, worldpayraft, globalpay, rapyd, etisalat, merchante"    # Comma-separated list of connectors that use UCS only
++ucs_only_connectors = "imerchantsolutions, paytm, phonepe, hyperpg, revolv3, fiservcommercehub, absa_sanlam, interpayments, payconex, dlocal, barclaycard, jpmorgan, datatrans, tsys_transit, givepayments, citigate, ilixium, moneris, elavon, worldpayraft, globalpay, rapyd, paynearme, jpmorgan_orbital, saferpay, d24, etisalat, globalpayments_heartland, paydotcom, merchante, nsure, elavon_pg, trustly"    # Comma-separated list of connectors that use UCS only
+ ucs_psync_disabled_connectors = "cashtocode, trustly"    # Comma-separated list of connectors to disable UCS PSync call
+
+ # Merchant Advice Code Configuration
+ [merchant_advice_codes.visa]
+ "01" = { description = "The issuer will never approve (do not reattempt with the same card)", recommended_action = "do_not_retry" }
+ "02" = { description = "The issuer cannot approve at this time (limit the reattempts with the same card to a maximum of 20 times within 30 days)", recommended_action = "retry_later" }
+ "03" = { description = "Data quality (monitor for fraud attacks, revalidate the customer data prior to reattempt for a maximum of 20 times within 30 days)", recommended_action = "retry_after_instrument_update" }
+ "04" = { description = "Generic response codes (limit the reattempts with the same card to a maximum of 20 times within 30 days)", recommended_action = "retry_later" }
+
+ [merchant_advice_codes.mastercard]
+```
+
+```patch
+diff --git a/config/deployments/production.toml b/config/deployments/production.toml
+index 34842b56da..42c58b4366 100644
+--- a/config/deployments/production.toml
++++ b/config/deployments/production.toml
+@@ -1,17 +1,18 @@
+ # Whether saving a payment method is supported by all, some, or none of the connectors
+ # eligible for it. Returned in the PML response so the SDK can decide whether to show the
+ # "save my details" checkbox ("supported" | "partially_supported" | "unsupported").
+ [customer_acceptance_support]
+ card.credit = "supported"
+ card.debit = "supported"
+ bank_redirect.open_banking = "partially_supported"
++bank_redirect.trustly = "partially_supported"
+
+ # Bank redirect configs for allowed banks
+ [bank_config]
+ eps.adyen.banks = "bank_austria,bawag_psk_ag,dolomitenbank,easybank_ag,erste_bank_und_sparkassen,hypo_tirol_bank_ag,posojilnica_bank_e_gen,raiffeisen_bankengruppe_osterreich,schoellerbank_ag,sparda_bank_wien,volksbank_gruppe,volkskreditbank_ag"
+ eps.stripe.banks = "arzte_und_apotheker_bank,austrian_anadi_bank_ag,bank_austria,bankhaus_carl_spangler,bankhaus_schelhammer_und_schattera_ag,bawag_psk_ag,bks_bank_ag,brull_kallmus_bank_ag,btv_vier_lander_bank,capital_bank_grawe_gruppe_ag,dolomitenbank,easybank_ag,erste_bank_und_sparkassen,hypo_alpeadriabank_international_ag,hypo_noe_lb_fur_niederosterreich_u_wien,hypo_oberosterreich_salzburg_steiermark,hypo_tirol_bank_ag,hypo_vorarlberg_bank_ag,hypo_bank_burgenland_aktiengesellschaft,marchfelder_bank,oberbank_ag,raiffeisen_bankengruppe_osterreich,schoellerbank_ag,sparda_bank_wien,volksbank_gruppe,volkskreditbank_ag,vr_bank_braunau"
+ ideal.adyen.banks = "abn_amro,asn_bank,bunq,ing,knab,n26,nationale_nederlanden,rabobank,regiobank,revolut,sns_bank,triodos_bank,van_lanschot,yoursafe"
+ ideal.stripe.banks = "abn_amro,asn_bank,bunq,handelsbanken,ing,knab,moneyou,rabobank,regiobank,revolut,sns_bank,triodos_bank,van_lanschot"
+ ideal.multisafepay.banks = "abn_amro, asn_bank, bunq, handelsbanken, nationale_nederlanden, n26, ing, knab, rabobank, regiobank, revolut, sns_bank,triodos_bank, van_lanschot, yoursafe"
+ online_banking_czech_republic.adyen.banks = "ceska_sporitelna,komercni_banka,platnosc_online_karta_platnicza"
+ online_banking_fpx.adyen.banks = "affin_bank,agro_bank,alliance_bank,am_bank,bank_islam,bank_muamalat,bank_rakyat,bank_simpanan_nasional,cimb_bank,hong_leong_bank,hsbc_bank,kuwait_finance_house,maybank,ocbc_bank,public_bank,rhb_bank,standard_chartered_bank,uob_bank"
+@@ -62,111 +63,127 @@ cashtocode.base_url = "https://cluster14.api.cashtocode.com"
+ celero.base_url = "https://app.gotnpgateway.com"
+ chargebee.base_url = "https://{{merchant_endpoint_prefix}}.chargebee.com/api/"
+ checkbook.base_url = "https://api.checkbook.io"
+ checkout.base_url = "https://api.checkout.com/"
+ citigate.base_url = "https://gw.cgate.tech"
+ coinbase.base_url = "https://api.commerce.coinbase.com"
+ coingate.base_url = "https://api.coingate.com"
+ cryptopay.base_url = "https://business.cryptopay.me/"
+ cybersource.base_url = "https://api.cybersource.com/"
+ cybersourcedecisionmanager.base_url = "https://api.cybersource.com/"
++d24.base_url = "https://api.directa24.com"
+ datatrans.base_url = "https://api.datatrans.com/"
+ datatrans.secondary_base_url = "https://pay.datatrans.com/"
+ deutschebank.base_url = "https://merch.directpos.de/rest-api"
+ digitalvirgo.base_url = "https://dcb-integration-service-sandbox-external.staging.digitalvirgo.pl"
+ dlocal.base_url = "https://api.dlocal.com/"
+ dummyconnector.base_url = "http://localhost:8080/dummy-connector"
+ dwolla.base_url = "https://api.dwolla.com"
+ ebanx.base_url = "https://api.ebanxpay.com/"
+ elavon.base_url = "https://api.convergepay.com/VirtualMerchant/"
++# Elavon Payment Gateway (EPG), Elavon's JSON REST gateway. Distinct from the
++# `elavon` entry above, which is Elavon Converge (an XML API).
++elavon_pg.base_url = "https://api.eu.convergepay.com"
+ envoy.base_url = "https://envoytx.com/"
+ etisalat.base_url = "https://ipg.comtrust.ae:2443"
+ facilitapay.base_url = "https://api.facilitapay.com/api/v1"
+ finix.base_url = "https://finix.live-payments-api.com"
+ fiserv.base_url = "https://cert.api.fiservapps.com/"
+ fiservcommercehub.base_url = "https://connect.fiservapis.com/ch/"
+ fiservemea.base_url = "https://prod.emea.api.fiservapps.com"
+ fiuu.base_url = "https://pay.merchant.razer.com/"
+ flexiti.base_url = "https://onlineapi.flexiti.fi/flexiti/online-api/"
+ fiuu.secondary_base_url="https://api.merchant.razer.com/"
+ fiuu.third_base_url="https://api.merchant.razer.com/"
+ forte.base_url = "https://api.forte.net/v3"
+ getnet.base_url = "https://api.getneteurope.com/engine/rest"
+ gigadat.base_url = "https://interac.express-connect.com/"
+ givepayments.base_url = "https://api-sandbox.givepayments.com"
+ globalpay.base_url = "https://apis.globalpay.com/ucp/"
++globalpayments_heartland.base_url = "https://api2.heartlandportico.com/Hps.Exchange.PosGateway/PosGatewayService.asmx"
+ globepay.base_url = "https://pay.globepay.co/"
+ gocardless.base_url = "https://api.gocardless.com"
+ gotyme_sanlam.base_url = "live"
+ gpayments.base_url = "https://{{merchant_endpoint_prefix}}-test.api.as1.gpayments.net"
+ helcim.base_url = "https://api.helcim.com/"
+ hipay.base_url = "https://secure-gateway.hipay-tpp.com/rest/"
+ hyperpg.base_url = "https://sandbox.hyperpg.in"
+ hipay.secondary_base_url = "https://secure2-vault.hipay-tpp.com/rest/"
+ hipay.third_base_url = "https://api-gateway.hipay.com/"
+ hyperwallet.base_url = "https://uat-api.paylution.com"
+ iatapay.base_url = "https://iata-pay.iata.org/api/v1"
+ ilixium.base_url = "https://prprocessing.ilixium.com/platform/ili"
+ imerchantsolutions.base_url = "https://imerchantsolutions.com/api"
+ inespay.base_url = "https://apiflow.inespay.com/san/v21"
+ interpayments.base_url = "https://api-test.interpayments.com/v1"
+ itaubank.base_url = "https://secure.api.itau/"
+ jpmorgan.base_url = "https://api-ms.payments.jpmorgan.com/api/v2"
+ juspaythreedsserver.base_url = "http://localhost:8000"
+ katapult.base_url = "https://www.katapult.com/api/v3"
+ jpmorgan.secondary_base_url="https://id.payments.jpmorgan.com"
++# JP Morgan Orbital (Chase Paymentech Orbital Gateway JSON API v4). Distinct from the
++# `jpmorgan` entry above, which is the JPMorgan Payments API v2.
++# NOTE: UNCONFIRMED production hostname. JPMorgan does not publish it; only the VAR host
++# is documented. This follows the Chase Paymentech convention (orbitalvarN = VAR/test,
++# orbitalN = production) and resolves in public DNS, but must be confirmed with JPMorgan
++# Merchant Services during onboarding.
++jpmorgan_orbital.base_url = "https://orbital1.chasepaymentech.com/gwapi/v4/gateway"
+ klarna.base_url = "https://api{{klarna_region}}.klarna.com/"
+ loonio.base_url = "https://loonio.ca/"
+ merchante.base_url = "https://cert.merchante-solutions.com/mes-api/tridentApi" # TODO: replace with real Merchante production hostname once provided.
+ mifinity.base_url = "https://secure.mifinity.com/"
+ mollie.base_url = "https://api.mollie.com/v2/"
+ mollie.secondary_base_url = "https://api.cc.mollie.com/v1/"
+ moneris.base_url = "https://api.moneris.io"
+ mpgs.base_url = "https://ap-gateway.mastercard.com"
+ multisafepay.base_url = "https://api.multisafepay.com/"
+ nexinets.base_url = "https://api.payengine.de/v1"
+ nexixpay.base_url = "https://xpay.nexigroup.com/api/phoenix-0.0/psp/api/v1"
+ payconex.base_url = "https://secure.payconex.net"
++paydotcom.base_url = "https://api.pay.com/"
+ nmi.base_url = "https://secure.nmi.com/"
+ nomupay.base_url = "https://payout-api.nomupay.com"
+ noon.base_url = "https://api{{region}}.noonpayments.com/"
+ nordea.base_url = "https://open.nordeaopenbanking.com"
+ noon.key_mode = "Live"
+ novalnet.base_url = "https://payport.novalnet.de/v2"
++nsure.base_url = "https://service.nsureapi.com"
+ nuvei.base_url = "https://secure.safecharge.com/"
+ opayo.base_url = "https://pi-live.sagepay.com/"
+ opennode.base_url = "https://api.opennode.com"
+ paybox.base_url = "https://ppps.paybox.com/PPPS.php"
+ paybox.secondary_base_url="https://tpeweb.paybox.com/"
+ payeezy.base_url = "https://api.payeezy.com/"
+ payjustnow.base_url = "https://checkout.payjustnow.io/v2"
+ payjustnowinstore.base_url = "https://api.payjustnow.com/api"
+ payload.base_url = "https://api.payload.com"
+ payme.base_url = "https://live.payme.io/"
++paynearme.base_url = "https://api.paynearme.com/json-api"
+ payone.base_url = "https://payment.payone.com/"
+ paypal.base_url = "https://api-m.paypal.com/"
+ paysafe.base_url = "https://api.paysafe.com/paymenthub/"
+ paystack.base_url = "https://api.paystack.co"
+ paytm.base_url = "https://securegw-stage.paytm.in/"
+ payu.base_url = "https://secure.payu.com/api/"
+ peachpayments.base_url = "https://api.bankint.peachpayments.com/v/1"
+ phonepe.base_url = "https://api.phonepe.com/apis/hermes/"
+ placetopay.base_url = "https://checkout.placetopay.com/rest/gateway"
+ plaid.base_url = "https://production.plaid.com"
+ powertranz.base_url = "https://staging.ptranz.com/api/"
+ prophetpay.base_url = "https://ccm-thirdparty.cps.golf/"
+ rapyd.base_url = "https://api.rapyd.net"
+ razorpay.base_url = "https://api.razorpay.com/"
+ recurly.base_url = "https://v3.recurly.com"
+ redsys.base_url = "https://sis.redsys.es"
+ revolv3.base_url = "https://api.revolv3.com"
+ riskified.base_url = "https://wh.riskified.com/api/"
++saferpay.base_url = "https://www.saferpay.com/api"
+ sanlam_payshield.base_url = "live"
+ santander.base_url = "https://trust-pix.santander.com.br/"
+ santander.secondary_base_url = "https://trust-open.api.santander.com.br/"
+ shift4.base_url = "https://api.shift4.com/"
+ sift.base_url = "https://api.sift.com/v205"
+ silverflow.base_url = "https://api.silverflow.co/v1"
+ signifyd.base_url = "https://api.signifyd.com/"
+ square.base_url = "https://connect.squareup.com/"
+ square.secondary_base_url = "https://pci-connect.squareup.com/"
+ stax.base_url = "https://apiprod.fattlabs.com/"
+@@ -245,26 +262,26 @@ force_two_factor_auth = true
+ force_cookies = false
+
+ [frm]
+ enabled = false
+
+ [zero_mandates.supported_payment_methods]
+ bank_debit.ach = { connector_list = "gocardless,adyen,payload" }
+ bank_debit.becs = { connector_list = "gocardless,adyen" }
+ bank_debit.bacs = { connector_list = "gocardless" }
+ bank_debit.sepa = { connector_list = "gocardless,adyen" }
+-card.credit.connector_list = "checkout,stripe,adyen,authorizedotnet,cybersource,datatrans,worldpay,nmi,bankofamerica,wellsfargo,bamboraapac,nexixpay,novalnet,paypal,archipel,tesouro,mollie,fiservcommercehub,imerchantsolutions,peachpayments,tsys_transit"
+-card.debit.connector_list = "checkout,stripe,adyen,authorizedotnet,cybersource,datatrans,worldpay,nmi,bankofamerica,wellsfargo,bamboraapac,nexixpay,novalnet,paypal,archipel,tesouro,mollie,fiservcommercehub,imerchantsolutions,peachpayments,tsys_transit"
++card.credit.connector_list = "checkout,stripe,adyen,authorizedotnet,cybersource,datatrans,worldpay,nmi,bankofamerica,wellsfargo,bamboraapac,nexixpay,novalnet,paypal,archipel,tesouro,mollie,fiservcommercehub,imerchantsolutions,peachpayments,tsys_transit,shift4"
++card.debit.connector_list = "checkout,stripe,adyen,authorizedotnet,cybersource,datatrans,worldpay,nmi,bankofamerica,wellsfargo,bamboraapac,nexixpay,novalnet,paypal,archipel,tesouro,mollie,fiservcommercehub,imerchantsolutions,peachpayments,tsys_transit,shift4"
+ pay_later.klarna.connector_list = "adyen"
+-wallet.apple_pay.connector_list = "aci,checkout,stripe,adyen,cybersource,bankofamerica,novalnet,nuvei,authorizedotnet,nmi,tesouro,worldpaymodular,worldpayxml,imerchantsolutions,datatrans,moneris"
++wallet.apple_pay.connector_list = "aci,checkout,stripe,adyen,cybersource,bankofamerica,novalnet,nuvei,authorizedotnet,nmi,tesouro,worldpaymodular,worldpayxml,imerchantsolutions,datatrans,moneris,shift4,revolv3"
+ wallet.samsung_pay.connector_list = "aci,cybersource"
+-wallet.google_pay.connector_list = "aci,checkout,stripe,adyen,cybersource,bankofamerica,novalnet,nuvei,authorizedotnet,nmi,tesouro,worldpaymodular,worldpayxml,imerchantsolutions,datatrans,moneris"
++wallet.google_pay.connector_list = "aci,checkout,stripe,adyen,cybersource,bankofamerica,novalnet,nuvei,authorizedotnet,nmi,tesouro,worldpaymodular,worldpayxml,imerchantsolutions,datatrans,moneris,shift4,revolv3"
+ wallet.paypal.connector_list = "adyen,novalnet"
+ wallet.momo.connector_list = "adyen"
+ wallet.kakao_pay.connector_list = "adyen"
+ wallet.go_pay.connector_list = "adyen"
+ wallet.gcash.connector_list = "adyen"
+ wallet.dana.connector_list = "adyen"
+ wallet.twint.connector_list = "adyen"
+ wallet.vipps.connector_list = "adyen"
+ bank_redirect.ideal.connector_list = "adyen"
+ bank_redirect.bancontact_card.connector_list = "adyen"
+@@ -272,26 +289,26 @@ bank_redirect.trustly.connector_list = "adyen"
+ bank_redirect.open_banking_uk.connector_list = "adyen"
+ bank_transfer.pix_automatico_push = { connector_list = "santander" }
+ bank_transfer.pix_automatico_qr = { connector_list = "santander" }
+ network_token.network_token.connector_list = "peachpayments"
+
+ [mandates.supported_payment_methods]
+ bank_debit.ach = { connector_list = "gocardless,adyen,stripe,payload" }
+ bank_debit.becs = { connector_list = "gocardless,stripe,adyen" }
+ bank_debit.bacs = { connector_list = "stripe,gocardless" }
+ bank_debit.sepa = { connector_list = "gocardless,adyen,stripe,deutschebank" }
+-card.credit.connector_list = "aci,checkout,stripe,zift,adyen,authorizedotnet,cybersource,datatrans,globalpay,worldpay,multisafepay,nmi,nexinets,noon,bankofamerica,braintree,nuvei,payme,wellsfargo,bamboraapac,elavon,fiuu,nexixpay,novalnet,paybox,paypal,xendit,moneris,archipel,worldpayvantiv,payload,paysafe,finix,tesouro,mollie,airwallex,peachpayments,fiservcommercehub,imerchantsolutions,givepayments,tsys_transit"
+-card.debit.connector_list = "aci,checkout,stripe,zift,adyen,authorizedotnet,cybersource,datatrans,globalpay,worldpay,multisafepay,nmi,nexinets,noon,bankofamerica,braintree,nuvei,payme,wellsfargo,bamboraapac,elavon,fiuu,nexixpay,novalnet,paybox,paypal,xendit,moneris,archipel,worldpayvantiv,payload,paysafe,finix,tesouro,mollie,airwallex,peachpayments,fiservcommercehub,imerchantsolutions,givepayments,tsys_transit"
++card.credit.connector_list = "aci,checkout,stripe,zift,adyen,authorizedotnet,cybersource,datatrans,globalpay,worldpay,multisafepay,nmi,nexinets,noon,bankofamerica,braintree,nuvei,payme,wellsfargo,bamboraapac,elavon,fiuu,nexixpay,novalnet,paybox,paypal,xendit,moneris,archipel,worldpayvantiv,payload,paysafe,finix,tesouro,mollie,airwallex,peachpayments,fiservcommercehub,imerchantsolutions,givepayments,tsys_transit,shift4"
++card.debit.connector_list = "aci,checkout,stripe,zift,adyen,authorizedotnet,cybersource,datatrans,globalpay,worldpay,multisafepay,nmi,nexinets,noon,bankofamerica,braintree,nuvei,payme,wellsfargo,bamboraapac,elavon,fiuu,nexixpay,novalnet,paybox,paypal,xendit,moneris,archipel,worldpayvantiv,payload,paysafe,finix,tesouro,mollie,airwallex,peachpayments,fiservcommercehub,imerchantsolutions,givepayments,tsys_transit,shift4"
+ pay_later.klarna.connector_list = "adyen,aci"
+-wallet.apple_pay.connector_list = "aci,checkout,stripe,adyen,braintree,cybersource,noon,bankofamerica,nuvei,nexinets,novalnet,authorizedotnet,wellsfargo,worldpayvantiv,finix,nmi,tesouro,worldpaymodular,worldpayxml,payme,imerchantsolutions,datatrans,moneris"
++wallet.apple_pay.connector_list = "aci,checkout,stripe,adyen,braintree,cybersource,noon,bankofamerica,nuvei,nexinets,novalnet,authorizedotnet,wellsfargo,worldpayvantiv,finix,nmi,tesouro,worldpaymodular,worldpayxml,payme,imerchantsolutions,datatrans,moneris,shift4,revolv3"
+ wallet.samsung_pay.connector_list = "aci,cybersource"
+-wallet.google_pay.connector_list = "aci,checkout,stripe,adyen,cybersource,bankofamerica,noon,globalpay,multisafepay,novalnet,nuvei,authorizedotnet,wellsfargo,worldpayvantiv,finix,nmi,tesouro,worldpaymodular,worldpayxml,imerchantsolutions,datatrans,moneris"
++wallet.google_pay.connector_list = "aci,checkout,stripe,adyen,cybersource,bankofamerica,noon,globalpay,multisafepay,novalnet,nuvei,authorizedotnet,wellsfargo,worldpayvantiv,finix,nmi,tesouro,worldpaymodular,worldpayxml,imerchantsolutions,datatrans,moneris,shift4,revolv3"
+ wallet.paypal.connector_list = "adyen,globalpay,nexinets,novalnet,paypal,authorizedotnet"
+ wallet.momo.connector_list = "adyen"
+ wallet.kakao_pay.connector_list = "adyen"
+ wallet.go_pay.connector_list = "adyen"
+ wallet.gcash.connector_list = "adyen"
+ wallet.dana.connector_list = "adyen"
+ wallet.twint.connector_list = "adyen"
+ wallet.vipps.connector_list = "adyen"
+ network_token.network_token.connector_list = "peachpayments"
+
+@@ -908,20 +925,32 @@ crypto_currency = { country = "AL, AD, AT, BE, BA, BG, HR, CZ, DK, EE, FI, FR, D
+
+ [pm_filters.paystack]
+ eft = { country = "NG, ZA, GH, KE, CI", currency = "NGN, GHS, ZAR, KES, USD" }
+
+ [pm_filters.santander]
+ pix_qr = { country = "BR", currency = "BRL" }
+ boleto = { country = "BR", currency = "BRL" }
+ pix_automatico_qr = { country = "BR", currency = "BRL" }
+ pix_automatico_push = { country = "BR", currency = "BRL" }
+
++[pm_filters.worldpayraft]
++credit = { country = "US", currency = "USD" }
++debit = { country = "US", currency = "USD" }
++
++[pm_filters.etisalat]
++credit = { country = "AE,BH,KW,OM,QA,SA,EG", currency = "AED,BHD,KWD,OMR,QAR,SAR,EGP,USD,EUR" }
++debit = { country = "AE,BH,KW,OM,QA,SA,EG", currency = "AED,BHD,KWD,OMR,QAR,SAR,EGP,USD,EUR" }
++
++[pm_filters.merchante]
++credit = { country = "US", currency = "USD" }
++debit = { country = "US", currency = "USD" }
++
+ [pm_filters.calida]
+ bluecode = { country = "AT,BE,BG,HR,CY,CZ,DK,EE,FI,FR,DE,GR,HU,IE,IT,LV,LT,LU,MT,NL,PL,PT,RO,SK,SI,ES,SE,IS,LI,NO", currency = "EUR" }
+
+ [pm_filters.boku]
+ dana = { country = "ID", currency = "IDR" }
+ gcash = { country = "PH", currency = "PHP" }
+ go_pay = { country = "ID", currency = "IDR" }
+ kakao_pay = { country = "KR", currency = "KRW" }
+ momo = { country = "VN", currency = "VND" }
+
+@@ -934,24 +963,24 @@ google_pay = { country = "EG,ZA,BH,CY,HK,IN,ID,IL,JP,JO,KW,MY,PK,PH,SA,SG,KR,TW,
+ [pm_filters.paypal]
+ credit = { country = "DZ,AO,BJ,BW,BF,BI,CM,CV,TD,KM,CI,CD,DJ,EG,ER,ET,GA,GM,GN,GW,KE,LS,MG,MW,ML,MR,MU,MA,MZ,NA,NE,NG,CG,RW,SH,ST,SN,SC,SL,SO,ZA,SZ,TZ,TG,TN,UG,ZM,ZW,AI,AG,AR,AW,BS,BB,BZ,BM,BO,BR,VG,CA,KY,CL,CO,CR,DM,DO,EC,SV,FK,GL,GD,GT,GY,HN,JM,MX,MS,NI,PA,PY,PE,KN,LC,PM,VC,SR,TT,TC,US,UY,VE,AM,AU,BH,BT,BN,KH,CN,CK,FJ,PF,HK,IN,ID,IL,JP,JO,KZ,KI,KW,KG,LA,MY,MV,MH,FM,MN,NR,NP,NC,NZ,NU,NF,OM,PW,PG,PH,PN,QA,WS,SA,SG,SB,KR,LK,TW,TJ,TH,TO,TM,TV,AE,VU,VN,WF,YE,AL,AD,AT,AZ,BY,BE,BA,BG,HR,CY,CZ,DK,EE,FO,FI,FR,GE,DE,GR,HU,IS,IE,IT,LV,LI,LT,LU,MK,MT,MD,MC,ME,NL,NO,PL,PT,RO,RU,SM,RS,SK,SI,ES,SJ,SE,CH,UA,GB,VA", currency = "AUD,BRL,CAD,CNY,CZK,DKK,EUR,HKD,HUF,ILS,JPY,MYR,MXN,TWD,NZD,NOK,PHP,PLN,GBP,SGD,SEK,CHF,THB,USD" }
+ debit = { country = "DZ,AO,BJ,BW,BF,BI,CM,CV,TD,KM,CI,CD,DJ,EG,ER,ET,GA,GM,GN,GW,KE,LS,MG,MW,ML,MR,MU,MA,MZ,NA,NE,NG,CG,RW,SH,ST,SN,SC,SL,SO,ZA,SZ,TZ,TG,TN,UG,ZM,ZW,AI,AG,AR,AW,BS,BB,BZ,BM,BO,BR,VG,CA,KY,CL,CO,CR,DM,DO,EC,SV,FK,GL,GD,GT,GY,HN,JM,MX,MS,NI,PA,PY,PE,KN,LC,PM,VC,SR,TT,TC,US,UY,VE,AM,AU,BH,BT,BN,KH,CN,CK,FJ,PF,HK,IN,ID,IL,JP,JO,KZ,KI,KW,KG,LA,MY,MV,MH,FM,MN,NR,NP,NC,NZ,NU,NF,OM,PW,PG,PH,PN,QA,WS,SA,SG,SB,KR,LK,TW,TJ,TH,TO,TM,TV,AE,VU,VN,WF,YE,AL,AD,AT,AZ,BY,BE,BA,BG,HR,CY,CZ,DK,EE,FO,FI,FR,GE,DE,GR,HU,IS,IE,IT,LV,LI,LT,LU,MK,MT,MD,MC,ME,NL,NO,PL,PT,RO,RU,SM,RS,SK,SI,ES,SJ,SE,CH,UA,GB,VA", currency = "AUD,BRL,CAD,CNY,CZK,DKK,EUR,HKD,HUF,ILS,JPY,MYR,MXN,TWD,NZD,NOK,PHP,PLN,GBP,SGD,SEK,CHF,THB,USD" }
+ paypal = { country = "DZ,AO,BJ,BW,BF,BI,CM,CV,TD,KM,CI,CD,DJ,EG,ER,ET,GA,GM,GN,GW,KE,LS,MG,MW,ML,MR,MU,MA,MZ,NA,NE,NG,CG,RW,SH,ST,SN,SC,SL,SO,ZA,SZ,TZ,TG,TN,UG,ZM,ZW,AI,AG,AR,AW,BS,BB,BZ,BM,BO,BR,VG,CA,KY,CL,CO,CR,DM,DO,EC,SV,FK,GL,GD,GT,GY,HN,JM,MX,MS,NI,PA,PY,PE,KN,LC,PM,VC,SR,TT,TC,US,UY,VE,AM,AU,BH,BT,BN,KH,CN,CK,FJ,PF,HK,IN,ID,IL,JP,JO,KZ,KI,KW,KG,LA,MY,MV,MH,FM,MN,NR,NP,NC,NZ,NU,NF,OM,PW,PG,PH,PN,QA,WS,SA,SG,SB,KR,LK,TW,TJ,TH,TO,TM,TV,AE,VU,VN,WF,YE,AL,AD,AT,AZ,BY,BE,BA,BG,HR,CY,CZ,DK,EE,FO,FI,FR,GE,DE,GR,HU,IS,IE,IT,LV,LI,LT,LU,MK,MT,MD,MC,ME,NL,NO,PL,PT,RO,RU,SM,RS,SK,SI,ES,SJ,SE,CH,UA,GB,VA", currency = "AUD,BRL,CAD,CNY,CZK,DKK,EUR,HKD,HUF,ILS,JPY,MYR,MXN,TWD,NZD,NOK,PHP,PLN,GBP,SGD,SEK,CHF,THB,USD" }
+ eps = { country = "DZ,AO,BJ,BW,BF,BI,CM,CV,TD,KM,CI,CD,DJ,EG,ER,ET,GA,GM,GN,GW,KE,LS,MG,MW,ML,MR,MU,MA,MZ,NA,NE,NG,CG,RW,SH,ST,SN,SC,SL,SO,ZA,SZ,TZ,TG,TN,UG,ZM,ZW,AI,AG,AR,AW,BS,BB,BZ,BM,BO,BR,VG,CA,KY,CL,CO,CR,DM,DO,EC,SV,FK,GL,GD,GT,GY,HN,JM,MX,MS,NI,PA,PY,PE,KN,LC,PM,VC,SR,TT,TC,US,UY,VE,AM,AU,BH,BT,BN,KH,CN,CK,FJ,PF,HK,IN,ID,IL,JP,JO,KZ,KI,KW,KG,LA,MY,MV,MH,FM,MN,NR,NP,NC,NZ,NU,NF,OM,PW,PG,PH,PN,QA,WS,SA,SG,SB,KR,LK,TW,TJ,TH,TO,TM,TV,AE,VU,VN,WF,YE,AL,AD,AT,AZ,BY,BE,BA,BG,HR,CY,CZ,DK,EE,FO,FI,FR,GE,DE,GR,HU,IS,IE,IT,LV,LI,LT,LU,MK,MT,MD,MC,ME,NL,NO,PL,PT,RO,RU,SM,RS,SK,SI,ES,SJ,SE,CH,UA,GB,VA", currency = "AUD,BRL,CAD,CNY,CZK,DKK,EUR,HKD,HUF,ILS,JPY,MYR,MXN,TWD,NZD,NOK,PHP,PLN,GBP,SGD,SEK,CHF,THB,USD" }
+ giropay = { currency = "EUR" }
+ ideal = { currency = "EUR" }
+ sofort = { country = "DZ,AO,BJ,BW,BF,BI,CM,CV,TD,KM,CI,CD,DJ,EG,ER,ET,GA,GM,GN,GW,KE,LS,MG,MW,ML,MR,MU,MA,MZ,NA,NE,NG,CG,RW,SH,ST,SN,SC,SL,SO,ZA,SZ,TZ,TG,TN,UG,ZM,ZW,AI,AG,AR,AW,BS,BB,BZ,BM,BO,BR,VG,CA,KY,CL,CO,CR,DM,DO,EC,SV,FK,GL,GD,GT,GY,HN,JM,MX,MS,NI,PA,PY,PE,KN,LC,PM,VC,SR,TT,TC,US,UY,VE,AM,AU,BH,BT,BN,KH,CN,CK,FJ,PF,HK,IN,ID,IL,JP,JO,KZ,KI,KW,KG,LA,MY,MV,MH,FM,MN,NR,NP,NC,NZ,NU,NF,OM,PW,PG,PH,PN,QA,WS,SA,SG,SB,KR,LK,TW,TJ,TH,TO,TM,TV,AE,VU,VN,WF,YE,AL,AD,AT,AZ,BY,BE,BA,BG,HR,CY,CZ,DK,EE,FO,FI,FR,GE,DE,GR,HU,IS,IE,IT,LV,LI,LT,LU,MK,MT,MD,MC,ME,NL,NO,PL,PT,RO,RU,SM,RS,SK,SI,ES,SJ,SE,CH,UA,GB,VA", currency = "AUD,BRL,CAD,CNY,CZK,DKK,EUR,HKD,HUF,ILS,JPY,MYR,MXN,TWD,NZD,NOK,PHP,PLN,GBP,SGD,SEK,CHF,THB,USD" }
+
+ [pm_filters.datatrans]
+-credit = { country = "AL,AD,AM,AT,AZ,BY,BE,BA,BG,CH,CY,CZ,DE,DK,EE,ES,FI,FR,GB,GE,GR,HR,HU,IE,IS,IT,KZ,LI,LT,LU,LV,MC,MD,ME,MK,MT,NL,NO,PL,PT,RO,RU,SE,SI,SK,SM,TR,UA,VA",  currency = "BHD,BIF,CHF,DJF,EUR,GBP,GNF,IQD,ISK,JPY,JOD,KMF,KRW,KWD,LYD,OMR,PYG,RWF,TND,UGX,USD,VND,VUV,XAF,XOF,XPF" }
+-debit = { country = "AL,AD,AM,AT,AZ,BY,BE,BA,BG,CH,CY,CZ,DE,DK,EE,ES,FI,FR,GB,GE,GR,HR,HU,IE,IS,IT,KZ,LI,LT,LU,LV,MC,MD,ME,MK,MT,NL,NO,PL,PT,RO,RU,SE,SI,SK,SM,TR,UA,VA",  currency = "BHD,BIF,CHF,DJF,EUR,GBP,GNF,IQD,ISK,JPY,JOD,KMF,KRW,KWD,LYD,OMR,PYG,RWF,TND,UGX,USD,VND,VUV,XAF,XOF,XPF" }
+-apple_pay = { country = "AL,AD,AM,AT,AZ,BY,BE,BA,BG,CH,CY,CZ,DE,DK,EE,ES,FI,FR,GB,GE,GR,HR,HU,IE,IS,IT,KZ,LI,LT,LU,LV,MC,MD,ME,MK,MT,NL,NO,PL,PT,RO,RU,SE,SI,SK,SM,TR,UA,VA",  currency = "BHD,BIF,CHF,DJF,EUR,GBP,GNF,IQD,ISK,JPY,JOD,KMF,KRW,KWD,LYD,OMR,PYG,RWF,TND,UGX,USD,VND,VUV,XAF,XOF,XPF" }
+-google_pay = { country = "AL,AD,AM,AT,AZ,BY,BE,BA,BG,CH,CY,CZ,DE,DK,EE,ES,FI,FR,GB,GE,GR,HR,HU,IE,IS,IT,KZ,LI,LT,LU,LV,MC,MD,ME,MK,MT,NL,NO,PL,PT,RO,RU,SE,SI,SK,SM,TR,UA,VA",  currency = "BHD,BIF,CHF,DJF,EUR,GBP,GNF,IQD,ISK,JPY,JOD,KMF,KRW,KWD,LYD,OMR,PYG,RWF,TND,UGX,USD,VND,VUV,XAF,XOF,XPF" }
++credit = { }
++debit = { }
++apple_pay = { }
++google_pay = { }
+
+ [pm_filters.payme]
+ credit = { country = "US,CA,IL,GB", currency = "ILS,USD,EUR" }
+ debit = { country = "US,CA,IL,GB", currency = "ILS,USD,EUR" }
+ apple_pay = { country = "US,CA,IL,GB", currency = "ILS,USD,EUR" }
+
+ [pm_filters.paysafe]
+ apple_pay = {country = "AF,AX,AL,DZ,AS,AD,AO,AI,AQ,AG,AR,AM,AW,AU,AT,AZ,BS,BH,BD,BB,BY,BE,BZ,BJ,BM,BT,BO,BQ,BA,BW,BV,BR,IO,BN,BG,BF,BI,KH,CM,CA,CV,KY,CF,TD,CL,CN,CX,CC,CO,KM,CG,CD,CK,CR,CI,HR,CU,CW,CY,CZ,DK,DJ,DM,DO,EC,EG,SV,GQ,ER,EE,ET,FK,FO,FJ,FI,FR,GF,PF,TF,GA,GM,GE,DE,GH,GI,GR,GL,GD,GP,GU,GT,GG,GN,GW,GY,HT,HM,HN,HK,HU,IS,IN,ID,IR,IQ,IE,IM,IL,IT,JM,JP,JE,JO,KZ,KE,KI,KP,KR,KW,KG,LA,LV,LB,LS,LR,LY,LI,LT,LU,MO,MK,MG,MW,MY,MV,ML,MT,MH,MQ,MR,MU,YT,MX,FM,MD,MC,MN,ME,MS,MA,MZ,MM,NA,NR,NP,NC,NZ,NI,NE,NG,NU,NF,MP,NO,OM,PK,PW,PS,PA,PG,PY,PE,PH,PN,PL,PT,PR,QA,RE,RO,RU,RW,BL,SH,KN,LC,MF,VC,WS,SM,ST,SA,SN,RS,SC,SL,SG,SX,SK,SI,SB,SO,ZA,GS,SS,ES,LK,PM,SD,SR,SJ,SZ,SE,CH,SY,TW,TJ,TZ,TH,NL,TL,TG,TK,TO,TT,TN,TR,TM,TC,TV,UG,UA,AE,GB,US,UM,UY,UZ,VU,VA,VE,VN,VG,VI,WF,EH,YE,ZM,ZW", currency = "ARS,AUD,AZN,BHD,BOB,BAM,BRL,BGN,CAD,CLP,CNY,COP,CRC,HRK,CZK,DKK,DOP,XCD,EGP,ETB,EUR,FJD,GEL,GTQ,HTG,HNL,HKD,HUF,INR,IDR,JMD,JPY,JOD,KZT,KES,KRW,KWD,LBP,LYD,MWK,MUR,MXN,MDL,MAD,ILS,NZD,NGN,NOK,OMR,PKR,PAB,PYG,PEN,PHP,PLN,GBP,QAR,RON,RUB,RWF,SAR,RSD,SGD,ZAR,LKR,SEK,CHF,SYP,TWD,THB,TTD,TND,TRY,UAH,AED,UYU,USD,VND" }
+ google_pay = {country = "AF,AX,AL,DZ,AS,AD,AO,AI,AQ,AG,AR,AM,AW,AU,AT,AZ,BS,BH,BD,BB,BY,BE,BZ,BJ,BM,BT,BO,BQ,BA,BW,BV,BR,IO,BN,BG,BF,BI,KH,CM,CA,CV,KY,CF,TD,CL,CN,CX,CC,CO,KM,CG,CD,CK,CR,CI,HR,CU,CW,CY,CZ,DK,DJ,DM,DO,EC,EG,SV,GQ,ER,EE,ET,FK,FO,FJ,FI,FR,GF,PF,TF,GA,GM,GE,DE,GH,GI,GR,GL,GD,GP,GU,GT,GG,GN,GW,GY,HT,HM,HN,HK,HU,IS,IN,ID,IR,IQ,IE,IM,IL,IT,JM,JP,JE,JO,KZ,KE,KI,KP,KR,KW,KG,LA,LV,LB,LS,LR,LY,LI,LT,LU,MO,MK,MG,MW,MY,MV,ML,MT,MH,MQ,MR,MU,YT,MX,FM,MD,MC,MN,ME,MS,MA,MZ,MM,NA,NR,NP,NC,NZ,NI,NE,NG,NU,NF,MP,NO,OM,PK,PW,PS,PA,PG,PY,PE,PH,PN,PL,PT,PR,QA,RE,RO,RU,RW,BL,SH,KN,LC,MF,VC,WS,SM,ST,SA,SN,RS,SC,SL,SG,SX,SK,SI,SB,SO,ZA,GS,SS,ES,LK,PM,SD,SR,SJ,SZ,SE,CH,SY,TW,TJ,TZ,TH,NL,TL,TG,TK,TO,TT,TN,TR,TM,TC,TV,UG,UA,AE,GB,US,UM,UY,UZ,VU,VA,VE,VN,VG,VI,WF,EH,YE,ZM,ZW", currency = "ARS,AUD,AZN,BHD,BOB,BAM,BRL,BGN,CAD,CLP,CNY,COP,CRC,HRK,CZK,DKK,DOP,XCD,EGP,ETB,EUR,FJD,GEL,GTQ,HTG,HNL,HKD,HUF,INR,IDR,JMD,JPY,JOD,KZT,KES,KRW,KWD,LBP,LYD,MWK,MUR,MXN,MDL,MAD,ILS,NZD,NGN,NOK,OMR,PKR,PAB,PYG,PEN,PHP,PLN,GBP,QAR,RON,RUB,RWF,SAR,RSD,SGD,ZAR,LKR,SEK,CHF,SYP,TWD,THB,TTD,TND,TRY,UAH,AED,UYU,USD,VND" }
+
+@@ -990,20 +1019,21 @@ stripe.payment_method = "bank_transfer"
+ bankofamerica = { payment_method = "card" }
+ cybersource = { payment_method = "card" }
+ barclaycard = { payment_method = "card" }
+ nmi.payment_method = "card"
+ payme.payment_method = "card"
+ deutschebank = { payment_method = "bank_debit" }
+ paybox = { payment_method = "card" }
+ nexixpay = { payment_method = "card" }
+ redsys = { payment_method = "card" }
+ worldpayxml = { payment_method = "card,wallet" }
++paydotcom = { payment_method = "card" }    # Pay.com gateway 3DS settles on CompleteAuthorize; the card must be restorable
+
+ #tokenization configuration which describe token lifetime and payment method for specific connector
+ [tokenization]
+ braintree = { long_lived_token = false, payment_method = "card,wallet" }
+ checkout = { long_lived_token = false, payment_method = "wallet", apple_pay_pre_decrypt_flow = "network_tokenization", google_pay_pre_decrypt_flow = "network_tokenization" }
+ datatrans = { long_lived_token = false, payment_method = "wallet", payment_method_type = { type = "enable_only", list = "google_pay" } }
+ gocardless = { long_lived_token = true, payment_method = "bank_debit" }
+ hipay = { long_lived_token = false, payment_method = "card" }
+ mollie = { long_lived_token = false, payment_method = "card" }
+ payme = { long_lived_token = false, payment_method = "card" }
+@@ -1054,21 +1084,21 @@ billing_connectors_which_requires_invoice_sync_call = "recurly"
+ [billing_connectors_dispute_record_back]
+ billing_connectors_which_requires_dispute_record_back_call = "chargebee"
+
+ [authentication_providers]
+ click_to_pay = {connector_list = "adyen, cybersource, trustpay"}
+
+ [authentication_service_enabled_connectors]
+ connector_list = "juspaythreedsserver, ctp_mastercard, ctp_visa"
+
+ [grpc_client.unified_connector_service]
+-ucs_only_connectors = "imerchantsolutions, paytm, phonepe, hyperpg, revolv3, fiservcommercehub, absa_sanlam, interpayments, payconex, dlocal, barclaycard, jpmorgan, datatrans, tsys_transit, givepayments, citigate, ilixium, moneris, elavon, worldpayraft, globalpay, rapyd, etisalat, merchante"    # Comma-separated list of connectors that use UCS only
++ucs_only_connectors = "imerchantsolutions, paytm, phonepe, hyperpg, revolv3, fiservcommercehub, absa_sanlam, interpayments, payconex, dlocal, barclaycard, jpmorgan, datatrans, tsys_transit, givepayments, citigate, ilixium, moneris, elavon, worldpayraft, globalpay, rapyd, paynearme, jpmorgan_orbital, saferpay, d24, etisalat, globalpayments_heartland, paydotcom, merchante, nsure, elavon_pg, trustly"    # Comma-separated list of connectors that use UCS only
+ ucs_psync_disabled_connectors = "cashtocode, trustly"    # Comma-separated list of connectors to disable UCS PSync call
+
+ # Merchant Advice Code Configuration
+ [merchant_advice_codes.visa]
+ "01" = { description = "The issuer will never approve (do not reattempt with the same card)", recommended_action = "do_not_retry" }
+ "02" = { description = "The issuer cannot approve at this time (limit the reattempts with the same card to a maximum of 20 times within 30 days)", recommended_action = "retry_later" }
+ "03" = { description = "Data quality (monitor for fraud attacks, revalidate the customer data prior to reattempt for a maximum of 20 times within 30 days)", recommended_action = "retry_after_instrument_update" }
+ "04" = { description = "Generic response codes (limit the reattempts with the same card to a maximum of 20 times within 30 days)", recommended_action = "retry_later" }
+
+ [merchant_advice_codes.mastercard]
+```
+
+**Full Changelog:** [`v1.127.0...v1.128.0`](https://github.com/juspay/hyperswitch/compare/v1.127.0...v1.128.0)
+
+### [Hyperswitch Control Center v1.38.10 (2026-10-14)](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.38.10)
+
+#### Features
+
+- Add offers list screen with filters ([#5559](https://github.com/juspay/hyperswitch-control-center/pull/5559))
+- Add clone blocklist functionality ([#5568](https://github.com/juspay/hyperswitch-control-center/pull/5568))
+- Add MerchantE connector in dashboard ([#5557](https://github.com/juspay/hyperswitch-control-center/pull/5557))
+- Add Support for Apple Pay and Google Pay Predecrypted Flow ([#5558](https://github.com/juspay/hyperswitch-control-center/pull/5558))
+- Add offer detail page ([#5569](https://github.com/juspay/hyperswitch-control-center/pull/5569))
+- Decouple dashboard bootstrap from merchant account API ([#4903](https://github.com/juspay/hyperswitch-control-center/pull/4903))
+- Embed the Decision Engine in a workspace instead of new tabs ([#5553](https://github.com/juspay/hyperswitch-control-center/pull/5553))
+- Add resolve, blacklist, and snooze actions to alert details ([#5585](https://github.com/juspay/hyperswitch-control-center/pull/5585))
+- Add granular webhook event configuration to Payment Settings ([#5575](https://github.com/juspay/hyperswitch-control-center/pull/5575))
+- Add timezones context in recon ([#5522](https://github.com/juspay/hyperswitch-control-center/pull/5522))
+- Add sanlam payshield frm connector ([#5619](https://github.com/juspay/hyperswitch-control-center/pull/5619))
+- Embed Grafana views for internal users ([#5620](https://github.com/juspay/hyperswitch-control-center/pull/5620))
+
+#### Enhancement
+
+- Superposition enhancement changes ([#5564](https://github.com/juspay/hyperswitch-control-center/pull/5564))
+- Add create offer form ([#5570](https://github.com/juspay/hyperswitch-control-center/pull/5570))
+- Show offers in demo mode when dev_offers is disabled ([#5580](https://github.com/juspay/hyperswitch-control-center/pull/5580))
+- Add support to list active and in active alerts ([#5582](https://github.com/juspay/hyperswitch-control-center/pull/5582))
+- Align blocklist permission gating and show clone job progress ([#5579](https://github.com/juspay/hyperswitch-control-center/pull/5579))
+- Allow write actions for internal roles ([#5592](https://github.com/juspay/hyperswitch-control-center/pull/5592))
+- Update frm connector details in business profile ([#5615](https://github.com/juspay/hyperswitch-control-center/pull/5615))
+- Extract frm connector list from config ([#5617](https://github.com/juspay/hyperswitch-control-center/pull/5617))
+
+#### Fixes
+
+- Refresh end time after creating a payment link ([#5587](https://github.com/juspay/hyperswitch-control-center/pull/5587))
+- Use analytics aggregate only with Analytics access ([#5595](https://github.com/juspay/hyperswitch-control-center/pull/5595))
+
+#### Compatibility
+
+This version of the Hyperswitch Control Center is compatible with the following versions of other components:
+
+- App Server Version: [v1.128.0](https://github.com/juspay/hyperswitch/releases/tag/v1.128.0)
+- Web Client Version: [v0.134.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.134.0)
+- Card Vault Version: [v0.9.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.9.0)
+- Key Manager: [v0.1.14](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.14)
+
+**Full Changelog**: https://github.com/juspay/hyperswitch-control-center/compare/v1.38.9...v1.38.10
+
+### [Hyperswitch Prism v0.6.0 (2026-10-15)](https://github.com/juspay/hyperswitch-prism/releases/tag/v0.6.0)
+
+#### Features
+
+- **config:** Split raw and typed connector data flags ([#2386](https://github.com/juspay/hyperswitch-prism/pull/2386))
+- **connector:**
+  - [Revolv3] MITs for Applepay and Googlepay using Decrypted payload + NTID ([#2338](https://github.com/juspay/hyperswitch-prism/pull/2338))
+  - [Trustly] Implement returning user journey for Trustly ([#2373](https://github.com/juspay/hyperswitch-prism/pull/2373))
+  - Add support for santander ted banktransfer payouts ([#2337](https://github.com/juspay/hyperswitch-prism/pull/2337))
+  - Add payout flows to gigadat ([#1181](https://github.com/juspay/hyperswitch-prism/pull/1181))
+  - [Stripe] port error_on_requires_action and dispute RDR details ([#2392](https://github.com/juspay/hyperswitch-prism/pull/2392))
+  - Payout support in stripe ([#1227](https://github.com/juspay/hyperswitch-prism/pull/1227))
+  - Fiserv Commerce Hub applepay, googlepay decrypted flow ([#2344](https://github.com/juspay/hyperswitch-prism/pull/2344))
+  - [Mifinity] implement PayoutTransfer for mifinity ([#2231](https://github.com/juspay/hyperswitch-prism/pull/2231))
+  - Worldpay raft Card with No cvc & void implementation ([#2408](https://github.com/juspay/hyperswitch-prism/pull/2408))
+  - [Authorizedotnet] add Google Pay and Apple Pay via opaqueData ([#2479](https://github.com/juspay/hyperswitch-prism/pull/2479))
+  - Add JPMorgan merchant-decrypted wallet payments ([#2462](https://github.com/juspay/hyperswitch-prism/pull/2462))
+- **framework:**
+  - Support 3DS 2.3.1 SPC trans_status `S` ([#2438](https://github.com/juspay/hyperswitch-prism/pull/2438))
+  - Log reference_id on every request, unmask PM headers ([#2459](https://github.com/juspay/hyperswitch-prism/pull/2459))
+  - Add subscription type if mit category ([#2461](https://github.com/juspay/hyperswitch-prism/pull/2461))
+  - Add avs check flag support ([#2478](https://github.com/juspay/hyperswitch-prism/pull/2478))
+- **grace:** Techspec-driven grpcurl test agent, curl E2E, doubled rework caps ([#2422](https://github.com/juspay/hyperswitch-prism/pull/2422))
+- **payments:** Support a vault-aliased card with a network transaction ID on the repeat payment flow ([#2434](https://github.com/juspay/hyperswitch-prism/pull/2434))
+- **payouts:** Support Nuvei external vault proxy transfers ([#2452](https://github.com/juspay/hyperswitch-prism/pull/2452))
+- **twoc_twop_paco:** Send billing state in authorize requests ([#2448](https://github.com/juspay/hyperswitch-prism/pull/2448))
+- **vault:** Thread optional egress proxy_url into HyperswitchVault injector calls ([#1995](https://github.com/juspay/hyperswitch-prism/pull/1995))
+- Add raw_connector_status for Tamara ([#2387](https://github.com/juspay/hyperswitch-prism/pull/2387))
+- MTI change transforms for Travelhub ([#2468](https://github.com/juspay/hyperswitch-prism/pull/2468))
+
+#### Bug Fixes
+
+- **adyen:** Align webhook parsing with hyperswitch ([#2380](https://github.com/juspay/hyperswitch-prism/pull/2380))
+- **connector:**
+  - [Kount] Remove from payment ConnectorEnum; register only as FRM connector with superposition URL support ([#2359](https://github.com/juspay/hyperswitch-prism/pull/2359))
+  - [Trustly] map each bank to its own BankNames variant ([#2389](https://github.com/juspay/hyperswitch-prism/pull/2389))
+  - [Truelayer] Add payout benificiary reference validation ([#2420](https://github.com/juspay/hyperswitch-prism/pull/2420))
+  - [Datatrans] enroll Google Pay aliases as card-on-file and thread COF id through CIT/MIT ([#2415](https://github.com/juspay/hyperswitch-prism/pull/2415))
+  - [Ilixium] point production at the live host and platform path ([#2444](https://github.com/juspay/hyperswitch-prism/pull/2444))
+  - Close five UCS shadow-parity gaps found in prod ([#2447](https://github.com/juspay/hyperswitch-prism/pull/2447))
+  - [Zift] Handle void transactions in Zift payment sync ([#2453](https://github.com/juspay/hyperswitch-prism/pull/2453))
+  - [Stripe] match hyperswitch's moto flag on telephone orders ([#2455](https://github.com/juspay/hyperswitch-prism/pull/2455))
+  - [dLocal] Populate connector_mandate_id for setup mandate flow ([#2458](https://github.com/juspay/hyperswitch-prism/pull/2458))
+  - [Stripe] accept a split refund with no charge id and keep the split options ([#2442](https://github.com/juspay/hyperswitch-prism/pull/2442))
+  - [Fiuu] log response shape when PSync response fails to parse ([#2483](https://github.com/juspay/hyperswitch-prism/pull/2483))
+- **connectors:**
+  - Align production shadow parity ([#2372](https://github.com/juspay/hyperswitch-prism/pull/2372))
+  - [Adyen] card SetupMandate shopperName, [Stripe] wallet-token address gate ([#2385](https://github.com/juspay/hyperswitch-prism/pull/2385))
+  - [Adyen] shopperInteraction MOTO, [Stripe] wallet billing details ([#2404](https://github.com/juspay/hyperswitch-prism/pull/2404))
+- **core:** Use Unspecified for placeholder attempt status ([#2375](https://github.com/juspay/hyperswitch-prism/pull/2375))
+- **data:** Close the GlobalpaymentsRealex array in integration-source-links.json ([#2381](https://github.com/juspay/hyperswitch-prism/pull/2381))
+- **domain_types:** Convert non-US/CA state names to subdivision codes ([#2374](https://github.com/juspay/hyperswitch-prism/pull/2374))
+- **framework:**
+  - Use enum for Card, Funding Source, Country ([#2363](https://github.com/juspay/hyperswitch-prism/pull/2363))
+  - Give UCS internal-processing latency its own histogram buckets ([#2383](https://github.com/juspay/hyperswitch-prism/pull/2383))
+  - Forward original_payment_authorized_amount into PaymentFlowData for RepeatPayment ([#2437](https://github.com/juspay/hyperswitch-prism/pull/2437))
+  - Retry on a fresh client after stale-pool connection-closed error ([#2424](https://github.com/juspay/hyperswitch-prism/pull/2424))
+- **grpc:** Return connector HTTP errors in flow responses ([#1480](https://github.com/juspay/hyperswitch-prism/pull/1480))
+- **qwikcilver:** Retain wallet details in eligibility ([#2421](https://github.com/juspay/hyperswitch-prism/pull/2421))
+- **revolv3:** Forward device manufacturer identifier for Apple Pay MIT payments ([#2473](https://github.com/juspay/hyperswitch-prism/pull/2473))
+
+#### Refactors
+
+- **domain:** Remove legacy amount mirrors ([#2450](https://github.com/juspay/hyperswitch-prism/pull/2450))
+
+#### Compatibility
+This version of the Hyperswitch Prism is compatible with the following versions of other components:
+
+- App Server Version: [v1.128.0](https://github.com/juspay/hyperswitch/releases/tag/v1.128.0)
+- Web Client Version: [v0.134.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.134.0)
+- Card Vault Version: [v0.9.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.9.0)
+- Key Manager: [v0.1.14](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.14)
+- Superposition: [v0.115.0](https://github.com/juspay/superposition/releases/tag/v0.115.0)
+
+**Full Changelog**: https://github.com/juspay/hyperswitch-control-center/compare/v1.38.8...v1.38.9
+
+**Full Changelog:** [`v0.5.0...v0.6.0`](https://github.com/juspay/hyperswitch-prism/compare/v0.5.0...v0.6.0)
+
 ## Hyperswitch Suite v1.22
 
 ### [Hyperswitch App Server v1.127.0 (2026-09-27)](https://github.com/juspay/hyperswitch/releases/tag/v1.127.0)
