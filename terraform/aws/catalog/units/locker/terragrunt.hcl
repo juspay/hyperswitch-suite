@@ -85,7 +85,7 @@ inputs = {
     description         = "KMS key for Locker multi-region encryption"
     multi_region        = true
     create_replica      = try(values.is_passive, false)
-    primary_key_arn     = try(dependency.locker-primary.outputs.kms_key_arn, null)
+    primary_key_arn     = try(values.is_passive, false) ? dependency.locker-primary.outputs.kms_key_arn : null
     enable_key_rotation = true
     aliases             = ["locker-key-${include.root.locals.environment.full}"]
   }
@@ -105,8 +105,8 @@ inputs = {
     use_existing_as_global_primary = !try(values.is_passive, false)
 
     # Read Replica Configuration
-    global_cluster_identifier     = try(dependency.locker-primary.outputs.db_global_cluster_id, null)
-    replication_source_identifier = try(dependency.locker-primary.outputs.db_cluster_arn, null)
+    global_cluster_identifier     = try(values.is_passive, false) ? dependency.locker-primary.outputs.db_global_cluster_id : null
+    replication_source_identifier = try(values.is_passive, false) ? dependency.locker-primary.outputs.db_cluster_arn : null
     source_region                 = try(values.primary_region, null)
 
     # KMS Key Configuration - Create a new KMS key for this replica cluster

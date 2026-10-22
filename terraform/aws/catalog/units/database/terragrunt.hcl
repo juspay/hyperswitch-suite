@@ -26,7 +26,8 @@ dependency "primary_database" {
   enabled = try(values.is_passive, false)
 
   mock_outputs = {
-    cluster_arn = "hyperswitchdb-cluster-arn"
+    cluster_arn       = "arn:aws:rds:ap-south-1:123456789012:cluster:mock-primary-database"
+    global_cluster_id = "mock-global-cluster-id"
   }
 
   mock_outputs_merge_strategy_with_state = "shallow"
@@ -73,8 +74,8 @@ inputs = {
   use_existing_as_global_primary = !try(values.is_passive, false)
 
   # Read Replica Configuration - replicates from ap-south-1
-  global_cluster_identifier     = try(dependency.primary_database.outputs.global_cluster_id, null)
-  replication_source_identifier = try(dependency.primary_database.outputs.cluster_arn, null)
+  global_cluster_identifier     = try(values.is_passive, false) ? dependency.primary_database.outputs.global_cluster_id : null
+  replication_source_identifier = try(values.is_passive, false) ? dependency.primary_database.outputs.cluster_arn : null
   source_region                 = try(values.primary_region, null)
 
   # KMS Key Configuration - Create a new KMS key for this replica cluster
