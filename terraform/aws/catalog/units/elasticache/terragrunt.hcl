@@ -93,7 +93,7 @@ inputs = {
   maintenance_window         = try(values.maintenance_window, "mon:04:00-mon:05:00")
   snapshot_window            = try(values.snapshot_window, "23:30-00:30")
   snapshot_retention_limit   = try(values.snapshot_retention_limit, 7)
-  auto_minor_version_upgrade = true
+  auto_minor_version_upgrade = try(values.auto_minor_version_upgrade, false)
   apply_immediately          = true
 
   # Log Delivery (engine/slow logs to CloudWatch or Kinesis Firehose).
