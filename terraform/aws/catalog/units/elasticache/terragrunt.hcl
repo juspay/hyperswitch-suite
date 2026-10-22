@@ -110,7 +110,7 @@ inputs = {
 
   # Global Replication Configuration (secondary region)
   create_global_replication_group = !try(values.is_passive, false)
-  global_replication_group_id     = try(values.is_passive, false) ? dependency.elasticache_primary.outputs.global_replication_group_id : try(values.global_replication_group_id, null)
+  global_replication_group_id     = try(values.is_passive, false) ? dependency.elasticache_primary.outputs.global_replication_group_id : try(values.global_replication_group_id, "${include.root.locals.environment.short}-${include.root.locals.project_name}-global")
   global_deletion_protection      = true
   is_secondary_region             = try(values.is_passive, false)
   use_existing_as_global_primary  = false
