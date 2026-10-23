@@ -93,8 +93,9 @@ resource "aws_elasticache_replication_group" "main" {
   network_type       = local.is_secondary_cluster ? null : var.network_type
 
   # High Availability
-  automatic_failover_enabled  = var.automatic_failover_enabled
-  multi_az_enabled            = local.is_secondary_cluster ? null : var.multi_az_enabled
+  automatic_failover_enabled = var.automatic_failover_enabled
+  # Multi-AZ is a regional setting for both global datastore members.
+  multi_az_enabled            = var.multi_az_enabled
   global_replication_group_id = local.is_secondary_cluster ? var.global_replication_group_id : null
   # Security
   at_rest_encryption_enabled = local.is_secondary_cluster ? null : var.at_rest_encryption_enabled

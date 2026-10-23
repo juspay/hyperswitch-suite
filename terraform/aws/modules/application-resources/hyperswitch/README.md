@@ -88,11 +88,11 @@
 | <a name="output_role_arn"></a> [role\_arn](#output\_role\_arn) | ARN of the IAM role for Hyperswitch application |
 | <a name="output_role_name"></a> [role\_name](#output\_role\_name) | Name of the IAM role for Hyperswitch application |
 | <a name="output_s3_dashboard_themes_bucket_arn"></a> [s3\_dashboard\_themes\_bucket\_arn](#output\_s3\_dashboard\_themes\_bucket\_arn) | ARN of the dashboard themes S3 bucket (created or existing) |
-| <a name="output_s3_dashboard_themes_bucket_name"></a> [s3\_dashboard\_themes\_bucket\_name](#output\_s3\_dashboard\_themes\_bucket\_name) | Name of the dashboard themes S3 bucket (only if created by this module) |
+| <a name="output_s3_dashboard_themes_bucket_name"></a> [s3\_dashboard\_themes\_bucket\_name](#output\_s3\_dashboard\_themes\_bucket\_name) | Name of the dashboard themes S3 bucket (created or existing) |
 | <a name="output_s3_dashboard_themes_enabled"></a> [s3\_dashboard\_themes\_enabled](#output\_s3\_dashboard\_themes\_enabled) | Whether S3 dashboard themes feature is enabled |
 | <a name="output_s3_dashboard_themes_policy_arn"></a> [s3\_dashboard\_themes\_policy\_arn](#output\_s3\_dashboard\_themes\_policy\_arn) | ARN of the dashboard themes S3 IAM policy (if enabled) |
 | <a name="output_s3_file_uploads_bucket_arn"></a> [s3\_file\_uploads\_bucket\_arn](#output\_s3\_file\_uploads\_bucket\_arn) | ARN of the file uploads S3 bucket (created or existing) |
-| <a name="output_s3_file_uploads_bucket_name"></a> [s3\_file\_uploads\_bucket\_name](#output\_s3\_file\_uploads\_bucket\_name) | Name of the file uploads S3 bucket (only if created by this module) |
+| <a name="output_s3_file_uploads_bucket_name"></a> [s3\_file\_uploads\_bucket\_name](#output\_s3\_file\_uploads\_bucket\_name) | Name of the file uploads S3 bucket (created or existing) |
 | <a name="output_s3_file_uploads_enabled"></a> [s3\_file\_uploads\_enabled](#output\_s3\_file\_uploads\_enabled) | Whether S3 file uploads feature is enabled |
 | <a name="output_s3_file_uploads_policy_arn"></a> [s3\_file\_uploads\_policy\_arn](#output\_s3\_file\_uploads\_policy\_arn) | ARN of the file uploads S3 IAM policy (if enabled) |
 | <a name="output_secrets_manager_enabled"></a> [secrets\_manager\_enabled](#output\_secrets\_manager\_enabled) | Whether Secrets Manager feature is enabled |
