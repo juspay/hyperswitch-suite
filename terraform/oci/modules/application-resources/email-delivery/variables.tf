@@ -40,6 +40,14 @@ variable "email" {
     (e.g. decision-engine) reuse one verified domain/sender pair shared with
     hyperswitch, avoiding two independent DNS verifications for the same
     logical sender.
+
+    `dkim_enabled` (default false) opt-in creates an `oci_email_dkim` signing
+    key for the domain, enabling DKIM signing for DMARC alignment and higher
+    deliverability. The CNAME it must be published to is exported as
+    `email_dkim_cname_record_value` / `email_dkim_dns_subdomain_name` for the
+    DNS owner; until that CNAME is published the DKIM stays in PENDING state
+    (sending still works). `dkim_selector` is optional; if omitted, OCI
+    auto-generates a globally-unique selector.
   EOT
   type = object({
     enabled                = optional(bool, true)
@@ -48,6 +56,8 @@ variable "email" {
     sender_address         = optional(string)
     use_existing_domain_id = optional(string)
     use_existing_sender_id = optional(string)
+    dkim_enabled           = optional(bool, false)
+    dkim_selector          = optional(string)
   })
   default = {}
 

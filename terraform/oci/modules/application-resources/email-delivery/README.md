@@ -23,13 +23,19 @@ logical sender is described once and reused by both.
   via the sender's `depends_on`.
 - `oci_email_sender` (count = `email.create`), under the verified domain, with a
   `lifecycle.precondition` enforcing the sender address is under `domain_name`.
+- `oci_email_dkim` (count = `email.create && email.dkim_enabled`, opt-in). A DKIM
+  signing key for the domain, created after the domain via an explicit
+  `depends_on`. Exports `email_dkim_cname_record_value` / the
+  `email_dkim_dns_subdomain_name` the DNS owner must publish; the DKIM stays in
+  PENDING state until that CNAME resolves (sending still works via SPF-only).
 
 `use_existing_domain_id` / `use_existing_sender_id` allow a second consumer to
 reuse `hyperswitch`'s verified domain rather than verifying a duplicate.
 
 ## Outputs
 
-`email_domain_id`, `email_sender_id`, `email_sender_address`,
+`email_domain_id`, `email_sender_id`, `email_sender_address`, `email_dkim_id`,
+`email_dkim_cname_record_value`, `email_dkim_dns_subdomain_name`,
 `email_uses_static_credential_fallback`, `smtp_credential_vault_secret_id`.
 
 `email_domain_id` / `email_sender_id` are what `decision-engine` consumes to

@@ -13,6 +13,21 @@ output "email_sender_address" {
   value       = try(var.email.sender_address, null)
 }
 
+output "email_dkim_id" {
+  description = "OCID of the DKIM signing key created for the email domain, or null when DKIM is disabled."
+  value       = local.email_dkim_id
+}
+
+output "email_dkim_cname_record_value" {
+  description = "CNAME target the DNS owner must publish for the DKIM to become ACTIVE and start signing. Empty when DKIM is disabled."
+  value       = local.email_dkim_enabled ? one(oci_email_dkim.this[*].cname_record_value) : ""
+}
+
+output "email_dkim_dns_subdomain_name" {
+  description = "DNS subdomain that must host the DKIM CNAME (the record NAME for the CNAME). Empty when DKIM is disabled."
+  value       = local.email_dkim_enabled ? one(oci_email_dkim.this[*].dns_subdomain_name) : ""
+}
+
 output "email_uses_static_credential_fallback" {
   description = <<-EOT
     TRUE means this deployment is NOT sending mail under workload identity.

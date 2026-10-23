@@ -91,6 +91,16 @@ output "email_sender_address" {
   value       = try(var.email.sender_address, null)
 }
 
+output "email_dkim_cname_record_value" {
+  description = "CNAME target the DNS owner must publish for the domain DKIM to start signing. Empty when DKIM is disabled."
+  value       = module.email-delivery.email_dkim_cname_record_value
+}
+
+output "email_dkim_dns_subdomain_name" {
+  description = "DNS subdomain that must host the DKIM CNAME. Empty when DKIM is disabled."
+  value       = module.email-delivery.email_dkim_dns_subdomain_name
+}
+
 output "email_uses_static_credential_fallback" {
   description = <<-EOT
     TRUE means this deployment is NOT sending mail under workload identity.

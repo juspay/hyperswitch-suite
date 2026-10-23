@@ -193,6 +193,8 @@ variable "email" {
     sender_address         = optional(string)
     use_existing_domain_id = optional(string)
     use_existing_sender_id = optional(string)
+    dkim_enabled           = optional(bool, false)
+    dkim_selector          = optional(string)
   })
   default = {}
 

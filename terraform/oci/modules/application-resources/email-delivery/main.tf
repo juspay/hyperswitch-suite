@@ -38,3 +38,20 @@ resource "oci_email_sender" "this" {
     }
   }
 }
+
+resource "oci_email_dkim" "this" {
+  count = local.email_dkim_enabled ? 1 : 0
+
+  email_domain_id = local.email_domain_id
+  name            = try(var.email.dkim_selector, null)
+
+  # compartment_id is not configurable on oci_email_dkim; it is inherited from
+  # the email domain.
+  freeform_tags = var.freeform_tags
+  defined_tags  = var.defined_tags
+
+  # DKIM is a signing key under the domain, so it is created only after the
+  # domain exists. Referencing email_domain_id pins the ordering; depends_on
+  # makes it explicit and robust to OCID-string graph inference.
+  depends_on = [oci_email_email_domain.this]
+}
