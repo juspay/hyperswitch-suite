@@ -26,7 +26,7 @@ dependency "elasticache_primary" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/elasticache?ref=elasticache-v0.1.7"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/elasticache?ref=elasticache-v0.1.8"
 }
 
 locals {
