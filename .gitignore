@@ -79,9 +79,3 @@ $RECYCLE.BIN/
 #secrets
 .env
 .secrets.env
-
-#misc
-load-test/test_env/
-load-test/output/
-
-load-test/__pycache__
