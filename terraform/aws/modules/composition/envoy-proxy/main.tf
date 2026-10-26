@@ -521,18 +521,31 @@ resource "aws_lb_listener" "envoy_https" {
   certificate_arn   = var.ssl_certificate_arn
 
   default_action {
-    type = "forward"
-    forward {
-      dynamic "target_group" {
-        for_each = local.auto_scaling_groups
-        content {
-          arn    = local.target_group_arns[target_group.key]
-          weight = target_group.value.weight
+    type = var.https_default_action.type
+
+    dynamic "forward" {
+      for_each = var.https_default_action.type == "forward" ? [1] : []
+      content {
+        dynamic "target_group" {
+          for_each = local.auto_scaling_groups
+          content {
+            arn    = local.target_group_arns[target_group.key]
+            weight = target_group.value.weight
+          }
+        }
+        stickiness {
+          enabled  = false
+          duration = 1
         }
       }
-      stickiness {
-        enabled  = false
-        duration = 1
+    }
+
+    dynamic "fixed_response" {
+      for_each = var.https_default_action.type == "fixed-response" && var.https_default_action.fixed_response != null ? [var.https_default_action.fixed_response] : []
+      content {
+        content_type = fixed_response.value.content_type
+        status_code  = fixed_response.value.status_code
+        message_body = fixed_response.value.message_body
       }
     }
   }

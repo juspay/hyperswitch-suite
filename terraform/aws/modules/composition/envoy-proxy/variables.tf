@@ -113,6 +113,37 @@ variable "enable_https_listener" {
   default     = false
 }
 
+variable "https_default_action" {
+  description = "Default action for the main HTTPS listener. Forward preserves weighted deployment routing; fixed-response rejects requests not matched by listener rules."
+  type = object({
+    type = optional(string, "forward")
+    fixed_response = optional(object({
+      content_type = optional(string, "text/plain")
+      status_code  = optional(string, "403")
+      message_body = optional(string)
+    }))
+  })
+  default  = {}
+  nullable = false
+
+  validation {
+    condition = (
+      var.https_default_action.type == "forward" ? var.https_default_action.fixed_response == null :
+      var.https_default_action.type == "fixed-response" && var.https_default_action.fixed_response != null
+    )
+    error_message = "Use forward without fixed_response, or fixed-response with a fixed_response configuration."
+  }
+
+  validation {
+    condition = var.https_default_action.fixed_response == null ? true : (
+      contains(["text/plain", "text/css", "text/html", "application/javascript", "application/json"], var.https_default_action.fixed_response.content_type) &&
+      can(regex("^[245][0-9]{2}$", var.https_default_action.fixed_response.status_code)) &&
+      (var.https_default_action.fixed_response.message_body == null ? true : length(var.https_default_action.fixed_response.message_body) <= 1024)
+    )
+    error_message = "Fixed responses require a supported content type, a 2xx/4xx/5xx status code, and a body of at most 1024 characters."
+  }
+}
+
 variable "ssl_certificate_arn" {
   description = "ARN of SSL certificate for HTTPS listener (required if enable_https_listener = true)"
   type        = string
