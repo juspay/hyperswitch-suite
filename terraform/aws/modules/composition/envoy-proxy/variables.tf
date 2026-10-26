@@ -219,7 +219,7 @@ variable "mtls_listener" {
 # =========================================================================
 
 variable "listener_rules" {
-  description = "Advanced listener rules for header-based routing, path-based routing, etc."
+  description = "Advanced listener rules for header-based routing, path-based routing, etc. Forward actions with no target_group_arn use the Envoy deployment target groups and their configured weights."
   type = list(object({
     priority = number
     actions = list(object({

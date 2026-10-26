@@ -648,6 +648,24 @@ resource "aws_lb_listener_rule" "custom_rules" {
       type             = action.value.type
       target_group_arn = action.value.type == "forward" ? action.value.target_group_arn : null
 
+      # Forward actions without an explicit ARN use the Envoy deployments.
+      dynamic "forward" {
+        for_each = action.value.type == "forward" && action.value.target_group_arn == null ? [1] : []
+        content {
+          dynamic "target_group" {
+            for_each = local.auto_scaling_groups
+            content {
+              arn    = local.target_group_arns[target_group.key]
+              weight = target_group.value.weight
+            }
+          }
+          stickiness {
+            enabled  = false
+            duration = 1
+          }
+        }
+      }
+
       # Redirect action
       dynamic "redirect" {
         for_each = action.value.type == "redirect" && action.value.redirect != null ? [action.value.redirect] : []
