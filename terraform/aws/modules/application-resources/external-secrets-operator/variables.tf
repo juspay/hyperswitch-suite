@@ -77,18 +77,24 @@ variable "oidc_audience" {
 # ============================================================================
 
 variable "cluster_service_accounts" {
-  description = "Map of cluster names to service accounts that can assume this role. Each service account must have 'namespace' and 'name' attributes."
-  type = map(list(object({
-    namespace = string
-    name      = string
-  })))
+  description = "Map of EKS cluster name -> the cluster's OIDC provider ARN and the service accounts allowed to assume the IRSA role"
+  type = map(object({
+    oidc_provider_arn = string
+    service_accounts = list(object({
+      namespace = string
+      name      = string
+    }))
+  }))
   default = {}
-  
+
   # Example:
   # {
-  #   "dev-eks-cluster" = [
-  #     { namespace = "external-secrets-operator", name = "external-secrets-sa" }
-  #   ]
+  #   "dev-eks-cluster" = {
+  #     oidc_provider_arn = "arn:aws:iam::123456789012:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/EXAMPLE"
+  #     service_accounts = [
+  #       { namespace = "external-secrets-operator", name = "external-secrets-sa" }
+  #     ]
+  #   }
   # }
 }
 

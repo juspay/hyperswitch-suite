@@ -127,3 +127,11 @@ output "lb_security_group_name" {
   description = "Name of the load balancer security group"
   value       = local.lb_security_group_enabled ? aws_security_group.lb[0].name : null
 }
+
+# =========================================================================
+# DNS OUTPUTS
+# =========================================================================
+output "domain" {
+  description = "DNS name (FQDN) for the ratelimiter LoadBalancer Service load balancer"
+  value       = var.domain
+}

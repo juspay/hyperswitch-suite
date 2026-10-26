@@ -1,0 +1,347 @@
+[sources.envoy_logs]
+  type = "file"
+  include = [ "/var/log/envoy/listener-https*.log" ]
+  read_from = "end"
+  max_read_bytes = 10485760  # 10 MB max read per file
+  max_line_bytes = 102400     # 100 KB max line size
+
+[api]
+  enabled = true
+
+[sources.vector_internal]
+  type = "internal_metrics"
+  namespace = "vector"
+
+[sources.systems_metrics]
+type = "host_metrics"
+collectors = [
+  "cpu",
+  "disk",
+  "filesystem",
+  "load",
+  "host",
+  "memory",
+  "network"
+]
+namespace = "envoy"
+scrape_interval_secs = 10
+
+[transforms.systems_metrics_with_metadata]
+type = "remap"
+inputs = [ "systems_metrics" ]
+source = """
+  .tags.ltversion = get_env_var("METADATA_LT_VERSION") ?? "unknown"
+"""
+
+
+[sources.envoy_prom_metrics]
+type = "prometheus_scrape"
+endpoints = [ "http://localhost:9901/stats/prometheus" ]
+scrape_interval_secs = 10
+
+[transforms.envoy_prom_metrics_with_metadata]
+type = "remap"
+inputs = [ "envoy_prom_metrics" ]
+source = """
+  .tags.ltversion = get_env_var("METADATA_LT_VERSION") ?? "unknown"
+"""
+
+[transforms.envoy_logs_with_metadata]
+type = "remap"
+inputs = [ "envoy_logs" ]
+source = """
+  .asg_name = get_env_var("METADATA_ASG_NAME") ?? "unknown"
+  .instance_id = get_env_var("METADATA_INSTANCE_ID") ?? "unknown"
+  .instance_ip = get_env_var("METADATA_INSTANCE_IP") ?? "unknown"
+  .ltversion = get_env_var("METADATA_LT_VERSION") ?? "unknown"
+"""
+
+[transforms.envoy_logs_json]
+type = "remap"
+inputs = [ "envoy_logs_with_metadata" ]
+source = """
+  # Parse JSON with error handling
+  parsed_message, err = parse_json(.message)
+  if err == null {
+    . = merge(., parsed_message) ?? .
+  }
+  # separating query string from path
+  .|= parse_regex!(.path, r'^(?P<path>[^\\\\?]*)(\\\\?(?P<query_string>.*?))?')
+
+  # converting upstream_service_time to float
+  .upstream_service_time, err = to_float(.upstream_service_time)
+  if err != null{
+      .upstream_service_time = 0.0
+  }
+  .upstream_service_time = .upstream_service_time / 1000
+
+  # changing the default value from null to "-"
+  if .x_payment_method_type == null{
+      .x_payment_method_type = "-"
+  }
+
+  if .path == null{
+      .path = "-"
+  }
+
+  if .x_merchant_id == null{
+      .x_merchant_id = "-"
+  }
+
+  if .upstream_service_time == null{
+      .upstream_service_time = 0
+  }
+
+  if .upstream_cluster == null{
+      .upstream_cluster = "-"
+  }
+
+  .duration = to_float(.duration) / 1000
+  del(.message)
+  del(.query_string)
+  del(.file)
+"""
+
+[transforms.modify_logs]
+type = "remap"
+inputs = [ "envoy_logs_json" ]
+source = """
+  # Replace patterns in the path
+
+  .path = to_string(.path) ?? "default"
+
+  .path = replace(.path, r'^/payments/(.*)/confirm', "/payments/:id/confirm")
+  .path = replace(.path, r'^/payments/(.*)/confirm', "/payments/:id/confirm")
+  .path = replace(.path, r'^/payments/(.*)/cancel', "/payments/:id/cancel")
+  .path = replace(.path, r'^/payments/(.*)/capture', "/payments/:id/capture")
+  .path = replace(.path, r'^/payments/(.*)/approve', "/payments/:id/approve")
+  .path = replace(.path, r'^/payments/(.*)/reject', "/payments/:id/reject")
+  .path = replace(.path, r'^/payments/(.*)/3ds/authentication', "/payments/:id/3ds/authentication")
+  .path = replace(.path, r'^/payments/(.*)/(.*)/authorize/(.*)', "/payments/:id/$${2}/$${3}")
+  .path = replace(.path, r'^/payments/(.*)/(.*)/redirect/response/(.*)/(.*)' , "/payments/:id/$${2}/redirect/response/$${3}/:cred_identifier")
+  .path = replace(.path, r'^/payments/(.*)/(.*)/redirect/response/(.*)' , "/payments/:id/:mid/redirect/response/:gateway")
+
+  .path = replace(.path, r'^/customers/(.*)/payment_methods', "/customers/:id/payment_methods")
+
+  .path = replace(.path, r'^/payouts/(.*)/cancel', "/payouts/:id/cancel")
+  .path = replace(.path, r'^/payouts/(.*)/fulfill', "/payouts/:id/fulfill")
+  .path = replace(.path, r'^/payouts/(.*)', "/payments/:id")
+
+  .path = replace(.path, r'^/mandates/(.*)', "/mandates/:id")
+  .path = replace(.path, r'^/mandates/revoke/(.*)', "/mandates/revoke/:id")
+
+  .path = replace(.path, r'^/api_keys/(.*)', "/api_keys/:id")
+  .path = replace(.path, r'^/api_keys/(.*)/list', "/api_keys/:id/list")
+  .path = replace(.path, r'^/api_keys/(.*)/(.*)', "/api_keys/:mid/:keyid")
+
+  .path = replace(.path, r'^/disputes/accept/(.*)', "/disputes/accept/:id")
+  .path = replace(.path, r'^/disputes/evidence/(.*)', "/disputes/evidence/:id")
+  .path = replace(.path, r'^/disputes/(.*)', "/disputes/:id")
+
+  .path = replace(.path, r'^/cards/(.*)', "/cards/:bin")
+
+  .path = replace(.path, r'^/payment_link/(.*)', "/payment_link/:link_id")
+  .path = replace(.path, r'^/payment_link/(.*)/(.*)', "/payment_link/:mid/:pid")
+
+  .path = replace(.path, r'^/account/(.*)/business_profile', "/account/:id/business_profile")
+
+
+  # del(.message)
+  del(.query_string)
+  del(.protocol)
+  del(.x_forwarded_for)
+  del(.user_agent)
+  del(.request_id)
+  del(.authority)
+  del(.upstream_host)
+  del(.content_type)"""
+
+[transforms.metrics]
+type = "log_to_metric"
+inputs = [ "modify_logs" ]
+
+  [[transforms.metrics.metrics]]
+  type = "counter"
+  field = "path"
+  namespace = "envoy"
+
+    [transforms.metrics.metrics.tags]
+    path = "{{ .path }}"
+    response_code = "{{ .response_code }}"
+#    merchant_id = "{{ .x_merchant_id }}"
+    upstream_cluster = "{{ .upstream_cluster }}"
+    request_method = "{{ .request_method }}"
+    response_flags = "{{ .response_flags }}"
+    ltversion = "{{ .ltversion }}"
+
+  [[transforms.metrics.metrics]]
+  type = "histogram"
+  field = "duration"
+  namespace = "envoy"
+
+    [transforms.metrics.metrics.tags]
+    path = "{{ path }}"
+    response_code = "{{ .response_code }}"
+ #   merchant_id = "{{ .x_merchant_id }}"
+    upstream_cluster = "{{ .upstream_cluster }}"
+    request_method = "{{ .request_method }}"
+    response_flags = "{{ .response_flags }}"
+    ltversion = "{{ .ltversion }}"
+
+  [[transforms.metrics.metrics]]
+  type = "gauge"
+  field = "bytes_sent"
+  namespace = "envoy"
+
+    [transforms.metrics.metrics.tags]
+    path = "{{ .path }}"
+    response_code = "{{ .response_code }}"
+  #  merchant_id = "{{ .x_merchant_id }}"
+    upstream_cluster = "{{ .upstream_cluster }}"
+    request_method = "{{ .request_method }}"
+    response_flags = "{{ .response_flags }}"
+    ltversion = "{{ .ltversion }}"
+
+  [[transforms.metrics.metrics]]
+  type = "gauge"
+  field = "bytes_received"
+  namespace = "envoy"
+
+    [transforms.metrics.metrics.tags]
+    path = "{{ .path }}"
+    response_code = "{{ .response_code }}"
+   # merchant_id = "{{ .x_merchant_id }}"
+    upstream_cluster = "{{ .upstream_cluster }}"
+    request_method = "{{ .request_method }}"
+    response_flags = "{{ .response_flags }}"
+    ltversion = "{{ .ltversion }}"
+
+  [[transforms.metrics.metrics]]
+  type = "histogram"
+  field = "upstream_service_time"
+  default = 0
+  namespace = "envoy"
+
+    [transforms.metrics.metrics.tags]
+    path = "{{ .path }}"
+    response_code = "{{ .response_code }}"
+    #merchant_id = "{{ .x_merchant_id }}"
+    upstream_cluster = "{{ .upstream_cluster }}"
+    request_method = "{{ .request_method }}"
+    response_flags = "{{ .response_flags }}"
+    ltversion = "{{ .ltversion }}"
+
+  [[transforms.metrics.metrics]]
+  type = "counter"
+  field = "x_payment_method_type"
+  namespace = "envoy"
+
+    [transforms.metrics.metrics.tags]
+    path = "{{ .path }}"
+    response_code = "{{ .response_code }}"
+   # merchant_id = "{{ .x_merchant_id }}"
+    upstream_cluster = "{{ .upstream_cluster }}"
+    request_method = "{{ .request_method }}"
+    response_flags = "{{ .response_flags }}"
+    ltversion = "{{ .ltversion }}"
+
+[sinks.prom]
+type = "prometheus_exporter"
+inputs = [
+  "metrics",
+  "systems_metrics_with_metadata",
+  "envoy_prom_metrics_with_metadata",
+  "vector_internal"
+]
+buckets = [
+  0.01,
+  0.05,
+  0.1,
+  0.25,
+  0.5,
+  1,
+  2.5,
+  5,
+  10,
+  30,
+  60,
+  120,
+  220,
+  300
+]
+address = "0.0.0.0:9273"
+flush_period_secs = 10
+
+[sinks.sink_elasticsearch]
+type = "elasticsearch"
+inputs = ["envoy_logs_json"]
+mode = "bulk"
+endpoints = [
+  "{{opensearch-endpoint}}",
+]
+auth.strategy = "aws"
+aws.region = "{{opensearch-region}}"
+bulk.action = "index"
+bulk.index = "envoy-edge-%Y-%m-%d"
+  # Buffer settings to prevent memory bloat
+  [sinks.sink_elasticsearch.buffer]
+    type = "memory"
+    max_events = 10000
+    when_full = "drop_newest"
+  # Batch settings to reduce network overhead
+  [sinks.sink_elasticsearch.batch]
+    max_bytes = 10485760  # 10 MB max batch size
+    max_events = 1000
+    timeout_secs = 5
+  # Request settings with timeout
+  [sinks.sink_elasticsearch.request]
+    timeout_secs = 60
+    retry_attempts = 3
+    retry_initial_backoff_secs = 1
+    retry_max_duration_secs = 30
+
+[transforms.system_memory_metric]
+type = "filter"
+inputs = ["systems_metrics_with_metadata"]
+condition = 'starts_with!(.name, "memory")'
+
+[transforms.update_namespace]
+type = "remap"
+inputs = ["system_memory_metric"]
+source = '.namespace = "EnvoySystemMetrics"'
+
+[sinks.cloudwatch_metrics]
+type = "aws_cloudwatch_metrics"
+inputs = ["update_namespace"]
+namespace = "EnvoySystemMetrics"
+region = "ap-south-1"
+  [sinks.cloudwatch_metrics.batch]
+  max_events = 200
+  timeout_secs = 60
+
+[sinks.sink_loki]
+type = "loki"
+inputs = ["envoy_logs_json"]
+endpoint = "http://loki.hyperswitch.internal"
+encoding.codec = "json"
+labels.job = "vector/envoy-sandbox"
+labels.service = "envoy"
+labels.asg_name = "{{ asg_name }}"
+labels.instance_ip = "{{ instance_ip }}"
+labels.instance_id = "{{ instance_id }}"
+  # Buffer settings to prevent memory bloat
+  [sinks.sink_loki.buffer]
+    type = "memory"
+    max_events = 10000
+    when_full = "drop_newest"
+  # Batch settings to reduce network overhead
+  [sinks.sink_loki.batch]
+    max_bytes = 10485760  # 10 MB max batch size
+    max_events = 1000
+    timeout_secs = 5
+  # Request settings with timeout
+  [sinks.sink_loki.request]
+    timeout_secs = 60
+    retry_attempts = 3
+    retry_initial_backoff_secs = 1
+    retry_max_duration_secs = 30

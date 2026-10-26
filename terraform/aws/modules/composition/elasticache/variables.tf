@@ -216,7 +216,7 @@ variable "auth_token_update_strategy" {
 }
 
 variable "kms_key_id" {
-  description = "(Optional) The ARN of the key that you wish to use if encrypting at rest. Can be specified only if at_rest_encryption_enabled = true"
+  description = "(Optional) Existing regional KMS key ARN. Primary/standalone clusters require at_rest_encryption_enabled = true; secondary clusters inherit that flag from the global datastore."
   type        = string
   default     = null
 }
@@ -319,19 +319,23 @@ variable "user_group_ids" {
 }
 
 # Log Delivery
-variable "log_delivery_configuration" {
-  description = "(Optional, Redis only) Specifies the destination and format of Redis/Valkey SLOWLOG or Engine Log. Max of 2 blocks"
-  type = list(object({
-    destination      = string
-    destination_type = string
-    log_format       = string
-    log_type         = string
-  }))
-  default = []
+variable "log_delivery" {
+  description = "Engine/slow log delivery. Set create_log_groups to also create the CloudWatch log groups named as destinations."
+  type = object({
+    configuration = list(object({
+      destination      = string
+      destination_type = string
+      log_format       = string
+      log_type         = string
+    }))
+    create_log_groups        = optional(bool, false)
+    log_group_retention_days = optional(number, 30)
+  })
+  default = { configuration = [] }
 
   validation {
-    condition     = length(var.log_delivery_configuration) <= 2
-    error_message = "Maximum of 2 log_delivery_configuration blocks allowed."
+    condition     = length(var.log_delivery.configuration) <= 2
+    error_message = "Maximum of 2 log delivery configuration blocks allowed."
   }
 }
 
@@ -386,4 +390,35 @@ variable "existing_security_group_ids" {
   description = "(Optional) List of existing security group IDs to attach to ElastiCache"
   type        = list(string)
   default     = []
+}
+
+variable "kms" {
+  description = "Optional customer-managed encryption key configuration. Creates a regional key (or multi-region replica) when create is true; otherwise uses existing_key_arn. Legacy kms_key_id takes precedence over existing_key_arn."
+  type = object({
+    create                  = optional(bool, false)
+    existing_key_arn        = optional(string)
+    description             = optional(string)
+    multi_region            = optional(bool, false)
+    create_replica          = optional(bool, false)
+    primary_key_arn         = optional(string)
+    deletion_window_in_days = optional(number, 30)
+    enable_key_rotation     = optional(bool, true)
+    aliases                 = optional(list(string), [])
+    key_administrators      = optional(list(string), [])
+    key_users               = optional(list(string), [])
+    key_service_users       = optional(list(string), [])
+    key_owners              = optional(list(string), [])
+  })
+  default  = {}
+  nullable = false
+
+  validation {
+    condition     = !var.kms.create_replica || (var.kms.create && var.kms.primary_key_arn != null)
+    error_message = "Replica key creation requires kms.create = true and kms.primary_key_arn."
+  }
+
+  validation {
+    condition     = var.kms.deletion_window_in_days >= 7 && var.kms.deletion_window_in_days <= 30
+    error_message = "kms.deletion_window_in_days must be between 7 and 30."
+  }
 }

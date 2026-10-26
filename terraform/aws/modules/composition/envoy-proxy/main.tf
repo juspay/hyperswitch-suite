@@ -118,7 +118,13 @@ module "config_bucket" {
 # Git is the source of truth - any changes to files will trigger re-upload
 
 resource "aws_s3_object" "envoy_config_files" {
-  for_each = var.upload_config_to_s3 ? fileset(var.config_files_source_path, "**") : []
+  # Hidden files are excluded: terragrunt stack generation drops a non-UTF-8
+  # .terragrunt-stack-manifest marker into generated directories, which would
+  # fail file() below and does not belong in the config bucket.
+  for_each = var.upload_config_to_s3 ? toset([
+    for f in fileset(var.config_files_source_path, "**") : f
+    if length(regexall("(^|/)\\.", f)) == 0
+  ]) : []
 
   bucket = local.config_bucket_name
   key    = "envoy/${each.value}"
@@ -234,6 +240,8 @@ resource "aws_iam_instance_profile" "envoy_profile" {
 
 # Security Group for Load Balancer (Only create if creating new ALB)
 module "lb_security_group" {
+  revoke_rules_on_delete = true
+
   count   = var.create_lb ? 1 : 0
   source  = "terraform-aws-modules/security-group/aws"
   version = "~> 5.0"
@@ -268,6 +276,8 @@ resource "aws_security_group_rule" "lb_default_egress_to_asg" {
 
 # Security Group for Envoy ASG Instances
 module "asg_security_group" {
+  revoke_rules_on_delete = true
+
   source  = "terraform-aws-modules/security-group/aws"
   version = "~> 5.0"
 
@@ -309,6 +319,24 @@ resource "aws_security_group_rule" "asg_ingress_from_alb_healthcheck" {
   protocol                 = "tcp"
   source_security_group_id = var.create_lb ? module.lb_security_group[0].security_group_id : var.existing_lb_security_group_id
   description              = "Allow health checks from ALB"
+}
+
+# =========================================================================
+# ASG Security Group - S3 Egress (Gateway VPC Endpoint)
+# =========================================================================
+# Instances pull Envoy config from the S3 config bucket and ship logs to the
+# logs bucket. Same-region S3 traffic rides the S3 gateway VPC endpoint, so
+# egress is scoped to the regional S3 managed prefix list instead of
+# 0.0.0.0/0. The subnet route tables must carry the S3 gateway endpoint
+# route (the vpc-network module attaches it).
+resource "aws_security_group_rule" "asg_egress_s3" {
+  security_group_id = module.asg_security_group.security_group_id
+  type              = "egress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  prefix_list_ids   = [data.aws_prefix_list.s3.id]
+  description       = "Allow HTTPS to same-region S3 via gateway endpoint"
 }
 
 # =========================================================================
@@ -561,6 +589,33 @@ resource "aws_lb_listener_certificate" "additional" {
 
   listener_arn    = aws_lb_listener.envoy_https[0].arn
   certificate_arn = each.value
+}
+
+# =========================================================================
+# DNS Records
+# =========================================================================
+# Alias records pointing at this module's load balancer. An alias (rather than a
+# CNAME to a hardcoded *.elb.amazonaws.com hostname) follows the LB on its own,
+# so the record stays correct in every region without pinning one region's LB.
+resource "aws_route53_record" "envoy_lb" {
+  for_each = var.create_lb && var.dns.create ? var.dns.records : {}
+
+  lifecycle {
+    precondition {
+      condition     = var.dns.zone_id != null
+      error_message = "dns.zone_id is required when dns.create is true."
+    }
+  }
+
+  zone_id = var.dns.zone_id
+  name    = each.value.name
+  type    = "A"
+
+  alias {
+    name                   = module.alb[0].dns_name
+    zone_id                = module.alb[0].zone_id
+    evaluate_target_health = each.value.evaluate_target_health
+  }
 }
 
 # =========================================================================

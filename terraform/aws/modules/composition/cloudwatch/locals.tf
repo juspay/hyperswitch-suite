@@ -25,6 +25,18 @@ locals {
     )
   }
 
+  # Owner per alarm: explicit `owner`, else the classification's owner, else
+  # null (falls back to var.sns_topic_arns).
+  alarm_owners = {
+    for alarm_key, alarm_config in var.classified_metric_alarms :
+    alarm_key => alarm_config.owner != null ? alarm_config.owner : lookup(var.classification_owners, alarm_config.classification, null)
+  }
+
+  anomaly_alarm_owners = {
+    for alarm_key, alarm_config in var.classified_anomaly_alarms :
+    alarm_key => alarm_config.owner != null ? alarm_config.owner : lookup(var.classification_owners, alarm_config.classification, null)
+  }
+
   classified_alarms_flat = merge([
     for alarm_key, alarm_config in var.classified_metric_alarms : {
       for sev_key, sev_config in alarm_config.severities : "${alarm_key}-${sev_key}" => {
@@ -42,10 +54,15 @@ locals {
         datapoints_to_alarm = sev_config.datapoints_to_alarm
         skip_ok_action      = sev_config.skip_ok_action
         actions_enabled     = sev_config.actions_enabled
-        additional_tags = {
-          Classification = alarm_config.classification
-          Severity       = sev_key
-        }
+        owner               = local.alarm_owners[alarm_key]
+        topic_arns          = local.alarm_owners[alarm_key] != null ? lookup(var.owner_sns_topic_arns, local.alarm_owners[alarm_key], {}) : var.sns_topic_arns
+        additional_tags = merge(
+          {
+            Classification = alarm_config.classification
+            Severity       = sev_key
+          },
+          local.alarm_owners[alarm_key] != null ? { Owner = local.alarm_owners[alarm_key] } : {}
+        )
       }
     }
   ]...)
@@ -65,10 +82,15 @@ locals {
         treat_missing_data  = sev_config.treat_missing_data
         standard_deviations = sev_config.standard_deviations
         skip_ok_action      = sev_config.skip_ok_action
-        additional_tags = {
-          Classification = alarm_config.classification
-          Severity       = sev_key
-        }
+        owner               = local.anomaly_alarm_owners[alarm_key]
+        topic_arns          = local.anomaly_alarm_owners[alarm_key] != null ? lookup(var.owner_sns_topic_arns, local.anomaly_alarm_owners[alarm_key], {}) : var.sns_topic_arns
+        additional_tags = merge(
+          {
+            Classification = alarm_config.classification
+            Severity       = sev_key
+          },
+          local.anomaly_alarm_owners[alarm_key] != null ? { Owner = local.anomaly_alarm_owners[alarm_key] } : {}
+        )
       }
     }
   ]...)

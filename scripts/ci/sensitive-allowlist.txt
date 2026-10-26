@@ -1,0 +1,13 @@
+# Legitimate public references that match the sensitive-data patterns.
+# One substring per line; lines are matched with `grep -F` against scan hits.
+
+# Public docs site linked from the envoy maintenance page
+https://docs.hyperswitch.io
+
+# Redacted placeholder examples in the pre-existing dev environment / module docs
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.gr7.
+AWSReservedSSO_AWSAdministratorAccess_XXXXXXXXXXXXXXXX
+012345678903AB2BAE5D1E0BFE0E2B50.gr7.us-east-1
+
+# Public support email mentioned in the upstream changelog
+hyperswitch@juspay.in to support.global@juspay.io

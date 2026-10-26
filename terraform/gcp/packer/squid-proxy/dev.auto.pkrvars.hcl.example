@@ -1,0 +1,15 @@
+# Copy to dev.auto.pkrvars.hcl (gitignored) and fill in real values, or pass
+# equivalent -var flags on the command line.
+
+project_id = "hyperswitch-dev"
+zone       = "asia-south1-a"
+network    = "hyperswitch-dev-vpc"
+subnetwork = "hyperswitch-dev-management" # needs egress to the internet (Cloud NAT) for apt
+
+environment = "dev"
+
+# use_iap = true is currently broken for Ubuntu source images
+# (hashicorp/packer#12169) - set to false to build over a temporary public
+# IP instead (requires the packer-build-tagged firewall rule, see
+# hyperswitch-infra/terraform/gcp/live/dev/asia-south1/envoy-packer-temp-ssh-firewall).
+use_iap = false

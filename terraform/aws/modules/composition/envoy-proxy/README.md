@@ -39,7 +39,9 @@
 | [aws_lb_listener_certificate.additional](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener_certificate) | resource |
 | [aws_lb_listener_rule.custom_rules](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener_rule) | resource |
 | [aws_lb_target_group.envoy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_target_group) | resource |
+| [aws_route53_record.envoy_lb](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_record) | resource |
 | [aws_s3_object.envoy_config_files](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_object) | resource |
+| [aws_security_group_rule.asg_egress_s3](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
 | [aws_security_group_rule.asg_ingress_from_alb_healthcheck](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
 | [aws_security_group_rule.asg_ingress_from_alb_traffic](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
 | [aws_security_group_rule.existing_lb_to_asg_healthcheck](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
@@ -49,6 +51,7 @@
 | [aws_wafv2_web_acl_association.envoy_alb](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/wafv2_web_acl_association) | resource |
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
 | [aws_iam_role.existing_envoy_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_role) | data source |
+| [aws_prefix_list.s3](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/prefix_list) | data source |
 | [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
 
 ## Inputs
@@ -59,6 +62,7 @@
 | <a name="input_additional_policy_arns"></a> [additional\_policy\_arns](#input\_additional\_policy\_arns) | List of additional IAM policy ARNs to attach to the Envoy IAM role (e.g., AmazonSSMManagedInstanceCore for SSM access) | `list(string)` | `[]` | no |
 | <a name="input_alb_http_listener_port"></a> [alb\_http\_listener\_port](#input\_alb\_http\_listener\_port) | Port for ALB HTTP listener (port that ALB listens on for incoming HTTP traffic) | `number` | `80` | no |
 | <a name="input_alb_https_listener_port"></a> [alb\_https\_listener\_port](#input\_alb\_https\_listener\_port) | Port for ALB HTTPS listener (port that ALB listens on for incoming HTTPS traffic) | `number` | `443` | no |
+| <a name="input_auth_proxy_loadbalancer_dns"></a> [auth\_proxy\_loadbalancer\_dns](#input\_auth\_proxy\_loadbalancer\_dns) | Auth proxy / decision service load balancer DNS (for envoy.yaml templating) | `string` | `""` | no |
 | <a name="input_config_bucket_arn"></a> [config\_bucket\_arn](#input\_config\_bucket\_arn) | ARN of S3 bucket containing Envoy configuration files (required if create\_config\_bucket=false) | `string` | `""` | no |
 | <a name="input_config_bucket_name"></a> [config\_bucket\_name](#input\_config\_bucket\_name) | Name of S3 bucket containing Envoy configuration files (required if create\_config\_bucket=false) | `string` | `""` | no |
 | <a name="input_config_files_source_path"></a> [config\_files\_source\_path](#input\_config\_files\_source\_path) | Local path to envoy config files to upload to S3 (only used if upload\_config\_to\_s3=true) | `string` | `"./config"` | no |
@@ -69,8 +73,10 @@
 | <a name="input_create_logs_bucket"></a> [create\_logs\_bucket](#input\_create\_logs\_bucket) | Whether to create a new S3 bucket for logs (if false, use existing bucket) | `bool` | `true` | no |
 | <a name="input_create_target_group"></a> [create\_target\_group](#input\_create\_target\_group) | Whether to create a new target group | `bool` | `true` | no |
 | <a name="input_custom_userdata"></a> [custom\_userdata](#input\_custom\_userdata) | Custom userdata script for Envoy instances. This should be environment-specific and loaded from the live layer (e.g., file("${path.module}/templates/userdata.sh")) | `string` | n/a | yes |
+| <a name="input_default_host_for_http_10"></a> [default\_host\_for\_http\_10](#input\_default\_host\_for\_http\_10) | Default host for HTTP/1.0 requests without a Host header (for envoy.yaml templating). Defaults to the first entry of virtual\_hosts\_domains when unset. | `string` | `""` | no |
 | <a name="input_deployments"></a> [deployments](#input\_deployments) | Map of concurrent Envoy deployments. Each key is an identifier (e.g., "v1", "v2").<br/>Traffic is split across them via ALB weighted forward.<br/><br/>- launch\_template\_id:      Optional. Provide to use an external launch template.<br/>- launch\_template\_version: Optional. Defaults to "$Latest" for external LTs,<br/>                           or the module-managed LT's latest\_version. | <pre>map(object({<br/>    asg_name                  = optional(string)<br/>    weight                    = number<br/>    desired_capacity          = optional(number)<br/>    launch_template_id        = optional(string)<br/>    launch_template_version   = string<br/>    target_group_name         = optional(string)<br/>    existing_target_group_arn = optional(string)<br/>  }))</pre> | <pre>{<br/>  "stable": {<br/>    "launch_template_version": "$Latest",<br/>    "weight": 100<br/>  }<br/>}</pre> | no |
 | <a name="input_desired_capacity"></a> [desired\_capacity](#input\_desired\_capacity) | Desired number of instances in ASG | `number` | `1` | no |
+| <a name="input_dns"></a> [dns](#input\_dns) | Route53 records pointing at the Envoy load balancer. Each record is created as an A alias to this module's own LB, so no hardcoded LB hostname is needed. Requires create\_lb; zone\_id is required when create is true. | <pre>object({<br/>    create  = optional(bool, false)<br/>    zone_id = optional(string, null)<br/>    records = optional(map(object({<br/>      name                   = string<br/>      evaluate_target_health = optional(bool, false)<br/>    })), {})<br/>  })</pre> | `{}` | no |
 | <a name="input_eks_cluster_name"></a> [eks\_cluster\_name](#input\_eks\_cluster\_name) | EKS cluster name (for envoy.yaml templating) | `string` | `""` | no |
 | <a name="input_enable_autoscaling"></a> [enable\_autoscaling](#input\_enable\_autoscaling) | Enable auto-scaling policies for the ASG based on CPU and memory metrics | `bool` | `false` | no |
 | <a name="input_enable_capacity_rebalance"></a> [enable\_capacity\_rebalance](#input\_enable\_capacity\_rebalance) | Enable capacity rebalancing for spot instances (launches replacement before termination) | `bool` | `false` | no |
@@ -109,6 +115,7 @@
 | <a name="input_on_demand_base_capacity"></a> [on\_demand\_base\_capacity](#input\_on\_demand\_base\_capacity) | Minimum number of on-demand instances to maintain (useful for baseline capacity) | `number` | `1` | no |
 | <a name="input_project_name"></a> [project\_name](#input\_project\_name) | Project name for resource naming | `string` | `"hyperswitch"` | no |
 | <a name="input_proxy_subnet_ids"></a> [proxy\_subnet\_ids](#input\_proxy\_subnet\_ids) | Subnet IDs for proxy instances (private subnets) | `list(string)` | n/a | yes |
+| <a name="input_ratelimiter_loadbalancer_dns"></a> [ratelimiter\_loadbalancer\_dns](#input\_ratelimiter\_loadbalancer\_dns) | Ratelimiter service load balancer DNS (for envoy.yaml templating) | `string` | `""` | no |
 | <a name="input_s3_vpc_endpoint_prefix_list_id"></a> [s3\_vpc\_endpoint\_prefix\_list\_id](#input\_s3\_vpc\_endpoint\_prefix\_list\_id) | Prefix list ID for S3 VPC endpoint (e.g., pl-6ea54007). If not provided, will use 0.0.0.0/0 for S3 access. | `string` | `null` | no |
 | <a name="input_scaling_policies"></a> [scaling\_policies](#input\_scaling\_policies) | Configuration for auto-scaling policies using built-in AWS metrics | <pre>object({<br/>    # CPU-based target tracking<br/>    cpu_target_tracking = optional(object({<br/>      enabled      = optional(bool, false)<br/>      target_value = optional(number, 70.0) # Target CPU utilization %<br/>    }), {})<br/><br/>    # Memory-based target tracking (requires CloudWatch agent on instances)<br/>    memory_target_tracking = optional(object({<br/>      enabled      = optional(bool, false)<br/>      target_value = optional(number, 70.0) # Target Memory utilization %<br/>    }), {})<br/>  })</pre> | <pre>{<br/>  "cpu_target_tracking": {<br/>    "enabled": false,<br/>    "target_value": 70<br/>  },<br/>  "memory_target_tracking": {<br/>    "enabled": false,<br/>    "target_value": 70<br/>  }<br/>}</pre> | no |
 | <a name="input_spot_allocation_strategy"></a> [spot\_allocation\_strategy](#input\_spot\_allocation\_strategy) | Strategy for allocating spot instances (lowest-price, capacity-optimized, capacity-optimized-prioritized) | `string` | `"capacity-optimized"` | no |
@@ -136,6 +143,7 @@
 | <a name="output_config_bucket_name"></a> [config\_bucket\_name](#output\_config\_bucket\_name) | Name of the S3 bucket for configuration (created or existing) |
 | <a name="output_config_version"></a> [config\_version](#output\_config\_version) | Current configuration version hash |
 | <a name="output_deployment_weights"></a> [deployment\_weights](#output\_deployment\_weights) | Map of deployment names to ALB traffic weights |
+| <a name="output_dns_record_fqdns"></a> [dns\_record\_fqdns](#output\_dns\_record\_fqdns) | Map of record key to the FQDN created for the Envoy load balancer |
 | <a name="output_iam_instance_profile_name"></a> [iam\_instance\_profile\_name](#output\_iam\_instance\_profile\_name) | Name of the IAM instance profile (created or existing) |
 | <a name="output_iam_role_arn"></a> [iam\_role\_arn](#output\_iam\_role\_arn) | ARN of the IAM role (created or existing) |
 | <a name="output_iam_role_created"></a> [iam\_role\_created](#output\_iam\_role\_created) | Whether IAM role was created by this module (true) or using existing (false) |

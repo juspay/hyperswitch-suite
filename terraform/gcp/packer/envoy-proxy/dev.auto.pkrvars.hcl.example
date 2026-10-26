@@ -1,0 +1,10 @@
+# Copy to dev.auto.pkrvars.hcl (gitignored) and fill in real values, or pass
+# equivalent -var flags on the command line.
+
+project_id   = "hyperswitch-dev"
+zone         = "asia-south1-a"
+network      = "hyps-dev-vpc"
+subnetwork   = "hyps-dev-management" # needs egress to the internet (Cloud NAT) for apt
+
+envoy_version = "v1.39.0" # a Docker Hub tag of envoyproxy/envoy, not an apt version
+environment   = "dev"

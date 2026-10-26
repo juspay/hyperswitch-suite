@@ -1,0 +1,208 @@
+include "root" {
+  path   = find_in_parent_folders("root.hcl")
+  expose = true
+}
+
+terraform {
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/vpc-network?ref=vpc-v0.1.12"
+}
+
+# Passive-side only: sources the primary region's VPC id/cidr for vpc_peering_connections.
+locals {
+  vpc_peering_enabled = try(values.vpc_peering.enable, false)
+}
+
+dependency "primary_vpc" {
+  config_path = try(values.primary_vpc_config_path, try("../../${values.primary_region}/vpc-network", "."))
+
+  enabled = try(values.is_passive, false) && local.vpc_peering_enabled
+
+  mock_outputs = {
+    vpc_id                         = "vpc-00000000000000000"
+    vpc_cidr_block                 = "10.x.x.x/16"
+    eks_workers_subnet_cidr_blocks = ["10.x.0.0/22", "10.x.4.0/22"]
+    data_stack_subnet_cidr_blocks  = ["10.x.16.0/24", "10.x.17.0/24"]
+  }
+  mock_outputs_merge_strategy_with_state = "shallow"
+}
+
+inputs = {
+  vpc_name     = "${include.root.locals.project_name}-${include.root.locals.environment.short}-vpc"
+  environment  = include.root.locals.environment.short
+  project_name = include.root.locals.project_name
+  region       = include.root.locals.region
+
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+  enable_nat_gateway   = true
+
+  map_public_ip_on_launch     = false
+  enable_eks_elb_tag          = true
+  enable_eks_internal_elb_tag = true
+
+  vpc_cidr = "${values.vpc_cidr_prefix}.0.0/16"
+
+  availability_zones = [
+    "${include.root.locals.region}a",
+    "${include.root.locals.region}b",
+  ]
+
+  secondary_cidr_blocks = []
+
+  single_nat_gateway = try(values.single_nat_gateway, false)
+
+  external_incoming_subnet_cidrs = [
+    "${values.vpc_cidr_prefix}.18.0/24",
+    "${values.vpc_cidr_prefix}.19.0/24",
+  ]
+
+  management_subnet_cidrs = [
+    "${values.vpc_cidr_prefix}.10.0/24",
+    "${values.vpc_cidr_prefix}.11.0/24",
+  ]
+
+  eks_workers_subnet_cidrs = [
+    "${values.vpc_cidr_prefix}.0.0/22",
+    "${values.vpc_cidr_prefix}.4.0/22",
+  ]
+
+  eks_control_plane_subnet_cidrs = [
+    "${values.vpc_cidr_prefix}.32.0/24",
+    "${values.vpc_cidr_prefix}.33.0/24",
+  ]
+
+  database_subnet_cidrs = [
+    "${values.vpc_cidr_prefix}.20.0/24",
+    "${values.vpc_cidr_prefix}.21.0/24",
+  ]
+
+  locker_database_subnet_cidrs = [
+    "${values.vpc_cidr_prefix}.12.0/24",
+    "${values.vpc_cidr_prefix}.13.0/24",
+  ]
+
+  locker_server_subnet_cidrs = [
+    "${values.vpc_cidr_prefix}.26.0/24",
+    "${values.vpc_cidr_prefix}.27.0/24",
+  ]
+
+  elasticache_subnet_cidrs = [
+    "${values.vpc_cidr_prefix}.28.0/24",
+    "${values.vpc_cidr_prefix}.29.0/24"
+  ]
+
+  data_stack_subnet_cidrs = [
+    "${values.vpc_cidr_prefix}.16.0/24",
+    "${values.vpc_cidr_prefix}.17.0/24"
+  ]
+
+  incoming_envoy_subnet_cidrs = [
+    "${values.vpc_cidr_prefix}.34.0/24",
+    "${values.vpc_cidr_prefix}.35.0/24"
+  ]
+
+  outgoing_proxy_subnet_cidrs = [
+    "${values.vpc_cidr_prefix}.24.0/24",
+    "${values.vpc_cidr_prefix}.25.0/24"
+  ]
+
+  utils_subnet_cidrs = [
+    "${values.vpc_cidr_prefix}.8.0/24",
+    "${values.vpc_cidr_prefix}.9.0/24"
+  ]
+
+  lambda_subnet_cidrs = [
+    "${values.vpc_cidr_prefix}.97.0/24",
+  ]
+
+  enable_vpc_endpoints = true
+
+  create_nacl = true
+
+  gateway_vpc_endpoints = [
+    "s3",
+    "dynamodb"
+  ]
+
+  interface_vpc_endpoints = [
+    "ec2",
+    "ecr_api",
+    "ecr_dkr",
+    "logs",
+    "secretsmanager",
+    "ssm",
+    "ssmmessages",
+    "sts",
+    "ec2messages",
+    "kms",
+    "elasticloadbalancing",
+    "autoscaling",
+    "monitoring",
+    "lambda",
+    "sns",
+    "sqs",
+    "eks",
+    "execute_api",
+    "efs"
+  ]
+
+  custom_interface_vpc_endpoints = try(values.custom_interface_vpc_endpoints, null)
+
+  create_vpc_endpoint_security_group = true
+  enable_flow_logs                   = false
+  flow_logs_destination_type         = "cloud-watch-logs"
+  flow_logs_traffic_type             = "ALL"
+
+  manage_default_network_acl    = true
+  manage_default_security_group = true
+  manage_default_route_table    = true
+
+  # Cross-region peering (same account only): passive is always the requester,
+  # active the accepter. Driven entirely by stack values (`is_passive`,
+  # `vpc_peering.enable`, `primary_region`), so single-region stacks are
+  # unaffected.
+  vpc_peering_connections = (
+    try(values.is_passive, false) && local.vpc_peering_enabled
+    ) ? {
+    peer-to-primary = {
+      peer_vpc_id = dependency.primary_vpc.outputs.vpc_id
+      # Narrow scope: route only the primary's data-stack (Kafka/ClickHouse) and
+      # EKS worker subnets, matching the route_tables below — not the full VPC CIDR.
+      peer_vpc_cidr = concat(
+        dependency.primary_vpc.outputs.data_stack_subnet_cidr_blocks,
+        dependency.primary_vpc.outputs.eks_workers_subnet_cidr_blocks,
+      )
+      peer_region   = values.primary_region
+      peer_owner_id = include.root.locals.account_id
+      route_tables  = ["eks-workers", "private-isolated"]
+      auto_accept   = false
+      tags = {
+        PeerName = "${include.root.locals.environment.short}-${values.primary_region}-hyperswitch-vpc"
+      }
+    }
+  } : {}
+
+  vpc_peering_accepter_connections = (
+    !try(values.is_passive, false) && local.vpc_peering_enabled
+    ) ? {
+    peer-from-passive = {
+      peering_connection_id = values.vpc_peering.connection_id
+      # Narrow scope: values.vpc_peering.peer_vpc_cidr must list only the passive's
+      # eks-workers and data-stack subnet CIDRs — not the full VPC CIDR.
+      peer_vpc_cidr = values.vpc_peering.peer_vpc_cidr
+      route_tables  = ["eks-workers", "private-isolated"]
+      tags = {
+        PeerName = "${include.root.locals.environment.short}-passive-hyperswitch-vpc"
+      }
+    }
+  } : {}
+
+  enable_vpc_peering_routes = local.vpc_peering_enabled
+
+  tags = {
+    Environment = include.root.locals.environment.short
+    Team        = "Infra"
+    ManagedBy   = "Terraform"
+    Project     = include.root.locals.project_name
+  }
+}

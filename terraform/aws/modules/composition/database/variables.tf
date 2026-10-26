@@ -110,6 +110,18 @@ variable "manage_master_user_password" {
   default     = null
 }
 
+variable "master_password_secretsmanager_secret_id" {
+  description = "(Optional) ARN or name of an existing AWS Secrets Manager secret to fetch the master DB password from. Takes precedence over master_password. Cannot be used together with manage_master_user_password = true"
+  type        = string
+  default     = null
+}
+
+variable "master_password_secretsmanager_secret_key" {
+  description = "(Optional) JSON key within the Secrets Manager secret that holds the master password (e.g. \"password\"). If null, the raw secret string is used as the password"
+  type        = string
+  default     = null
+}
+
 variable "master_user_secret_kms_key_id" {
   description = "(Optional) KMS key identifier for encrypting the master user password in Secrets Manager"
   type        = string
@@ -608,8 +620,8 @@ variable "kms" {
   EOT
   type = object({
     # Key source: either create new or use existing
-    create           = optional(bool, false)       # Set true to create KMS key, false to use existing
-    existing_key_arn = optional(string, null)      # Existing KMS key ARN to use (when create=false)
+    create           = optional(bool, false)  # Set true to create KMS key, false to use existing
+    existing_key_arn = optional(string, null) # Existing KMS key ARN to use (when create=false)
 
     # Key creation settings (used when create=true)
     description  = optional(string, null)

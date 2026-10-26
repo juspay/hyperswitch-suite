@@ -1,0 +1,11 @@
+{
+  "keepers": {{keeper_ips}},
+  "cluster": [
+    {
+      "name": "hyperswitch-clickhouse-ec2",
+      "shard": [
+        {{server_ips}}
+      ]
+    }
+  ]
+}

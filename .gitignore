@@ -79,3 +79,9 @@ $RECYCLE.BIN/
 #secrets
 .env
 .secrets.env
+
+#terragrunt
+.terragrunt-cache/
+.terragrunt-stack-manifest
+*.tfstate
+*.tfstate.backup

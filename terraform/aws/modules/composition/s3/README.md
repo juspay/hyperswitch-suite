@@ -1,0 +1,155 @@
+# composition/s3
+
+Creates an S3 bucket using the registry module
+[`terraform-aws-modules/s3-bucket/aws`](https://registry.terraform.io/modules/terraform-aws-modules/s3-bucket/aws)
+(`~> 5.0`). When `replication_configuration.enabled` is set, it also creates a
+replica bucket in a different region and wires up cross-region replication (CRR)
+from the source bucket: versioning is forced on both buckets, an IAM replication
+role is created, and a replication rule is attached to the source bucket.
+
+KMS is regional, so the source and replica buckets take their own key ARNs
+(`kms_key_arn` and `replication_configuration.kms_key_arn`). When the source is
+KMS-encrypted, the replication rule opts SSE-KMS objects into replication, sets the
+replica key on the destination, and the replication role is granted
+decrypt/encrypt on the respective keys.
+
+The replica bucket is provisioned through the module's own `aws.replica` provider
+alias, whose region comes from `replication_configuration.region`. The default
+(source-region) provider is supplied by the consuming layer (for Terragrunt roots,
+the generated `provider.tf` from `root.hcl`).
+
+## Bi-directional (two-way) replication
+
+Set `replication_configuration.bidirectional = true` to also replicate the
+replica bucket back to the source, making the two buckets a mirrored pair. This
+adds a second replication rule on the replica bucket and a second, direction-scoped
+IAM role (`rev`). `replica_modifications` is enabled on both rules so metadata
+changes sync both ways, and `delete_marker_replication` keeps deletes in sync.
+
+S3 prevents infinite replication loops natively (objects that arrived via
+replication are not re-replicated), so there is no ping-pong. Important caveats:
+
+- **Not a multi-writer store.** Conflict resolution is last-writer-wins by
+  timestamp. Use this for active/passive with failback, not concurrent writes to
+  the same key in both regions.
+- **No back-fill.** Only objects written after the config is applied are
+  replicated; pre-existing objects need an S3 Batch Replication job.
+- **Symmetric KMS.** When using SSE-KMS, both `kms_key_arn` (source region) and
+  `replication_configuration.kms_key_arn` (replica region) must be set.
+
+## Upgrading a pre-existing one-way deployment
+
+The replication IAM role/policy changed from a `count` index to a per-direction
+`for_each` key (`[0]` → `["fwd"]`). The forward role name is unchanged, so this is
+a pure state rename with no resource replacement. Fresh deployments need nothing.
+A stack that already applied the one-way version should add a one-time `moved`
+block in the **consuming** configuration (the migration lives with the state, not
+in this library module) before `apply`:
+
+```hcl
+moved {
+  from = module.<this_module>.aws_iam_role.replication[0]
+  to   = module.<this_module>.aws_iam_role.replication["fwd"]
+}
+
+moved {
+  from = module.<this_module>.aws_iam_role_policy.replication[0]
+  to   = module.<this_module>.aws_iam_role_policy.replication["fwd"]
+}
+```
+
+Equivalently, run `terraform state mv` for the two addresses once. Without this,
+the forward replication role/policy is destroyed and recreated on upgrade.
+
+## Example
+
+```hcl
+module "payment_files" {
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/s3?ref=s3-v0.1.0"
+
+  environment = "sandbox"
+  region      = "ap-south-1"
+  bucket_name = "hyperswitch-sandbox-payment-files" # optional; derived when omitted
+
+  replication_configuration = {
+    enabled     = true
+    region      = "ap-south-2"
+    bucket_name = "hyperswitch-sandbox-payment-files-replica" # optional; derived when omitted
+  }
+}
+
+# Two-way (mirrored) variant
+module "payment_files_mirrored" {
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/s3?ref=s3-v0.1.0"
+
+  environment = "sandbox"
+  region      = "ap-south-1"
+
+  replication_configuration = {
+    enabled       = true
+    region        = "ap-south-2"
+    bidirectional = true
+  }
+}
+```
+
+<!-- BEGIN_TF_DOCS -->
+## Requirements
+
+| Name | Version |
+|------|---------|
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.7 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.2 |
+
+## Providers
+
+| Name | Version |
+|------|---------|
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 6.2 |
+| <a name="provider_terraform"></a> [terraform](#provider\_terraform) | n/a |
+
+## Modules
+
+| Name | Source | Version |
+|------|--------|---------|
+| <a name="module_replica_bucket"></a> [replica\_bucket](#module\_replica\_bucket) | terraform-aws-modules/s3-bucket/aws | ~> 5.0 |
+| <a name="module_source_bucket"></a> [source\_bucket](#module\_source\_bucket) | terraform-aws-modules/s3-bucket/aws | ~> 5.0 |
+
+## Resources
+
+| Name | Type |
+|------|------|
+| [aws_iam_role.replication](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
+| [aws_iam_role_policy.replication](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
+| [terraform_data.replication_guard](https://registry.terraform.io/providers/hashicorp/terraform/latest/docs/resources/data) | resource |
+| [aws_iam_policy_document.replication](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
+| [aws_iam_policy_document.replication_assume](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
+
+## Inputs
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| <a name="input_bucket_name"></a> [bucket\_name](#input\_bucket\_name) | Name of the source S3 bucket. When null, it is derived as "<project\_name>-<environment>-<region>". | `string` | `null` | no |
+| <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev/sandbox/prod) | `string` | n/a | yes |
+| <a name="input_force_destroy"></a> [force\_destroy](#input\_force\_destroy) | Allow deleting non-empty buckets on destroy (applies to both source and replica) | `bool` | `false` | no |
+| <a name="input_kms_key_arn"></a> [kms\_key\_arn](#input\_kms\_key\_arn) | Optional KMS key ARN (in the source region) for SSE-KMS on the source bucket. When null, SSE-S3 (AES256) is used. | `string` | `null` | no |
+| <a name="input_project_name"></a> [project\_name](#input\_project\_name) | Project name for resource naming | `string` | `"hyperswitch"` | no |
+| <a name="input_region"></a> [region](#input\_region) | Primary (source) region. The source bucket is created with the default aws provider, which must be configured for this region. | `string` | n/a | yes |
+| <a name="input_replication_configuration"></a> [replication\_configuration](#input\_replication\_configuration) | Cross-region replication configuration. When enabled, a replica bucket is<br/>created in `region` and CRR is configured from the source bucket.<br/><br/>- enabled:       whether to create the replica and configure replication.<br/>- region:        replica region. Required when enabled; must differ from the source region.<br/>- bucket\_name:   replica bucket name. When null, derived as "<project\_name>-<environment>-<region>".<br/>- storage\_class: storage class for replicated objects.<br/>- kms\_key\_arn:   KMS key ARN in the replica region. Required when the source bucket uses kms\_key\_arn (KMS keys are regional).<br/>- rule\_id:       ID for the (source -> replica) replication rule.<br/><br/>Bi-directional (two-way) replication — opt-in, default off:<br/>- bidirectional:         when true, the replica bucket also replicates back to<br/>                         the source (replica -> source), making the two buckets<br/>                         a mirrored pair. Requires `enabled = true`. S3 prevents<br/>                         infinite replication loops natively; `replica_modifications`<br/>                         is enabled on both rules so metadata changes sync both ways.<br/>                         NOTE: conflict resolution is last-writer-wins (timestamp),<br/>                         so this is for active/passive-with-failback, NOT concurrent<br/>                         multi-region writes to the same key. Existing objects are<br/>                         not back-filled (use S3 Batch Replication). When KMS is<br/>                         used, both source and replica keys must be set (symmetric).<br/>- reverse\_rule\_id:       ID for the reverse (replica -> source) rule. Must differ<br/>                         from `rule_id`. Only used when bidirectional = true.<br/>- reverse\_storage\_class: storage class for objects replicated back to the source. | <pre>object({<br/>    enabled       = optional(bool, false)<br/>    region        = optional(string)<br/>    bucket_name   = optional(string)<br/>    storage_class = optional(string, "STANDARD")<br/>    kms_key_arn   = optional(string)<br/>    rule_id       = optional(string, "replicate-all")<br/><br/>    bidirectional         = optional(bool, false)<br/>    reverse_rule_id       = optional(string, "replicate-all-reverse")<br/>    reverse_storage_class = optional(string, "STANDARD")<br/>  })</pre> | `{}` | no |
+| <a name="input_tags"></a> [tags](#input\_tags) | Common tags to apply to all resources | `map(string)` | `{}` | no |
+| <a name="input_versioning_enabled"></a> [versioning\_enabled](#input\_versioning\_enabled) | Enable versioning on the source bucket. Forced to true when replication is enabled, since cross-region replication requires versioning. | `bool` | `true` | no |
+
+## Outputs
+
+| Name | Description |
+|------|-------------|
+| <a name="output_bidirectional_replication_enabled"></a> [bidirectional\_replication\_enabled](#output\_bidirectional\_replication\_enabled) | Whether two-way (replica -> source) replication is configured |
+| <a name="output_replica_bucket_arn"></a> [replica\_bucket\_arn](#output\_replica\_bucket\_arn) | ARN of the replica bucket (null when replication is disabled) |
+| <a name="output_replica_bucket_id"></a> [replica\_bucket\_id](#output\_replica\_bucket\_id) | Name/ID of the replica bucket (null when replication is disabled) |
+| <a name="output_replication_enabled"></a> [replication\_enabled](#output\_replication\_enabled) | Whether cross-region replication is configured |
+| <a name="output_replication_role_arn"></a> [replication\_role\_arn](#output\_replication\_role\_arn) | ARN of the forward (source -> replica) replication IAM role (null when replication is disabled) |
+| <a name="output_replication_role_arns"></a> [replication\_role\_arns](#output\_replication\_role\_arns) | Map of replication direction (fwd/rev) to IAM role ARN for all active directions |
+| <a name="output_source_bucket_arn"></a> [source\_bucket\_arn](#output\_source\_bucket\_arn) | ARN of the source bucket |
+| <a name="output_source_bucket_id"></a> [source\_bucket\_id](#output\_source\_bucket\_id) | Name/ID of the source bucket |
+| <a name="output_source_bucket_regional_domain_name"></a> [source\_bucket\_regional\_domain\_name](#output\_source\_bucket\_regional\_domain\_name) | Region-specific domain name of the source bucket |
+<!-- END_TF_DOCS -->

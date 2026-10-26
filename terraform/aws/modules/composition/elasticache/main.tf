@@ -47,7 +47,26 @@ resource "aws_security_group" "elasticache_sg" {
 }
 
 # ElastiCache Redis Replication Group
+# CloudWatch log groups for log delivery (optional). Deduplicated by
+# destination name since engine-log and slow-log may share one group.
+# Secondary clusters skip this along with log_delivery_configuration itself.
+resource "aws_cloudwatch_log_group" "log_delivery" {
+  for_each = var.log_delivery.create_log_groups && !local.is_secondary_cluster ? toset([
+    for config in var.log_delivery.configuration : config.destination
+    if config.destination_type == "cloudwatch-logs"
+  ]) : []
+
+  name              = each.value
+  retention_in_days = var.log_delivery.log_group_retention_days
+
+  tags = local.common_tags
+}
+
 resource "aws_elasticache_replication_group" "main" {
+  # The log groups must exist before ElastiCache validates the log delivery
+  # destinations.
+  depends_on = [aws_cloudwatch_log_group.log_delivery]
+
   # Required
   replication_group_id = local.elasticache_replication_group_id
   description          = "${title(var.project_name)} ${title(var.environment)} Elasticache replication group"
@@ -74,8 +93,9 @@ resource "aws_elasticache_replication_group" "main" {
   network_type       = local.is_secondary_cluster ? null : var.network_type
 
   # High Availability
-  automatic_failover_enabled  = var.automatic_failover_enabled
-  multi_az_enabled            = local.is_secondary_cluster ? null : var.multi_az_enabled
+  automatic_failover_enabled = var.automatic_failover_enabled
+  # Multi-AZ is a regional setting for both global datastore members.
+  multi_az_enabled            = var.multi_az_enabled
   global_replication_group_id = local.is_secondary_cluster ? var.global_replication_group_id : null
   # Security
   at_rest_encryption_enabled = local.is_secondary_cluster ? null : var.at_rest_encryption_enabled
@@ -83,7 +103,7 @@ resource "aws_elasticache_replication_group" "main" {
   transit_encryption_mode    = local.is_secondary_cluster ? null : var.transit_encryption_mode
   auth_token                 = local.is_secondary_cluster ? null : var.auth_token
   auth_token_update_strategy = local.is_secondary_cluster ? null : var.auth_token_update_strategy
-  kms_key_id                 = local.is_secondary_cluster ? null : var.kms_key_id
+  kms_key_id                 = local.kms_key_arn
   # Maintenance & Backup
   maintenance_window        = local.is_secondary_cluster ? null : var.maintenance_window
   snapshot_window           = local.is_secondary_cluster ? null : var.snapshot_window
@@ -100,7 +120,7 @@ resource "aws_elasticache_replication_group" "main" {
   user_group_ids = local.is_secondary_cluster ? null : var.user_group_ids
   # Log Delivery Configuration
   dynamic "log_delivery_configuration" {
-    for_each = local.is_secondary_cluster ? [] : var.log_delivery_configuration
+    for_each = local.is_secondary_cluster ? [] : var.log_delivery.configuration
     content {
       destination      = log_delivery_configuration.value.destination
       destination_type = log_delivery_configuration.value.destination_type
@@ -125,6 +145,14 @@ resource "aws_elasticache_replication_group" "main" {
     Name = local.elasticache_replication_group_id
   })
   lifecycle {
+    precondition {
+      condition     = !local.kms_create || (var.kms_key_id == null && var.kms.existing_key_arn == null)
+      error_message = "Choose KMS key creation or an existing key, not both."
+    }
+    precondition {
+      condition     = local.is_secondary_cluster || var.at_rest_encryption_enabled || (var.kms_key_id == null && !local.kms_create && var.kms.existing_key_arn == null)
+      error_message = "Standalone and primary clusters using a KMS key require at_rest_encryption_enabled = true."
+    }
     ignore_changes = [
       engine_version, # Prevent unwanted version upgrades
     ]

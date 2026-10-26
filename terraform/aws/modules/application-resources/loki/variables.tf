@@ -31,11 +31,14 @@ variable "tags" {
 # =========================================================================
 
 variable "cluster_service_accounts" {
-  description = "Map of EKS cluster names to their respective list of Kubernetes service accounts (namespace and service account name)"
-  type = map(list(object({
-    namespace = string
-    name      = string
-  })))
+  description = "Map of EKS cluster name -> the cluster's OIDC provider ARN and the service accounts allowed to assume the IRSA role"
+  type = map(object({
+    oidc_provider_arn = string
+    service_accounts = list(object({
+      namespace = string
+      name      = string
+    }))
+  }))
   default = {}
 }
 
@@ -201,4 +204,13 @@ variable "security_group_egress_rules" {
       cidr_blocks = ["0.0.0.0/0"]
     }
   ]
+}
+
+# =========================================================================
+# DNS
+# =========================================================================
+variable "domain" {
+  description = "DNS name (FQDN) for the Loki gateway ingress load balancer. Exposed as an output so deployment tooling (e.g. the external-dns hostname annotation rendered via tfstate) reads the domain from this unit instead of hardcoding it."
+  type        = string
+  default     = null
 }

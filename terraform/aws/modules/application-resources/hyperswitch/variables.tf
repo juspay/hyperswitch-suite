@@ -32,11 +32,14 @@ variable "public_domain" {
 # =========================================================================
 
 variable "cluster_service_accounts" {
-  description = "Map of EKS cluster names to their respective list of Kubernetes service accounts (namespace and service account name)"
-  type = map(list(object({
-    namespace = string
-    name      = string
-  })))
+  description = "Map of EKS cluster name -> the cluster's OIDC provider ARN and the service accounts allowed to assume the IRSA role"
+  type = map(object({
+    oidc_provider_arn = string
+    service_accounts = list(object({
+      namespace = string
+      name      = string
+    }))
+  }))
   default = {}
 }
 

@@ -17,6 +17,17 @@ locals {
   security_group_name        = var.security_group_name != null ? var.security_group_name : "${local.name_prefix}-sg"
   security_group_description = var.security_group_description != null ? var.security_group_description : "Security group for ${var.project_name} ${var.environment} RDS"
 
+  # Master Password Resolution
+  # Priority: 1. AWS Secrets Manager secret (var.master_password_secretsmanager_secret_id),
+  #           2. var.master_password
+  # When master_password_secretsmanager_secret_key is set, the secret is treated as a
+  # JSON object and the password is read from that key; otherwise the raw secret string is used
+  master_password = var.master_password_secretsmanager_secret_id != null ? (
+    var.master_password_secretsmanager_secret_key != null
+    ? jsondecode(data.aws_secretsmanager_secret_version.master_password[0].secret_string)[var.master_password_secretsmanager_secret_key]
+    : data.aws_secretsmanager_secret_version.master_password[0].secret_string
+  ) : var.master_password
+
   # Global Cluster Configuration
   global_cluster_identifier = var.global_cluster_identifier != null ? var.global_cluster_identifier : "${local.name_prefix}-global"
   is_secondary_cluster      = var.replication_source_identifier != null

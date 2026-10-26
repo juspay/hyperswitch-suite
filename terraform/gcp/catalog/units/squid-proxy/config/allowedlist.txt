@@ -1,0 +1,9 @@
+# Minimal default egress allowlist - only Google's own API domains, enough
+# for a GCP workload to reach its own cloud provider. Almost every real
+# deployment needs more than this (package registries, the app's own third
+# party integrations) - override via values.squid.allowlist_file (a path to a
+# private list) or values.cfg.squid_allowlist_content (inline), rather than
+# forking this unit.
+.googleapis.com
+.pkg.dev
+.gcr.io

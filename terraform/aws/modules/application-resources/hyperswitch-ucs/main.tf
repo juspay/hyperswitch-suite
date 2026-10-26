@@ -1,0 +1,120 @@
+# =========================================================================
+# Hyperswitch UCS (Unified Connector Service) application resources.
+#
+# The IAM role the UCS pods run as, following the router pattern: the
+# hyperswitch-ucs Helm chart's External Secrets Operator resources
+# authenticate as the UCS service account, and this role lets the operator
+# read the UCS secrets (e.g. the Superposition API token) from Secrets
+# Manager. UCS keeps no other AWS state, so there is no KMS key, bucket or
+# SES access here; generic policy hooks cover anything environment-specific.
+# =========================================================================
+
+# =========================================================================
+# IAM - ROLE
+# =========================================================================
+resource "aws_iam_role" "this" {
+  name                  = var.role_name != null ? var.role_name : "${local.name_prefix}-role"
+  description           = var.role_description != null ? var.role_description : "IAM role for ${title(var.project_name)} ${title(var.environment)} UCS (Unified Connector Service)"
+  path                  = var.role_path
+  max_session_duration  = var.max_session_duration
+  force_detach_policies = var.force_detach_policies
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = concat(
+      # OIDC trust relationships for EKS IRSA
+      [
+        for cluster_name, statement in local.cluster_oidc_statements : {
+          Effect = "Allow"
+          Principal = {
+            Federated = statement.oidc_arn
+          }
+          Action = "sts:AssumeRoleWithWebIdentity"
+          Condition = {
+            StringEquals = {
+              "${statement.oidc_url}:aud" = "sts.amazonaws.com"
+              "${statement.oidc_url}:sub" = statement.subjects
+            }
+          }
+        }
+      ],
+      # Additional AWS principal trust relationships
+      local.assume_role_principals_enabled ? [
+        {
+          Effect = "Allow"
+          Principal = {
+            AWS = var.assume_role_principals
+          }
+          Action = "sts:AssumeRole"
+        }
+      ] : [],
+      # Additional custom trust statements
+      var.additional_assume_role_statements
+    )
+  })
+
+  tags = local.common_tags
+}
+
+# =========================================================================
+# IAM - AWS MANAGED POLICY ATTACHMENTS
+# =========================================================================
+resource "aws_iam_role_policy_attachment" "aws_managed" {
+  for_each = local.aws_managed_policies_enabled ? toset(var.aws_managed_policy_names) : toset([])
+
+  role       = aws_iam_role.this.name
+  policy_arn = "arn:aws:iam::aws:policy/${each.value}"
+}
+
+# =========================================================================
+# IAM - CUSTOMER MANAGED POLICY ATTACHMENTS
+# =========================================================================
+resource "aws_iam_role_policy_attachment" "customer_managed" {
+  for_each = local.customer_managed_policies_enabled ? toset(var.customer_managed_policy_arns) : toset([])
+
+  role       = aws_iam_role.this.name
+  policy_arn = each.value
+}
+
+# =========================================================================
+# IAM - INLINE POLICIES
+# =========================================================================
+resource "aws_iam_role_policy" "inline" {
+  for_each = local.inline_policies_enabled ? var.inline_policies : {}
+
+  name   = each.key
+  role   = aws_iam_role.this.name
+  policy = each.value
+}
+
+# =========================================================================
+# IAM - SECRETS MANAGER POLICY
+# =========================================================================
+resource "aws_iam_policy" "secrets_manager_policy" {
+  count = local.secrets_manager_enabled ? 1 : 0
+
+  name = "${local.name_prefix}-secrets-policy"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowSecretsManagerAccess"
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret"
+        ]
+        Resource = local.secrets_manager_arns
+      }
+    ]
+  })
+
+  tags = local.common_tags
+}
+
+resource "aws_iam_role_policy_attachment" "secrets_manager_policy_attachment" {
+  count = local.secrets_manager_enabled ? 1 : 0
+
+  role       = aws_iam_role.this.name
+  policy_arn = aws_iam_policy.secrets_manager_policy[0].arn
+}

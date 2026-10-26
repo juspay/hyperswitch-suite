@@ -21,7 +21,6 @@
 | <a name="module_common_local_nat_s3_rt"></a> [common\_local\_nat\_s3\_rt](#module\_common\_local\_nat\_s3\_rt) | ../../base/route-table | n/a |
 | <a name="module_common_local_route_rt"></a> [common\_local\_route\_rt](#module\_common\_local\_route\_rt) | ../../base/route-table | n/a |
 | <a name="module_common_local_s3_rt"></a> [common\_local\_s3\_rt](#module\_common\_local\_s3\_rt) | ../../base/route-table | n/a |
-| <a name="module_custom_interface_vpc_endpoints"></a> [custom\_interface\_vpc\_endpoints](#module\_custom\_interface\_vpc\_endpoints) | terraform-aws-modules/vpc/aws//modules/vpc-endpoints | 5.21.0 |
 | <a name="module_custom_subnets"></a> [custom\_subnets](#module\_custom\_subnets) | ../../base/subnet | n/a |
 | <a name="module_data_stack_subnets"></a> [data\_stack\_subnets](#module\_data\_stack\_subnets) | ../../base/subnet | n/a |
 | <a name="module_database_route_table"></a> [database\_route\_table](#module\_database\_route\_table) | ../../base/route-table | n/a |
@@ -32,9 +31,7 @@
 | <a name="module_eks_workers_subnets"></a> [eks\_workers\_subnets](#module\_eks\_workers\_subnets) | ../../base/subnet | n/a |
 | <a name="module_elasticache_subnets"></a> [elasticache\_subnets](#module\_elasticache\_subnets) | ../../base/subnet | n/a |
 | <a name="module_external_incoming_subnets"></a> [external\_incoming\_subnets](#module\_external\_incoming\_subnets) | ../../base/subnet | n/a |
-| <a name="module_gateway_vpc_endpoints"></a> [gateway\_vpc\_endpoints](#module\_gateway\_vpc\_endpoints) | ../../base/vpc-endpoint | n/a |
 | <a name="module_incoming_envoy_subnets"></a> [incoming\_envoy\_subnets](#module\_incoming\_envoy\_subnets) | ../../base/subnet | n/a |
-| <a name="module_interface_vpc_endpoints"></a> [interface\_vpc\_endpoints](#module\_interface\_vpc\_endpoints) | ../../base/vpc-endpoint | n/a |
 | <a name="module_lambda_subnets"></a> [lambda\_subnets](#module\_lambda\_subnets) | ../../base/subnet | n/a |
 | <a name="module_locker_database_subnets"></a> [locker\_database\_subnets](#module\_locker\_database\_subnets) | ../../base/subnet | n/a |
 | <a name="module_locker_server_s3_rt"></a> [locker\_server\_s3\_rt](#module\_locker\_server\_s3\_rt) | ../../base/route-table | n/a |
@@ -49,6 +46,7 @@
 | <a name="module_utils_subnets"></a> [utils\_subnets](#module\_utils\_subnets) | ../../base/subnet | n/a |
 | <a name="module_vpc"></a> [vpc](#module\_vpc) | ../../base/vpc | n/a |
 | <a name="module_vpc_endpoint_sg"></a> [vpc\_endpoint\_sg](#module\_vpc\_endpoint\_sg) | ../../base/security-group | n/a |
+| <a name="module_vpc_endpoints"></a> [vpc\_endpoints](#module\_vpc\_endpoints) | terraform-aws-modules/vpc/aws//modules/vpc-endpoints | 5.21.0 |
 
 ## Resources
 
@@ -213,3 +211,31 @@
 | <a name="output_vpc_peering_connection_ids"></a> [vpc\_peering\_connection\_ids](#output\_vpc\_peering\_connection\_ids) | Map of VPC peering connection IDs (requester side) |
 | <a name="output_vpc_secondary_cidr_blocks"></a> [vpc\_secondary\_cidr\_blocks](#output\_vpc\_secondary\_cidr\_blocks) | List of secondary CIDR blocks of the VPC |
 <!-- END_TF_DOCS -->
+
+## Peering route keys and upgrades
+
+Peering routes selected through `route_tables` groups use stable logical table
+names in their Terraform instance keys, e.g.
+`peer-to-primary-eks-workers-10.63.0.0-22`. AWS route-table and peering IDs are
+stored only in resource arguments, so new or replaced tables can be planned.
+Optional NAT tables are selected using `enable_nat_gateway` and the number of
+availability zones. The `all` group takes precedence over other selectors.
+Explicit route-table IDs are still supported and retain their ID-based keys;
+these IDs and peer CIDRs must be known at plan time.
+
+When upgrading from ID-based group keys, migrate existing route addresses before
+applying to avoid deleting and recreating otherwise unchanged routes. For example,
+run this in the consuming Terraform working directory (or use `terragrunt state mv`):
+
+```sh
+terraform state mv \
+  'aws_route.peering_routes["peer-to-primary-rtb-0123456789abcdef0-10.63.0.0-22"]' \
+  'aws_route.peering_routes["peer-to-primary-eks-workers-10.63.0.0-22"]'
+```
+
+Use the actual peer name, route-table ID, logical table name and destination CIDR
+from your state. Apply the same migration to `aws_route.accepter_peering_routes`.
+Use `module.<name>.` prefixes when the composition is called as a child module.
+A fixed `moved` block cannot cover every deployment because old keys contain
+AWS-assigned IDs. Review the full plan after migration: changing the primary VPC
+CIDR can still replace the VPC and its dependent resources.

@@ -3,7 +3,7 @@
 # =========================================================================
 
 locals {
-  s3_dashboard_themes_bucket_name = try(var.s3_dashboard_themes.bucket_name, null) != null ? var.s3_dashboard_themes.bucket_name : "${local.name_prefix}-dashboard-themes"
+  s3_dashboard_themes_bucket_name = try(var.s3_dashboard_themes.bucket_name, null) != null ? var.s3_dashboard_themes.bucket_name : "${local.name_prefix}-${var.region}-dashboard-themes"
 }
 
 module "s3_dashboard_themes" {
@@ -44,7 +44,7 @@ module "s3_dashboard_themes" {
 # =========================================================================
 
 locals {
-  s3_file_uploads_bucket_name = try(var.s3_file_uploads.bucket_name, null) != null ? var.s3_file_uploads.bucket_name : "${local.name_prefix}-file-uploads"
+  s3_file_uploads_bucket_name = try(var.s3_file_uploads.bucket_name, null) != null ? var.s3_file_uploads.bucket_name : "${local.name_prefix}-${var.region}-file-uploads"
 }
 
 module "s3_file_uploads" {

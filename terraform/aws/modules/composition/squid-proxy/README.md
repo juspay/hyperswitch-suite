@@ -4,13 +4,13 @@
 | Name | Version |
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.0 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.30.0 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 5.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 6.30.0 |
 | <a name="provider_tls"></a> [tls](#provider\_tls) | n/a |
 
 ## Modules
@@ -18,9 +18,9 @@
 | Name | Source | Version |
 |------|--------|---------|
 | <a name="module_asg"></a> [asg](#module\_asg) | ../../base/asg | n/a |
-| <a name="module_config_bucket"></a> [config\_bucket](#module\_config\_bucket) | ../../base/s3-bucket | n/a |
+| <a name="module_config_bucket"></a> [config\_bucket](#module\_config\_bucket) | terraform-aws-modules/s3-bucket/aws | ~> 4.0 |
 | <a name="module_launch_template"></a> [launch\_template](#module\_launch\_template) | ../../base/launch-template | n/a |
-| <a name="module_logs_bucket"></a> [logs\_bucket](#module\_logs\_bucket) | ../../base/s3-bucket | n/a |
+| <a name="module_logs_bucket"></a> [logs\_bucket](#module\_logs\_bucket) | terraform-aws-modules/s3-bucket/aws | ~> 4.0 |
 | <a name="module_nlb"></a> [nlb](#module\_nlb) | ../../base/nlb | n/a |
 | <a name="module_nlb_listener_tcp"></a> [nlb\_listener\_tcp](#module\_nlb\_listener\_tcp) | ../../base/nlb-listener | n/a |
 | <a name="module_nlb_listener_tls"></a> [nlb\_listener\_tls](#module\_nlb\_listener\_tls) | ../../base/nlb-listener | n/a |
@@ -36,6 +36,7 @@
 | [aws_s3_object.squid_config_files](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_object) | resource |
 | [aws_security_group.asg](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
 | [aws_security_group.nlb](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
+| [aws_security_group_rule.asg_egress_s3](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
 | [aws_security_group_rule.nlb_health_checks](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
 | [aws_security_group_rule.nlb_to_squid_outbound](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
 | [aws_security_group_rule.squid_from_nlb_inbound](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
@@ -43,6 +44,7 @@
 | [tls_private_key.squid](https://registry.terraform.io/providers/hashicorp/tls/latest/docs/resources/private_key) | resource |
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
 | [aws_iam_role.existing_squid_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_role) | data source |
+| [aws_prefix_list.s3](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/prefix_list) | data source |
 | [aws_subnet.lb_subnets](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/subnet) | data source |
 
 ## Inputs
@@ -54,6 +56,7 @@
 | <a name="input_config_bucket_arn"></a> [config\_bucket\_arn](#input\_config\_bucket\_arn) | ARN of S3 bucket containing Squid configuration files (required if create\_config\_bucket=false) | `string` | `""` | no |
 | <a name="input_config_bucket_name"></a> [config\_bucket\_name](#input\_config\_bucket\_name) | Name of S3 bucket containing Squid configuration files (required if create\_config\_bucket=false) | `string` | `""` | no |
 | <a name="input_config_files"></a> [config\_files](#input\_config\_files) | Map of Squid config files to upload to S3. The key is the object key name (uploaded as <s3\_config\_path\_prefix>/<key>) and the value is the local file path. Only used if upload\_config\_to\_s3=true. | `map(string)` | `{}` | no |
+| <a name="input_config_files_vars"></a> [config\_files\_vars](#input\_config\_files\_vars) | Extra values substituted for {{key}} placeholders in config\_files content (e.g. { vpc\_cidr = "10.1.0.0/16" } for squid.conf's localnet ACL). Placeholders with no matching key are left unresolved. | `map(string)` | `{}` | no |
 | <a name="input_configure_root_volume"></a> [configure\_root\_volume](#input\_configure\_root\_volume) | Whether to explicitly configure root volume. If false, uses AMI defaults (not recommended) | `bool` | `true` | no |
 | <a name="input_create_config_bucket"></a> [create\_config\_bucket](#input\_create\_config\_bucket) | Whether to create a new S3 bucket for configuration files (if false, use existing bucket) | `bool` | `false` | no |
 | <a name="input_create_iam_role"></a> [create\_iam\_role](#input\_create\_iam\_role) | Whether to create a new IAM role or use existing one | `bool` | `true` | no |
@@ -86,6 +89,7 @@
 | <a name="input_lb_subnet_ids"></a> [lb\_subnet\_ids](#input\_lb\_subnet\_ids) | Subnet IDs for load balancer (service layer subnets) | `list(string)` | n/a | yes |
 | <a name="input_logs_bucket_arn"></a> [logs\_bucket\_arn](#input\_logs\_bucket\_arn) | ARN of existing S3 bucket for logs (required if create\_logs\_bucket=false) | `string` | `""` | no |
 | <a name="input_logs_bucket_name"></a> [logs\_bucket\_name](#input\_logs\_bucket\_name) | Name of existing S3 bucket for logs (required if create\_logs\_bucket=false) | `string` | `""` | no |
+| <a name="input_loki_endpoint"></a> [loki\_endpoint](#input\_loki\_endpoint) | Loki endpoint URL substituted for the {{loki\_endpoint}} placeholder in config\_files content (e.g. vector.toml's Loki sink). Empty string leaves any {{loki\_endpoint}} placeholder unresolved. | `string` | `""` | no |
 | <a name="input_max_size"></a> [max\_size](#input\_max\_size) | Maximum number of instances in ASG | `number` | `3` | no |
 | <a name="input_min_size"></a> [min\_size](#input\_min\_size) | Minimum number of instances in ASG | `number` | `1` | no |
 | <a name="input_name_override"></a> [name\_override](#input\_name\_override) | Override for resource name prefix (appended to environment and project name) | `string` | `"squid"` | no |

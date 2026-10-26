@@ -67,9 +67,11 @@ locals {
   # Auto-generate key pair name if not provided
   ssh_key_pair_name = var.ssh_key_name != null ? var.ssh_key_name : "${var.environment}-${var.project_name}-eks-node-key"
 
-  # Resolved AMI ID for EKS nodes (provided or fetched from SSM)
+  # Resolved AMI ID for EKS nodes (provided or fetched from SSM).
+  # insecure_value keeps image_id visible in plans (the .value attribute is
+  # marked sensitive by the provider, and an AMI ID is not a secret).
   eks_node_ami_id = var.default_ami_id != null ? var.default_ami_id : (
-    local.create_node_groups ? data.aws_ssm_parameter.eks_ami[0].value : null
+    local.create_node_groups ? data.aws_ssm_parameter.eks_ami[0].insecure_value : null
   )
 
   # Default metadata options merged with user overrides
@@ -89,6 +91,14 @@ data "aws_ssm_parameter" "eks_ami" {
   count = local.create_node_groups && var.default_ami_id == null ? 1 : 0
 
   name = "/aws/service/eks/optimized-ami/${var.cluster_version}/amazon-linux-2023/x86_64/standard/recommended/image_id"
+}
+
+# -----------------------------------------------------------------------------
+# Regional S3 managed prefix list, for scoping worker egress to the S3
+# gateway VPC endpoint instead of 0.0.0.0/0
+# -----------------------------------------------------------------------------
+data "aws_prefix_list" "s3" {
+  name = "com.amazonaws.${var.region}.s3"
 }
 
 
@@ -142,9 +152,9 @@ resource "aws_iam_role_policy_attachment" "cluster_policies" {
 # EKS Cluster using terraform-aws-modules/eks
 # -----------------------------------------------------------------------------
 module "eks" {
-  source  = "../../base/eks"
+  source = "../../base/eks"
 
-  name    = "${var.environment}-${var.project_name}-cluster-${var.cluster_name_version}"
+  name               = "${var.environment}-${var.project_name}-cluster-${var.cluster_name_version}"
   kubernetes_version = var.cluster_version
 
   vpc_id                   = var.vpc_id
@@ -169,6 +179,21 @@ module "eks" {
       to_port     = 443
       type        = "ingress"
       cidr_blocks = var.vpn_cidr_blocks
+    }
+  }
+
+  # Node security group - allow workers to reach same-region S3 through the
+  # gateway VPC endpoint (image layers, config, log shipping). Kept explicit
+  # so S3 access survives even if the recommended allow-all egress rule is
+  # ever disabled.
+  node_security_group_additional_rules = {
+    egress_s3_gateway = {
+      description     = "Allow HTTPS to same-region S3 via gateway endpoint"
+      protocol        = "tcp"
+      from_port       = 443
+      to_port         = 443
+      type            = "egress"
+      prefix_list_ids = [data.aws_prefix_list.s3.id]
     }
   }
 

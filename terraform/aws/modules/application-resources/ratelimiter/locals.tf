@@ -41,11 +41,11 @@ locals {
   # OIDC Configuration
   # =========================================================================
   cluster_oidc_statements = {
-    for cluster_name, service_accounts in var.cluster_service_accounts : cluster_name => {
-      oidc_arn = data.aws_iam_openid_connect_provider.oidc[cluster_name].arn
-      oidc_url = data.aws_iam_openid_connect_provider.oidc[cluster_name].url
+    for cluster_name, cluster in var.cluster_service_accounts : cluster_name => {
+      oidc_arn = cluster.oidc_provider_arn
+      oidc_url = split(":oidc-provider/", cluster.oidc_provider_arn)[1]
       subjects = [
-        for sa in service_accounts : "system:serviceaccount:${sa.namespace}:${sa.name}"
+        for sa in cluster.service_accounts : "system:serviceaccount:${sa.namespace}:${sa.name}"
       ]
     }
   }
