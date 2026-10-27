@@ -17,6 +17,18 @@ locals {
   }
 }
 
+# Resolve only unpinned addons in the configured provider region.
+data "aws_eks_addon_version" "compatible" {
+  for_each = {
+    for name, addon in var.eks_addons : name => addon
+    if addon.addon_version == null
+  }
+
+  addon_name         = each.key
+  kubernetes_version = var.cluster_version
+  most_recent        = each.value.most_recent
+}
+
 # -----------------------------------------------------------------------------
 # EKS Addons - Created BEFORE node groups
 # vpc-cni and kube-proxy are required for proper node bootstrapping
@@ -29,7 +41,7 @@ resource "aws_eks_addon" "before_nodes" {
 
   cluster_name                = module.eks.cluster_name
   addon_name                  = each.key
-  addon_version               = each.value.addon_version
+  addon_version               = each.value.addon_version != null ? each.value.addon_version : data.aws_eks_addon_version.compatible[each.key].version
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "OVERWRITE"
 
@@ -57,7 +69,7 @@ resource "aws_eks_addon" "after_nodes" {
 
   cluster_name                = module.eks.cluster_name
   addon_name                  = each.key
-  addon_version               = each.value.addon_version
+  addon_version               = each.value.addon_version != null ? each.value.addon_version : data.aws_eks_addon_version.compatible[each.key].version
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "OVERWRITE"
 
