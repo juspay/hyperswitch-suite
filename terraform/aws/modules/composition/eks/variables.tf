@@ -231,9 +231,10 @@ variable "region" {
 # EKS Addons Configuration
 # -----------------------------------------------------------------------------
 variable "eks_addons" {
-  description = "EKS addons configuration - map keyed by addon name"
+  description = "EKS addons keyed by name. Omit addon_version to resolve the AWS default compatible build for cluster_version; most_recent selects the latest compatible build instead."
   type = map(object({
-    addon_version        = string
+    addon_version        = optional(string)
+    most_recent          = optional(bool, false)
     service_account_role = optional(string) # "cluster_autoscaler", "ebs_csi", or full ARN
   }))
   default = {}
