@@ -107,9 +107,9 @@ variable "manage_default_route_table" {
 # VPC Flow Logs
 ###################
 variable "enable_flow_logs" {
-  description = "Enable VPC Flow Logs"
+  description = "Enable VPC Flow Logs. Creates CloudWatch logging and a delivery role when none are supplied."
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "flow_logs_iam_role_arn" {
@@ -122,6 +122,10 @@ variable "flow_logs_destination_arn" {
   description = "ARN of CloudWatch Log Group or S3 Bucket for VPC Flow Logs"
   type        = string
   default     = ""
+  validation {
+    condition     = !var.enable_flow_logs || var.flow_logs_destination_type != "s3" || length(trimspace(var.flow_logs_destination_arn)) > 0
+    error_message = "An S3 destination ARN is required when flow logs use S3. The module only creates CloudWatch destinations automatically."
+  }
 }
 
 variable "flow_logs_destination_type" {
@@ -134,6 +138,26 @@ variable "flow_logs_traffic_type" {
   description = "Type of traffic to capture. Valid values: ACCEPT, REJECT, ALL"
   type        = string
   default     = "ALL"
+}
+
+variable "flow_logs_kms_key_arn" {
+  description = "Existing symmetric KMS key ARN for a module-created flow-log group. When null, create a rotating key with a CloudWatch Logs policy. Supplied keys must permit the regional Logs service. External destinations manage encryption separately."
+  type        = string
+  default     = null
+  validation {
+    condition     = var.flow_logs_kms_key_arn == null ? true : can(regex("^arn:[^:]+:kms:[^:]+:[0-9]{12}:key/.+$", var.flow_logs_kms_key_arn))
+    error_message = "flow_logs_kms_key_arn must be a KMS key ARN."
+  }
+}
+
+variable "flow_logs_retention_in_days" {
+  description = "Retention for the automatically created CloudWatch flow-log group. Zero retains logs indefinitely."
+  type        = number
+  default     = 30
+  validation {
+    condition     = contains([0, 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653], var.flow_logs_retention_in_days)
+    error_message = "flow_logs_retention_in_days must be a supported CloudWatch Logs retention period."
+  }
 }
 
 variable "flow_logs_log_format" {
