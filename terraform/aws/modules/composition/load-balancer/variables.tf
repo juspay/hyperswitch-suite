@@ -293,3 +293,25 @@ variable "alb_access_logs_kms_key_arn" {
     error_message = "alb_access_logs_kms_key_arn must be a KMS key ARN."
   }
 }
+
+variable "create_alb_access_logs_s3_bucket" {
+  description = "Create an SSE-S3 encrypted ALB access log bucket, including for controller-managed ALBs."
+  type        = bool
+  default     = false
+}
+
+variable "alb_access_logs_s3_bucket_name" {
+  description = "Optional name for the managed ALB access log bucket."
+  type        = string
+  default     = null
+}
+
+variable "alb_access_logs_s3_prefix" {
+  description = "S3 key prefix for ALB access logs. Must not contain AWSLogs."
+  type        = string
+  default     = "alb"
+  validation {
+    condition     = !strcontains(var.alb_access_logs_s3_prefix, "AWSLogs") && trim(var.alb_access_logs_s3_prefix, "/") == var.alb_access_logs_s3_prefix
+    error_message = "The prefix must not contain AWSLogs or start/end with a slash."
+  }
+}

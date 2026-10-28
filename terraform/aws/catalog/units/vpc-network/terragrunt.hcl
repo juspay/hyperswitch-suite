@@ -4,7 +4,7 @@ include "root" {
 }
 
 terraform {
-  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/vpc-network?ref=vpc-v0.1.12"
+  source = "git::https://github.com/juspay/hyperswitch-suite.git//terraform/aws/modules/composition/vpc-network?ref=vpc-v0.1.13"
 }
 
 # Passive-side only: sources the primary region's VPC id/cidr for vpc_peering_connections.
@@ -149,9 +149,11 @@ inputs = {
   custom_interface_vpc_endpoints = try(values.custom_interface_vpc_endpoints, null)
 
   create_vpc_endpoint_security_group = true
-  enable_flow_logs                   = false
+  enable_flow_logs                   = try(values.enable_flow_logs, true)
   flow_logs_destination_type         = "cloud-watch-logs"
   flow_logs_traffic_type             = "ALL"
+  flow_logs_retention_in_days        = try(values.flow_logs_retention_in_days, 30)
+  flow_logs_kms_key_arn              = try(values.flow_logs_kms_key_arn, null)
 
   manage_default_network_acl    = true
   manage_default_security_group = true

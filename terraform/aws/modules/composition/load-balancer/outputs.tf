@@ -122,3 +122,15 @@ output "access_logs_delivery_ids" {
   description = "ALB CloudWatch log delivery IDs keyed by load-balancer name."
   value       = { for name, delivery in aws_cloudwatch_log_delivery.alb_access_logs : name => delivery.id }
 }
+
+output "access_logs_s3_bucket_name" {
+  description = "SSE-S3 bucket name for ALB access logs."
+  value       = var.create_alb_access_logs_s3_bucket ? module.alb_access_logs_s3[0].s3_bucket_id : null
+}
+
+output "access_logs_s3_ingress_annotations" {
+  description = "Apply to an Ingress in each controller-managed ALB group; merge with existing load-balancer attributes."
+  value = var.create_alb_access_logs_s3_bucket ? {
+    "alb.ingress.kubernetes.io/load-balancer-attributes" = "access_logs.s3.enabled=true,access_logs.s3.bucket=${module.alb_access_logs_s3[0].s3_bucket_id},access_logs.s3.prefix=${var.alb_access_logs_s3_prefix}"
+  } : {}
+}

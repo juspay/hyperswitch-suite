@@ -65,11 +65,11 @@ resource "aws_lb" "this" {
 
   # Access logs configuration
   dynamic "access_logs" {
-    for_each = var.access_logs.enabled ? [1] : []
+    for_each = var.create_alb_access_logs_s3_bucket || var.access_logs.enabled ? [1] : []
     content {
-      enabled = var.access_logs.enabled
-      bucket  = var.access_logs.bucket
-      prefix  = var.access_logs.prefix
+      enabled = true
+      bucket  = var.create_alb_access_logs_s3_bucket ? module.alb_access_logs_s3[0].s3_bucket_id : var.access_logs.bucket
+      prefix  = var.create_alb_access_logs_s3_bucket ? var.alb_access_logs_s3_prefix : var.access_logs.prefix
     }
   }
 
