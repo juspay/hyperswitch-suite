@@ -14,7 +14,9 @@
 
 ## Modules
 
-No modules.
+| Name | Source | Version |
+|------|--------|---------|
+| <a name="module_alb_access_logs_s3"></a> [alb\_access\_logs\_s3](#module\_alb\_access\_logs\_s3) | terraform-aws-modules/s3-bucket/aws | ~> 4.0 |
 
 ## Resources
 
@@ -35,8 +37,11 @@ No modules.
 | [aws_security_group_rule.egress](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
 | [aws_security_group_rule.ingress](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
 | [aws_caller_identity.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
+| [aws_caller_identity.alb_access_logs_s3](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
 | [aws_partition.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/partition) | data source |
+| [aws_partition.alb_access_logs_s3](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/partition) | data source |
 | [aws_region.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
+| [aws_region.alb_access_logs_s3](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
 
 ## Inputs
 
@@ -48,7 +53,10 @@ No modules.
 | <a name="input_alb_access_logs_load_balancer_arns"></a> [alb\_access\_logs\_load\_balancer\_arns](#input\_alb\_access\_logs\_load\_balancer\_arns) | Existing ALB ARNs keyed by stable names. Used for Kubernetes-managed load balancers without importing their resources. | `map(string)` | `{}` | no |
 | <a name="input_alb_access_logs_log_group_name"></a> [alb\_access\_logs\_log\_group\_name](#input\_alb\_access\_logs\_log\_group\_name) | Optional custom CloudWatch log group name for ALB access logs. | `string` | `null` | no |
 | <a name="input_alb_access_logs_retention_days"></a> [alb\_access\_logs\_retention\_days](#input\_alb\_access\_logs\_retention\_days) | CloudWatch retention period for ALB access logs. | `number` | `30` | no |
+| <a name="input_alb_access_logs_s3_bucket_name"></a> [alb\_access\_logs\_s3\_bucket\_name](#input\_alb\_access\_logs\_s3\_bucket\_name) | Optional name for the managed ALB access log bucket. | `string` | `null` | no |
+| <a name="input_alb_access_logs_s3_prefix"></a> [alb\_access\_logs\_s3\_prefix](#input\_alb\_access\_logs\_s3\_prefix) | S3 key prefix for ALB access logs. Must not contain AWSLogs. | `string` | `"alb"` | no |
 | <a name="input_create_alb"></a> [create\_alb](#input\_create\_alb) | Whether to create the Application Load Balancer. When false, Route53 records and listeners are also skipped. | `bool` | `true` | no |
+| <a name="input_create_alb_access_logs_s3_bucket"></a> [create\_alb\_access\_logs\_s3\_bucket](#input\_create\_alb\_access\_logs\_s3\_bucket) | Create an SSE-S3 encrypted ALB access log bucket, including for controller-managed ALBs. | `bool` | `false` | no |
 | <a name="input_drop_invalid_header_fields"></a> [drop\_invalid\_header\_fields](#input\_drop\_invalid\_header\_fields) | Drop invalid header fields | `bool` | `false` | no |
 | <a name="input_egress_rules"></a> [egress\_rules](#input\_egress\_rules) | Map of egress rules for the load balancer security group | <pre>map(object({<br/>    from_port   = number<br/>    to_port     = number<br/>    protocol    = string<br/>    cidr_blocks = list(string)<br/>    description = string<br/>  }))</pre> | `{}` | no |
 | <a name="input_enable_alb_access_logs"></a> [enable\_alb\_access\_logs](#input\_enable\_alb\_access\_logs) | Enable KMS-encrypted CloudWatch access logging for module-managed or supplied Kubernetes ALBs. | `bool` | `false` | no |
@@ -77,6 +85,8 @@ No modules.
 | <a name="output_access_logs_kms_key_arn"></a> [access\_logs\_kms\_key\_arn](#output\_access\_logs\_kms\_key\_arn) | KMS key encrypting ALB access logs, or null when disabled. |
 | <a name="output_access_logs_log_group_arn"></a> [access\_logs\_log\_group\_arn](#output\_access\_logs\_log\_group\_arn) | ARN of the CloudWatch ALB access-log group, or null when disabled. |
 | <a name="output_access_logs_log_group_name"></a> [access\_logs\_log\_group\_name](#output\_access\_logs\_log\_group\_name) | CloudWatch log group receiving ALB access logs, or null when disabled. |
+| <a name="output_access_logs_s3_bucket_name"></a> [access\_logs\_s3\_bucket\_name](#output\_access\_logs\_s3\_bucket\_name) | SSE-S3 bucket name for ALB access logs. |
+| <a name="output_access_logs_s3_ingress_annotations"></a> [access\_logs\_s3\_ingress\_annotations](#output\_access\_logs\_s3\_ingress\_annotations) | Apply to an Ingress in each controller-managed ALB group; merge with existing load-balancer attributes. |
 | <a name="output_alb_arn"></a> [alb\_arn](#output\_alb\_arn) | ARN of the Application Load Balancer |
 | <a name="output_alb_arn_suffix"></a> [alb\_arn\_suffix](#output\_alb\_arn\_suffix) | ARN suffix of the Application Load Balancer (useful for CloudWatch metrics) |
 | <a name="output_alb_dns_name"></a> [alb\_dns\_name](#output\_alb\_dns\_name) | DNS name of the Application Load Balancer |
