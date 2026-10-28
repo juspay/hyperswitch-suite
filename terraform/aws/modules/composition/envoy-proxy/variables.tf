@@ -842,3 +842,35 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "enable_alb_access_logs" {
+  description = "Enable KMS-encrypted CloudWatch access logging for the module-managed ALB."
+  type        = bool
+  default     = true
+}
+
+variable "alb_access_logs_retention_days" {
+  description = "CloudWatch retention period for ALB access logs."
+  type        = number
+  default     = 30
+  validation {
+    condition     = contains([0, 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653], var.alb_access_logs_retention_days)
+    error_message = "alb_access_logs_retention_days must be a supported CloudWatch Logs retention period."
+  }
+}
+
+variable "alb_access_logs_log_group_name" {
+  description = "Optional custom CloudWatch log group name for ALB access logs."
+  type        = string
+  default     = null
+}
+
+variable "alb_access_logs_kms_key_arn" {
+  description = "Optional existing KMS key ARN for ALB access logs. A rotating key is created when null."
+  type        = string
+  default     = null
+  validation {
+    condition     = var.alb_access_logs_kms_key_arn == null ? true : can(regex("^arn:[^:]+:kms:[^:]+:[0-9]{12}:key/.+$", var.alb_access_logs_kms_key_arn))
+    error_message = "alb_access_logs_kms_key_arn must be a KMS key ARN."
+  }
+}

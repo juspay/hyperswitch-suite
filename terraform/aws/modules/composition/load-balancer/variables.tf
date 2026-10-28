@@ -251,3 +251,45 @@ variable "route53_records" {
     error_message = "When create_as_alias is false, ttl must be provided."
   }
 }
+
+variable "enable_alb_access_logs" {
+  description = "Enable KMS-encrypted CloudWatch access logging for module-managed or supplied Kubernetes ALBs."
+  type        = bool
+  default     = false
+}
+
+variable "alb_access_logs_retention_days" {
+  description = "CloudWatch retention period for ALB access logs."
+  type        = number
+  default     = 30
+  validation {
+    condition     = contains([0, 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653], var.alb_access_logs_retention_days)
+    error_message = "alb_access_logs_retention_days must be a supported CloudWatch Logs retention period."
+  }
+}
+
+variable "alb_access_logs_load_balancer_arns" {
+  description = "Existing ALB ARNs keyed by stable names. Used for Kubernetes-managed load balancers without importing their resources."
+  type        = map(string)
+  default     = {}
+  validation {
+    condition     = alltrue([for arn in values(var.alb_access_logs_load_balancer_arns) : can(regex("^arn:[^:]+:elasticloadbalancing:[^:]+:[0-9]{12}:loadbalancer/app/", arn))])
+    error_message = "Each alb_access_logs_load_balancer_arns value must be an Application Load Balancer ARN."
+  }
+}
+
+variable "alb_access_logs_log_group_name" {
+  description = "Optional custom CloudWatch log group name for ALB access logs."
+  type        = string
+  default     = null
+}
+
+variable "alb_access_logs_kms_key_arn" {
+  description = "Optional existing KMS key ARN for ALB access logs. A rotating key is created when null."
+  type        = string
+  default     = null
+  validation {
+    condition     = var.alb_access_logs_kms_key_arn == null ? true : can(regex("^arn:[^:]+:kms:[^:]+:[0-9]{12}:key/.+$", var.alb_access_logs_kms_key_arn))
+    error_message = "alb_access_logs_kms_key_arn must be a KMS key ARN."
+  }
+}
