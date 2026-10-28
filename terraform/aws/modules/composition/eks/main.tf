@@ -189,6 +189,14 @@ module "eks" {
   # so S3 access survives even if the recommended allow-all egress rule is
   # disabled through node_security_group_allow_all_egress.
   node_security_group_additional_rules = {
+    egress_cluster_api = {
+      description                   = "Allow HTTPS to EKS cluster API"
+      protocol                      = "tcp"
+      from_port                     = 443
+      to_port                       = 443
+      type                          = "egress"
+      source_cluster_security_group = true
+    }
     egress_s3_gateway = {
       description     = "Allow HTTPS to same-region S3 via gateway endpoint"
       protocol        = "tcp"
