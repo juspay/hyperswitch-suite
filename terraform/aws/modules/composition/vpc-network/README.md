@@ -52,6 +52,10 @@
 
 | Name | Type |
 |------|------|
+| [aws_cloudwatch_log_group.flow_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
+| [aws_iam_role.flow_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
+| [aws_iam_role_policy.flow_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy) | resource |
+| [aws_kms_key.flow_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/kms_key) | resource |
 | [aws_route.accepter_peering_routes](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route) | resource |
 | [aws_route.peering_routes](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route) | resource |
 | [aws_route_table_association.data_stack](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route_table_association) | resource |
@@ -69,6 +73,8 @@
 | [aws_route_table_association.utils](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route_table_association) | resource |
 | [aws_vpc_peering_connection.requester](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_peering_connection) | resource |
 | [aws_vpc_peering_connection_accepter.accepter](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc_peering_connection_accepter) | resource |
+| [aws_caller_identity.flow_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
+| [aws_partition.flow_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/partition) | data source |
 
 ## Inputs
 
@@ -98,7 +104,7 @@
 | <a name="input_enable_dns_support"></a> [enable\_dns\_support](#input\_enable\_dns\_support) | Enable DNS support in the VPC | `bool` | `true` | no |
 | <a name="input_enable_eks_elb_tag"></a> [enable\_eks\_elb\_tag](#input\_enable\_eks\_elb\_tag) | Enable kubernetes.io/role/elb tag for external incoming subnets (for EKS external load balancers) | `bool` | `true` | no |
 | <a name="input_enable_eks_internal_elb_tag"></a> [enable\_eks\_internal\_elb\_tag](#input\_enable\_eks\_internal\_elb\_tag) | Enable kubernetes.io/role/internal-elb tag for EKS worker subnets (for EKS internal load balancers) | `bool` | `true` | no |
-| <a name="input_enable_flow_logs"></a> [enable\_flow\_logs](#input\_enable\_flow\_logs) | Enable VPC Flow Logs | `bool` | `false` | no |
+| <a name="input_enable_flow_logs"></a> [enable\_flow\_logs](#input\_enable\_flow\_logs) | Enable VPC Flow Logs. Creates CloudWatch logging and a delivery role when none are supplied. | `bool` | `true` | no |
 | <a name="input_enable_ipv6"></a> [enable\_ipv6](#input\_enable\_ipv6) | Requests an Amazon-provided IPv6 CIDR block | `bool` | `false` | no |
 | <a name="input_enable_nat_gateway"></a> [enable\_nat\_gateway](#input\_enable\_nat\_gateway) | Should be true if you want to provision NAT Gateways | `bool` | `true` | no |
 | <a name="input_enable_network_address_usage_metrics"></a> [enable\_network\_address\_usage\_metrics](#input\_enable\_network\_address\_usage\_metrics) | Enable network address usage metrics | `bool` | `false` | no |
@@ -108,7 +114,9 @@
 | <a name="input_flow_logs_destination_arn"></a> [flow\_logs\_destination\_arn](#input\_flow\_logs\_destination\_arn) | ARN of CloudWatch Log Group or S3 Bucket for VPC Flow Logs | `string` | `""` | no |
 | <a name="input_flow_logs_destination_type"></a> [flow\_logs\_destination\_type](#input\_flow\_logs\_destination\_type) | Type of flow log destination. Valid values: cloud-watch-logs, s3 | `string` | `"cloud-watch-logs"` | no |
 | <a name="input_flow_logs_iam_role_arn"></a> [flow\_logs\_iam\_role\_arn](#input\_flow\_logs\_iam\_role\_arn) | ARN of IAM role for VPC Flow Logs | `string` | `""` | no |
+| <a name="input_flow_logs_kms_key_arn"></a> [flow\_logs\_kms\_key\_arn](#input\_flow\_logs\_kms\_key\_arn) | Existing symmetric KMS key ARN for a module-created flow-log group. When null, create a rotating key with a CloudWatch Logs policy. Supplied keys must permit the regional Logs service. External destinations manage encryption separately. | `string` | `null` | no |
 | <a name="input_flow_logs_log_format"></a> [flow\_logs\_log\_format](#input\_flow\_logs\_log\_format) | Custom format for VPC Flow Logs | `string` | `null` | no |
+| <a name="input_flow_logs_retention_in_days"></a> [flow\_logs\_retention\_in\_days](#input\_flow\_logs\_retention\_in\_days) | Retention for the automatically created CloudWatch flow-log group. Zero retains logs indefinitely. | `number` | `30` | no |
 | <a name="input_flow_logs_traffic_type"></a> [flow\_logs\_traffic\_type](#input\_flow\_logs\_traffic\_type) | Type of traffic to capture. Valid values: ACCEPT, REJECT, ALL | `string` | `"ALL"` | no |
 | <a name="input_gateway_vpc_endpoints"></a> [gateway\_vpc\_endpoints](#input\_gateway\_vpc\_endpoints) | List of gateway VPC endpoints to create (s3, dynamodb) | `list(string)` | `[]` | no |
 | <a name="input_include_database_route_tables_in_gateway_endpoints"></a> [include\_database\_route\_tables\_in\_gateway\_endpoints](#input\_include\_database\_route\_tables\_in\_gateway\_endpoints) | Whether to include database subnet route tables in gateway endpoints | `bool` | `false` | no |
@@ -174,6 +182,9 @@
 | <a name="output_external_incoming_subnet_arns"></a> [external\_incoming\_subnet\_arns](#output\_external\_incoming\_subnet\_arns) | List of ARNs of external incoming subnets |
 | <a name="output_external_incoming_subnet_cidr_blocks"></a> [external\_incoming\_subnet\_cidr\_blocks](#output\_external\_incoming\_subnet\_cidr\_blocks) | List of CIDR blocks of external incoming subnets |
 | <a name="output_external_incoming_subnet_ids"></a> [external\_incoming\_subnet\_ids](#output\_external\_incoming\_subnet\_ids) | List of IDs of external incoming subnets |
+| <a name="output_flow_logs_destination_arn"></a> [flow\_logs\_destination\_arn](#output\_flow\_logs\_destination\_arn) | Destination receiving VPC flow logs, or null when disabled. |
+| <a name="output_flow_logs_id"></a> [flow\_logs\_id](#output\_flow\_logs\_id) | ID of the VPC flow log, or an empty string when disabled. |
+| <a name="output_flow_logs_kms_key_arn"></a> [flow\_logs\_kms\_key\_arn](#output\_flow\_logs\_kms\_key\_arn) | KMS key ARN used by the module-created flow-log group, or null for an external destination. |
 | <a name="output_gateway_vpc_endpoint_ids"></a> [gateway\_vpc\_endpoint\_ids](#output\_gateway\_vpc\_endpoint\_ids) | Map of Gateway VPC Endpoint IDs |
 | <a name="output_incoming_envoy_subnet_cidr_blocks"></a> [incoming\_envoy\_subnet\_cidr\_blocks](#output\_incoming\_envoy\_subnet\_cidr\_blocks) | List of CIDR blocks of incoming envoy subnets |
 | <a name="output_incoming_envoy_subnet_ids"></a> [incoming\_envoy\_subnet\_ids](#output\_incoming\_envoy\_subnet\_ids) | List of IDs of incoming envoy subnets |
