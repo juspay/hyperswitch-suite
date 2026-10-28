@@ -349,3 +349,18 @@ output "vpc_peering_accepter_ids" {
   description = "Map of accepted VPC peering connection IDs (accepter side)"
   value       = { for k, v in aws_vpc_peering_connection_accepter.accepter : k => v.id }
 }
+
+output "flow_logs_id" {
+  description = "ID of the VPC flow log, or an empty string when disabled."
+  value       = module.vpc.flow_logs_id
+}
+
+output "flow_logs_destination_arn" {
+  description = "Destination receiving VPC flow logs, or null when disabled."
+  value       = var.enable_flow_logs ? local.flow_logs_destination_arn : null
+}
+
+output "flow_logs_kms_key_arn" {
+  description = "KMS key ARN used by the module-created flow-log group, or null for an external destination."
+  value       = local.flow_logs_kms_key_arn
+}
