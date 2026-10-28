@@ -102,3 +102,23 @@ output "route53_record_names" {
   description = "Names of the created Route53 records"
   value       = var.create_alb ? { for key, record in aws_route53_record.alb : key => record.name } : {}
 }
+
+output "access_logs_log_group_name" {
+  description = "CloudWatch log group receiving ALB access logs, or null when disabled."
+  value       = try(aws_cloudwatch_log_group.alb_access_logs[0].name, null)
+}
+
+output "access_logs_log_group_arn" {
+  description = "ARN of the CloudWatch ALB access-log group, or null when disabled."
+  value       = try(aws_cloudwatch_log_group.alb_access_logs[0].arn, null)
+}
+
+output "access_logs_kms_key_arn" {
+  description = "KMS key encrypting ALB access logs, or null when disabled."
+  value       = local.alb_access_logs_kms_key_arn
+}
+
+output "access_logs_delivery_ids" {
+  description = "ALB CloudWatch log delivery IDs keyed by load-balancer name."
+  value       = { for name, delivery in aws_cloudwatch_log_delivery.alb_access_logs : name => delivery.id }
+}

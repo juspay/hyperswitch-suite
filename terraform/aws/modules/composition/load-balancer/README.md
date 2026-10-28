@@ -4,13 +4,13 @@
 | Name | Version |
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.0 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.70 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 6.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 6.70 |
 
 ## Modules
 
@@ -20,6 +20,12 @@ No modules.
 
 | Name | Type |
 |------|------|
+| [aws_cloudwatch_log_delivery.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_delivery) | resource |
+| [aws_cloudwatch_log_delivery_destination.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_delivery_destination) | resource |
+| [aws_cloudwatch_log_delivery_source.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_delivery_source) | resource |
+| [aws_cloudwatch_log_group.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
+| [aws_cloudwatch_log_resource_policy.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_resource_policy) | resource |
+| [aws_kms_key.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/kms_key) | resource |
 | [aws_lb.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb) | resource |
 | [aws_lb_listener.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener) | resource |
 | [aws_lb_listener_certificate.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener_certificate) | resource |
@@ -28,6 +34,9 @@ No modules.
 | [aws_security_group.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group) | resource |
 | [aws_security_group_rule.egress](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
 | [aws_security_group_rule.ingress](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
+| [aws_caller_identity.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
+| [aws_partition.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/partition) | data source |
+| [aws_region.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
 
 ## Inputs
 
@@ -35,9 +44,14 @@ No modules.
 |------|-------------|------|---------|:--------:|
 | <a name="input_access_logs"></a> [access\_logs](#input\_access\_logs) | Access logs configuration | <pre>object({<br/>    enabled = optional(bool, false)<br/>    bucket  = optional(string, null)<br/>    prefix  = optional(string, null)<br/>  })</pre> | <pre>{<br/>  "enabled": false<br/>}</pre> | no |
 | <a name="input_additional_certificates"></a> [additional\_certificates](#input\_additional\_certificates) | Map of additional certificates to attach to listeners | <pre>map(object({<br/>    listener_key    = string<br/>    certificate_arn = string<br/>  }))</pre> | `{}` | no |
+| <a name="input_alb_access_logs_kms_key_arn"></a> [alb\_access\_logs\_kms\_key\_arn](#input\_alb\_access\_logs\_kms\_key\_arn) | Optional existing KMS key ARN for ALB access logs. A rotating key is created when null. | `string` | `null` | no |
+| <a name="input_alb_access_logs_load_balancer_arns"></a> [alb\_access\_logs\_load\_balancer\_arns](#input\_alb\_access\_logs\_load\_balancer\_arns) | Existing ALB ARNs keyed by stable names. Used for Kubernetes-managed load balancers without importing their resources. | `map(string)` | `{}` | no |
+| <a name="input_alb_access_logs_log_group_name"></a> [alb\_access\_logs\_log\_group\_name](#input\_alb\_access\_logs\_log\_group\_name) | Optional custom CloudWatch log group name for ALB access logs. | `string` | `null` | no |
+| <a name="input_alb_access_logs_retention_days"></a> [alb\_access\_logs\_retention\_days](#input\_alb\_access\_logs\_retention\_days) | CloudWatch retention period for ALB access logs. | `number` | `30` | no |
 | <a name="input_create_alb"></a> [create\_alb](#input\_create\_alb) | Whether to create the Application Load Balancer. When false, Route53 records and listeners are also skipped. | `bool` | `true` | no |
 | <a name="input_drop_invalid_header_fields"></a> [drop\_invalid\_header\_fields](#input\_drop\_invalid\_header\_fields) | Drop invalid header fields | `bool` | `false` | no |
 | <a name="input_egress_rules"></a> [egress\_rules](#input\_egress\_rules) | Map of egress rules for the load balancer security group | <pre>map(object({<br/>    from_port   = number<br/>    to_port     = number<br/>    protocol    = string<br/>    cidr_blocks = list(string)<br/>    description = string<br/>  }))</pre> | `{}` | no |
+| <a name="input_enable_alb_access_logs"></a> [enable\_alb\_access\_logs](#input\_enable\_alb\_access\_logs) | Enable KMS-encrypted CloudWatch access logging for module-managed or supplied Kubernetes ALBs. | `bool` | `false` | no |
 | <a name="input_enable_cross_zone_load_balancing"></a> [enable\_cross\_zone\_load\_balancing](#input\_enable\_cross\_zone\_load\_balancing) | Enable cross-zone load balancing | `bool` | `true` | no |
 | <a name="input_enable_deletion_protection"></a> [enable\_deletion\_protection](#input\_enable\_deletion\_protection) | Enable deletion protection on the load balancer | `bool` | `false` | no |
 | <a name="input_enable_http2"></a> [enable\_http2](#input\_enable\_http2) | Enable HTTP/2 | `bool` | `true` | no |
@@ -59,6 +73,10 @@ No modules.
 
 | Name | Description |
 |------|-------------|
+| <a name="output_access_logs_delivery_ids"></a> [access\_logs\_delivery\_ids](#output\_access\_logs\_delivery\_ids) | ALB CloudWatch log delivery IDs keyed by load-balancer name. |
+| <a name="output_access_logs_kms_key_arn"></a> [access\_logs\_kms\_key\_arn](#output\_access\_logs\_kms\_key\_arn) | KMS key encrypting ALB access logs, or null when disabled. |
+| <a name="output_access_logs_log_group_arn"></a> [access\_logs\_log\_group\_arn](#output\_access\_logs\_log\_group\_arn) | ARN of the CloudWatch ALB access-log group, or null when disabled. |
+| <a name="output_access_logs_log_group_name"></a> [access\_logs\_log\_group\_name](#output\_access\_logs\_log\_group\_name) | CloudWatch log group receiving ALB access logs, or null when disabled. |
 | <a name="output_alb_arn"></a> [alb\_arn](#output\_alb\_arn) | ARN of the Application Load Balancer |
 | <a name="output_alb_arn_suffix"></a> [alb\_arn\_suffix](#output\_alb\_arn\_suffix) | ARN suffix of the Application Load Balancer (useful for CloudWatch metrics) |
 | <a name="output_alb_dns_name"></a> [alb\_dns\_name](#output\_alb\_dns\_name) | DNS name of the Application Load Balancer |

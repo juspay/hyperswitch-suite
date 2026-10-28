@@ -142,3 +142,23 @@ output "dns_record_fqdns" {
   description = "Map of record key to the FQDN created for the Envoy load balancer"
   value       = { for k, r in aws_route53_record.envoy_lb : k => r.fqdn }
 }
+
+output "access_logs_log_group_name" {
+  description = "CloudWatch log group receiving ALB access logs, or null when disabled."
+  value       = try(aws_cloudwatch_log_group.alb_access_logs[0].name, null)
+}
+
+output "access_logs_log_group_arn" {
+  description = "ARN of the CloudWatch ALB access-log group, or null when disabled."
+  value       = try(aws_cloudwatch_log_group.alb_access_logs[0].arn, null)
+}
+
+output "access_logs_kms_key_arn" {
+  description = "KMS key encrypting ALB access logs, or null when disabled."
+  value       = local.alb_access_logs_kms_key_arn
+}
+
+output "access_logs_delivery_ids" {
+  description = "ALB CloudWatch log delivery IDs keyed by load-balancer name."
+  value       = { for name, delivery in aws_cloudwatch_log_delivery.alb_access_logs : name => delivery.id }
+}
