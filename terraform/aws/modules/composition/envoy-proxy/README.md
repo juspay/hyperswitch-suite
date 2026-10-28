@@ -4,13 +4,13 @@
 | Name | Version |
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.0 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.29 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.70 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 6.29 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 6.70 |
 
 ## Modules
 
@@ -31,7 +31,13 @@
 |------|------|
 | [aws_autoscaling_policy.cpu_target_tracking](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_policy) | resource |
 | [aws_autoscaling_policy.memory_target_tracking](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_policy) | resource |
+| [aws_cloudwatch_log_delivery.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_delivery) | resource |
+| [aws_cloudwatch_log_delivery_destination.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_delivery_destination) | resource |
+| [aws_cloudwatch_log_delivery_source.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_delivery_source) | resource |
+| [aws_cloudwatch_log_group.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
+| [aws_cloudwatch_log_resource_policy.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_resource_policy) | resource |
 | [aws_iam_instance_profile.envoy_profile](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_instance_profile) | resource |
+| [aws_kms_key.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/kms_key) | resource |
 | [aws_launch_template.envoy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/launch_template) | resource |
 | [aws_lb_listener.envoy_http](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener) | resource |
 | [aws_lb_listener.envoy_https](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener) | resource |
@@ -49,9 +55,12 @@
 | [aws_security_group_rule.lb_default_egress_to_asg](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
 | [aws_ssm_parameter.envoy_private_key](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ssm_parameter) | resource |
 | [aws_wafv2_web_acl_association.envoy_alb](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/wafv2_web_acl_association) | resource |
+| [aws_caller_identity.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
 | [aws_iam_role.existing_envoy_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_role) | data source |
+| [aws_partition.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/partition) | data source |
 | [aws_prefix_list.s3](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/prefix_list) | data source |
+| [aws_region.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
 | [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
 
 ## Inputs
@@ -60,6 +69,9 @@
 |------|-------------|------|---------|:--------:|
 | <a name="input_additional_certificate_arns"></a> [additional\_certificate\_arns](#input\_additional\_certificate\_arns) | List of additional SSL certificate ARNs to attach to the HTTPS listener for SNI (Server Name Indication) support. Allows serving different certificates for different domains on the same listener. | `list(string)` | `[]` | no |
 | <a name="input_additional_policy_arns"></a> [additional\_policy\_arns](#input\_additional\_policy\_arns) | List of additional IAM policy ARNs to attach to the Envoy IAM role (e.g., AmazonSSMManagedInstanceCore for SSM access) | `list(string)` | `[]` | no |
+| <a name="input_alb_access_logs_kms_key_arn"></a> [alb\_access\_logs\_kms\_key\_arn](#input\_alb\_access\_logs\_kms\_key\_arn) | Optional existing KMS key ARN for ALB access logs. A rotating key is created when null. | `string` | `null` | no |
+| <a name="input_alb_access_logs_log_group_name"></a> [alb\_access\_logs\_log\_group\_name](#input\_alb\_access\_logs\_log\_group\_name) | Optional custom CloudWatch log group name for ALB access logs. | `string` | `null` | no |
+| <a name="input_alb_access_logs_retention_days"></a> [alb\_access\_logs\_retention\_days](#input\_alb\_access\_logs\_retention\_days) | CloudWatch retention period for ALB access logs. | `number` | `30` | no |
 | <a name="input_alb_http_listener_port"></a> [alb\_http\_listener\_port](#input\_alb\_http\_listener\_port) | Port for ALB HTTP listener (port that ALB listens on for incoming HTTP traffic) | `number` | `80` | no |
 | <a name="input_alb_https_listener_port"></a> [alb\_https\_listener\_port](#input\_alb\_https\_listener\_port) | Port for ALB HTTPS listener (port that ALB listens on for incoming HTTPS traffic) | `number` | `443` | no |
 | <a name="input_auth_proxy_loadbalancer_dns"></a> [auth\_proxy\_loadbalancer\_dns](#input\_auth\_proxy\_loadbalancer\_dns) | Auth proxy / decision service load balancer DNS (for envoy.yaml templating) | `string` | `""` | no |
@@ -78,6 +90,7 @@
 | <a name="input_desired_capacity"></a> [desired\_capacity](#input\_desired\_capacity) | Desired number of instances in ASG | `number` | `1` | no |
 | <a name="input_dns"></a> [dns](#input\_dns) | Route53 records pointing at the Envoy load balancer. Each record is created as an A alias to this module's own LB, so no hardcoded LB hostname is needed. Requires create\_lb; zone\_id is required when create is true. | <pre>object({<br/>    create  = optional(bool, false)<br/>    zone_id = optional(string, null)<br/>    records = optional(map(object({<br/>      name                   = string<br/>      evaluate_target_health = optional(bool, false)<br/>    })), {})<br/>  })</pre> | `{}` | no |
 | <a name="input_eks_cluster_name"></a> [eks\_cluster\_name](#input\_eks\_cluster\_name) | EKS cluster name (for envoy.yaml templating) | `string` | `""` | no |
+| <a name="input_enable_alb_access_logs"></a> [enable\_alb\_access\_logs](#input\_enable\_alb\_access\_logs) | Enable KMS-encrypted CloudWatch access logging for the module-managed ALB. | `bool` | `true` | no |
 | <a name="input_enable_autoscaling"></a> [enable\_autoscaling](#input\_enable\_autoscaling) | Enable auto-scaling policies for the ASG based on CPU and memory metrics | `bool` | `false` | no |
 | <a name="input_enable_capacity_rebalance"></a> [enable\_capacity\_rebalance](#input\_enable\_capacity\_rebalance) | Enable capacity rebalancing for spot instances (launches replacement before termination) | `bool` | `false` | no |
 | <a name="input_enable_http_to_https_redirect"></a> [enable\_http\_to\_https\_redirect](#input\_enable\_http\_to\_https\_redirect) | Enable automatic redirect from HTTP to HTTPS (requires enable\_https\_listener = true) | `bool` | `false` | no |
@@ -136,6 +149,10 @@
 
 | Name | Description |
 |------|-------------|
+| <a name="output_access_logs_delivery_ids"></a> [access\_logs\_delivery\_ids](#output\_access\_logs\_delivery\_ids) | ALB CloudWatch log delivery IDs keyed by load-balancer name. |
+| <a name="output_access_logs_kms_key_arn"></a> [access\_logs\_kms\_key\_arn](#output\_access\_logs\_kms\_key\_arn) | KMS key encrypting ALB access logs, or null when disabled. |
+| <a name="output_access_logs_log_group_arn"></a> [access\_logs\_log\_group\_arn](#output\_access\_logs\_log\_group\_arn) | ARN of the CloudWatch ALB access-log group, or null when disabled. |
+| <a name="output_access_logs_log_group_name"></a> [access\_logs\_log\_group\_name](#output\_access\_logs\_log\_group\_name) | CloudWatch log group receiving ALB access logs, or null when disabled. |
 | <a name="output_asg_ids"></a> [asg\_ids](#output\_asg\_ids) | Map of deployment names to Auto Scaling Group IDs |
 | <a name="output_asg_names"></a> [asg\_names](#output\_asg\_names) | Map of deployment names to Auto Scaling Group names |
 | <a name="output_asg_security_group_id"></a> [asg\_security\_group\_id](#output\_asg\_security\_group\_id) | Security group ID for ASG instances |
