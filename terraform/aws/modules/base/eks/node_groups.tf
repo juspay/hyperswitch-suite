@@ -171,7 +171,7 @@ locals {
       cidr_blocks      = ["0.0.0.0/0"]
       ipv6_cidr_blocks = var.ip_family == "ipv6" ? ["::/0"] : null
     }
-  } : k => v if var.node_security_group_enable_recommended_rules }
+  } : k => v if var.node_security_group_enable_recommended_rules && (k != "egress_all" || var.node_security_group_allow_all_egress) }
 }
 
 resource "aws_security_group" "node" {

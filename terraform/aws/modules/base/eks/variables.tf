@@ -485,6 +485,13 @@ variable "node_security_group_additional_rules" {
   default = {}
 }
 
+variable "node_security_group_allow_all_egress" {
+  description = "Whether to include the recommended allow-all IPv4/IPv6 worker egress rule. When false, callers must provide required egress separately; recommended ingress rules are retained."
+  type        = bool
+  default     = true
+  nullable    = false
+}
+
 variable "node_security_group_enable_recommended_rules" {
   description = "Determines whether to enable recommended security group rules for the node security group created. This includes node-to-node TCP ingress on ephemeral ports and allows all egress traffic"
   type        = bool
