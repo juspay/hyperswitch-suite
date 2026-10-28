@@ -88,6 +88,7 @@
 | <a name="input_node_group_iam_role_name"></a> [node\_group\_iam\_role\_name](#input\_node\_group\_iam\_role\_name) | Custom name for the node group IAM role (auto-generated if null) | `string` | `null` | no |
 | <a name="input_node_group_iam_role_policies"></a> [node\_group\_iam\_role\_policies](#input\_node\_group\_iam\_role\_policies) | Map of IAM policy ARNs to attach to the node group IAM role | `map(string)` | `{}` | no |
 | <a name="input_node_groups"></a> [node\_groups](#input\_node\_groups) | EKS managed node groups configuration | `any` | `{}` | no |
+| <a name="input_node_security_group_allow_all_egress"></a> [node\_security\_group\_allow\_all\_egress](#input\_node\_security\_group\_allow\_all\_egress) | Whether to include the recommended allow-all IPv4/IPv6 worker egress rule. When false, callers must provide required egress separately; recommended ingress rules are retained. | `bool` | `true` | no |
 | <a name="input_project_name"></a> [project\_name](#input\_project\_name) | Name of the project | `string` | n/a | yes |
 | <a name="input_region"></a> [region](#input\_region) | AWS region | `string` | `"eu-central-1"` | no |
 | <a name="input_ssh_key_name"></a> [ssh\_key\_name](#input\_ssh\_key\_name) | SSH key pair name. Used directly if create\_ssh\_key=false. Used as name for new key if create\_ssh\_key=true. Auto-generated if null. | `string` | `null` | no |

@@ -182,10 +182,12 @@ module "eks" {
     }
   }
 
+  node_security_group_allow_all_egress = var.node_security_group_allow_all_egress
+
   # Node security group - allow workers to reach same-region S3 through the
   # gateway VPC endpoint (image layers, config, log shipping). Kept explicit
   # so S3 access survives even if the recommended allow-all egress rule is
-  # ever disabled.
+  # disabled through node_security_group_allow_all_egress.
   node_security_group_additional_rules = {
     egress_s3_gateway = {
       description     = "Allow HTTPS to same-region S3 via gateway endpoint"

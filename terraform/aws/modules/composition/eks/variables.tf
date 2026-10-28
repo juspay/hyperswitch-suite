@@ -27,6 +27,13 @@ variable "cluster_version" {
   default     = "1.34"
 }
 
+variable "node_security_group_allow_all_egress" {
+  description = "Whether to include the recommended allow-all IPv4/IPv6 worker egress rule. When false, callers must provide required egress separately; recommended ingress rules are retained."
+  type        = bool
+  default     = true
+  nullable    = false
+}
+
 variable "cluster_endpoint_public_access" {
   description = "Enable public API server endpoint"
   type        = bool
