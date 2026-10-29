@@ -702,6 +702,31 @@ variable "lb_security_group_description" {
   nullable    = false
 }
 
+variable "alb_enable_deletion_protection" {
+  description = "Override ALB deletion protection. Null preserves the existing default: enabled when environment is prod."
+  type        = bool
+  default     = null
+}
+
+variable "alb_drop_invalid_header_fields" {
+  description = "Whether the ALB drops HTTP headers with invalid names."
+  type        = bool
+  default     = true
+  nullable    = false
+}
+
+variable "alb_idle_timeout" {
+  description = "ALB connection idle timeout in seconds."
+  type        = number
+  default     = 60
+  nullable    = false
+
+  validation {
+    condition     = var.alb_idle_timeout >= 1 && var.alb_idle_timeout <= 4000 && floor(var.alb_idle_timeout) == var.alb_idle_timeout
+    error_message = "alb_idle_timeout must be an integer between 1 and 4000 seconds."
+  }
+}
+
 variable "lb_internal" {
   description = "Whether the ALB is internal (true) or internet-facing (false)"
   type        = bool

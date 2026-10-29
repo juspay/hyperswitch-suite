@@ -398,9 +398,11 @@ module "alb" {
   security_groups = [local.lb_security_group_id]
 
   # ALB settings
-  enable_deletion_protection       = var.environment == "prod" ? true : false
+  enable_deletion_protection       = var.alb_enable_deletion_protection != null ? var.alb_enable_deletion_protection : var.environment == "prod"
   enable_cross_zone_load_balancing = true
   enable_http2                     = true
+  drop_invalid_header_fields       = var.alb_drop_invalid_header_fields
+  idle_timeout                     = var.alb_idle_timeout
 
   access_logs = local.s3_logging.create_bucket || local.s3_logging.enabled ? {
     enabled = true
