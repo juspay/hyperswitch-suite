@@ -674,6 +674,34 @@ variable "create_lb" {
   default     = true
 }
 
+variable "lb_name" {
+  description = "Optional ALB name override, including when importing an existing ALB. Null retains the environment/project naming convention."
+  type        = string
+  default     = null
+
+  validation {
+    condition = var.lb_name == null ? true : (
+      length(var.lb_name) <= 32 &&
+      can(regex("^[A-Za-z0-9]([A-Za-z0-9-]*[A-Za-z0-9])?$", var.lb_name)) &&
+      !startswith(var.lb_name, "internal-")
+    )
+    error_message = "lb_name must be 1–32 alphanumeric or hyphen characters, start and end with an alphanumeric character, and not start with internal-."
+  }
+}
+
+variable "lb_security_group_name" {
+  description = "Optional name for the module-created ALB security group. Ignored when existing_lb_security_group_id is set."
+  type        = string
+  default     = null
+}
+
+variable "lb_security_group_description" {
+  description = "Description for the module-created ALB security group. Ignored when existing_lb_security_group_id is set."
+  type        = string
+  default     = "Security group for Envoy proxy Application Load Balancer"
+  nullable    = false
+}
+
 variable "lb_internal" {
   description = "Whether the ALB is internal (true) or internet-facing (false)"
   type        = bool
@@ -775,7 +803,7 @@ variable "existing_lb_arn" {
 }
 
 variable "existing_lb_security_group_id" {
-  description = "Security group ID of existing load balancer (optional - only needed for automatic security group rule creation)"
+  description = "Existing ALB security group to reuse. When create_lb is true, attaches this group instead of creating one; automatic ALB/ASG communication rules are still managed."
   type        = string
   default     = null
 }

@@ -49,8 +49,8 @@ output "asg_security_group_id" {
 }
 
 output "lb_security_group_id" {
-  description = "Security group ID for load balancer (null if using existing LB)"
-  value       = var.create_lb ? module.lb_security_group[0].security_group_id : null
+  description = "Selected load balancer security group ID, or null when no group is configured"
+  value       = local.lb_security_group_id
 }
 
 output "logs_bucket_name" {
