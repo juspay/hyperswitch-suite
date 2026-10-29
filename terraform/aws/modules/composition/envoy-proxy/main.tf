@@ -1,3 +1,8 @@
+locals {
+  # Reuse a supplied security group for either an imported or external ALB.
+  lb_security_group_id = var.existing_lb_security_group_id != null ? var.existing_lb_security_group_id : (var.create_lb ? module.lb_security_group[0].security_group_id : null)
+}
+
 # =========================================================================
 # SSH Key Pair for Envoy Instances
 # =========================================================================
@@ -242,13 +247,15 @@ resource "aws_iam_instance_profile" "envoy_profile" {
 module "lb_security_group" {
   revoke_rules_on_delete = true
 
-  count   = var.create_lb ? 1 : 0
+  count   = var.create_lb && var.existing_lb_security_group_id == null ? 1 : 0
   source  = "terraform-aws-modules/security-group/aws"
   version = "~> 5.0"
 
-  name        = "${local.name_prefix}-alb-sg"
-  description = "Security group for Envoy proxy Application Load Balancer"
-  vpc_id      = var.vpc_id
+  name        = var.lb_security_group_name != null ? var.lb_security_group_name : "${local.name_prefix}-alb-sg"
+  description = var.lb_security_group_description
+  # Explicit names must match imported groups exactly; preserve prefix defaults otherwise.
+  use_name_prefix = var.lb_security_group_name == null
+  vpc_id          = var.vpc_id
 
   # Rules are managed separately
   egress_rules  = []
@@ -265,7 +272,7 @@ module "lb_security_group" {
 resource "aws_security_group_rule" "lb_default_egress_to_asg" {
   count = var.create_lb ? 1 : 0
 
-  security_group_id        = module.lb_security_group[0].security_group_id
+  security_group_id        = local.lb_security_group_id
   type                     = "egress"
   from_port                = var.envoy_traffic_port
   to_port                  = var.envoy_traffic_port
@@ -304,7 +311,7 @@ resource "aws_security_group_rule" "asg_ingress_from_alb_traffic" {
   from_port                = var.envoy_traffic_port
   to_port                  = var.envoy_traffic_port
   protocol                 = "tcp"
-  source_security_group_id = var.create_lb ? module.lb_security_group[0].security_group_id : var.existing_lb_security_group_id
+  source_security_group_id = local.lb_security_group_id
   description              = "Allow traffic from ALB to Envoy"
 }
 
@@ -317,7 +324,7 @@ resource "aws_security_group_rule" "asg_ingress_from_alb_healthcheck" {
   from_port                = var.health_check.port
   to_port                  = var.health_check.port
   protocol                 = "tcp"
-  source_security_group_id = var.create_lb ? module.lb_security_group[0].security_group_id : var.existing_lb_security_group_id
+  source_security_group_id = local.lb_security_group_id
   description              = "Allow health checks from ALB"
 }
 
@@ -362,7 +369,7 @@ resource "aws_security_group_rule" "existing_lb_to_asg_traffic" {
 
 # Rule for health checks (only if different port)
 resource "aws_security_group_rule" "existing_lb_to_asg_healthcheck" {
-  count = !var.create_lb && var.existing_lb_security_group_id != null && var.health_check.port != var.envoy_traffic_port ? 1 : 0
+  count = var.existing_lb_security_group_id != null && var.health_check.port != var.envoy_traffic_port ? 1 : 0
 
   type                     = "egress"
   from_port                = var.health_check.port
@@ -382,13 +389,13 @@ module "alb" {
   source  = "terraform-aws-modules/alb/aws"
   version = "~> 9.0"
 
-  name               = "${local.name_prefix}-alb"
+  name               = var.lb_name != null ? var.lb_name : "${local.name_prefix}-alb"
   load_balancer_type = "application"
   internal           = var.lb_internal
 
   vpc_id          = var.vpc_id
   subnets         = var.lb_subnet_ids
-  security_groups = [module.lb_security_group[0].security_group_id]
+  security_groups = [local.lb_security_group_id]
 
   # ALB settings
   enable_deletion_protection       = var.environment == "prod" ? true : false
