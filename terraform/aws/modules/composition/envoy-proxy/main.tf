@@ -395,6 +395,15 @@ module "alb" {
   enable_cross_zone_load_balancing = true
   enable_http2                     = true
 
+  access_logs = local.s3_logging.create_bucket || local.s3_logging.enabled ? {
+    enabled = true
+    bucket  = local.s3_logging.create_bucket ? module.alb_access_logs_s3[0].s3_bucket_id : local.s3_logging.bucket
+    prefix  = local.s3_logging.create_bucket ? local.s3_logging.prefix : local.s3_logging.prefix
+  } : {}
+
+  # The delivery policy must exist before ALB access logging is enabled.
+  depends_on = [module.alb_access_logs_s3]
+
   # We'll create target groups and listeners separately for more control
   create_security_group = false
 
@@ -466,7 +475,7 @@ resource "aws_lb_target_group" "envoy" {
 
 # HTTP Listener - Conditional behavior based on HTTPS configuration
 resource "aws_lb_listener" "envoy_http" {
-  count = var.create_lb ? 1 : 0
+  count = var.create_lb && var.enable_http_listener ? 1 : 0
 
   load_balancer_arn = module.alb[0].arn
   port              = var.alb_http_listener_port
@@ -638,8 +647,15 @@ resource "aws_route53_record" "envoy_lb" {
 resource "aws_lb_listener_rule" "custom_rules" {
   for_each = var.create_lb ? { for idx, rule in var.listener_rules : idx => rule } : {}
 
-  listener_arn = var.enable_https_listener ? aws_lb_listener.envoy_https[0].arn : aws_lb_listener.envoy_http[0].arn
+  listener_arn = var.enable_https_listener ? aws_lb_listener.envoy_https[0].arn : try(aws_lb_listener.envoy_http[0].arn, null)
   priority     = each.value.priority
+
+  lifecycle {
+    precondition {
+      condition     = var.enable_https_listener || var.enable_http_listener
+      error_message = "Custom listener rules require enable_https_listener or enable_http_listener to be true."
+    }
+  }
 
   # Actions
   dynamic "action" {

@@ -59,6 +59,12 @@ variable "lb_egress_rules" {
 # Port Configuration Variables
 # =========================================================================
 
+variable "enable_http_listener" {
+  description = "Create the ALB HTTP listener. Set false with enable_https_listener=true for HTTPS-only access."
+  type        = bool
+  default     = true
+}
+
 variable "alb_http_listener_port" {
   description = "Port for ALB HTTP listener (port that ALB listens on for incoming HTTP traffic)"
   type        = number
@@ -843,34 +849,62 @@ variable "tags" {
   default     = {}
 }
 
-variable "enable_alb_access_logs" {
-  description = "Enable KMS-encrypted CloudWatch access logging for the module-managed ALB."
-  type        = bool
-  default     = true
-}
+# =========================================================================
+# ALB Access Logging - CloudWatch Destination
+# =========================================================================
+variable "alb_access_logs_cloudwatch" {
+  description = "CloudWatch ALB access logging configuration."
+  type = object({
+    enabled        = optional(bool, false)
+    retention_days = optional(number, 30)
+    log_group_name = optional(string, null)
+    kms_key_arn    = optional(string, null)
+  })
+  default  = {}
+  nullable = false
 
-variable "alb_access_logs_retention_days" {
-  description = "CloudWatch retention period for ALB access logs."
-  type        = number
-  default     = 30
   validation {
-    condition     = contains([0, 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653], var.alb_access_logs_retention_days)
-    error_message = "alb_access_logs_retention_days must be a supported CloudWatch Logs retention period."
+    condition = contains(
+      [0, 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653],
+      var.alb_access_logs_cloudwatch.retention_days
+    )
+    error_message = "CloudWatch retention_days must be a supported retention period."
+  }
+
+  validation {
+    condition = (
+      var.alb_access_logs_cloudwatch.kms_key_arn == null ? true : can(regex("^arn:[^:]+:kms:[^:]+:[0-9]{12}:key/.+$", var.alb_access_logs_cloudwatch.kms_key_arn))
+    )
+    error_message = "CloudWatch kms_key_arn must be a KMS key ARN."
   }
 }
 
-variable "alb_access_logs_log_group_name" {
-  description = "Optional custom CloudWatch log group name for ALB access logs."
-  type        = string
-  default     = null
-}
+# =========================================================================
+# ALB Access Logging - S3 Destination
+# =========================================================================
+variable "alb_access_logs_s3" {
+  description = "S3 ALB access logging. Set create_bucket=true for a managed bucket, or enabled=true with bucket for an existing bucket."
+  type = object({
+    enabled       = optional(bool, false)
+    create_bucket = optional(bool, false)
+    bucket        = optional(string, null)
+    bucket_name   = optional(string, null)
+    prefix        = optional(string, "alb")
+  })
+  default  = {}
+  nullable = false
 
-variable "alb_access_logs_kms_key_arn" {
-  description = "Optional existing KMS key ARN for ALB access logs. A rotating key is created when null."
-  type        = string
-  default     = null
   validation {
-    condition     = var.alb_access_logs_kms_key_arn == null ? true : can(regex("^arn:[^:]+:kms:[^:]+:[0-9]{12}:key/.+$", var.alb_access_logs_kms_key_arn))
-    error_message = "alb_access_logs_kms_key_arn must be a KMS key ARN."
+    condition = (
+      !strcontains(var.alb_access_logs_s3.prefix, "AWSLogs") && trim(var.alb_access_logs_s3.prefix, "/") == var.alb_access_logs_s3.prefix
+    )
+    error_message = "S3 prefix must not contain AWSLogs or start/end with a slash."
+  }
+
+  validation {
+    condition = (
+      !var.alb_access_logs_s3.enabled || var.alb_access_logs_s3.create_bucket || try(trimspace(var.alb_access_logs_s3.bucket) != "", false)
+    )
+    error_message = "S3 logging requires bucket when enabled without create_bucket."
   }
 }

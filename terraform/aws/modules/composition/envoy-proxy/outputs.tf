@@ -162,3 +162,13 @@ output "access_logs_delivery_ids" {
   description = "ALB CloudWatch log delivery IDs keyed by load-balancer name."
   value       = { for name, delivery in aws_cloudwatch_log_delivery.alb_access_logs : name => delivery.id }
 }
+
+output "access_logs_s3_bucket_name" {
+  description = "Configured ALB access log bucket name, or null when S3 logging is disabled."
+  value       = local.s3_logging.create_bucket ? module.alb_access_logs_s3[0].s3_bucket_id : (local.s3_logging.enabled ? local.s3_logging.bucket : null)
+}
+
+output "access_logs_s3_bucket_arn" {
+  description = "ARN of the module-managed ALB access log bucket, or null when not created."
+  value       = try(module.alb_access_logs_s3[0].s3_bucket_arn, null)
+}
