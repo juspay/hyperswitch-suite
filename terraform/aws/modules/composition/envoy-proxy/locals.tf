@@ -1,4 +1,28 @@
 locals {
+  config_file_names = var.upload_config_to_s3 ? toset([
+    for f in fileset(var.config_files_source_path, "**") : f
+    if length(regexall("(^|/)\\.", f)) == 0
+  ]) : toset([])
+
+  config_files_vars = merge(
+    var.loki_endpoint != "" ? { loki_endpoint = var.loki_endpoint } : {},
+    var.config_files_vars
+  )
+
+  # Split on "{{" and resolve each segment's leading "key}}" against config_files_vars,
+  # since HCL has no fold to chain replace() over a map.
+  config_files_content = {
+    for key in local.config_file_names : key => join("", [
+      for i, part in split("{{", key == var.envoy_config_filename ? local.envoy_config_content : file("${var.config_files_source_path}/${key}")) :
+      i == 0 ? part : (
+        can(local.config_files_vars[regex("^([A-Za-z0-9_-]+)}}", part)[0]])
+        ? "${local.config_files_vars[regex("^([A-Za-z0-9_-]+)}}", part)[0]]}${substr(part, length(regex("^([A-Za-z0-9_-]+)}}", part)[0]) + 2, -1)}"
+        : "{{${part}"
+      )
+    ])
+  }
+
+
   # Naming convention
   name_prefix = "${var.environment}-${var.project_name}-envoy"
 

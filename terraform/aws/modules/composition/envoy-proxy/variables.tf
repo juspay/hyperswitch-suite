@@ -609,6 +609,18 @@ variable "config_files_source_path" {
   default     = "./config"
 }
 
+variable "loki_endpoint" {
+  description = "Loki endpoint substituted for {{loki_endpoint}} in uploaded config files. Empty string preserves the placeholder."
+  type        = string
+  default     = ""
+}
+
+variable "config_files_vars" {
+  description = "Additional {{key}} substitutions for uploaded config files. Unknown placeholders remain unchanged."
+  type        = map(string)
+  default     = {}
+}
+
 variable "envoy_config_filename" {
   description = <<-EOT
     Name of the main Envoy config file (relative to config_files_source_path).
