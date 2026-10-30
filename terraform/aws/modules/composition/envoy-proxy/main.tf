@@ -126,17 +126,14 @@ resource "aws_s3_object" "envoy_config_files" {
   # Hidden files are excluded: terragrunt stack generation drops a non-UTF-8
   # .terragrunt-stack-manifest marker into generated directories, which would
   # fail file() below and does not belong in the config bucket.
-  for_each = var.upload_config_to_s3 ? toset([
-    for f in fileset(var.config_files_source_path, "**") : f
-    if length(regexall("(^|/)\\.", f)) == 0
-  ]) : []
+  for_each = local.config_file_names
 
   bucket = local.config_bucket_name
   key    = "envoy/${each.value}"
 
-  # Use templated content for the specified config file, raw content for other files
-  content = each.value == var.envoy_config_filename ? local.envoy_config_content : file("${var.config_files_source_path}/${each.value}")
-  etag    = each.value == var.envoy_config_filename ? md5(local.envoy_config_content) : filemd5("${var.config_files_source_path}/${each.value}")
+  # Apply config placeholders after the main Envoy configuration is rendered.
+  content = local.config_files_content[each.value]
+  etag    = md5(local.config_files_content[each.value])
 
   tags = local.common_tags
 }
