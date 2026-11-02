@@ -278,7 +278,7 @@ resource "oci_psql_db_system" "this" {
     # that survives a wrong apply is an IAM policy denying the delete verb on
     # postgres-db-systems outside a break-glass group, which lives outside this
     # module.
-    prevent_destroy = false
+    prevent_destroy = true
   }
 }
 
