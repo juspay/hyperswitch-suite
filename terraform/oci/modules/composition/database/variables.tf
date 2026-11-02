@@ -257,21 +257,33 @@ variable "admin_username" {
 }
 
 variable "admin_password" {
-  description = "Admin password. Leave null to have the module generate one (random_password). Never set this to a literal in a unit; hand in a value only from a caller-owned secret store."
+  description = "Optional admin password, which is retained in Terraform state when supplied. Prefer vault_secret.secret_id to keep credential values outside Terraform. When neither is supplied, the module generates a password."
   type        = string
   default     = null
   sensitive   = true
 }
 
 variable "vault_secret" {
-  description = "OCI Vault storage for the generated admin password. create = true writes the password to a new oci_vault_secret and wires the db system to it with password_type = VAULT_SECRET; otherwise the password is passed as PLAIN_TEXT (still generated, never a literal). key_id is required by oci_vault_secret - the provider mandates it."
+  description = "Admin credential storage. Set create=false and secret_id to an externally populated Vault secret to keep password values out of Terraform state. create=true generates and stores a password in both Vault and Terraform state. secret_version pins the externally managed credential version."
   type = object({
-    create      = bool
-    vault_id    = optional(string)
-    key_id      = optional(string)
-    secret_name = optional(string)
+    create         = bool
+    vault_id       = optional(string)
+    key_id         = optional(string)
+    secret_name    = optional(string)
+    secret_id      = optional(string)
+    secret_version = optional(number, 1)
   })
   default = null
+
+  validation {
+    condition     = var.vault_secret == null ? true : !(var.vault_secret.create && var.vault_secret.secret_id != null)
+    error_message = "vault_secret.create and an existing secret_id are mutually exclusive."
+  }
+
+  validation {
+    condition     = var.vault_secret == null ? true : var.vault_secret.secret_version >= 1 && floor(var.vault_secret.secret_version) == var.vault_secret.secret_version
+    error_message = "vault_secret.secret_version must be a positive integer."
+  }
 }
 
 # Backup and point-in-time recovery: two independent policies on OCI where AWS

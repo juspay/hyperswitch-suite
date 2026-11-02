@@ -101,8 +101,8 @@ resource "oci_psql_db_system" "this" {
         # rotates it. PLAIN_TEXT still carries a generated value, never a
         # literal.
         password       = local.password_type == "PLAIN_TEXT" ? local.admin_password : null
-        secret_id      = local.vault_secret_create ? oci_vault_secret.admin_password[0].id : null
-        secret_version = local.vault_secret_create ? oci_vault_secret.admin_password[0].current_version_number : null
+        secret_id      = local.password_secret_id
+        secret_version = local.password_type == "VAULT_SECRET" ? local.password_secret_version : null
       }
     }
   }

@@ -83,6 +83,11 @@ output "system_role" {
   }
 
   precondition {
+    condition     = local.external_password_secret == null || (var.admin_password == null && !local.is_standby)
+    error_message = "An external password secret cannot be combined with admin_password or a warm standby."
+  }
+
+  precondition {
     condition     = !contains(var.backup_copy_regions, var.region)
     error_message = "A backup cannot be copied into the region it was created in. Remove this region from backup_copy_regions."
   }
@@ -191,14 +196,14 @@ output "admin_username" {
 }
 
 output "admin_password" {
-  description = "The admin password in effect, module-generated when admin_password was left unset. Null on a warm standby."
+  description = "The module-managed admin password. Null when using an external Vault secret or a warm standby."
   value       = local.admin_password
   sensitive   = true
 }
 
 output "vault_secret_id" {
-  description = "OCID of the OCI Vault secret holding the admin password, when vault_secret.create was set. Replaces AWS master_user_secret, with a different mechanism: the caller owns the secret and nothing rotates it (section 4.10)."
-  value       = local.vault_secret_create ? oci_vault_secret.admin_password[0].id : null
+  description = "OCID of the externally managed or module-created admin password secret. This module does not rotate credentials."
+  value       = local.password_secret_id
   sensitive   = true
 }
 

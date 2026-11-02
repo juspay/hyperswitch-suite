@@ -49,18 +49,18 @@ locals {
     )
   )
 
-  # OCI has no manage_master_user_password, so the module generates the password
-  # itself and optionally writes it to OCI Vault.
-  generate_password = !local.is_standby && var.admin_password == null
-  admin_password    = local.is_standby ? null : (local.generate_password ? random_password.admin[0].result : var.admin_password)
+  # External references keep credential values outside Terraform entirely.
+  external_password_secret = try(var.vault_secret.secret_id, null)
+  generate_password        = !local.is_standby && var.admin_password == null && local.external_password_secret == null
+  admin_password           = local.is_standby || local.external_password_secret != null ? null : (local.generate_password ? random_password.admin[0].result : var.admin_password)
 
   vault_secret_create = var.vault_secret != null ? (var.vault_secret.create && !local.is_standby) : false
   vault_secret_name   = local.vault_secret_create ? coalesce(var.vault_secret.secret_name, "${local.display_name}-admin-password") : null
 
-  # VAULT_SECRET when the module owns a Vault secret, PLAIN_TEXT otherwise.
-  # PLAIN_TEXT still never carries a literal - the value is either generated
-  # here or handed in by the caller from its own secret store.
-  password_type = local.vault_secret_create ? "VAULT_SECRET" : "PLAIN_TEXT"
+  # The database service reads the pinned Vault version, not the provider.
+  password_type           = local.vault_secret_create || local.external_password_secret != null ? "VAULT_SECRET" : "PLAIN_TEXT"
+  password_secret_id      = local.vault_secret_create ? oci_vault_secret.admin_password[0].id : local.external_password_secret
+  password_secret_version = local.vault_secret_create ? oci_vault_secret.admin_password[0].current_version_number : try(var.vault_secret.secret_version, null)
 
   # The module owns the empty NSG and exports its OCID; the rules are written
   # by the security-last phase unit.
