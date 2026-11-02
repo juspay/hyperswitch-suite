@@ -2,6 +2,619 @@
 
 All notable changes to Hyperswitch will be documented here.
 
+## Hyperswitch Suite v1.24
+
+### [Hyperswitch App Server v1.129.0 (2026-11-02)](https://github.com/juspay/hyperswitch/releases/tag/v1.129.0)
+
+#### Docker Images
+
+- `v1.129.0` (with AWS SES support): `docker pull docker.juspay.io/juspaydotin/hyperswitch-router:v1.129.0`
+- `v1.129.0-standalone` (without AWS SES support): `docker pull docker.juspay.io/juspaydotin/hyperswitch-router:v1.129.0-standalone`
+
+#### Security Updates
+
+This release includes security fixes and hardening across the application and its dependencies. We recommend upgrading to v1.129.0 to benefit from these improvements alongside fixes to payment processing reliability.
+
+- Strengthen authentication, client-secret validation, and resource access controls. ([#15043](https://github.com/juspay/hyperswitch/pull/15043), [#14864](https://github.com/juspay/hyperswitch/pull/14864), [#15073](https://github.com/juspay/hyperswitch/pull/15073))
+- Improve webhook verification and service credential handling, with additional verification and rate-limit controls. ([#14965](https://github.com/juspay/hyperswitch/pull/14965), [#15072](https://github.com/juspay/hyperswitch/pull/15072), [#14787](https://github.com/juspay/hyperswitch/pull/14787), [#14828](https://github.com/juspay/hyperswitch/pull/14828), [#14587](https://github.com/juspay/hyperswitch/pull/14587))
+- Harden input validation, analytics queries, payment-link rendering, and browser-origin checks. ([#15044](https://github.com/juspay/hyperswitch/pull/15044), [#15013](https://github.com/juspay/hyperswitch/pull/15013), [#15091](https://github.com/juspay/hyperswitch/pull/15091), [#15011](https://github.com/juspay/hyperswitch/pull/15011), [#14506](https://github.com/juspay/hyperswitch/pull/14506))
+- Refresh dependencies and certificate trust stores. ([#14930](https://github.com/juspay/hyperswitch/pull/14930))
+
+Review the upgrade notes, database migrations, and configuration changes before deploying. New webhook verification and rate-limit controls require configuration before enablement.
+
+#### Features
+
+- **payments:** Add capture-method auto-fallback and AVS-check selection. ([#14452](https://github.com/juspay/hyperswitch/pull/14452), [#14689](https://github.com/juspay/hyperswitch/pull/14689))
+- **payment_methods:** Add merchant-scoped fingerprints and inactivation by auxiliary fingerprint. ([#14392](https://github.com/juspay/hyperswitch/pull/14392), [#14854](https://github.com/juspay/hyperswitch/pull/14854))
+- **payouts:** Add external-vault proxy execution through UCS and FRM support for automatic retries. ([#14690](https://github.com/juspay/hyperswitch/pull/14690), [#14785](https://github.com/juspay/hyperswitch/pull/14785))
+- **blocklist:** Separate payment and payout blocklists. ([#14722](https://github.com/juspay/hyperswitch/pull/14722))
+- **connector:** Add Realex UCS routing, JPMorgan wallets/recurring payments, PayPal returning-customer support, and Peachpayments external authentication. ([#13980](https://github.com/juspay/hyperswitch/pull/13980), [#14640](https://github.com/juspay/hyperswitch/pull/14640), [#14673](https://github.com/juspay/hyperswitch/pull/14673), [#15012](https://github.com/juspay/hyperswitch/pull/15012))
+- **webhooks:** Add automatic retries for v2 outgoing webhooks. ([#14664](https://github.com/juspay/hyperswitch/pull/14664))
+- **revenue_recovery:** Add new retry algorithms, v2 invoice cancellation, and network-aware hard-decline lookup. ([#14697](https://github.com/juspay/hyperswitch/pull/14697), [#14716](https://github.com/juspay/hyperswitch/pull/14716), [#15082](https://github.com/juspay/hyperswitch/pull/15082))
+
+#### Bug Fixes
+
+- **refunds/payouts:** Prevent concurrent refund reservation and payout fulfillment. ([#15075](https://github.com/juspay/hyperswitch/pull/15075), [#14931](https://github.com/juspay/hyperswitch/pull/14931))
+- **payment_methods:** Correct modular updates and saved-wallet deduplication. ([#15010](https://github.com/juspay/hyperswitch/pull/15010), [#14951](https://github.com/juspay/hyperswitch/pull/14951))
+- **database:** Improve recovery from database failover. ([#13629](https://github.com/juspay/hyperswitch/pull/13629))
+
+#### Performance
+
+- **cache/storage:** Coordinate cache population and reduce unnecessary database leases. ([#14513](https://github.com/juspay/hyperswitch/pull/14513), [#14581](https://github.com/juspay/hyperswitch/pull/14581))
+
+#### Refactors
+
+- **cache:** Make in-memory caches runtime-configurable. ([#14509](https://github.com/juspay/hyperswitch/pull/14509))
+- **cloud_services:** Share storage, KMS, and email clients. ([#14671](https://github.com/juspay/hyperswitch/pull/14671))
+- **platform:** Add compile-time context safety to payments. ([#14793](https://github.com/juspay/hyperswitch/pull/14793))
+
+#### Compatibility
+
+This version of the Hyperswitch App Server is compatible with the following versions of other components:
+
+- Control Center: [v1.39.0](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.39.0)
+- Web Client: [v0.135.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.135.0)
+- WooCommerce Plugin: [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)
+- Card Vault: [v0.9.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.9.0)
+- Encryption Service: [v0.1.14](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.14)
+- Superposition: [v0.118.0](https://github.com/juspay/superposition/releases/tag/v0.118.0)
+- Hyperswitch Prism: [v0.7.0](https://github.com/juspay/hyperswitch-prism/releases/tag/v0.7.0)
+
+#### Breaking Changes
+
+- **V1 admin authentication header:** replace `api-key: <ADMIN_API_KEY>` with `Authorization: admin-api-key=<ADMIN_API_KEY>` in administrative clients and provisioning scripts before rollout. The configured admin secret retains its existing name. ([#15007](https://github.com/juspay/hyperswitch/pull/15007))
+
+- **Credential configuration:** affected deployments must migrate password fields to `primary_password` and configure `primary_internal_api_key` when internal authentication or legacy-key settings require it. Old password names have no aliases. With KMS as the secrets manager, startup-resolved credentials require encrypted values. See Configuration Changes below for fields, formats, and legacy-key handling. ([#15072](https://github.com/juspay/hyperswitch/pull/15072))
+
+- **Recovery request contract:** provide `connector_transaction_id`, `transaction_created_at`, and `billing_started_at`, and remove `action` from requests. Supported statuses are `charged`, `failure`, and `partial_charged`; partial charges require `0 < amount_captured < order amount`. Actions are derived from transaction status. ([#14688](https://github.com/juspay/hyperswitch/pull/14688), [#14886](https://github.com/juspay/hyperswitch/pull/14886))
+
+- **Dynamic-routing update endpoints:** PATCH routes under `/account/{account_id}/business_profile/{profile_id}/dynamic_routing` are removed for `success_based/config/{algorithm_id}`, `elimination/config/{algorithm_id}`, and `contracts/config/{algorithm_id}`. Creation, toggle, and volume-split routes remain available. ([#15014](https://github.com/juspay/hyperswitch/pull/15014))
+
+- **Webhook and proxy URLs:** destination URLs must use HTTP(S); nonpublic literal IPs and configured proxy-bypass destinations are rejected. Update affected merchant/profile webhook URLs and proxy destinations before rollout. ([#14506](https://github.com/juspay/hyperswitch/pull/14506))
+
+#### Upgrade Notes
+
+- **Recovery migration:** use `POST /v2/recovery`; `/v2/payments/recovery` remains a deprecated alias. Billing connector metadata supplies grace period and the default partial-authorization setting; request-level partial-authorization overrides remain supported. ([#14803](https://github.com/juspay/hyperswitch/pull/14803), [#14776](https://github.com/juspay/hyperswitch/pull/14776))
+- **Source builds:** the minimum supported Rust version increases to `1.92.0`. Custom Rust connector integrations using `PaymentIdType::PreprocessingId` must migrate away from the removed enum variant. ([Cargo.toml](https://github.com/juspay/hyperswitch/blob/cddfdf9769283affd160d16575880f471b145737/Cargo.toml), [#14419](https://github.com/juspay/hyperswitch/pull/14419))
+- **Connector and policy settings:** review the configuration details below for JPMorgan credentials, Fiuu endpoints, corrected Superposition seed keys, and recovery algorithm defaults. These require attention in deployments using the affected integrations or overrides.
+
+#### Database Migration Changes
+
+DB difference between `v1.128.0` and `v1.129.0`: **19 new main migrations, one new v2-compatible migration, and one historical migration edit.**
+
+- Apply additive columns before dependent application code. Keep blocklist column → backfill → replacement indexes → old-index removal order.
+- Honor all 13 `run_in_transaction = false` overrides. The blocklist backfill commits batches internally; do not wrap the migration listing in one transaction.
+
+##### Migration SQL
+
+The forward SQL covers all 20 new migrations, with source paths and transaction metadata included. Apply the main and v2-compatible migrations appropriate to your deployment through their migration runners.
+
+<details>
+<summary>View SQL for all 20 new migrations</summary>
+
+Paths and transaction metadata are included as comments. Run each migration through the appropriate runner in its recorded order; this combined listing is a reference.
+
+###### Main migrations
+
+```sql
+-- migrations/2026-09-24-073107_drop_preprocessing_step_id_index/up.sql
+-- No query in the codebase filters payment_attempt by preprocessing_step_id anymore
+-- (see find_by_processor_merchant_id_preprocessing_id, removed alongside this migration).
+DROP INDEX IF EXISTS preprocessing_step_id_index;
+
+-- migrations/2026-09-24-100000_add_auto_fallback_capture_method_to_business_profile/up.sql
+ALTER TABLE business_profile
+ADD COLUMN IF NOT EXISTS auto_fallback_capture_method VARCHAR(16);
+
+-- migrations/2026-09-24-100001_add_applied_overrides_to_payment_attempt/up.sql
+-- Add applied_overrides to payment_attempt table
+ALTER TABLE payment_attempt ADD COLUMN IF NOT EXISTS applied_overrides JSONB;
+
+-- migrations/2026-09-27-150000_add_index_processor_merchant_id_connector_refund_id_for_refund/up.sql
+-- migrations/2026-09-27-150000_add_index_processor_merchant_id_connector_refund_id_for_refund/metadata.toml: run_in_transaction = false
+CREATE INDEX CONCURRENTLY IF NOT EXISTS refund_processor_merchant_id_connector_refund_id_index ON refund (processor_merchant_id, connector_refund_id);
+
+-- migrations/2026-09-27-150001_add_index_merchant_id_connector_refund_id_for_refund/up.sql
+-- migrations/2026-09-27-150001_add_index_merchant_id_connector_refund_id_for_refund/metadata.toml: run_in_transaction = false
+-- Supports the stagger-release fallback lookup by merchant_id (for refunds with NULL processor_merchant_id).
+-- TODO: Drop this index once processor_merchant_id is backfilled and the merchant_id fallback is removed.
+CREATE INDEX CONCURRENTLY IF NOT EXISTS refund_merchant_id_connector_refund_id_index ON refund (merchant_id, connector_refund_id);
+
+-- migrations/2026-09-28-100000_add_merchant_reference_id_to_customers/up.sql
+-- The column is also added by `v2_compatible_migrations` (`add_v2_columns`) for deployments that
+-- serve the v2 customers API. `IF NOT EXISTS` keeps both migrations independent of the order they
+-- are run in, and makes this one a no-op wherever the column is already present.
+ALTER TABLE customers
+ADD COLUMN IF NOT EXISTS merchant_reference_id VARCHAR(64);
+
+-- migrations/2026-10-04-100000_add_payout_execution_kind/up.sql
+-- Apply before deploying code that reads or writes execution_kind.
+ALTER TABLE payout_attempt
+    ADD COLUMN execution_kind TEXT;
+
+-- migrations/2026-10-08-103000_drop_payment_attempt_attempt_id_merchant_id_index/up.sql
+-- migrations/2026-10-08-103000_drop_payment_attempt_attempt_id_merchant_id_index/metadata.toml: run_in_transaction = false
+-- Exact duplicate of payment_attempt_pkey, which has been (attempt_id, merchant_id) since
+-- the 2024-06-03-090859_make_id_as_optional_for_payments migration. This index was added as a
+-- perf index in 2023-08-23 when the primary key was still (id), and became redundant after that.
+DROP INDEX CONCURRENTLY IF EXISTS payment_attempt_attempt_id_merchant_id_index;
+
+-- migrations/2026-10-08-103001_drop_payment_attempt_payment_id_merchant_id_attempt_id_index/up.sql
+-- migrations/2026-10-08-103001_drop_payment_attempt_payment_id_merchant_id_attempt_id_index/metadata.toml: run_in_transaction = false
+-- Redundant with payment_attempt_pkey (attempt_id, merchant_id): because that key is already
+-- unique, uniqueness over the (payment_id, merchant_id, attempt_id) superset is implied, and a
+-- lookup on all three columns resolves to a single row through the primary key. Scans on the
+-- leading (payment_id, merchant_id) prefix remain served by
+-- payment_attempt_payment_id_merchant_id_index.
+DROP INDEX CONCURRENTLY IF EXISTS payment_attempt_payment_id_merchant_id_attempt_id_index;
+
+-- migrations/2026-10-08-103002_drop_payment_intent_payment_id_merchant_id_index/up.sql
+-- migrations/2026-10-08-103002_drop_payment_intent_payment_id_merchant_id_index/metadata.toml: run_in_transaction = false
+-- Exact duplicate of payment_intent_pkey, which has been (payment_id, merchant_id) since the
+-- 2024-06-03-090859_make_id_as_optional_for_payments migration. Both are unique over the same
+-- columns in the same order, so every lookup this index could serve is served by the primary key.
+DROP INDEX CONCURRENTLY IF EXISTS payment_intent_payment_id_merchant_id_index;
+
+-- migrations/2026-10-08-120000_add_enable_avs_check_to_payment_intent/up.sql
+ALTER TABLE payment_intent ADD COLUMN IF NOT EXISTS enable_avs_check BOOLEAN;
+
+-- migrations/2026-10-10-100000_scope_blocklist_by_transaction_type/up.sql
+-- Commit the column addition before the following migration backfills rows.
+ALTER TABLE blocklist ADD COLUMN transaction_type TEXT;
+
+-- migrations/2026-10-10-100050_backfill_blocklist_transaction_type/up.sql
+-- migrations/2026-10-10-100050_backfill_blocklist_transaction_type/metadata.toml: run_in_transaction = false
+-- Existing rows are payment-scoped. The preceding migration commits the
+-- column addition first, releasing its ALTER TABLE lock before this backfill.
+-- Keep this file as one DO statement; metadata.toml allows per-batch commits.
+DO $$
+DECLARE
+    rows_updated BIGINT;
+BEGIN
+    LOOP
+        WITH batch AS (
+            SELECT ctid
+            FROM blocklist
+            WHERE transaction_type IS NULL
+            LIMIT 5000
+            FOR UPDATE
+        )
+        UPDATE blocklist AS b
+        SET transaction_type = 'payment'
+        FROM batch
+        WHERE b.ctid = batch.ctid;
+
+        GET DIAGNOSTICS rows_updated = ROW_COUNT;
+
+        COMMIT;
+
+        RAISE NOTICE 'Updated % rows', rows_updated;
+        EXIT WHEN rows_updated = 0;
+
+        PERFORM pg_sleep(1);
+    END LOOP;
+END;
+$$;
+
+-- migrations/2026-10-10-100100_add_blocklist_pm_profile_transaction_index/up.sql
+-- migrations/2026-10-10-100100_add_blocklist_pm_profile_transaction_index/metadata.toml: run_in_transaction = false
+-- Build the replacement before removing the existing uniqueness indexes.
+CREATE UNIQUE INDEX CONCURRENTLY blocklist_pm_fingerprint_profile_transaction_type_index
+    ON blocklist (processor_merchant_id, fingerprint_id, profile_id, transaction_type);
+
+-- migrations/2026-10-10-100200_add_blocklist_pm_null_profile_transaction_index/up.sql
+-- migrations/2026-10-10-100200_add_blocklist_pm_null_profile_transaction_index/metadata.toml: run_in_transaction = false
+-- Build the replacement before removing the existing uniqueness indexes.
+CREATE UNIQUE INDEX CONCURRENTLY blocklist_pm_fingerprint_null_profile_transaction_type_index
+    ON blocklist (processor_merchant_id, fingerprint_id, transaction_type)
+    WHERE profile_id IS NULL;
+
+-- migrations/2026-10-10-100300_add_blocklist_merchant_profile_transaction_index/up.sql
+-- migrations/2026-10-10-100300_add_blocklist_merchant_profile_transaction_index/metadata.toml: run_in_transaction = false
+-- Build the replacement before removing the existing uniqueness indexes.
+CREATE UNIQUE INDEX CONCURRENTLY blocklist_merchant_fingerprint_profile_transaction_type_index
+    ON blocklist (merchant_id, fingerprint_id, profile_id, transaction_type);
+
+-- migrations/2026-10-10-100400_drop_blocklist_pm_profile_index/up.sql
+-- migrations/2026-10-10-100400_drop_blocklist_pm_profile_index/metadata.toml: run_in_transaction = false
+DROP INDEX CONCURRENTLY IF EXISTS blocklist_processor_merchant_id_fingerprint_id_profile_id_index;
+
+-- migrations/2026-10-10-100500_drop_blocklist_pm_null_profile_index/up.sql
+-- migrations/2026-10-10-100500_drop_blocklist_pm_null_profile_index/metadata.toml: run_in_transaction = false
+DROP INDEX CONCURRENTLY IF EXISTS blocklist_pm_fingerprint_null_profile_index;
+
+-- migrations/2026-10-10-100600_drop_blocklist_merchant_profile_index/up.sql
+-- migrations/2026-10-10-100600_drop_blocklist_merchant_profile_index/metadata.toml: run_in_transaction = false
+DROP INDEX CONCURRENTLY IF EXISTS blocklist_merchant_id_fingerprint_id_profile_id_index;
+
+```
+
+###### V2-compatible migration
+
+```sql
+-- v2_compatible_migrations/2026-10-06-000001_add_payment_methods_auxiliary_fingerprint_id_index/up.sql
+-- v2_compatible_migrations/2026-10-06-000001_add_payment_methods_auxiliary_fingerprint_id_index/metadata.toml: run_in_transaction = false
+CREATE INDEX CONCURRENTLY IF NOT EXISTS payment_methods_customer_id_merchant_id_auxiliary_fingerprint_id_index
+ON payment_methods (customer_id, merchant_id, auxiliary_fingerprint_id)
+WHERE auxiliary_fingerprint_id IS NOT NULL;
+
+```
+
+</details>
+
+##### Historical v2-compatible migration
+
+Nine index definitions in an existing v2-compatible migration become unique. This edit does not automatically update databases where the migration has already run; check the final schema and use a reviewed forward repair where required.
+
+<details>
+<summary>View the nine changed index definitions</summary>
+
+Path: `v2_compatible_migrations/2024-08-28-081757_drop_not_null_constraints_on_v1_columns/up.sql`.
+
+Only the changed index definitions are shown below. The historical primary-key removals and nullability changes are unchanged. Do not rerun the entire migration on an existing installation; subsequent v2 migrations also affect the final schema.
+
+```diff
+-CREATE INDEX idx_organization_org_id ON organization (org_id);
++CREATE UNIQUE INDEX idx_organization_org_id ON organization (org_id);
+-CREATE INDEX idx_merchant_account_merchant_id ON merchant_account (merchant_id);
++CREATE UNIQUE INDEX idx_merchant_account_merchant_id ON merchant_account (merchant_id);
+-CREATE INDEX idx_business_profile_profile_id ON business_profile (profile_id);
++CREATE UNIQUE INDEX idx_business_profile_profile_id ON business_profile (profile_id);
+-CREATE INDEX idx_merchant_connector_account_merchant_connector_id ON merchant_connector_account (merchant_connector_id);
++CREATE UNIQUE INDEX idx_merchant_connector_account_merchant_connector_id ON merchant_connector_account (merchant_connector_id);
+-CREATE INDEX idx_customers_merchant_id_customer_id ON customers (merchant_id, customer_id);
++CREATE UNIQUE INDEX idx_customers_merchant_id_customer_id ON customers (merchant_id, customer_id);
+-CREATE INDEX idx_payment_intent_payment_id_merchant_id ON payment_intent (payment_id, merchant_id);
++CREATE UNIQUE INDEX idx_payment_intent_payment_id_merchant_id ON payment_intent (payment_id, merchant_id);
+-CREATE INDEX idx_payment_attempt_attempt_id_merchant_id ON payment_attempt (attempt_id, merchant_id);
++CREATE UNIQUE INDEX idx_payment_attempt_attempt_id_merchant_id ON payment_attempt (attempt_id, merchant_id);
+-CREATE INDEX idx_payment_methods_payment_method_id ON payment_methods (payment_method_id);
++CREATE UNIQUE INDEX idx_payment_methods_payment_method_id ON payment_methods (payment_method_id);
+-CREATE INDEX idx_refund_refund_id_merchant_id ON refund (refund_id, merchant_id);
++CREATE UNIQUE INDEX idx_refund_refund_id_merchant_id ON refund (refund_id, merchant_id);
+```
+
+</details>
+
+##### Rollout and rollback
+
+The rollout must preserve migration order and allow the batched blocklist backfill to commit independently. Rollbacks also require attention to payout execution state and blocklist uniqueness.
+
+<details>
+<summary>View the rollout and rollback checklist</summary>
+
+1. Apply additive columns before deploying application code that reads or writes them, particularly `payout_attempt.execution_kind`.
+2. Preserve blocklist migration order: commit the new column, complete the backfill, build all three replacement unique indexes, then remove the old indexes. Coordinate mixed-version writes so they cannot leave new unscoped rows after the backfill.
+3. Honor all 13 `metadata.toml` files that specify `run_in_transaction = false`. Concurrent index operations and the blocklist backfill must not be wrapped in a single outer transaction. The backfill requires a runner that permits its internal commits.
+4. Monitor locking, database load, replication lag, and index validity. Check the existing primary/unique constraints before removing redundant indexes, particularly on v2-compatible schemas. Inspect failed concurrent index builds before retrying.
+5. Retain the merchant-ID refund fallback index until the corresponding processor-merchant backfill and code fallback removal are complete.
+6. Before rolling back payout execution tracking, drain dependent application code and reconcile proxy attempts. Restoring old blocklist uniqueness requires resolving payment/payout rows that conflict under the old rules. Column-dropping rollbacks discard stored data; the customer-reference and blocklist-backfill down migrations intentionally leave their data in place.
+
+</details>
+
+#### Configuration Changes
+
+Paths: `config/{config.example,development,docker_compose,superposition_seed}.toml`, `config/deployments/{env_specific,drainer,production,sandbox,integration_test}.toml`, `crates/connector_configs/toml/{development,production,sandbox}.toml`, and fixture `loadtest/config/development.toml`.
+
+**Required credential updates:** rename `redis.password` → `redis.primary_password` (including drainer), `analytics.clickhouse.password` → `analytics.clickhouse.primary_password`, `opensearch.auth.password` → `opensearch.auth.primary_password`, and `email.smtp.password` → `email.smtp.primary_password`. Update environment variables and secret templates; old names have no aliases. Redis requires a nonempty password with an ACL username; omit for unauthenticated Redis. Credentials use the secrets manager at startup.
+
+**KMS-encrypted credentials:** when KMS is configured as the secrets manager, supply KMS-encrypted values in the provider's expected ciphertext format for the renamed `primary_password` fields, `email.smtp.socks5.primary_password`, `internal_merchant_id_profile_id_auth.primary_internal_api_key`, and `micro_services.authentication_service.api_key`. These credentials are decrypted at startup for configured services; update environment variables and secret templates accordingly. Renaming existing plaintext values alone is insufficient under KMS. The retained legacy `internal_api_key` remains plaintext.
+
+**Internal authentication:** configure `internal_merchant_id_profile_id_auth.primary_internal_api_key`. `internal_api_key` remains optional legacy. Nonempty primary is required when auth is enabled, either legacy flag is on, or legacy key is configured—even with auth disabled. `key_rotation_enabled` accepts the legacy key inbound; `use_legacy_key_for_outbound` selects it outbound. Both default to `false` and require a legacy key when enabled. Coordinate inbound/outbound changes before disabling legacy support; both flags off discards the legacy key.
+
+**Webhook prerequisites:** provision verification secrets; default-secret fallbacks are removed. Before IP/mTLS enforcement, configure `incoming_webhooks.source_ip_header` / `.mtls_verified_header` (both unset by default), trusted ingress handling, and connector IP/CIDR policies. Strip client-supplied copies at ingress. Populate ranges before enabling verification; required checks reject missing/invalid ranges. Seed policies/dimension before enforcement. Verification/rate-limit flags default to `false`.
+
+##### Runtime settings and optional services
+
+New settings cover database connections, caching, reporting, recovery, and cloud backends. Review the defaults and enable optional integrations after their supporting services are ready.
+
+<details>
+<summary>View settings, defaults, and rollout requirements</summary>
+
+Compiled defaults unless marked bundled; provision dependencies before opt-in.
+
+| Configuration | Default / change | Impact and rollout |
+|---|---|---|
+| `{master_database,replica_database,accounts_database,global_database}.{keepalives_idle,keepalives_interval,keepalives_count,tcp_user_timeout_ms}` | `5` seconds, `2` seconds, `3` probes, `5000` ms respectively; shared router/drainer database settings also gain these fields. | Detect dead connections sooner. Keep TCP user timeout below connection timeout; review platform/pool settings. Overrides optional. |
+| `cache.invalidation_channel` | `hyperswitch_invalidate`. | Every instance in a deployment must use the same channel for invalidation. |
+| `cache.{config,accounts,mca_list,routing,decision_manager,surcharge,cgraph,pm_filters_cgraph,success_based_dynamic_algorithm,elimination_based_dynamic_algorithm,contract_based_dynamic_algorithm}.{ttl_in_secs,tti_in_secs,max_entries}` | TTL `1800` seconds, TTI `600` seconds; capacity `31457280` entries except `config` (unbounded). `max_entries=0` means unbounded. | Optional tuning; omitted settings preserve eviction behavior. Capacity counts entries, not bytes. Monitor memory/size evictions. |
+| `locker.use_batched_fingerprint` | `false`; v2 only. | Enable only with a vault supporting the batch fingerprint API; coordinate merchant-scoped fingerprint rollout. |
+| `email.smtp.socks5.{host,port,username,primary_password}` | Optional; absent means direct SMTP. | Proxy auth needs paired credentials. Existing SMTP fields `host,port,timeout,connection,username` remain; connection supports `plaintext,starttls`. Select `email.active_email_client="SMTP"`. |
+| `comparison_service.shadow_kill_switch_threshold` | `1`. | Disables shadow proxying after qualifying timeout/DNS/refused-connection/proxy-auth failures. Override: `ROUTER__COMPARISON_SERVICE__SHADOW_KILL_SWITCH_THRESHOLD`. |
+| `revenue_recovery.exploration_floor`, `.tie_tolerance` | `0.10`, `1e-4`. | Retry-day allocation: exploration outside `[0,1)` and negative/nonfinite tolerance warn/fall back; infeasible floors clamp. Raising tolerance redistributes probabilities. Fallback hour remains `12` UTC; invalid hours use noon. |
+| `billing_connectors_invoice_record_back.billing_connectors_which_require_invoice_record_back_call` | Bundled value `chargebee,stripebilling,recurly`; omitted section gives an empty set. | Configure eligible billing connectors when invoice record-back after recovery payments is required. |
+| `report_download_config.process_tracker_reports` | Empty list retains Lambda handling. Options: `v1_payments,refunds,disputes,payouts,relay,authentications,v2_payments,revenue_recovery`. | Opt in per report; provision scheduler replica access, storage, links and email. Omit Lambda names once reports move. |
+| `report_download_config.process_tracker.{file_key_prefix,download_url_expiry_days,page_size,query_timeout_secs,email_bcc,email_env_label,report_email_bcc}` | `analytics_reports`, `7` days, `5000` rows, `300` seconds/page, empty BCC list, `Hyperswitch`, empty per-report map. | Per-report BCC replaces global BCC. S3 links cap at seven days/credential expiry. Tune replica load. Report/BCC lists support environment overrides. |
+| `secrets_management.secrets_manager`, `encryption_management.encryption_manager` | Gain `oci_kms`; configure `{vault_crypto_endpoint,key_id}` under the corresponding `.oci_kms` section. | Provision OKE Workload Identity/KMS permissions; plan existing ciphertext/secrets before switching providers. |
+| `file_storage.file_storage_backend`, `theme.storage.file_storage_backend` | Gain `oci_object_storage`, `gcs_object_storage`; existing backend selection is retained. | Optional. Enable the corresponding build feature and provision bucket access before selection. Existing objects require a migration plan. |
+| `file_storage.oci_object_storage`, `theme.storage.oci_object_storage` | Required `namespace,region,bucket_name`. | Uses OCI S3 Compatibility API with Customer Secret Key credentials in `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`. |
+| `file_storage.gcs_object_storage`, `theme.storage.gcs_object_storage` | Required `bucket_name,hmac_access_id,hmac_secret`; optional `region` defaults to `auto`. | Uses GCS XML API with service-account Cloud Storage HMAC credentials, separate from the AWS credential chain. |
+
+Shared defaults apply where examples are not repeated. `env_specific.toml` documents SMTP/proxy, reports, theme storage and KMS. Development/Docker add auth flags, batch-fingerprint and recovery tunables. Drainer TOML changes only Redis password documentation; database TCP defaults also change in code.
+
+</details>
+
+##### Connector configuration
+
+Connector changes include updated endpoints, credentials, wallet support, and eligibility filters. Review the entries for your enabled connectors and apply the environment-specific settings.
+
+<details>
+<summary>View connector changes and environment differences</summary>
+
+Update overlays/accounts together; capability lists do not provision credentials or establish contracted markets.
+
+| Connector / family | Configuration change | Required rollout or impact |
+|---|---|---|
+| Fiuu `connectors.fiuu` | Production `base_url=https://pay.fiuu.com/`, `secondary_base_url=https://api.fiuu.com/`; nonproduction `base_url=https://sandbox-payment.fiuu.com/`, `secondary_base_url=https://sandbox-api.fiuu.com/`. Remove `third_base_url`. | Update custom endpoint overrides and network allowlists for the appropriate environment. |
+| Global Payments Realex | `connectors.globalpayments_realex.base_url`: production `https://api.realexpayments.com/`, sandbox `https://api.sandbox.realexpayments.com/`. `temp_locker_enable_config.globalpayments_realex.payment_method="card"`. Metadata uses `MultiAuthKey`: `api_key` Shared Secret, `key1` Merchant ID, `key2` Account, `api_secret` Refund Password. Credit/debit networks: Mastercard, Visa, AmericanExpress, JCB, Discover, DinersClub, UnionPay. | Provision credentials/UCS before enablement; temporary locker restores card details. |
+| JPMorgan | `tokenization.jpmorgan`: wallet Apple Pay/Google Pay only, `long_lived_token=false`, both pre-decrypt flows `network_tokenization`. Add JPMorgan to card/wallet mandate and zero-mandate lists and `network_transaction_id_supported_connectors`. Auth `BodyKey` → `MultiAuthKey`: `api_key` Client ID, `key1` Certificate Thumbprint, `api_secret` Base64 private key, `key2` Resource ID. | Supply the required credentials for updated UCS flows and validate existing connector accounts before rollout. |
+| Fiserv Commerce Hub, Shift4, Worldpay RAFT | Add Apple Pay/Google Pay wallet methods and metadata. Fiserv Commerce Hub also gains wallet mandate entries. | Provision required wallet fields before enabling methods; field families and connector differences are listed below. |
+| Santander | `mandates.supported_payment_methods.bank_transfer.{pix_automatico_push,pix_automatico_qr}.connector_list` adds `santander`. | Enables those mandate-capability entries; existing zero-mandate Pix entries are unchanged. |
+| dLocal | Adds `dlocal` to applicable GCash mandate/zero-mandate `connector_list` values. | Preserve environment-specific list membership; exceptions below. |
+| `pm_filters` | Add Fiserv Commerce Hub wallet filters; expand Worldpay RAFT card filters and add wallet filters; remove WorldpayXML card/wallet country restrictions and append currencies `STD,BYN`; set `pm_filters.mifinity.mifinity.not_available_flows.capture_method="manual"`. | Update overlay filters; review merchant eligibility. MiFinity manual capture is excluded. |
+| `grpc_client.unified_connector_service.ucs_only_connectors` | Adds connectors by environment as below; removes this list from `env_specific.toml`. | Confirm effective merged list and UCS support before routing connectors. |
+| PayPal | Optional `metadata.enable_stc` toggle. | Sends sender-profile data for Set Transaction Context risk assessment when enabled; review merchant configuration before adoption. |
+| Peach Payments | Optional `metadata.{acquirer_bin,acquirer_merchant_id,acquirer_country_code}` text fields. | Supply acquirer-specific details for applicable external-authentication flows. |
+| MiFinity payouts | Wallet `mifinity`, bank transfer `sepa_bank_transfer`, `connector_auth.HeaderKey.api_key`; required text `metadata.destination_account_number`. | Field label/placeholder says **Source Account Number** despite its key name; verify required account value during onboarding. |
+
+**Required wallet fields:** Apple Pay uses `certificate,certificate_keys,merchant_identifier,display_name,initiative,initiative_context,merchant_business_country,payment_processing_details_at`. Shift4 initiative options are `web,ios` and processing location is `Connector`; Fiserv Commerce Hub/Worldpay RAFT use `Hyperswitch`. Google Pay metadata uses `merchant_name,merchant_id,gateway_merchant_id,allowed_auth_methods`. Fiserv Commerce Hub/Worldpay RAFT additionally expose required `connector_wallets_details.google_pay` fields `merchant_name,merchant_id,gateway_merchant_id,public_key,private_key,recipient_id,allowed_auth_methods`. Fiserv allows `PAN_ONLY,CRYPTOGRAM_3DS`; Shift4/Worldpay RAFT allow only `CRYPTOGRAM_3DS`. Certificates/keys use Base64 where specified.
+
+**Environment differences:** six runtime bundles share the changes above; append additions to each environment's existing lists. Final Fiserv/RAFT/XML filter tables match across these bundles and load-test.
+
+- UCS-only additions: example/development add `shift4,truelayer,globalpayments_realex`; production/integration/sandbox also add `gotyme_sanlam,paysafe,razorpay`; sandbox additionally adds `tesouro`. Docker's UCS-only list is unchanged. Removal of the env-specific override lets the environment bundle supply the intended list.
+- Production/integration/sandbox/development add dLocal to both GCash lists; Docker changes only the zero-mandate GCash list. The example has no GCash change.
+- Load-test changes: Fiserv wallet filters/mandates, four RAFT filters, XML filters, normal GCash dLocal mandates, JPMorgan network IDs, Realex temporary locker, internal primary-key rename.
+
+</details>
+
+##### Superposition policies
+
+New policies control webhook verification, rate limiting, blocklists, and recovery behavior. Seed the required keys and dimension before enablement, preserving existing contexts and overrides.
+
+<details>
+<summary>View policy keys, defaults, and prerequisites</summary>
+
+| Policy | Default and rollout |
+|---|---|
+| `webhooks.incoming_webhooks_ip_verification_enabled` | `false`; global IP-verification gate, read without merchant/connector dimensions; no database fallback. |
+| `webhooks.incoming_webhooks_allowed_ip_ranges` | Empty map of connector → nonempty IP/CIDR array. Populate valid environment-specific ranges before enabling required checks. |
+| `incoming_webhooks.mtls_verification_enabled` | `false`; connector overrides supported. Requires trusted ingress/header configuration. |
+| `webhooks.unverified_webhook_rate_limit_enabled` | `false`; enabled limits reject with HTTP 429. Configured only through Superposition, without database fallback. |
+| `webhooks.unverified_webhook_rate_limit_window_in_secs` | `60`; minimum `1`. |
+| `webhooks.unverified_webhook_merchant_rate_limit` | `60`; `0` disables merchant-level limiting. |
+| `webhooks.unverified_webhook_profile_rate_limit` | `0` disables profile-level limiting. |
+| `webhooks.unverified_webhook_merchant_connector_account_rate_limit` | `0` disables account-level limiting. Add regular string dimension `merchant_connector_id` at position `21`. |
+| `payouts.rerun_payout_frm_before_auto_retry` | `false`; optional FRM rerun before automatic retries, overridable by retry connector. |
+| `payments.should_override_setup_future_usage_to_off_session` | `false`; overrides applied future usage when customer acceptance is provided, preserving original intent future usage. |
+| `payments.payment_blocklist_guard` | `false`; payment confirm, eligibility and saved-card filtering, with merchant/profile overrides. Coordinate enablement with transaction-scoped blocklist migrations. |
+| `system.should_schedule_modular_backward_compat` | `false`; corrects the seed entry previously named `should_schedule_modular_backward_compat`. Runtime already reads the namespaced key; align any contexts attached to the old seed entry. |
+| `vaulting.should_generate_merchant_scoped_payment_method_fingerprint` | `false`; derives merchant-scoped card fingerprints. Coordinate vault capability and fingerprint migration/index rollout. |
+| `payments.use_merchant_reference_id_as_customer_id` | `false`; resolves payment customer IDs through v2 merchant references. Organization-scoped database fallback: `use_merchant_reference_id_as_customer_id_{organization_id}`. Not added by seed-file changes; provision policy separately and confirm identifier-migration strategy before enabling. |
+| `revenue_recovery.ab_algorithm` | Compiled fallback changes `adaptive_retry` → `systematic_k_max_at_score`; existing overrides and persisted invoice assignments continue to govern applicable behavior. Supported variants additionally include `hybrid_adaptive_retry` and `systematic_k_max_at_softmax`. Review overrides before adopting new recovery behavior. |
+
+Rate-limit ceilings use unsigned 32-bit values; zero disables a limiting level, while the window must remain positive. Review webhook retry traffic before enabling limits.
+
+</details>
+
+
+**Full Changelog:** [v1.128.0...v1.129.0](https://github.com/juspay/hyperswitch/compare/v1.128.0...v1.129.0)
+
+### [Hyperswitch Control Center v1.39.0 (2026-11-01)](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.39.0)
+
+#### Features
+
+- Use offer engine credential source from user info to gate demo mode ([#5609](https://github.com/juspay/hyperswitch-control-center/pull/5609))
+- Add conflicted payment status update modal ([#5629](https://github.com/juspay/hyperswitch-control-center/pull/5629))
+- Scaffold explorer section ([#5633](https://github.com/juspay/hyperswitch-control-center/pull/5633))
+- Use delta-based manual reconciliation v2 for exception resolution ([#5612](https://github.com/juspay/hyperswitch-control-center/pull/5612))
+- Add seven payment connectors and Playwright fixtures ([#5639](https://github.com/juspay/hyperswitch-control-center/pull/5639))
+- Upgrade blend to 0.0.38 ([#5659](https://github.com/juspay/hyperswitch-control-center/pull/5659))
+- Webhook registration ui for specific connectors ([#5249](https://github.com/juspay/hyperswitch-control-center/pull/5249))
+- Add embeddable component framework with payments and refunds ([#5660](https://github.com/juspay/hyperswitch-control-center/pull/5660))
+- Add explorer metric cards for payments ([#5635](https://github.com/juspay/hyperswitch-control-center/pull/5635))
+- Edit processor credentials and webhooks, refresh status, add webhooks and retry fields ([#5685](https://github.com/juspay/hyperswitch-control-center/pull/5685))
+- Add Recurly and Stripe Billing, simplify onboarding ([#5693](https://github.com/juspay/hyperswitch-control-center/pull/5693))
+- Add payout blocklist support in blocklist settings ([#5690](https://github.com/juspay/hyperswitch-control-center/pull/5690))
+- Gate recovery retries on start-retry threshold and label attempts on invoice details ([#5700](https://github.com/juspay/hyperswitch-control-center/pull/5700))
+- Add explorer split and table view ([#5641](https://github.com/juspay/hyperswitch-control-center/pull/5641))
+
+#### Enhancement
+
+- Use future validity presets and remove logo field from create offer ([#5631](https://github.com/juspay/hyperswitch-control-center/pull/5631))
+- Scope x-cug-user header to blocklist apis ([#5688](https://github.com/juspay/hyperswitch-control-center/pull/5688))
+
+#### Fixes
+
+- Added provider merchant id context for superposition ([#5627](https://github.com/juspay/hyperswitch-control-center/pull/5627))
+- Fix chargebee auth fields bug ([#5527](https://github.com/juspay/hyperswitch-control-center/pull/5527))
+- Include disabled connectors in Decision Engine handoff ([#5654](https://github.com/juspay/hyperswitch-control-center/pull/5654))
+- Enable virtualization for selectboxadapter ([#5626](https://github.com/juspay/hyperswitch-control-center/pull/5626))
+- Round amount to whole minor units ([#5677](https://github.com/juspay/hyperswitch-control-center/pull/5677))
+- Preserve `effective_at` during exception resolution ([#5698](https://github.com/juspay/hyperswitch-control-center/pull/5698))
+- Onboarding and configuration fixes ([#5702](https://github.com/juspay/hyperswitch-control-center/pull/5702))
+
+#### Compatibility
+
+This version of the Hyperswitch Control Center is compatible with the following versions of other components:
+
+- App Server: [v1.129.0](https://github.com/juspay/hyperswitch/releases/tag/v1.129.0)
+- Web Client: [v0.135.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.135.0)
+- Card Vault: [v0.9.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.9.0)
+- Encryption Service: [v0.1.14](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.14)
+- Superposition: [v0.118.0](https://github.com/juspay/superposition/releases/tag/v0.118.0)
+- Hyperswitch Prism: [v0.7.0](https://github.com/juspay/hyperswitch-prism/releases/tag/v0.7.0)
+
+**Full Changelog:** [v1.38.10...v1.39.0](https://github.com/juspay/hyperswitch-control-center/compare/v1.38.10...v1.39.0)
+
+### [Hyperswitch Web Client v0.135.0 (2026-11-02)](https://github.com/juspay/hyperswitch-web/releases/tag/v0.135.0)
+
+#### Chore
+
+- Vulnerability sanity checks.
+
+#### Compatibility
+
+This version of the Hyperswitch Web Client is compatible with the following versions of other components:
+
+- App Server: [v1.129.0](https://github.com/juspay/hyperswitch/releases/tag/v1.129.0)
+- Control Center: [v1.39.0](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.39.0)
+- WooCommerce Plugin: [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)
+- Card Vault: [v0.9.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.9.0)
+- Encryption Service: [v0.1.14](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.14)
+- Superposition: [v0.118.0](https://github.com/juspay/superposition/releases/tag/v0.118.0)
+- Hyperswitch Prism: [v0.7.0](https://github.com/juspay/hyperswitch-prism/releases/tag/v0.7.0)
+
+**Full Changelog:** [v0.134.0...v0.135.0](https://github.com/juspay/hyperswitch-web/compare/v0.134.0...v0.135.0)
+
+### [Hyperswitch Prism v0.7.0 (2026-11-02)](https://github.com/juspay/hyperswitch-prism/releases/tag/v0.7.0)
+
+#### Features
+
+- **common_utils:** Add connector minor unit amount type ([#2599](https://github.com/juspay/hyperswitch-prism/pull/2599))
+- **connector:**
+  - Add avs check for worldpay raft authorize ([#2488](https://github.com/juspay/hyperswitch-prism/pull/2488))
+  - [PLAID] add eligibility for plaid get_balance ([#2475](https://github.com/juspay/hyperswitch-prism/pull/2475))
+  - [Authorizedotnet] close 13 field and behaviour gaps across six flows ([#2515](https://github.com/juspay/hyperswitch-prism/pull/2515))
+  - APPLEPAY_APM Addition for Travelhub ([#2470](https://github.com/juspay/hyperswitch-prism/pull/2470))
+  - Handle different pos flag for raft cit and mit ([#2476](https://github.com/juspay/hyperswitch-prism/pull/2476))
+  - [PayHere] add Refund and RSync flows ([#2525](https://github.com/juspay/hyperswitch-prism/pull/2525))
+  - [Stripe] harden payment flows, 3DS and webhooks ([#2526](https://github.com/juspay/hyperswitch-prism/pull/2526))
+  - [Nuvei] add 10 flows (Authorize, PSync, Capture, Void, Refund, RSync, ...) ([#2330](https://github.com/juspay/hyperswitch-prism/pull/2330))
+  - [Cybersource] guard the 3DS authorization outcome and make webhook status capture-aware ([#2516](https://github.com/juspay/hyperswitch-prism/pull/2516))
+  - Add Worldpay raft IncrementalAuthorization flow ([#2504](https://github.com/juspay/hyperswitch-prism/pull/2504))
+  - [JPMorgan] Update Access Token Flow ([#2533](https://github.com/juspay/hyperswitch-prism/pull/2533))
+  - [Stripe] implement dispute evidence submission and accept ([#2559](https://github.com/juspay/hyperswitch-prism/pull/2559))
+  - Add Worldpay raft wallet payment method ([#2513](https://github.com/juspay/hyperswitch-prism/pull/2513))
+  - [Revolv3] Include processor name in connector metadata ([#2568](https://github.com/juspay/hyperswitch-prism/pull/2568))
+  - Pass card details in subsequent flows for Worldpay raft ([#2592](https://github.com/juspay/hyperswitch-prism/pull/2592))
+  - [JPMORGAN] support currency-specific merchant IDs and refund reference ([#2540](https://github.com/juspay/hyperswitch-prism/pull/2540))
+  - [Datatrans] support MCP request mapping ([#2570](https://github.com/juspay/hyperswitch-prism/pull/2570))
+  - [JPMorgan] Add support for L2L3 data ([#2572](https://github.com/juspay/hyperswitch-prism/pull/2572))
+  - Add JPMorgan card 3DS pass-through ([#2469](https://github.com/juspay/hyperswitch-prism/pull/2469))
+  - [Novalnet] add 11 flows (Authorize, PSync, Capture, Void, Refund, RSync) ([#2587](https://github.com/juspay/hyperswitch-prism/pull/2587))
+  - [Elavon PG] add recurring cards (CIT/MIT + NTID) and pre-decrypted Apple Pay / Google Pay ([#2571](https://github.com/juspay/hyperswitch-prism/pull/2571))
+  - Add void post capture support for worldpay raft ([#2596](https://github.com/juspay/hyperswitch-prism/pull/2596))
+  - [Ecommpay] add card, 3DS, mandate, refund, void and webhook flows ([#2561](https://github.com/juspay/hyperswitch-prism/pull/2561))
+  - [ClearSaleBR] add ClearSale Brazil FRM connector for PreRiskCheck ([#2639](https://github.com/juspay/hyperswitch-prism/pull/2639))
+  - [JPMorgan] Add support for partial auth, statement descriptor and issuer details ([#2598](https://github.com/juspay/hyperswitch-prism/pull/2598))
+  - [PPRO] add Satispay Intent and QR support ([#2018](https://github.com/juspay/hyperswitch-prism/pull/2018))
+  - [Noon] add 10 flows (Authorize, PSync, Capture, Void, Refund, RSync, ...) ([#2577](https://github.com/juspay/hyperswitch-prism/pull/2577))
+  - Add Worldpay raft network token cit and mit flow ([#2635](https://github.com/juspay/hyperswitch-prism/pull/2635))
+  - Tamara riskdata ([#2582](https://github.com/juspay/hyperswitch-prism/pull/2582))
+  - Add Betterpayment Wero integration ([#2465](https://github.com/juspay/hyperswitch-prism/pull/2465))
+  - [Nexixpay] add 9 flows (ThreeDS, IncomingWebhook, PSync, Capture, Void, ...) ([#2601](https://github.com/juspay/hyperswitch-prism/pull/2601))
+- **framework:**
+  - Support payment methods in follow-up payment flows ([#2536](https://github.com/juspay/hyperswitch-prism/pull/2536))
+  - Add integrity_specifications to allow amount mismatch in integrity checks ([#2382](https://github.com/juspay/hyperswitch-prism/pull/2382))
+- **jpmorgan:**
+  - Support stored cardholder payments ([#2529](https://github.com/juspay/hyperswitch-prism/pull/2529))
+  - Add zero verification and verification sync ([#2530](https://github.com/juspay/hyperswitch-prism/pull/2530))
+  - Support direct network-reference MIT ([#2531](https://github.com/juspay/hyperswitch-prism/pull/2531))
+- **observability:** Expose outgoing API overhead for composite calls ([#2594](https://github.com/juspay/hyperswitch-prism/pull/2594))
+- **risk:** Add RiskAssessmentData,DomainData for other services ([#2517](https://github.com/juspay/hyperswitch-prism/pull/2517))
+- Adding superposition url for sbx ([#2637](https://github.com/juspay/hyperswitch-prism/pull/2637))
+
+#### Bug Fixes
+
+- **PROTO:** Add connector PMT aliases ([#2410](https://github.com/juspay/hyperswitch-prism/pull/2410))
+- **ci:**
+  - Bind SDK release checkouts to workflow ref ([#2619](https://github.com/juspay/hyperswitch-prism/pull/2619))
+  - Restrict PR title workflow permissions ([#2628](https://github.com/juspay/hyperswitch-prism/pull/2628))
+- **connector:**
+  - Mask auth credentials in request headers ([#2503](https://github.com/juspay/hyperswitch-prism/pull/2503))
+  - [Ppro] verify webhook via HMAC-SHA256 and add raw connector status ([#2435](https://github.com/juspay/hyperswitch-prism/pull/2435))
+  - Close six UCS shadow-diff parity gaps ([#2506](https://github.com/juspay/hyperswitch-prism/pull/2506))
+  - [Nexixpay] use payment_id for the order id, matching Direct ([#2520](https://github.com/juspay/hyperswitch-prism/pull/2520))
+  - [tsys_transit] remove raw request and response XML logging ([#2542](https://github.com/juspay/hyperswitch-prism/pull/2542))
+  - [Revolv3] Update error details population logic ([#2544](https://github.com/juspay/hyperswitch-prism/pull/2544))
+  - [WorldpayXML][Checkout] map issuer errors and allow optional return-code attributes ([#2524](https://github.com/juspay/hyperswitch-prism/pull/2524))
+  - Tamara basketinfo fix ([#2549](https://github.com/juspay/hyperswitch-prism/pull/2549))
+  - [Ilixium] map connector message to error_reason, normalise billing province ([#2581](https://github.com/juspay/hyperswitch-prism/pull/2581))
+  - [Worldpayxml] return normalized card attributes ([#2466](https://github.com/juspay/hyperswitch-prism/pull/2466))
+  - Tamara basket added fallback ([#2595](https://github.com/juspay/hyperswitch-prism/pull/2595))
+  - [Citigate] sync by MerchantRef when there is no connector transaction id ([#2606](https://github.com/juspay/hyperswitch-prism/pull/2606))
+  - [fiuu] fall back to the request email on recurring payments ([#2518](https://github.com/juspay/hyperswitch-prism/pull/2518))
+  - Worldpay RAFT partial-approval handling and Mastercard TLID lifecycle metadata ([#2652](https://github.com/juspay/hyperswitch-prism/pull/2652))
+  - [Ilixium] send billing province as ISO 3166-2 code ([#2651](https://github.com/juspay/hyperswitch-prism/pull/2651))
+- **deps:**
+  - Override shell-quote to ^1.8.4 in grace-workspace ([#2616](https://github.com/juspay/hyperswitch-prism/pull/2616))
+  - Override handlebars and proxy-addr, drop medusa lockfile ([#2610](https://github.com/juspay/hyperswitch-prism/pull/2610))
+  - Override protobufjs to ^7.5.5 in legacy node-grpc-client ([#2614](https://github.com/juspay/hyperswitch-prism/pull/2614))
+  - Bump protobufjs to ^7.5.5 and drop JS SDK lockfile ([#2613](https://github.com/juspay/hyperswitch-prism/pull/2613))
+  - Bump netlify and override proxy-addr/tar in browser-automation-engine ([#2615](https://github.com/juspay/hyperswitch-prism/pull/2615))
+  - Update dashboard vite to 6.4.4 ([#2630](https://github.com/juspay/hyperswitch-prism/pull/2630))
+- **elavon_pg:**
+  - Capture on accounts without EPG partial-capture support ([#2493](https://github.com/juspay/hyperswitch-prism/pull/2493))
+  - Include total in hosted sale ([#2541](https://github.com/juspay/hyperswitch-prism/pull/2541))
+- **fiservcommercehub:** Classify oversized RSA payloads as invalid input ([#2580](https://github.com/juspay/hyperswitch-prism/pull/2580))
+- **fiuu:** Migrate to fiuu.com and align API handling ([#2507](https://github.com/juspay/hyperswitch-prism/pull/2507))
+- **framework:**
+  - Log connector HTTP transport error causes ([#2537](https://github.com/juspay/hyperswitch-prism/pull/2537))
+  - Stop GRACE runs stalling on rm approval prompts (grace/ only) ([#2562](https://github.com/juspay/hyperswitch-prism/pull/2562))
+  - Guard rules for command hygiene, permission settings and the private-scenario bucket (grace/ only) ([#2565](https://github.com/juspay/hyperswitch-prism/pull/2565))
+  - Distil resolutions not first asks, and make a repeat comment blocking (grace/ only) ([#2576](https://github.com/juspay/hyperswitch-prism/pull/2576))
+  - Run GRACE on arm64 macOS (grace/ only) ([#2605](https://github.com/juspay/hyperswitch-prism/pull/2605))
+- **grace:** Address CodeQL parsing and Markdown findings ([#2618](https://github.com/juspay/hyperswitch-prism/pull/2618))
+- **grace/dashboard:** Validate URLs flagged by CodeQL ([#2617](https://github.com/juspay/hyperswitch-prism/pull/2617))
+- **logs:** Skip span lifecycle logs for transformed API logs ([#2528](https://github.com/juspay/hyperswitch-prism/pull/2528))
+- **paytm:** Validate AES key lengths ([#2625](https://github.com/juspay/hyperswitch-prism/pull/2625))
+- **santander:** Prefer ISPB for Pix payouts and map error statuses ([#2646](https://github.com/juspay/hyperswitch-prism/pull/2646))
+- **security:** Require patched Node for Prism npm and Medusa ([#2631](https://github.com/juspay/hyperswitch-prism/pull/2631))
+- **stripe:** Forward external 3DS authentication data ([#2501](https://github.com/juspay/hyperswitch-prism/pull/2501))
+- **test:** Keep certification diagnostics local ([#2638](https://github.com/juspay/hyperswitch-prism/pull/2638))
+- **testing:** Isolate browser automation workers ([#2551](https://github.com/juspay/hyperswitch-prism/pull/2551))
+- **ucs:** Convert response amounts through connector amount types ([#2494](https://github.com/juspay/hyperswitch-prism/pull/2494))
+- **webhooks:** Expose preprocessing id in payment references ([#2432](https://github.com/juspay/hyperswitch-prism/pull/2432))
+
+#### Performance
+
+- **framework:** Cut GRACE run cost 45% and wall time 34% (grace/ only) ([#2477](https://github.com/juspay/hyperswitch-prism/pull/2477))
+
+#### Refactors
+
+- **common_utils:** Use Money in amount converters ([#2600](https://github.com/juspay/hyperswitch-prism/pull/2600))
+- **core:** Return post-capture void outcome as post_capture_void_status instead of payment_status ([#2527](https://github.com/juspay/hyperswitch-prism/pull/2527))
+- **grace:** Remove unused mock-server generation step ([#2609](https://github.com/juspay/hyperswitch-prism/pull/2609))
+- **logs:** Expose timestamp field in UCS log-transformers ([#2584](https://github.com/juspay/hyperswitch-prism/pull/2584))
+- **psync:** Require explicit reference validation ([#2641](https://github.com/juspay/hyperswitch-prism/pull/2641))
+
+#### Compatibility
+
+This version of Hyperswitch Prism is compatible with the following versions of other components:
+
+- App Server: [v1.129.0](https://github.com/juspay/hyperswitch/releases/tag/v1.129.0)
+- Control Center: [v1.39.0](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.39.0)
+- Web Client: [v0.135.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.135.0)
+- Card Vault: [v0.9.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.9.0)
+- Encryption Service: [v0.1.14](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.14)
+- Superposition: [v0.118.0](https://github.com/juspay/superposition/releases/tag/v0.118.0)
+
+**Full Changelog:** [v0.6.0...v0.7.0](https://github.com/juspay/hyperswitch-prism/compare/v0.6.0...v0.7.0)
+
+### [Superposition v0.118.0 (2026-09-11)](https://github.com/juspay/superposition/releases/tag/v0.118.0)
+
+#### Features
+
+- Add GCP Cloud KMS and OpenBao/Vault as pluggable KMS backends ([#1142](https://github.com/juspay/superposition/pull/1142))
+- Add workspace-defined metric selections and related cleanups ([#1145](https://github.com/juspay/superposition/pull/1145))
+
+#### Bug Fixes
+
+- Fix the TypeScript SDK dropping null values ([#1143](https://github.com/juspay/superposition/pull/1143))
+
+#### Compatibility
+
+This Suite release uses Superposition with the following component versions:
+
+- App Server: [v1.129.0](https://github.com/juspay/hyperswitch/releases/tag/v1.129.0)
+- Control Center: [v1.39.0](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.39.0)
+- Web Client: [v0.135.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.135.0)
+- Card Vault: [v0.9.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.9.0)
+- Encryption Service: [v0.1.14](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.14)
+- Hyperswitch Prism: [v0.7.0](https://github.com/juspay/hyperswitch-prism/releases/tag/v0.7.0)
+
+**Full Changelog:** [v0.117.2...v0.118.0](https://github.com/juspay/superposition/compare/v0.117.2...v0.118.0)
+
 ## Hyperswitch Suite v1.23
 
 ### [Hyperswitch App Server v1.128.0 (2026-10-15)](https://github.com/juspay/hyperswitch/releases/tag/v1.128.0)
