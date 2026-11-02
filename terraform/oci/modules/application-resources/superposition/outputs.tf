@@ -91,7 +91,7 @@ output "database_admin_username" {
 }
 
 output "database_vault_secret_id" {
-  description = "OCID of the Vault secret holding the generated admin password, when database_config.vault_secret.create was set. Replaces AWS master_user_secret with a different mechanism - the caller owns the secret and nothing rotates it (database.md section 4.10)."
+  description = "OCID of the externally managed or module-created administrator credential secret. Password values are not exported by this wrapper."
   value       = one(module.database[*].vault_secret_id)
   sensitive   = true
 }
