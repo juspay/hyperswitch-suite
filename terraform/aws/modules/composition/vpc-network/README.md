@@ -18,7 +18,6 @@
 |------|--------|---------|
 | <a name="module_common_internet_rt"></a> [common\_internet\_rt](#module\_common\_internet\_rt) | ../../base/route-table | n/a |
 | <a name="module_common_internet_s3_rt"></a> [common\_internet\_s3\_rt](#module\_common\_internet\_s3\_rt) | ../../base/route-table | n/a |
-| <a name="module_common_local_nat_s3_rt"></a> [common\_local\_nat\_s3\_rt](#module\_common\_local\_nat\_s3\_rt) | ../../base/route-table | n/a |
 | <a name="module_common_local_route_rt"></a> [common\_local\_route\_rt](#module\_common\_local\_route\_rt) | ../../base/route-table | n/a |
 | <a name="module_common_local_s3_rt"></a> [common\_local\_s3\_rt](#module\_common\_local\_s3\_rt) | ../../base/route-table | n/a |
 | <a name="module_custom_subnets"></a> [custom\_subnets](#module\_custom\_subnets) | ../../base/subnet | n/a |
@@ -157,7 +156,6 @@
 |------|-------------|
 | <a name="output_common_internet_route_table_id"></a> [common\_internet\_route\_table\_id](#output\_common\_internet\_route\_table\_id) | ID of the CommonInternet route table |
 | <a name="output_common_internet_s3_route_table_id"></a> [common\_internet\_s3\_route\_table\_id](#output\_common\_internet\_s3\_route\_table\_id) | ID of the CommonInternetS3 route table |
-| <a name="output_common_local_nat_s3_route_table_id"></a> [common\_local\_nat\_s3\_route\_table\_id](#output\_common\_local\_nat\_s3\_route\_table\_id) | ID of the Common Local NAT S3 route table (NAT + S3 access) |
 | <a name="output_common_local_route_table_id"></a> [common\_local\_route\_table\_id](#output\_common\_local\_route\_table\_id) | ID of the CommonLocalRoute route table |
 | <a name="output_common_local_s3_route_table_id"></a> [common\_local\_s3\_route\_table\_id](#output\_common\_local\_s3\_route\_table\_id) | ID of the CommonLocalS3 route table |
 | <a name="output_custom_interface_vpc_endpoint_ids"></a> [custom\_interface\_vpc\_endpoint\_ids](#output\_custom\_interface\_vpc\_endpoint\_ids) | Map of custom interface VPC endpoint IDs |
@@ -250,3 +248,9 @@ Use `module.<name>.` prefixes when the composition is called as a child module.
 A fixed `moved` block cannot cover every deployment because old keys contain
 AWS-assigned IDs. Review the full plan after migration: changing the primary VPC
 CIDR can still replace the VPC and its dependent resources.
+
+## Network isolation and upgrade notes
+
+Management subnets and their existing inputs, outputs, and route-table associations are retained. Their CommonInternetS3 route table keeps its legacy name but no longer has an Internet Gateway default route. VPC-local connectivity and configured gateway/interface endpoints remain available. Direct internet access to existing public jump hosts in these subnets will stop after applying this change.
+
+Lambda subnets use CommonLocalS3 with no IGW or NAT default route, including when NAT gateways are disabled. Their subnet IDs are preserved. The unused CommonLocalNATS3 route table and its output are removed; update any consumers of that output or its peering key before upgrading. NAT gateways remain available to outgoing-proxy subnets. Public internet destinations require a separately configured egress proxy. Review the plan before applying.

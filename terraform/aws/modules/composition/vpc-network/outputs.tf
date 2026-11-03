@@ -57,15 +57,7 @@ output "external_incoming_subnet_cidr_blocks" {
 }
 
 # Management Subnets (Public - Bastion)
-output "management_subnet_ids" {
-  description = "List of IDs of management subnets"
-  value       = module.management_subnets[*].subnet_id
-}
 
-output "management_subnet_cidr_blocks" {
-  description = "List of CIDR blocks of management subnets"
-  value       = module.management_subnets[*].subnet_cidr_block
-}
 
 # EKS Worker Node Subnets
 output "eks_workers_subnet_ids" {
@@ -230,10 +222,6 @@ output "common_internet_route_table_id" {
   value       = module.common_internet_rt.route_table_id
 }
 
-output "common_internet_s3_route_table_id" {
-  description = "ID of the CommonInternetS3 route table"
-  value       = module.common_internet_s3_rt.route_table_id
-}
 
 output "common_local_route_table_id" {
   description = "ID of the CommonLocalRoute route table"
@@ -285,10 +273,6 @@ output "eks_worker_route_table_id" {
   value       = module.eks_worker_rt.route_table_id
 }
 
-output "common_local_nat_s3_route_table_id" {
-  description = "ID of the Common Local NAT S3 route table (NAT + S3 access)"
-  value       = var.enable_nat_gateway ? module.common_local_nat_s3_rt[0].route_table_id : ""
-}
 
 ###################
 # Network ACL Outputs
@@ -363,4 +347,19 @@ output "flow_logs_destination_arn" {
 output "flow_logs_kms_key_arn" {
   description = "KMS key ARN used by the module-created flow-log group, or null for an external destination."
   value       = local.flow_logs_kms_key_arn
+}
+
+output "management_subnet_ids" {
+  description = "List of IDs of management subnets"
+  value       = module.management_subnets[*].subnet_id
+}
+
+output "management_subnet_cidr_blocks" {
+  description = "List of CIDR blocks of management subnets"
+  value       = module.management_subnets[*].subnet_cidr_block
+}
+
+output "common_internet_s3_route_table_id" {
+  description = "ID of the CommonInternetS3 route table"
+  value       = module.common_internet_s3_rt.route_table_id
 }

@@ -142,7 +142,6 @@ locals {
   # Subnet IDs by tier for custom endpoints
   endpoint_subnet_ids = {
     external_incoming = module.external_incoming_subnets[*].subnet_id
-    management        = module.management_subnets[*].subnet_id
     eks_workers       = module.eks_workers_subnets[*].subnet_id
     eks_control_plane = module.eks_control_plane_subnets[*].subnet_id
     database          = module.database_subnets[*].subnet_id
@@ -153,6 +152,7 @@ locals {
     incoming_envoy    = module.incoming_envoy_subnets[*].subnet_id
     outgoing_proxy    = module.outgoing_proxy_subnets[*].subnet_id
     utils             = module.utils_subnets[*].subnet_id
+    management        = module.management_subnets[*].subnet_id
     lambda            = module.lambda_subnets[*].subnet_id
   }
 
@@ -167,8 +167,6 @@ locals {
     var.enable_nat_gateway && length(var.availability_zones) > 2 ? [module.proxy_peering_nat_c_rt[0].route_table_id] : [],
     # EKS Worker route table (S3 only, no NAT)
     [module.eks_worker_rt.route_table_id],
-    # Common Local NAT S3 route table (NAT + S3)
-    var.enable_nat_gateway ? [module.common_local_nat_s3_rt[0].route_table_id] : [],
     var.include_database_route_tables_in_gateway_endpoints ? [module.db_route_table.route_table_id] : []
   ))
 }
