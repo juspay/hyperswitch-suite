@@ -2,14 +2,10 @@ locals {
   # Keep membership and keys independent of IDs, which are unknown when the
   # VPC/route tables are created or replaced. Only map values may be computed.
   public_route_tables = {
-    common-internet    = module.common_internet_rt.route_table_id
-    common-internet-s3 = module.common_internet_s3_rt.route_table_id
+    common-internet = module.common_internet_rt.route_table_id
   }
 
   private_nat_route_tables = merge(
-    var.enable_nat_gateway ? {
-      common-local-nat-s3 = module.common_local_nat_s3_rt[0].route_table_id
-    } : {},
     var.enable_nat_gateway && length(var.availability_zones) > 0 ? {
       proxy-peering-nat-a = module.proxy_peering_nat_a_rt[0].route_table_id
     } : {},
@@ -22,8 +18,9 @@ locals {
   )
 
   private_isolated_route_tables = {
-    common-local    = module.common_local_route_rt.route_table_id
-    common-local-s3 = module.common_local_s3_rt.route_table_id
+    common-internet-s3 = module.common_internet_s3_rt.route_table_id
+    common-local       = module.common_local_route_rt.route_table_id
+    common-local-s3    = module.common_local_s3_rt.route_table_id
   }
 
   database_route_tables = {
