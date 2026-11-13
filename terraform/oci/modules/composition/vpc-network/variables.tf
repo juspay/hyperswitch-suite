@@ -275,6 +275,12 @@ variable "incoming_envoy_subnet_cidr" {
   default     = null
 }
 
+variable "incoming_envoy_nat_enabled" {
+  description = "Associate the incoming-envoy subnet with common-local-nat-osn when true (default). When false, use common-local-osn to remove NAT internet egress while retaining private Oracle services and intra-VCN routing. Does not change utils or Squid routing."
+  type        = bool
+  default     = true
+}
+
 variable "outgoing_proxy_subnet_cidr" {
   description = "CIDR for the Squid egress proxy subnet - the only tier with a NAT route"
   type        = string
