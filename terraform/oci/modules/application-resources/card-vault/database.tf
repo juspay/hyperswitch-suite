@@ -15,6 +15,8 @@ module "database" {
 
   display_name = coalesce(var.database_config.display_name, "${local.name_prefix}-card-vault")
 
+  source_backup_id = var.database_config.source_backup_id
+
   # Network. There is no subnet-group concept on OCI: the db system takes one
   # subnet OCID directly, which is why AWS's `create_db_subnet_group` and its
   # subnet-list companion have nothing to map onto.
@@ -37,9 +39,8 @@ module "database" {
 
   is_reader_endpoint_enabled = var.database_config.is_reader_endpoint_enabled
 
-  # No password is passed and none should be. OCI has no
-  # manage_master_user_password equivalent, so the composition module generates
-  # one and writes it to Vault when `vault_secret.create` is set.
+  # No password value is passed. An existing Vault reference stays external;
+  # the composition module generates one only when no external secret is set.
   admin_username = var.database_config.admin_username
   vault_secret   = var.database_config.vault_secret
 
