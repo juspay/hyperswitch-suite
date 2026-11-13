@@ -243,7 +243,7 @@ variable "service_lb_backend_nsg_ids" {
 #    node_pool_autoscaler_bounds output. If the autoscaler is unhealthy,
 #    nothing pulls the pool back inside those bounds.
 variable "node_pools" {
-  description = "OKE node pools, keyed by pool name. See the block comment above this variable for the two structural gaps versus AWS node groups (single shape per pool; min_size/max_size are advisory metadata, not enforced)."
+  description = "OKE node pools, keyed by pool name. create_nsg defaults to false; true creates and additively attaches an empty worker/pod NSG pair (requires npn), with rules owned separately. See the block comment above this variable for the two structural gaps versus AWS node groups (single shape per pool; min_size/max_size are advisory metadata, not enforced)."
   type = map(object({
     # Shape. `ocpus` / `memory_in_gbs` apply only to Flex shapes.
     shape         = optional(string, "VM.Standard.E5.Flex")
@@ -283,6 +283,7 @@ variable "node_pools" {
     # Additive: concatenated with the managed worker NSG, not a replacement.
     nsg_ids            = optional(list(string), [])
     pod_nsg_ids        = optional(list(string), [])
+    create_nsg         = optional(bool, false)
     volume_kms_key_id  = optional(string)
     cloud_init         = optional(list(map(string)), [])
     kubernetes_version = optional(string)
