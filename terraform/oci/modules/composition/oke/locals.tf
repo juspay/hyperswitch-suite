@@ -84,7 +84,7 @@ locals {
   # Terraform never reverts the autoscaler's own scaling decisions. It creates
   # no floor or ceiling - none exists (see the node_pools variable comment).
   worker_pools = {
-    for name, pool in var.node_pools : name => {
+    for name, pool in var.node_pools : name => merge({
       create = true
       mode   = "node-pool"
 
@@ -116,7 +116,13 @@ locals {
       volume_kms_key_id  = pool.volume_kms_key_id != null ? pool.volume_kms_key_id : var.worker_volume_kms_key_id
 
       freeform_tags = local.common_freeform_tags
-    }
+      }, length(pool.pod_nsg_ids) > 0 ? {
+      pod_nsg_ids = distinct(concat(
+        [module.oke.pod_nsg_id],
+        var.additional_pod_nsg_ids,
+        pool.pod_nsg_ids,
+      ))
+    } : {})
   }
 
   # Advisory bounds, exported for whichever autoscaler enforces them; nothing in

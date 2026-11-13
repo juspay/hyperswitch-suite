@@ -281,11 +281,8 @@ variable "node_pools" {
     max_pods_per_node = optional(number, 31)
     subnet_id         = optional(string)
     # Additive: concatenated with the managed worker NSG, not a replacement.
-    nsg_ids = optional(list(string), [])
-    # NOTE: pod NSGs are deliberately module-level only (additional_pod_nsg_ids).
-    # A per-pool pod_nsg_ids key REPLACES rather than extends the managed pod
-    # NSG in the registry module, which would silently detach the baseline pod
-    # rules.
+    nsg_ids            = optional(list(string), [])
+    pod_nsg_ids        = optional(list(string), [])
     volume_kms_key_id  = optional(string)
     cloud_init         = optional(list(map(string)), [])
     kubernetes_version = optional(string)

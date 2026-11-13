@@ -170,6 +170,11 @@ resource "terraform_data" "validate" {
 
   lifecycle {
     precondition {
+      condition     = var.cni_type == "npn" || alltrue([for pool in var.node_pools : length(pool.pod_nsg_ids) == 0])
+      error_message = "node_pools[*].pod_nsg_ids requires cni_type = 'npn'; Flannel has no pod VNIC NSG attachment."
+    }
+
+    precondition {
       condition     = var.public_lb_subnet_id != null || var.internal_lb_subnet_id != null
       error_message = "At least one of public_lb_subnet_id or internal_lb_subnet_id must be set: OKE records a default service load-balancer subnet on the cluster itself, and unlike AWS there is no subnet-tag discovery to fall back on (vpc-network.md gap 4.7)."
     }
