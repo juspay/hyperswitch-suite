@@ -170,8 +170,18 @@ resource "terraform_data" "validate" {
 
   lifecycle {
     precondition {
-      condition     = var.cni_type == "npn" || alltrue([for pool in var.node_pools : length(pool.pod_nsg_ids) == 0])
-      error_message = "node_pools[*].pod_nsg_ids requires cni_type = 'npn'; Flannel has no pod VNIC NSG attachment."
+      condition     = var.cni_type == "npn" || alltrue([for pool in var.node_pools : !pool.create_nsg && length(pool.pod_nsg_ids) == 0])
+      error_message = "node_pools[*].create_nsg and pod_nsg_ids require cni_type = 'npn'; Flannel has no pod VNIC NSG attachment."
+    }
+
+    precondition {
+      condition     = alltrue([for ids in local.effective_worker_nsg_ids : length(ids) <= 5])
+      error_message = "Worker VNICs support at most 5 distinct NSGs, including the baseline, global, per-pool and OKE-owned groups."
+    }
+
+    precondition {
+      condition     = alltrue([for ids in local.effective_pod_nsg_ids : length(ids) <= 5])
+      error_message = "Pod VNICs support at most 5 distinct NSGs, including the baseline, global, per-pool and OKE-owned groups."
     }
 
     precondition {
