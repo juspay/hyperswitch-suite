@@ -33,6 +33,10 @@ resource "oci_identity_tag" "component" {
 }
 
 resource "oci_identity_dynamic_group" "this" {
+  # Dynamic groups are tenancy-level identity resources and, like the tag
+  # namespace above, reject create/update/delete outside the home region.
+  provider = oci.home
+
   compartment_id = var.tenancy_ocid
   name           = "${local.name_prefix}-fleet"
   description    = "Envoy-proxy fleet instances (${local.display_name}), matched by defined tag - freeform tags are not matchable. Grants instance-principal access to fetch this fleet's envoy.yaml at boot."
@@ -51,6 +55,10 @@ resource "oci_identity_dynamic_group" "this" {
 }
 
 resource "oci_identity_policy" "this" {
+  # Policies are home-region-gated identity resources, like every other
+  # resource in this file.
+  provider = oci.home
+
   compartment_id = var.compartment_id
   name           = "${local.name_prefix}-identity"
   description    = "Instance-principal read access for the ${local.display_name} fleet to its own config bucket. GetObject only - no bucket listing, no write."

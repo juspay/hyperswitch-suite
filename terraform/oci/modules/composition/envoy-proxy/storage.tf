@@ -61,6 +61,11 @@ resource "oci_objectstorage_object_lifecycle_policy" "logs" {
   namespace = local.namespace
   bucket    = oci_objectstorage_bucket.logs[0].name
 
+  # PutObjectLifecyclePolicy fails with 400-InsufficientServicePermissions
+  # unless the grant below already exists - the edge guarantees first-apply
+  # ordering rather than relying on luck.
+  depends_on = [oci_identity_policy.logs_lifecycle]
+
   dynamic "rules" {
     for_each = var.log_archive_after_days != null ? [1] : []
 
@@ -81,5 +86,33 @@ resource "oci_objectstorage_object_lifecycle_policy" "logs" {
     time_amount = tostring(var.log_retention_days)
     time_unit   = "DAYS"
     is_enabled  = true
+  }
+}
+
+# The lifecycle policy executes under the REGIONAL Object Storage service
+# principal (objectstorage-<region>), so the allow statement names that
+# regional principal. The policy OBJECT itself is a tenancy-wide identity
+# resource and is still created in the home region, like every other policy.
+# Mirrors squid-proxy/storage.tf `logs_lifecycle`, proven against the same
+# 400-InsufficientServicePermissions failure.
+resource "oci_identity_policy" "logs_lifecycle" {
+  count = var.create_logs_bucket ? 1 : 0
+
+  provider = oci.home
+
+  compartment_id = var.compartment_id
+  name           = "${local.name_prefix}-logs-lifecycle"
+  description    = "Authorize regional Object Storage service to execute the lifecycle policy on the ${local.display_name} logs bucket."
+
+  statements = [
+    "allow service objectstorage-${var.region} to manage object-family in compartment id ${var.compartment_id} where target.bucket.name = '${local.logs_bucket_name}'",
+  ]
+
+  freeform_tags = local.freeform_tags
+  defined_tags  = var.defined_tags
+
+  # See identity.tf - same Oracle-Tags stamping reasoning for identity resources.
+  lifecycle {
+    ignore_changes = [defined_tags]
   }
 }
