@@ -91,3 +91,7 @@ load-test/__pycache__
 .terragrunt-stack-manifest
 *.tfstate
 *.tfstate.backup
+
+# terraform provider caches and lock files
+.terraform/
+.terraform.lock.hcl

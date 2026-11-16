@@ -1,0 +1,178 @@
+---
+# CIS Ubuntu 24.04 baseline for the OCI envoy and squid images: Level 1 AND Level 2.
+# Applied by shared/scripts/run-cis-baseline.sh with no level filter.
+#
+# WHY LEVEL 2. Juspay's Hardening Procedure section 5 is not a pure Level 1
+# list. 5f requires auditd with its full rule set (29 rules in the role, all
+# Level 2) and 5e requires DCCP, SCTP, RDS and TIPC to be disabled (4 rules, all
+# Level 2). Only 13 other rules are Level 2 only; each is applied.
+#
+# Role: ansible-lockdown/UBUNTU24-CIS (CIS Ubuntu Linux 24.04 LTS Benchmark),
+# pinned by commit in the Packer template. Every deviation from the role's
+# defaults is listed here with its reason and mirrored in
+# hyperswitch-infra:docs/hardening/cis-exceptions.md. Add nothing here without
+# adding it there. (The 22.04 equivalent is ubuntu2204.yml, kept for reference.)
+- name: CIS baseline (Level 1 + 2) for an OCI proxy image, Ubuntu 24.04
+  hosts: localhost
+  connection: local
+  become: true
+  vars:
+    ansible_user: root
+
+    # --- Host firewall -----------------------------------------------------
+    # ufw is configured by the Packer template AFTER this role (default deny,
+    # the service port); `none` skips every firewall control.
+    ubtu24cis_firewall_package: none
+
+    # --- This image IS a proxy ---------------------------------------------
+    # 2.1.17 "Ensure web proxy server services are not in use" would remove squid.
+    ubtu24cis_squid_server: "{{ (lookup('env', 'CIS_SQUID_SERVER') | default('false', true)) | bool }}"
+
+    # --- Time ---------------------------------------------------------------
+    # OCI serves NTP on UDP 123 at the same link-local IP as IMDS
+    # (169.254.169.254); the role's default pools are NIST, unreachable from a
+    # VM with no internet route.
+    ubtu24cis_time_sync_tool: chrony
+    ubtu24cis_time_pool:
+      - name: 169.254.169.254
+        options: iburst
+    ubtu24cis_time_servers:
+      - name: 169.254.169.254
+        options: iburst
+
+    # --- Accounts -----------------------------------------------------------
+    # 5.2.4 removes passwordless sudo, which is how every operator gets root on
+    # an OCI VM; no user has a password and none should.
+    ubtu24cis_rule_5_2_4: false
+
+    # --- /tmp: configured by the post_tasks below, not by the role -------------
+    # The role's "Remount /tmp" handler runs a plain `mount -o remount /tmp`
+    # that fails ("umount: /tmp: not mounted") as the last step of the play when
+    # /tmp is not yet a mount point. The Packer template reboots right after this
+    # play, so the post_tasks write the unit (tmpfs, nodev,nosuid,noexec) and
+    # enable it for the next boot. 1.1.2.1.1-4 are met, minus the broken handler.
+    ubtu24cis_tmp_svc: false
+    ubtu24cis_rule_1_1_2_1_1: false
+    ubtu24cis_rule_1_1_2_1_2: false
+    ubtu24cis_rule_1_1_2_1_3: false
+    ubtu24cis_rule_1_1_2_1_4: false
+
+    # --- Single-disk image: separate-partition controls cannot be met -------
+    # /dev/shm keeps its options (1.1.2.2.x). /home, /var, /var/tmp, /var/log and
+    # /var/log/audit are directories on the one boot disk.
+    ubtu24cis_rule_1_1_2_3_1: false
+    ubtu24cis_rule_1_1_2_3_2: false
+    ubtu24cis_rule_1_1_2_3_3: false
+    ubtu24cis_rule_1_1_2_4_1: false
+    ubtu24cis_rule_1_1_2_4_2: false
+    ubtu24cis_rule_1_1_2_4_3: false
+    ubtu24cis_rule_1_1_2_5_1: false
+    ubtu24cis_rule_1_1_2_5_2: false
+    ubtu24cis_rule_1_1_2_5_3: false
+    ubtu24cis_rule_1_1_2_5_4: false
+    ubtu24cis_rule_1_1_2_6_1: false
+    ubtu24cis_rule_1_1_2_6_2: false
+    ubtu24cis_rule_1_1_2_6_3: false
+    ubtu24cis_rule_1_1_2_6_4: false
+    ubtu24cis_rule_1_1_2_7_1: false
+    ubtu24cis_rule_1_1_2_7_2: false
+    ubtu24cis_rule_1_1_2_7_3: false
+    ubtu24cis_rule_1_1_2_7_4: false
+
+    # --- squashfs ----------------------------------------------------------------
+    # 1.1.1.7 would blacklist squashfs, which snaps are made of; the OCI base
+    # image ships snapd and the snap payloads the build's Trivy gate keeps.
+    ubtu24cis_rule_1_1_1_7: false
+
+    # --- AIDE ---------------------------------------------------------------
+    # The initial database build can outlast the role's 600 s default on a small
+    # build VM; the Packer template rebuilds it on the final file state anyway.
+    ubtu24cis_aide_init_async: 1800
+    ubtu24cis_aide_init_poll: 30
+
+    # --- Reboot -------------------------------------------------------------
+    skip_reboot: true
+
+  # --- auditd must exist before the role needs its files ------------------------
+  pre_tasks:
+    - name: Install auditd before the role needs its files
+      ansible.builtin.apt:
+        name:
+          - auditd
+          - audispd-plugins
+        state: present
+        update_cache: false
+
+  roles:
+    - role: ubuntu24_cis
+
+  # --- OCI compatibility, applied after the role -------------------------------
+  # The role cannot know these. Each is verified by the Packer selftest or by
+  # the review VM's boot script.
+  post_tasks:
+    # 1.1.2.1.1-4: /tmp as a tmpfs with nodev, nosuid, noexec. The role's own
+    # systemd path only writes a drop-in and assumes a tmp.mount unit is already
+    # installed, which Ubuntu 22.04 does not do (the stock file sits in
+    # /usr/share/systemd for admins to copy). So this is the complete unit,
+    # equal to systemd's stock tmp.mount with noexec added to Options. It only
+    # takes effect at the next boot; the Packer template reboots right after.
+    - name: /tmp | tmpfs unit with nodev,nosuid,noexec
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/tmp.mount
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=Temporary Directory /tmp
+          Documentation=https://systemd.io/TEMPORARY_DIRECTORIES
+          ConditionPathIsSymbolicLink=!/tmp
+          DefaultDependencies=no
+          Conflicts=umount.target
+          Before=local-fs.target umount.target
+          After=swap.target
+
+          [Mount]
+          What=tmpfs
+          Where=/tmp
+          Type=tmpfs
+          Options=mode=1777,strictatime,nosuid,nodev,noexec,size=50%,nr_inodes=1m
+
+          [Install]
+          WantedBy=local-fs.target
+
+    - name: /tmp | enable the unit for the next boot (does not mount it now)
+      ansible.builtin.systemd:
+        name: tmp.mount
+        enabled: true
+        masked: false
+        daemon_reload: true
+
+    # Squid image only (these files exist only there). The hardened squid.service
+    # moves the PID file to /run/squid/squid.pid; the packaged logrotate script
+    # still looks at /run/squid.pid, so logs would silently stop rotating.
+    - name: Squid | does logrotate know squid?
+      ansible.builtin.stat:
+        path: /etc/logrotate.d/squid
+      register: squid_logrotate
+
+    - name: Squid | logrotate follows the moved PID file
+      ansible.builtin.replace:
+        path: /etc/logrotate.d/squid
+        regexp: '/run/squid\.pid'
+        replace: '/run/squid/squid.pid'
+      when: squid_logrotate.stat.exists
+
+    # NoNewPrivileges (squid.service drop-in) stops the ICMP pinger helper from
+    # gaining cap_net_raw / setuid. Nothing here uses ICMP netdb, so turn it off.
+    - name: Squid | is there a squid.conf?
+      ansible.builtin.stat:
+        path: /etc/squid/squid.conf
+      register: squid_conf
+
+    - name: Squid | pinger off
+      ansible.builtin.lineinfile:
+        path: /etc/squid/squid.conf
+        regexp: '^pinger_enable'
+        line: 'pinger_enable off'
+      when: squid_conf.stat.exists

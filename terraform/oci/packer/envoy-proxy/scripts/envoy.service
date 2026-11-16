@@ -1,0 +1,28 @@
+[Unit]
+Description=Envoy proxy
+After=network-online.target envoy-config-fetch.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=envoy
+Group=envoy
+ExecStart=/usr/bin/envoy -c /etc/envoy/envoy.yaml --log-path /var/log/envoy/envoy.log
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=1048576
+# Satisfies hardening control 12c. This shape binds no capability-bearing
+# ports: envoy listens on unprivileged ports (>1024, 8080 and 9273), so
+# CapabilityBoundingSet can be emptied and NoNewPrivileges set without losing
+# any required capability. ProtectSystem=strict makes /etc and /usr read-only;
+# envoy only needs to write under /var/log/envoy and its RuntimeDirectory, both
+# covered by ReadWritePaths below. PrivateTmp keeps its tmp hermetic.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/var/log/envoy
+ProtectHome=yes
+PrivateTmp=yes
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target

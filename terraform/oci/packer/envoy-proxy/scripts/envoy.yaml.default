@@ -1,0 +1,96 @@
+# =============================================================================
+# envoy.yaml - BAKED-IN DEFAULT, not the runtime config
+# =============================================================================
+# The authoritative envoy.yaml is delivered at boot from OCI Object Storage by
+# /usr/local/bin/fetch-envoy-config.sh, sourced from the envoy-proxy
+# composition module's config bucket (the `envoy_config_content` input on
+# hyperswitch-infra:terraform/catalog/units/oci/envoy-proxy).
+#
+# WHY THIS EXISTS AT ALL, WHEN THE GCP IMAGE DELIBERATELY HAS NO DEFAULT.
+# GCP's envoy image ships no envoy.yaml on purpose: "this service will
+# crash-loop (Restart=on-failure) until the startup script writes a real config
+# and restarts it, which is expected on first boot"
+# (terraform/gcp/packer/envoy-proxy/envoy-image.pkr.hcl, step 3). That is a
+# reasonable posture there because GCP's composition module has a
+# `custom_startup_script` seam and the GCP live root uses it, so a real config
+# arrives within seconds of boot.
+#
+# The OCI module has no such seam - it passes `config_bucket` /
+# `config_namespace` through instance metadata and expects the IMAGE to fetch.
+# Instance principal auth for that fetch now EXISTS (since 2026-09-10 each
+# composition module creates its own dynamic group and policy), so the normal
+# path fetches the real config at boot; this default only answers 503 when that
+# fetch genuinely fails. A no-default image on OCI would mean a permanent
+# systemd crash loop on every instance in the fleet, which buries any real
+# error in restart noise and makes `systemctl status envoy` useless for
+# diagnosis.
+#
+# WHAT THIS DEFAULT DOES, AND WHY IT IS NOT A LIE. Every request gets a 503
+# with an explicit body naming the reason - INCLUDING the load balancer's
+# health check path. So a fleet running this config registers with the backend
+# set and then fails health checks, which is exactly the truth: these instances
+# are up but are not serving. The alternative - answering 200 on /health while
+# proxying nothing - would make the load balancer report a healthy fleet that
+# black-holes traffic, and that is a far worse failure than a visibly unhealthy
+# one.
+#
+# The admin listener is bound to 127.0.0.1 only. It is not an operator
+# interface here; it exists because vector.toml scrapes
+# http://localhost:9901/stats/prometheus, and because /ready is what the build's
+# own health assertion checks. Binding it to 0.0.0.0 would expose Envoy's admin
+# API - which can drain listeners and dump the full config including secrets -
+# to anything that can reach the instance.
+# =============================================================================
+
+admin:
+  address:
+    socket_address:
+      address: 127.0.0.1
+      port_value: 9901
+
+static_resources:
+  listeners:
+    - name: placeholder_listener
+      address:
+        socket_address:
+          address: 0.0.0.0
+          # Must match the envoy-proxy unit's backend_port (8080) so that an
+          # instance running this default still ACCEPTS the health check and
+          # answers it, rather than refusing the connection. A refused
+          # connection and a 503 look different in the load balancer's own
+          # metrics, and "answered, unhealthy" is the more diagnosable of the
+          # two.
+          port_value: 8080
+      filter_chains:
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: placeholder
+                access_log:
+                  - name: envoy.access_loggers.file
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
+                      # The path glob vector.toml tails
+                      # (/var/log/envoy/listener-https*.log) is matched here so
+                      # that even the placeholder's traffic is observable - a
+                      # silent placeholder would make "is this instance running
+                      # the real config or the fallback?" unanswerable from
+                      # logs alone.
+                      path: /var/log/envoy/listener-https-placeholder.log
+                http_filters:
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                route_config:
+                  name: placeholder_route
+                  virtual_hosts:
+                    - name: placeholder
+                      domains: ["*"]
+                      routes:
+                        - match:
+                            prefix: "/"
+                          direct_response:
+                            status: 503
+                            body:
+                              inline_string: "envoy-proxy: no envoy.yaml has been delivered to this instance. The image's fetch-envoy-config.sh could not read the config object from OCI Object Storage - most likely because the instance principal / dynamic group for this fleet does not exist yet. This instance is intentionally failing its health check rather than pretending to serve.\n"

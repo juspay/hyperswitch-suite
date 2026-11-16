@@ -1,0 +1,90 @@
+================================================================================
+ ${instance_name} - operator connection guide (OCI)
+================================================================================
+
+Region              : ${region}
+Jump instance OCID  : ${instance_id}
+Jump instance IP    : ${instance_private_ip}   (private - no public IP)
+Bastion OCID        : ${bastion_id}
+Bastion endpoint IP : ${bastion_endpoint_ip}
+Max session TTL     : ${session_ttl} seconds
+Migration mode      : ${migration_mode}
+
+--------------------------------------------------------------------------------
+READ THIS FIRST - THIS IS NOT `aws ssm start-session`
+--------------------------------------------------------------------------------
+On AWS this host was reached with SSM Session Manager: no SSH key, no inbound
+port, no local agent beyond the AWS CLI. OCI Bastion is a session BROKER for
+SSH, not a replacement transport. Three things are different and none of them
+is cosmetic:
+
+  1. YOU NEED AN SSH KEYPAIR. Every OCI Bastion session requires one - the
+     public half is registered with the session at creation time. There is no
+     keyless mode.
+  2. THIS HOST HAS ONE INBOUND RULE. Traffic from ${bastion_endpoint_ip} on
+     port 22 is allowed. That rule cannot be removed; OCI Bastion cannot work
+     without it, unlike SSM which needed zero inbound rules.
+  3. NOTHING RECORDS WHAT YOU TYPE. OCI Audit logs that a session was created
+     and destroyed, by whom and against what. It does not record session
+     content. Self-managed recording is ${session_recording ? "ENABLED - a bucket exists, but the recorder itself is platform-built tooling; confirm it is actually running before relying on it" : "DISABLED"}.
+
+--------------------------------------------------------------------------------
+STEP 1 - one-time: have an SSH keypair
+--------------------------------------------------------------------------------
+    ssh-keygen -t ed25519 -f ~/.ssh/oci-bastion -C "$(whoami)@bastion"
+
+The public half must already be authorized on this host (var.ssh_public_keys),
+AND is passed again to each session below. Both are required.
+
+--------------------------------------------------------------------------------
+STEP 2 - create a PORT FORWARDING session to this host's sshd
+--------------------------------------------------------------------------------
+Port forwarding, not managed SSH. Managed SSH exists to reach arbitrary
+instances without standing SSH access configured on them; this box's whole
+purpose is being the one hop you tunnel THROUGH, so port forwarding is the
+right type.
+
+    oci bastion session create-port-forwarding \
+      --bastion-id ${bastion_id} \
+      --target-private-ip ${instance_private_ip} \
+      --target-port 22 \
+      --session-ttl ${session_ttl} \
+      --ssh-public-key-file ~/.ssh/oci-bastion.pub \
+      --region ${region} \
+      --wait-for-state SUCCEEDED
+
+Take the session OCID from the output, then:
+
+    oci bastion session get --session-id <SESSION_OCID> --region ${region} \
+      --query 'data."ssh-metadata".command'
+
+That prints the exact ssh command, including the bastion host to proxy
+through. Substitute your private key path for the <privateKey> placeholder.
+
+--------------------------------------------------------------------------------
+STEP 3 - tunnel onward to the data tier
+--------------------------------------------------------------------------------
+This host exists because the managed data-tier services do not run any agent a
+broker can reach, so they cannot be targeted directly. Open a local forward
+through the SSH connection from step 2:
+%{ if length(connection_targets) == 0 }
+  (no connection targets were wired into this module - the live root populates
+   them from the database/cache units via dependency blocks)
+%{ else }%{ for name, t in connection_targets }
+  ${name}${t.description != "" ? " - ${t.description}" : ""}
+      ssh -i ~/.ssh/oci-bastion \
+          -o ProxyCommand="..." \
+          -N -L ${t.port}:${t.host}:${t.port} \
+          opc@${instance_private_ip}
+
+      then connect to localhost:${t.port}
+%{ endfor }%{ endif }
+--------------------------------------------------------------------------------
+WHAT TO DO WHEN YOU ARE DONE
+--------------------------------------------------------------------------------
+    oci bastion session delete --session-id <SESSION_OCID> --region ${region}
+
+Sessions expire on their own after ${session_ttl} seconds, but that is a
+LIFETIME cap, not an idle timer - an unused session stays open until it
+expires. There is no OCI equivalent of SSM's idleSessionTimeout.
+================================================================================

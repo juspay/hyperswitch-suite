@@ -1,0 +1,13 @@
+[Unit]
+Description=Fetch Envoy config from OCI Object Storage before Envoy starts
+Before=envoy.service
+Wants=network-online.target
+After=network-online.target oci-metadata.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/fetch-envoy-config.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,55 @@
+# =============================================================================
+# OCI DevOps build_spec.yaml - builds hyperswitch router image and pushes to OCIR
+# =============================================================================
+# Runs on the OCI DevOps Managed Build stage. Builds the hyperswitch router
+# image and delivers it to OCIR.
+#
+# CRITICAL OCI constraint: `outputArtifacts[*].location` for DOCKER_IMAGE does
+# NOT support variables (exportedVariables / pipeline variables). The location
+# MUST be a literal image tag. When the commit hash changes, update the
+# `-t` argument and the outputArtifacts.location together to a new literal.
+# The `docker build -t` tag and the outputArtifacts.location MUST be the SAME
+# string, or the deliver-artifact stage fails.
+# =============================================================================
+version: 0.1
+
+steps:
+  - type: Command
+    name: "Print build context"
+    timeoutInSeconds: 60
+    command: |
+      echo "OCI_BUILD_RUN_ID = ${OCI_BUILD_RUN_ID}"
+      echo "OCI_PRIMARY_SOURCE_DIR = ${OCI_PRIMARY_SOURCE_DIR}"
+      cd ${OCI_PRIMARY_SOURCE_DIR}
+      pwd
+      ls -la
+
+  - type: Command
+    name: "Build router image"
+    timeoutInSeconds: 600
+    command: |
+      cd ${OCI_PRIMARY_SOURCE_DIR}
+
+      # Full image tag. Single source of truth for this build run:
+      # docker build -t here AND outputArtifacts.location below must match.
+      IMAGE_TAG="ap-mumbai-1.ocir.io/bm2f3aey2owc/dev/hyperswitch/router:dev-${OCI_BUILD_RUN_ID}"
+      echo "Building: ${IMAGE_TAG}"
+      docker build -t "${IMAGE_TAG}" .
+
+  - type: Command
+    name: "Confirm image exists"
+    timeoutInSeconds: 60
+    command: |
+      docker images
+      echo "Image build complete. Checking for outputArtifacts validity..."
+      # If the image was not built, the OCI deliver-artifact stage will fail
+      # loudly. This step only makes the failure visible early in the log.
+
+# -----------------------------------------------------------------------------
+# Output artifact - the image built above.
+# location MUST be the literal tag used in `docker build -t`.
+# -----------------------------------------------------------------------------
+outputArtifacts:
+  - name: hyperswitch-router-image
+    type: DOCKER_IMAGE
+    location: "ap-mumbai-1.ocir.io/bm2f3aey2owc/dev/hyperswitch/router:dev-${OCI_BUILD_RUN_ID}"

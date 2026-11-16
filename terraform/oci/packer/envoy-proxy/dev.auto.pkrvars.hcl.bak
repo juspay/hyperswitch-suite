@@ -1,0 +1,24 @@
+# Copy to dev.auto.pkrvars.hcl (gitignored) and fill in real values, or pass
+# equivalent -var flags on the command line.
+#
+# The three values with no defaults are all tenancy-specific and none of them
+# should be copied from another tenancy's docs:
+#   compartment_ocid    `oci iam compartment list`
+#   availability_domain `oci iam availability-domain list` - the "Niou:" style
+#                       prefix is per-tenancy, not per-region
+#   subnet_ocid         run ../build-network/create.sh and use what it prints
+
+compartment_ocid = "ocid1.compartment.oc1..aaaaaaaapeke7pwgbp6xviauvm7b6sxkcbqjl6osm555fxibwetdql7aohjq"
+availability_domain = "Niou:AP-MUMBAI-1-AD-1"
+subnet_ocid         = "ocid1.subnet.oc1.ap-mumbai-1.REPLACE"
+
+region      = "ap-mumbai-1"
+environment = "dev"
+
+# Profile in ~/.oci/config. `access_cfg_file_account` is the builder's name for
+# it - not `config_file_profile` (Terraform) and not `profile` (the CLI).
+access_cfg_file_account = "devuser"
+
+# An Envoy release tag on hub.docker.com/r/envoyproxy/envoy/tags, NOT an apt
+# package version.
+envoy_version = "v1.39.0"

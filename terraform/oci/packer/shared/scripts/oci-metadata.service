@@ -1,0 +1,13 @@
+[Unit]
+Description=Populate /etc/default/metadata from the OCI instance metadata service
+Before=vector.service envoy.service
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/populate-oci-metadata.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

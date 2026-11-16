@@ -1,0 +1,92 @@
+##### =====================================================================
+##### squid.conf - BAKED-IN DEFAULT, not the runtime config
+##### =====================================================================
+##### THIS FILE IS A FAIL-CLOSED FALLBACK. The authoritative squid.conf is
+##### delivered at boot from OCI Object Storage by
+##### /usr/local/bin/fetch-squid-config.sh, sourced from
+##### hyperswitch-infra:terraform/catalog/units/oci/squid-proxy/config/
+##### squid.conf via the squid-proxy composition module's config bucket.
+##### This copy exists so that an instance whose config fetch fails - which
+##### is the CURRENT state, because instance principals are not wired up yet
+##### (see the composition module README's "Not yet implemented,
+##### deliberately: Identity") - still boots a Squid that starts, parses and
+##### DENIES EVERYTHING rather than one that either crash-loops or, worse,
+##### falls back to Ubuntu's stock config.
+#####
+##### IT IS DELIBERATELY KEPT BYTE-COMPATIBLE IN BEHAVIOUR with the unit's
+##### copy, so that "the fetch worked" and "the fetch did not work" differ
+##### only in which domains are allowed, never in the security posture. The
+##### allowlist file it reads is created EMPTY by the Packer build, so with
+##### no fetched allowlist the effective policy is deny-all.
+#####
+##### DRIFT WARNING: there are now two copies of this config, one per
+##### repository. If you change the unit's copy
+##### (hyperswitch-infra:terraform/catalog/units/oci/squid-proxy/config/
+##### squid.conf), change this one too, or the fallback posture stops
+##### matching the intended one. The alternative - having the image fetch its
+##### own default from somewhere - reintroduces the very network dependency
+##### this fallback exists to survive.
+
+##### Disable cache - matches the AWS, GCP and OCI unit configs
+cache deny all
+
+##### CONNECT (HTTPS tunnel) is only allowed to a small fixed port list, so
+##### this proxy cannot be used to tunnel arbitrary TCP to other ports.
+##### 443 is the normal HTTPS tunnel port. 587 is kept as a DOCUMENTED
+##### exception: the smtp-relay workload tunnels the email relay to OCI Email
+##### Delivery over it (control 13f, workplan W2). 80 was removed - a plain
+##### HTTP CONNECT is not needed and, with Safe_ports below, is not the way
+##### clean HTTP is meant to flow through this proxy.
+acl SSL_ports port 443
+acl SSL_ports port 587
+acl CONNECT method CONNECT
+http_access deny CONNECT !SSL_ports
+
+##### HTTP (non-tunnel) egress is restricted to the well-known web ports.
+##### Without this a plain HTTP request to an allowlisted domain could be
+##### made on ANY port, which is not the posture intended (control 13f).
+acl Safe_ports port 80 443
+http_access deny !Safe_ports
+
+##### Do not leak client identity into forwarded traffic (control 13f,
+##### defence in depth): do not insert our own Via hop, delete the
+##### X-Forwarded-For header Squid would otherwise append, and suppress the
+##### Squid version banner Squid appends to error pages.
+via off
+forwarded_for delete
+httpd_suppress_version_string on
+
+##### Defence in depth that does not depend on the NSG: only the OKE pod span
+##### may proxy through this fleet. 10.90.32.0/20 = the oke-pods subnet
+##### (vcn_cidr_prefix 10.90). Decided via the oracle gate (2026-10-09): OCI NLB
+##### is is_preserve_source=true, so squid sees the real pod source IP, not the
+##### NLB's 10.90.8.17. NPN CNI gives pods their own VNIC IPs in this span,
+##### un-SNAT'd to the node. The node subnet 10.90.16.0/20 is deliberately NOT
+##### added: the NSG layer already authorizes only pod-subnet clients to the NLB
+##### (no worker-nsg rule near squid), so a pods-only ACL is consistent with -
+##### not a widening of - the NSG. Health probes are bare TCP connects and never
+##### reach http_access, so they are not blocked.
+acl oke_pods src 10.90.32.0/20
+
+##### Domain allowlist. Written by /usr/local/bin/update-squid-whitelist.sh
+##### from the allowlist object in Object Storage, on a 15-minute cron. The
+##### Packer build creates this file EMPTY, so an instance that never
+##### successfully fetches an allowlist permits nothing.
+acl allowed_sites_domain dstdomain "/etc/squid/squid.allowed.sites.txt"
+
+##### Allow only pod-subnet clients to the allowlisted domains. First-match
+##### wins in Squid: the CONNECT port restriction is evaluated before this.
+http_access allow oke_pods allowed_sites_domain
+
+##### Deny everything else
+http_access deny all
+
+##### Must match the unit's squid_port input and the NLB listener port.
+http_port 0.0.0.0:3128
+
+##### W3 (control 13c): Squid runs as user/group `proxy` via a systemd
+##### drop-in. The master process still needs to write the pid file, so the
+##### pid lives under systemd's RuntimeDirectory=/run/squid, owned proxy:proxy.
+pid_filename /run/squid/squid.pid
+
+coredump_dir /var/spool/squid
