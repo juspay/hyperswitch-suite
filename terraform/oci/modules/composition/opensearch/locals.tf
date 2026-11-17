@@ -55,16 +55,48 @@ locals {
     "Allow service opensearch to manage vcns in compartment id ${var.compartment_id}",
   ]
 
-  # HOME-REGION CAVEAT for any non-home-region deployment (us-phoenix-1 prod
-  # is the live case): oci_identity_policy writes must run under a provider
-  # homed in the TENANCY HOME REGION, and this module's resource shares the
-  # unit's single provider with the cluster - which must be regional. A unit
-  # instantiating this module outside the home region therefore MUST set
-  # create_service_policy = false and source the policy from a dedicated
-  # home-region unit (application-resources/opensearch-iam +
-  # catalog/units/opensearch-iam, the oke-cluster-iam pattern). The policy
-  # here remains the right shape for home-region-native deployments.
-  service_policy_statements = length(var.service_policy_statements) > 0 ? var.service_policy_statements : local.default_service_policy_statements
+  # The policy is written through the ALIASED oci.home provider (see
+  # identity.tf): one module, one unit, two provider configurations - the
+  # cluster regional, the IAM write homed in the tenancy home region.
+  service_policy_raw_statements = length(var.service_policy_statements) > 0 ? var.service_policy_statements : local.default_service_policy_statements
+
+  # Normalisation: collapse whitespace, tighten spaces around operators and
+  # comma lists, so contributed statements compare stable against the form the
+  # OCI API stores and returns.
+  service_policy_statements = sort(distinct([
+    for s in local.service_policy_raw_statements :
+    replace(
+      replace(
+        replace(
+          replace(trimspace(s), "/\\s+/", " "),
+        "/\\s*(!?=)\\s*/", "$1"),
+      "/,\\s+/", ","),
+    "/\\{\\s+|\\s+\\}/", "")
+  ]))
+
+  # Guard inputs for the identity.tf preconditions.
+  service_policy_statements_without_service_principal = [
+    for s in local.service_policy_statements : s
+    if length(regexall("(?i)service opensearch", s)) == 0
+  ]
+
+  service_policy_statements_with_named_compartment = [
+    for s in local.service_policy_statements : s
+    if length(regexall(" in compartment ", s)) > 0 && length(regexall(" in compartment id ", s)) == 0
+  ]
+
+  # oci_identity_policy.name is tenancy-unique and NOT UPDATABLE - decide once,
+  # then leave it alone. Default derives from the cluster display name, e.g.
+  # "prd-hyperswitch-opensearch-service-policy".
+  service_policy_name = coalesce(
+    var.service_policy_name,
+    "${local.display_name}-service-policy"
+  )
+
+  service_policy_description = coalesce(
+    var.service_policy_description,
+    "Allows the OCI Search with OpenSearch control plane to attach ${local.display_name} to the customer VCN"
+  )
 
   # ---------------------------------------------------------------------------
   # Endpoints

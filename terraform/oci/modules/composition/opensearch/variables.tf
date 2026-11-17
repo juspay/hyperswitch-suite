@@ -438,14 +438,17 @@ variable "create_service_policy" {
     (four documented statements - see locals.tf), granted once per compartment
     before the first cluster can attach to a customer VCN.
 
-    Defaults to false because of a PROVIDER-REGION constraint, not just
-    ownership: oci_identity_policy writes must run under a provider homed in
-    the TENANCY HOME REGION, and this module's policy resource shares the
-    unit's single provider with the cluster, which must be regional. Any
-    non-home-region deployment (us-phoenix-1 prod is the live case) MUST keep
-    this false and source the policy from the dedicated home-region unit
-    (application-resources/opensearch-iam). Home-region-native deployments
-    (ap-mumbai-1 dev) may set it true and let this module own the policy.
+    The policy resource binds to the ALIASED provider configuration oci.home,
+    because IAM writes must run from the tenancy home region while the cluster
+    runs regional. A unit setting this true must supply an oci.home provider
+    configuration - the prod root.hcl generates the regional default and the
+    home alias together in one provider.tf, so a prod unit needs no generate
+    override at all. Still defaults to false: creating a second policy when a
+    shared identity module already grants these statements is duplication,
+    not safety.
+
+    oci_identity_policy.name is tenancy-unique and NOT updatable - a name
+    change is a destroy-and-recreate.
   EOT
   type        = bool
   default     = false
@@ -463,9 +466,71 @@ variable "service_policy_statements" {
     authorization failure - the control plane needs the `manage vnics` and
     `manage vcns` verbs a narrower aggregate will not grant, and under-granting
     fails at first use, not at plan time.
+
+    Statements are whitespace-normalised and plan-time guarded: every statement
+    must name `service opensearch` as the principal, and must use the
+    `in compartment id <ocid>` form (the named-compartment form is rejected -
+    the OCI API lowercases names, producing a perpetual diff).
   EOT
   type        = list(string)
   default     = []
+}
+
+variable "service_policy_name" {
+  description = <<-EOT
+    Name of the oci_identity_policy created when create_service_policy = true.
+    Null derives "<display_name>-service-policy".
+
+    Two hard OCI facts make this the most dangerous input in the policy
+    surface:
+      1. `name` is UNIQUE ACROSS THE ENTIRE TENANCY.
+      2. `name` is NOT UPDATABLE - a change is a destroy-and-recreate.
+
+    Consequence: NO REGION COMPONENT. One object per environment, e.g.
+    "prd-hyperswitch-opensearch-service-policy". The regex validation rejects
+    an OCI region identifier appearing anywhere in the name.
+  EOT
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.service_policy_name == null || can(regex("^[a-z0-9][a-z0-9._-]{0,98}[a-z0-9]$", var.service_policy_name))
+    error_message = "service_policy_name must be lowercase alphanumeric with . _ - separators, 2-100 chars."
+  }
+
+  validation {
+    condition     = var.service_policy_name == null || length(regexall("(af|ap|ca|eu|il|me|mx|sa|uk|us)-[a-z]+-[0-9]", var.service_policy_name)) == 0
+    error_message = "service_policy_name must not contain an OCI region identifier. Identity objects are environment-scoped, never region-scoped."
+  }
+}
+
+variable "service_policy_description" {
+  description = "Human-readable description of the service policy. Updatable, unlike name and compartment_id. Null derives a stable default naming the cluster."
+  type        = string
+  default     = null
+}
+
+variable "service_policy_version_date" {
+  description = "Optional policy version date (YYYY-MM-DD). Null means always-current behaviour."
+  type        = string
+  default     = null
+}
+
+variable "service_policy_max_statements" {
+  description = <<-EOT
+    Plan-time cap on the number of statements in the service policy. Defaults
+    to 50, OCI's documented hard per-policy-object limit. Two further limits
+    are NOT checkable from inside a module and are the caller's
+    responsibility: 100 policy objects per tenancy, and 500 statements per
+    compartment hierarchy.
+  EOT
+  type        = number
+  default     = 50
+
+  validation {
+    condition     = var.service_policy_max_statements > 0 && var.service_policy_max_statements <= 50
+    error_message = "service_policy_max_statements must be between 1 and 50."
+  }
 }
 
 # =============================================================================

@@ -72,6 +72,26 @@ output "service_policy_id" {
   value       = try(oci_identity_policy.service[0].id, null)
 }
 
+output "service_policy_name" {
+  description = "Name of the service policy. Tenancy-unique and NOT updatable - decide it once. Null when create_service_policy = false."
+  value       = try(oci_identity_policy.service[0].name, null)
+}
+
+output "service_policy_statements" {
+  description = "The rendered, normalised, sorted statement list exactly as sent to the API. Review it, do not skim it - this is the security boundary in full. Empty when create_service_policy = false."
+  value       = var.create_service_policy ? local.service_policy_statements : []
+}
+
+output "service_policy_statement_count" {
+  description = "Number of statements in the service policy, against OCI's hard limit of 50 per policy object. 0 when create_service_policy = false."
+  value       = var.create_service_policy ? length(local.service_policy_statements) : 0
+}
+
+output "service_policy_statement_headroom" {
+  description = "Statements remaining before the service policy hits service_policy_max_statements. Null when create_service_policy = false."
+  value       = var.create_service_policy ? var.service_policy_max_statements - length(local.service_policy_statements) : null
+}
+
 output "connection_info" {
   description = "Connection summary, same role as the AWS output of the same name."
   value = {
