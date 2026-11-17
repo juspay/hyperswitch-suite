@@ -412,9 +412,14 @@ variable "maintenance_notification_email_ids" {
     downtime". All five AWS variables are DROPPED rather than approximated.
 
     Different guarantee (always-safe) rather than a missing capability
-    (customer-scheduled). Check sheet section 8 item 1: ORACLE GATE ITEM,
-    NOT YET CONSULTED - and the "without downtime" claim is worth verifying in
-    dev rather than accepting from marketing copy.
+    (customer-scheduled). Check sheet section 8 item 1: oracle gate CONSULTED
+    2026-11-17, APPROVE-WITH-CONDITIONS - the behavioral delta vs AWS is
+    larger than the scheduling difference alone: AWS eu-prod had software
+    updates OFF (auto_software_update_enabled = false); OCI upgrades are
+    always-on and platform-timed. Wire a real notification channel or record
+    an explicit accepted-risk for an empty one; and validate the "without
+    downtime" claim at data_node_count = 1 before prod traffic, where a
+    single-node replacement has nowhere to put the data.
   EOT
   type        = list(string)
   default     = []
