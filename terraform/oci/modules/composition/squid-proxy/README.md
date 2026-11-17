@@ -21,11 +21,17 @@ the allowlist object is inert. `var.image_id` says so at the point of use.
 
 ## Deliberately not implemented
 
-- **Identity.** No dynamic group or IAM policy; owned by the OCI identity model.
 - **Security rules.** Both NSGs are created empty on purpose.
-- **NLB backend fallback.** If instance-pool NLB backend registration is not
-  accepted, scripted per-instance registration is required and is not written
-  here.
+- **NLB backend registration.** Confirmed impossible (2026-11-17): the
+  instance-pool service rejects an NLB OCID in
+  `oci_core_instance_pool.load_balancers` with 404-NotAuthorizedOrNotFound, so
+  `var.attach_pool_to_nlb` defaults to false and backend membership is
+  maintained by scripted per-instance `oci nlb backend create` registration
+  outside this module.
+
+Identity is not on this list: `identity.tf` has owned the fleet's
+instance-principal identity (tag namespace, dynamic group, read-objects
+policy) since 2026-09-10.
 
 ## Validation
 

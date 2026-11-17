@@ -43,10 +43,12 @@ resource "oci_network_load_balancer_backend_set" "this" {
   name                     = local.backend_set_name
   policy                   = var.backend_set_policy
 
-  # Backends are NOT declared here - oci_core_instance_pool.load_balancers
-  # registers them as the pool scales (see the open question in compute.tf on
-  # whether that works for an NLB). is_preserve_source readdresses at the
-  # backend-set level so Squid's access log shows the real client IP, without
+  # Backends are NOT declared here, and on an NLB the instance pool cannot
+  # register them either (ANSWERED 2026-11-17: CreateInstancePool rejects an
+  # NLB OCID with 404-NotAuthorizedOrNotFound - see compute.tf). Membership is
+  # maintained by scripted per-instance `oci nlb backend create` registration
+  # outside Terraform. is_preserve_source readdresses at the backend-set level
+  # so Squid's access log shows the real client IP, without
   # skip_source_dest_check on the backend VNIC.
   is_preserve_source = var.nlb_preserve_source_destination
 

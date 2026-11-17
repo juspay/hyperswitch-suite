@@ -151,10 +151,14 @@ resource "oci_core_instance_pool" "this" {
     }
   }
 
-  # Native pool-to-backend-set registration. OPEN QUESTION: this is confirmed for
-  # the classic Load Balancer but NOT for a Network Load Balancer, and
-  # squid-proxy's balancer is an NLB. If the API rejects it, the fallback is
-  # scripted per-instance NLB backend registration, not implemented here.
+  # Native pool-to-backend-set registration - CLASSIC Load Balancer only.
+  # ANSWERED (2026-11-17, sandbox us-phoenix-1 apply): CreateInstancePool
+  # rejects this block when the OCID is this module's Network Load Balancer,
+  # with 404-NotAuthorizedOrNotFound (the pool service resolves the OCID
+  # against the classic Load Balancer API and cannot see an NLB). Gated
+  # behind var.attach_pool_to_nlb, default false; NLB backend membership is
+  # maintained by scripted per-instance `oci nlb backend create` registration
+  # outside Terraform.
   dynamic "load_balancers" {
     for_each = local.attach_to_lb ? [1] : []
 

@@ -315,6 +315,30 @@ variable "existing_backend_set_name" {
   default     = null
 }
 
+variable "attach_pool_to_nlb" {
+  description = <<-EOT
+    Whether oci_core_instance_pool.load_balancers registers the pool against
+    the module-created NLB's backend set. DEFAULT FALSE because the pool
+    service rejects an NLB OCID in that block: CreateInstancePool fails with
+    404-NotAuthorizedOrNotFound ("Authorization failed or requested resource
+    not found" / "Either the resource has been deleted or service Core
+    Instance Pool need policy to access this resource") - the pool service
+    resolves the OCID against the CLASSIC Load Balancer API, where an NLB is
+    not a visible resource, so no IAM policy can fix it. Confirmed on the
+    sandbox us-phoenix-1 apply, 2026-11-17.
+
+    With it false, NLB backend membership is maintained by scripted
+    per-instance registration (`oci nlb backend create`) outside Terraform;
+    autoscaler-created instances stay unregistered until that script runs,
+    which is the documented cost of this path. The create_nlb = false +
+    existing_load_balancer_id path is unaffected by this variable and still
+    auto-attaches - valid for a classic Load Balancer OCID; an NLB OCID there
+    fails the same way (see var.existing_load_balancer_id).
+  EOT
+  type        = bool
+  default     = false
+}
+
 variable "nlb_is_private" {
   description = "Whether the NLB gets a VCN-local private IP instead of a public one. TRUE, and it should stay true: this is the internal egress proxy, and a public forward proxy is an open relay."
   type        = bool

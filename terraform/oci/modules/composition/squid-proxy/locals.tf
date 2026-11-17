@@ -31,16 +31,20 @@ locals {
   backend_set_name  = "squid"
   health_check_port = coalesce(var.health_check.port, var.squid_port)
 
-  attach_to_lb = var.create_nlb ? true : (
+  # ANSWERED (2026-11-17, sandbox us-phoenix-1 first apply): the pool service
+  # does NOT accept this module's Network Load Balancer in
+  # oci_core_instance_pool.load_balancers. CreateInstancePool failed with
+  # 404-NotAuthorizedOrNotFound - the pool service resolves the OCID against
+  # the CLASSIC Load Balancer API, where an NLB OCID is not a visible
+  # resource, so no IAM policy can fix it. The attach is gated behind
+  # var.attach_pool_to_nlb (default false); NLB backend membership is kept
+  # correct by scripted per-instance registration (`oci nlb backend create`)
+  # outside Terraform, and autoscaler-created instances stay unregistered
+  # until that script runs.
+  attach_to_lb = var.create_nlb ? var.attach_pool_to_nlb : (
     var.existing_load_balancer_id != null && var.existing_backend_set_name != null
   )
 
-  # OPEN QUESTION: oci_core_instance_pool.load_balancers is confirmed to
-  # auto-register against a CLASSIC Load Balancer's backend set, but it is NOT
-  # confirmed to accept a NETWORK Load Balancer's. This module wires it anyway
-  # (the only mechanism that keeps backend membership correct as the pool
-  # autoscales); if the apply rejects it, the fallback is scripted per-instance
-  # NLB registration, which is not implemented here.
   pool_load_balancer_id = var.create_nlb ? try(oci_network_load_balancer_network_load_balancer.this[0].id, null) : var.existing_load_balancer_id
   pool_backend_set_name = var.create_nlb ? local.backend_set_name : var.existing_backend_set_name
 
