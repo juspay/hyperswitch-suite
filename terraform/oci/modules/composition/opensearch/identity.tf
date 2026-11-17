@@ -21,14 +21,16 @@
 #      here is duplication, not safety. Whether that shared module exists is
 #      check sheet open question 9 / section 4.6, UNRESOLVED.
 #
-# THE SERVICE PRINCIPAL NAME IS AN INFERENCE. It was derived from how OKE and
-# other network-attached OCI managed services are granted VCN access, and NOT
-# confirmed for the opensearch service specifically. If it is wrong, the apply
-# fails cleanly and visibly - which is why shipping the inference with this
-# comment is better than shipping nothing. Override with
-# var.service_policy_statements. Check sheet section 8 item 2: ORACLE GATE ITEM,
-# NOT YET CONSULTED (and framework.md section 4.4 ties it to the same identity
-# fork the VM modules' dynamic groups sit on).
+# THE SERVICE PRINCIPAL NAME IS VERIFIED (2026-11-17): `opensearch`, and the
+# four-statement grant set is Oracle's own documented prerequisite for this
+# resource (see locals.tf for citations). The earlier version of this block
+# carried an inference here; Oracle's prerequisite documentation has since
+# been located and confirms both the principal and a BROADER statement set
+# than the original single `use virtual-network-family` aggregate - a use-level
+# aggregate never grants the `manage vnics` / `manage vcns` verbs the control
+# plane needs to create cluster-node VNICs. Override with
+# var.service_policy_statements if a narrower grant is ever proven sufficient.
+# Check sheet section 8 item 2: ORACLE GATE - consulted 2026-11-17.
 
 resource "oci_identity_policy" "service" {
   count = var.create_service_policy ? 1 : 0

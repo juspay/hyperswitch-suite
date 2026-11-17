@@ -96,15 +96,17 @@ variable "nsg_id" {
 
 variable "software_version" {
   description = <<-EOT
-    OpenSearch engine version, e.g. "2.11.0". Replaces engine_version
-    ("OpenSearch_2.13" on AWS).
+    OpenSearch engine version, e.g. "2.19.1". Replaces engine_version
+    ("Elasticsearch_7.10" on the AWS eu-prod source this module mirrors).
 
-    DO NOT ASSUME THE AWS VALUE PORTS. AWS and OCI each control their own
-    supported-version list and upgrade cadence independently; "OpenSearch_2.13"
-    is an AWS-shaped string and is not a valid OCI software_version. Check sheet
-    open question 9.5, UNRESOLVED - confirm against `oci opensearch` before the
-    first apply. This variable has no default deliberately, so nobody inherits a
-    guess.
+    VERIFIED 2026-11-17 (docs.oracle.com/en-us/iaas/Content/search-opensearch/
+    Concepts/supportedversions.htm): the supported list is 2.11.0, 2.15.0,
+    2.18.0, 2.19.1, 3.2.0, 3.6.0. AWS strings like "OpenSearch_2.13" and
+    "Elasticsearch_7.10" are NOT valid here - each cloud controls its own
+    version list. Confirm against the oci_opensearch_opensearch_versions
+    data source before the first apply (the API is authoritative over the
+    docs page). Still no default on purpose: an engine version is a
+    per-environment decision nobody should inherit a guess for.
   EOT
   type        = string
 }
@@ -197,9 +199,17 @@ variable "master_node_host_ocpu_count" {
 }
 
 variable "master_node_host_memory_gb" {
-  description = "Memory per master node, GB. Replaces the memory half of dedicated_master_type."
+  description = <<-EOT
+    Memory per master (leader) node, GB.
+
+    Default is the DOCUMENTED FLOOR, not a choice: leader memory must be
+    20-1024 GB (docs.oracle.com/en-us/iaas/Content/search-opensearch/Concepts/
+    supportedchipsets.htm, "Cluster Node Hardware Size Requirements", verified
+    2026-11-17). The original default of 16 was below that floor and would
+    have failed cluster create; it predates that documentation being located.
+  EOT
   type        = number
-  default     = 16
+  default     = 20
 }
 
 variable "master_node_host_shape" {
@@ -226,9 +236,17 @@ variable "opendashboard_node_count" {
 }
 
 variable "opendashboard_node_host_ocpu_count" {
-  description = "OCPUs per Dashboards node."
+  description = <<-EOT
+    OCPUs per Dashboards node.
+
+    Default is the DOCUMENTED FLOOR, not a choice: dashboard nodes are
+    2-32 OCPU (docs.oracle.com/en-us/iaas/Content/search-opensearch/Concepts/
+    supportedchipsets.htm, "Cluster Node Hardware Size Requirements", verified
+    2026-11-17). The original default of 1 predates that documentation being
+    located and is below the floor.
+  EOT
   type        = number
-  default     = 1
+  default     = 2
 }
 
 variable "opendashboard_node_host_memory_gb" {
@@ -411,11 +429,18 @@ variable "create_service_policy" {
     Create the IAM policy letting the OpenSearch control plane attach to this
     compartment's VCN. Replaces aws_iam_service_linked_role (var.create_service_linked_role).
 
-    OCI has no service-linked-role object. The equivalent is a service POLICY,
-    granted once per compartment before the first cluster can attach to a
-    customer VCN. Defaults to false because the policy usually belongs to a
-    shared identity/compartment module rather than to each consumer - and because
-    creating it needs IAM write permission this module's caller may not have.
+    OCI has no service-linked-role object. The equivalent is a service POLICY
+    (four documented statements - see locals.tf), granted once per compartment
+    before the first cluster can attach to a customer VCN.
+
+    Defaults to false because of a PROVIDER-REGION constraint, not just
+    ownership: oci_identity_policy writes must run under a provider homed in
+    the TENANCY HOME REGION, and this module's policy resource shares the
+    unit's single provider with the cluster, which must be regional. Any
+    non-home-region deployment (us-phoenix-1 prod is the live case) MUST keep
+    this false and source the policy from the dedicated home-region unit
+    (application-resources/opensearch-iam). Home-region-native deployments
+    (ap-mumbai-1 dev) may set it true and let this module own the policy.
   EOT
   type        = bool
   default     = false
@@ -425,12 +450,14 @@ variable "service_policy_statements" {
   description = <<-EOT
     Override the service policy statements.
 
-    When empty the module emits the standard OCI managed-service network grant for
-    the `opensearch` service principal. THE EXACT PRINCIPAL NAME IS INFERRED BY
-    ANALOGY to other network-attached OCI managed services and was NOT
-    independently confirmed - check sheet open question 9.4, UNRESOLVED. If it is
-    wrong, the apply fails cleanly and visibly rather than silently, which is why
-    shipping the inference is acceptable.
+    When empty the module emits Oracle's documented four-statement prerequisite
+    set for the `opensearch` service principal (see locals.tf for citations -
+    VERIFIED 2026-11-17; supersedes the earlier single-statement inference that
+    check sheet 9.4 used to track as unresolved). Only override with a set you
+    have verified against Oracle's prerequisite documentation or a live
+    authorization failure - the control plane needs the `manage vnics` and
+    `manage vcns` verbs a narrower aggregate will not grant, and under-granting
+    fails at first use, not at plan time.
   EOT
   type        = list(string)
   default     = []
