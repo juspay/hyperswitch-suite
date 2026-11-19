@@ -172,3 +172,13 @@ output "additional_iam_policies_arns" {
   description = "Map of additional IAM policy ARNs (key = policy name suffix, value = ARN)"
   value       = { for k, v in aws_iam_policy.additional : k => v.arn }
 }
+
+output "additional_s3_buckets" {
+  description = "Additional existing S3 buckets keyed by purpose, with their ARNs and bucket names."
+  value = {
+    for name, bucket in var.additional_s3_buckets : name => {
+      bucket_arn  = bucket.bucket_arn
+      bucket_name = split(":", bucket.bucket_arn)[5]
+    }
+  }
+}
