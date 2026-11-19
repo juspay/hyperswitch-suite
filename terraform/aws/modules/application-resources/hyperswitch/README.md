@@ -52,8 +52,8 @@ input defaults to an empty map, preserving existing callers' behavior.
 
 | Name | Type |
 |------|------|
-| [aws_iam_policy.additional_s3_buckets](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.additional](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
+| [aws_iam_policy.additional_s3_buckets](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.assume_role_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.kms_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.lambda_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
@@ -62,8 +62,8 @@ input defaults to an empty map, preserving existing callers' behavior.
 | [aws_iam_policy.secrets_manager_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.ses_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_role.iam_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
-| [aws_iam_role_policy_attachment.additional_s3_buckets](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.additional](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.additional_s3_buckets](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.assume_role_policy_attachment](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.kms_policy_attachment](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.lambda_policy_attachment](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
@@ -82,8 +82,8 @@ input defaults to an empty map, preserving existing callers' behavior.
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_additional_assume_role_statements"></a> [additional\_assume\_role\_statements](#input\_additional\_assume\_role\_statements) | Additional IAM assume role policy statements to append | `list(any)` | `[]` | no |
-| <a name="input_additional_s3_buckets"></a> [additional_s3_buckets](#input_additional_s3_buckets) | Existing buckets keyed by purpose with configurable bucket/object permissions. | `map(object({ bucket_arn = string, bucket_actions = optional(list(string), ["s3:ListBucket"]), object_actions = optional(list(string), ["s3:GetObject", "s3:PutObject", "s3:GetObjectVersion"]) }))` | `{}` | no |
 | <a name="input_additional_iam_policies"></a> [additional\_iam\_policies](#input\_additional\_iam\_policies) | Map of additional IAM policies to create and attach to the IAM role. Each key is used as a policy name suffix. Value is an object with a `policy` field containing the IAM policy document as JSON string. | <pre>map(object({<br/>    policy = string # IAM policy document as JSON string<br/>  }))</pre> | `{}` | no |
+| <a name="input_additional_s3_buckets"></a> [additional\_s3\_buckets](#input\_additional\_s3\_buckets) | Existing S3 buckets keyed by purpose. Grants the Hyperswitch role the configured bucket/object actions and exposes bucket names and ARNs without creating buckets. | <pre>map(object({<br/>    bucket_arn     = string<br/>    bucket_actions = optional(list(string), ["s3:ListBucket"])<br/>    object_actions = optional(list(string), ["s3:GetObject", "s3:PutObject", "s3:GetObjectVersion"])<br/>  }))</pre> | `{}` | no |
 | <a name="input_assume_role"></a> [assume\_role](#input\_assume\_role) | Cross-account assume role configuration. Set to {} to disable assume role policy. | <pre>object({<br/>    enabled          = optional(bool, false)<br/>    target_role_arns = optional(list(string), []) # List of role ARNs to allow assuming<br/>    account_id       = optional(string, null)     # Account ID for wildcard role assumption<br/>  })</pre> | `{}` | no |
 | <a name="input_cluster_service_accounts"></a> [cluster\_service\_accounts](#input\_cluster\_service\_accounts) | Map of EKS cluster name -> the cluster's OIDC provider ARN and the service accounts allowed to assume the IRSA role | <pre>map(object({<br/>    oidc_provider_arn = string<br/>    service_accounts = list(object({<br/>      namespace = string<br/>      name      = string<br/>    }))<br/>  }))</pre> | `{}` | no |
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment name (dev/integ/prod) | `string` | n/a | yes |
@@ -102,9 +102,9 @@ input defaults to an empty map, preserving existing callers' behavior.
 
 | Name | Description |
 |------|-------------|
-| <a name="output_additional_s3_buckets"></a> [additional_s3_buckets](#output_additional_s3_buckets) | Additional buckets keyed by purpose, with bucket_arn and bucket_name. |
 | <a name="output_account_id"></a> [account\_id](#output\_account\_id) | AWS account ID |
 | <a name="output_additional_iam_policies_arns"></a> [additional\_iam\_policies\_arns](#output\_additional\_iam\_policies\_arns) | Map of additional IAM policy ARNs (key = policy name suffix, value = ARN) |
+| <a name="output_additional_s3_buckets"></a> [additional\_s3\_buckets](#output\_additional\_s3\_buckets) | Additional existing S3 buckets keyed by purpose, with their ARNs and bucket names. |
 | <a name="output_assume_role_enabled"></a> [assume\_role\_enabled](#output\_assume\_role\_enabled) | Whether cross-account assume role feature is enabled |
 | <a name="output_assume_role_policy_arn"></a> [assume\_role\_policy\_arn](#output\_assume\_role\_policy\_arn) | ARN of the assume role IAM policy (if enabled) |
 | <a name="output_kms_key_aliases"></a> [kms\_key\_aliases](#output\_kms\_key\_aliases) | Map of aliases created for the KMS key (only if created by this module) |
