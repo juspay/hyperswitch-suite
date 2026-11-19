@@ -34,7 +34,6 @@ inputs = {
 
   proxy_subnet_ids = dependency.vpc_network.outputs.outgoing_proxy_subnet_ids
   lb_subnet_ids    = dependency.vpc_network.outputs.outgoing_proxy_subnet_ids
-  lb_subnet_cidr_blocks = dependency.vpc_network.outputs.outgoing_proxy_subnet_cidr_blocks
 
   squid_port    = try(values.squid_port, 3128)
   ami_id        = values.ami_id
