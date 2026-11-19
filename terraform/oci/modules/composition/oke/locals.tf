@@ -58,7 +58,13 @@ locals {
 
   # NSG roles handed to the registry module. A role present in var.nsg_ids is
   # attached by OCID with no baseline rules written into it; a role absent is
-  # created here with Oracle's own baseline.
+  # created here with Oracle's own baseline - EXCEPT the baseline roles
+  # (cp/workers/pods/int_lb), which nsg-baseline.tf owns end-to-end: the NSG
+  # object and the essential rule set are created there, and the registry
+  # module is handed the id with create = "never", so its over-broad rule maps
+  # (ALL/ALL, untyped ICMP to 0.0.0.0/0, TCP/all-ports to the OSN) emit
+  # nothing. var.nsg_ids still wins when a caller supplies an external NSG.
+  # pub_lb stays registry-managed (edge tier; see nsg-baseline.tf SCOPE NOTE).
   nsg_roles = compact([
     "cp",
     "workers",
@@ -71,6 +77,8 @@ locals {
     { for role in local.nsg_roles : role => (
       contains(keys(var.nsg_ids), role)
       ? { create = "never", id = var.nsg_ids[role] }
+      : contains(local.baseline_nsg_roles, role)
+      ? { create = "never", id = oci_core_network_security_group.baseline[role].id }
       : { create = "always" }
     ) },
     # Components that do not exist in this deployment.
