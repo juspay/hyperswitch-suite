@@ -63,7 +63,7 @@ dependency "additional_s3_buckets" {
     source_bucket_arn  = "arn:aws:s3:::mock-additional-bucket"
     replica_bucket_arn = "arn:aws:s3:::mock-additional-bucket-replica"
   }
-  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
+  mock_outputs_merge_strategy_with_state = "shallow"
 }
 
 inputs = {

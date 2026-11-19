@@ -36,7 +36,7 @@ additional_s3_bucket_permissions = {
 
 This map only configures actions; bucket ARNs always come from dependencies.
 Other custom policies can still be passed through `additional_iam_policies`.
-Mocks are permitted only for `validate` and `plan`, never `apply`.
+Shallow merging preserves existing state outputs and supplies mocks for missing outputs. Mock usage is not restricted by Terraform command.
 
 ## Release order
 
