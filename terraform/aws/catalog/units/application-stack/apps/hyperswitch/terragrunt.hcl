@@ -50,6 +50,22 @@ dependency "file_uploads_bucket" {
   mock_outputs_merge_strategy_with_state = "shallow"
 }
 
+# Callers choose the bucket labels and composition/s3 unit paths.
+# No additional paths means no dependency instances and an empty module input.
+dependency "additional_s3_buckets" {
+  expansion {
+    for_each = try(values.additional_s3_bucket_config_paths, {})
+  }
+
+  config_path = each.value
+
+  mock_outputs = {
+    source_bucket_arn  = "arn:aws:s3:::mock-additional-bucket"
+    replica_bucket_arn = "arn:aws:s3:::mock-additional-bucket-replica"
+  }
+  mock_outputs_allowed_terraform_commands = ["validate", "plan"]
+}
+
 inputs = {
   environment  = include.root.locals.environment.full
   region       = include.root.locals.region
@@ -106,6 +122,18 @@ inputs = {
     versioning_enabled = try(values.s3_file_uploads_versioning_enabled, true)
     force_destroy      = try(values.s3_file_uploads_force_destroy, false)
   }
+
+  additional_s3_buckets = {
+    for name, bucket in try(dependency.additional_s3_buckets, {}) : name => merge(
+      try(values.additional_s3_bucket_permissions[name], {}),
+      {
+        bucket_arn = try(values.is_passive, false) ? bucket.outputs.replica_bucket_arn : bucket.outputs.source_bucket_arn
+      },
+    )
+  }
+
+  # Other custom IAM policies remain caller-controlled.
+  additional_iam_policies = try(values.additional_iam_policies, {})
 
   # SES Configuration (email-sending role is environment-specific; disabled when unset)
   ses = {

@@ -214,3 +214,29 @@ variable "additional_iam_policies" {
   }))
   default = {}
 }
+
+variable "additional_s3_buckets" {
+  description = "Existing S3 buckets keyed by purpose. Grants the Hyperswitch role the configured bucket/object actions and exposes bucket names and ARNs without creating buckets."
+  type = map(object({
+    bucket_arn     = string
+    bucket_actions = optional(list(string), ["s3:ListBucket"])
+    object_actions = optional(list(string), ["s3:GetObject", "s3:PutObject", "s3:GetObjectVersion"])
+  }))
+  default  = {}
+  nullable = false
+
+  validation {
+    condition = alltrue([
+      for bucket in values(var.additional_s3_buckets) :
+      can(regex("^arn:[a-z0-9-]+:s3:::[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$", bucket.bucket_arn))
+    ])
+    error_message = "Each additional S3 bucket must specify a bucket ARN (not an object ARN or access point ARN)."
+  }
+  validation {
+    condition = alltrue([
+      for bucket in values(var.additional_s3_buckets) :
+      length(bucket.bucket_actions) + length(bucket.object_actions) > 0
+    ])
+    error_message = "Each additional S3 bucket must grant at least one bucket or object action."
+  }
+}
