@@ -86,6 +86,7 @@
 | <a name="input_instance_refresh_triggers"></a> [instance\_refresh\_triggers](#input\_instance\_refresh\_triggers) | List of triggers that will start an instance refresh. Note: launch\_template changes always trigger refresh automatically. | `list(string)` | `[]` | no |
 | <a name="input_instance_type"></a> [instance\_type](#input\_instance\_type) | EC2 instance type for Squid proxy (ignored if use\_existing\_launch\_template = true) | `string` | `"t3.medium"` | no |
 | <a name="input_key_name"></a> [key\_name](#input\_key\_name) | SSH key pair name (ignored if generate\_ssh\_key=true) | `string` | `null` | no |
+| <a name="input_lb_subnet_cidr_blocks"></a> [lb\_subnet\_cidr\_blocks](#input\_lb\_subnet\_cidr\_blocks) | CIDR blocks for load balancer subnets. When provided, avoids looking up subnet IDs. | `list(string)` | `[]` | no |
 | <a name="input_lb_subnet_ids"></a> [lb\_subnet\_ids](#input\_lb\_subnet\_ids) | Subnet IDs for load balancer (service layer subnets) | `list(string)` | n/a | yes |
 | <a name="input_logs_bucket_arn"></a> [logs\_bucket\_arn](#input\_logs\_bucket\_arn) | ARN of existing S3 bucket for logs (required if create\_logs\_bucket=false) | `string` | `""` | no |
 | <a name="input_logs_bucket_name"></a> [logs\_bucket\_name](#input\_logs\_bucket\_name) | Name of existing S3 bucket for logs (required if create\_logs\_bucket=false) | `string` | `""` | no |

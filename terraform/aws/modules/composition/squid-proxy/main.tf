@@ -276,8 +276,14 @@ resource "aws_iam_instance_profile" "squid_profile" {
 # Data Sources for NLB Subnet CIDRs (for health check access)
 # =========================================================================
 data "aws_subnet" "lb_subnets" {
-  for_each = toset(var.lb_subnet_ids)
+  for_each = length(var.lb_subnet_cidr_blocks) == 0 ? toset(var.lb_subnet_ids) : toset([])
   id       = each.value
+}
+
+locals {
+  lb_subnet_cidr_blocks = length(var.lb_subnet_cidr_blocks) > 0 ? var.lb_subnet_cidr_blocks : [
+    for subnet in values(data.aws_subnet.lb_subnets) : subnet.cidr_block
+  ]
 }
 
 # =========================================================================
@@ -367,16 +373,16 @@ resource "aws_security_group_rule" "squid_from_nlb_inbound" {
 # NLB health checks originate from the NLB's private IPs in the lb_subnet_ids
 # We need to allow traffic from those subnet CIDRs to the Squid port
 resource "aws_security_group_rule" "nlb_health_checks" {
-  for_each = var.create_target_group ? data.aws_subnet.lb_subnets : {}
+  for_each = var.create_target_group ? toset(local.lb_subnet_cidr_blocks) : toset([])
 
   type              = "ingress"
   from_port         = var.squid_port
   to_port           = var.squid_port
   protocol          = "tcp"
-  cidr_blocks       = [each.value.cidr_block]
+  cidr_blocks       = [each.value]
   security_group_id = aws_security_group.asg.id
 
-  description = "Allow NLB health checks from LB subnet ${each.key}"
+  description = "Allow NLB health checks from LB subnet CIDR ${each.value}"
 }
 
 # =========================================================================

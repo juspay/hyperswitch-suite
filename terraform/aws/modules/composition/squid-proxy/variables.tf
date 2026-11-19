@@ -35,6 +35,12 @@ variable "lb_subnet_ids" {
   type        = list(string)
 }
 
+variable "lb_subnet_cidr_blocks" {
+  description = "CIDR blocks for load balancer subnets. When provided, avoids looking up subnet IDs."
+  type        = list(string)
+  default     = []
+}
+
 
 variable "squid_port" {
   description = "Port for Squid proxy"
