@@ -40,9 +40,7 @@ Mocks are permitted only for `validate` and `plan`, never `apply`.
 
 ## Release order
 
-The accompanying Hyperswitch module change adds `additional_s3_buckets`.
-Publish that module change and update this unit's module source ref (currently
-`hyperswitch-v0.2.2`) before releasing or deploying the updated unit. The old
-module version does not expose the additional bucket outputs. Then publish
-this catalog unit and update consuming stacks to the new unit ref. The
-existing source ref is deliberately retained until the module release exists.
+Publish the accompanying Hyperswitch module changes as `hyperswitch-v0.2.3`,
+which this unit now references, before releasing or deploying the updated unit.
+Then publish this catalog unit and update consuming stacks to the new unit ref.
+The module tag must include the additional bucket outputs and IAM policy.
