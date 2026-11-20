@@ -58,7 +58,13 @@ locals {
 
   # NSG roles handed to the registry module. A role present in var.nsg_ids is
   # attached by OCID with no baseline rules written into it; a role absent is
-  # created here with Oracle's own baseline.
+  # created here with Oracle's own baseline - EXCEPT the baseline roles
+  # (cp/workers/pods/int_lb), which nsg-baseline.tf owns end-to-end: the NSG
+  # object and the essential rule set are created there, and the registry
+  # module is handed the id with create = "never", so its over-broad rule maps
+  # (ALL/ALL, untyped ICMP to 0.0.0.0/0, TCP/all-ports to the OSN) emit
+  # nothing. var.nsg_ids still wins when a caller supplies an external NSG.
+  # pub_lb stays registry-managed (edge tier; see nsg-baseline.tf SCOPE NOTE).
   nsg_roles = compact([
     "cp",
     "workers",
@@ -71,11 +77,15 @@ locals {
     { for role in local.nsg_roles : role => (
       contains(keys(var.nsg_ids), role)
       ? { create = "never", id = var.nsg_ids[role] }
+      : contains(local.baseline_nsg_roles, role)
+      ? { create = "never", id = oci_core_network_security_group.baseline[role].id }
       : { create = "always" }
     ) },
     # Components that do not exist in this deployment.
     { bastion = { create = "never" }, operator = { create = "never" } },
   )
+
+  dedicated_nsg_pool_names = toset([for name, pool in var.node_pools : name if pool.create_nsg])
 
   # `ignore_initial_pool_size = true` routes the pool to the registry module's
   # `autoscaled_workers` resource, which carries
@@ -84,7 +94,7 @@ locals {
   # Terraform never reverts the autoscaler's own scaling decisions. It creates
   # no floor or ceiling - none exists (see the node_pools variable comment).
   worker_pools = {
-    for name, pool in var.node_pools : name => {
+    for name, pool in var.node_pools : name => merge({
       create = true
       mode   = "node-pool"
 
@@ -109,14 +119,33 @@ locals {
       node_labels       = pool.node_labels
       max_pods_per_node = pool.max_pods_per_node
       subnet_id         = coalesce(pool.subnet_id, var.worker_subnet_id)
-      nsg_ids           = pool.nsg_ids
+      nsg_ids           = concat(pool.nsg_ids, pool.create_nsg ? [oci_core_network_security_group.workers[name].id] : [])
       cloud_init        = pool.cloud_init
 
       kubernetes_version = coalesce(pool.kubernetes_version, var.kubernetes_version)
       volume_kms_key_id  = pool.volume_kms_key_id != null ? pool.volume_kms_key_id : var.worker_volume_kms_key_id
 
       freeform_tags = local.common_freeform_tags
-    }
+      }, pool.create_nsg || length(pool.pod_nsg_ids) > 0 ? {
+      pod_nsg_ids = distinct(concat(
+        [module.oke.pod_nsg_id],
+        var.additional_pod_nsg_ids,
+        pool.pod_nsg_ids,
+        pool.create_nsg ? [oci_core_network_security_group.pods[name].id] : [],
+      ))
+    } : {})
+  }
+
+  effective_worker_nsg_ids = {
+    for name, pool in local.worker_pools : name => distinct(compact(concat(
+      var.additional_worker_nsg_ids, [module.oke.worker_nsg_id], pool.nsg_ids,
+    )))
+  }
+
+  effective_pod_nsg_ids = {
+    for name, pool in local.worker_pools : name => distinct(compact(lookup(
+      pool, "pod_nsg_ids", concat(var.additional_pod_nsg_ids, [module.oke.pod_nsg_id]),
+    ))) if var.cni_type == "npn"
   }
 
   # Advisory bounds, exported for whichever autoscaler enforces them; nothing in

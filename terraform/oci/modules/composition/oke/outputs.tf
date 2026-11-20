@@ -101,6 +101,16 @@ output "custom_nsg_ids" {
 
 # Node pools.
 
+output "node_pool_nsg_ids" {
+  description = "Opted-in node-pool names to empty worker and pod NSG OCIDs. Rules are owned separately by security-rules."
+  value = {
+    for name in local.dedicated_nsg_pool_names : name => {
+      worker_nsg_id = oci_core_network_security_group.workers[name].id
+      pod_nsg_id    = oci_core_network_security_group.pods[name].id
+    }
+  }
+}
+
 output "node_pool_ids" {
   description = "Map of node-pool name to OCID. Replaces AWS `eks_managed_node_groups`."
   value       = module.oke.worker_pool_ids

@@ -106,9 +106,10 @@ output "database_name" {
   description = <<-EOT
     Always null, and deliberately so rather than omitted.
 
-    OCI creates only the default `postgres` database, and provider 9.0.0 has no
-    `oci_psql_database` resource - so a per-app database (`superposition_v2`)
-    cannot be declared in Terraform at all and remains a manual `psql` step.
+    Without a backup source, OCI creates only the default `postgres` database.
+    A backup source can carry existing application databases, but provider
+    9.0.0 has no `oci_psql_database` resource, so this output does not discover
+    or declare them. New per-app databases still need a manual `psql` step.
     GCP's AlloyDB port hit the identical wall. database.md open question 9.4.
 
     Emitted as an explicit null so a consumer reading this output sees the gap

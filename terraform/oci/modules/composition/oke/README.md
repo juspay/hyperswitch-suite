@@ -28,6 +28,41 @@ all-resources in tenancy`). Without it, node-pool image resolution fails
 
 ## Validation
 
+### Additive Per-Pool NSGs
+
+`node_pools[*].nsg_ids` and `node_pools[*].pod_nsg_ids` add worker and pod
+NSGs to one pool. Pod additions require `cni_type = "npn"`.
+
+Set `node_pools["<name>"].create_nsg = true` to have OKE create and attach
+one empty worker NSG and one empty pod NSG for that pool. It defaults to
+`false`: other pools create no dedicated groups and retain their existing
+attachments. This paired feature requires `cni_type = "npn"`; Flannel is
+rejected. Groups use the cluster's compartment, VCN and tags, with names
+`<cluster-name>-<pool>-workers-nsg` and `<cluster-name>-<pool>-pods-nsg`.
+The `node_pool_nsg_ids` output maps opted-in pool names to
+`{ worker_nsg_id, pod_nsg_id }`, or is empty when no pool opts in.
+No database dependencies or rules are added here: the security-last
+`security-rules` owner consumes these IDs and supplies cross-module rules.
+
+The registry module's managed pools read `pod_nsg_ids`, not its derived
+`pods_nsg_ids` merge. For an opted-in pool or a nonempty per-pool list, this
+wrapper explicitly combines `module.oke.pod_nsg_id`, `additional_pod_nsg_ids`,
+pool additions, and the owned pod group when enabled.
+That output depends on child networking, not worker inputs, so the reference
+does not create a graph cycle. Opted-out pools with empty lists omit the
+override and preserve upstream defaults. Supplying `nsg_ids.pods` means the caller owns the baseline
+rules. NSGs are additive allow-lists, not deny rules; VNIC attachment limits
+are checked against the effective distinct IDs (baseline, global, per-pool,
+and owned), once those IDs are known. No isolation is enabled by default.
+
+`terraform test -filter=tests/pool-nsgs.tftest.hcl` uses mock providers and
+requires Terraform >= 1.9. It checks group ownership, placement, output IDs,
+additive inputs, Flannel rejection and effective attachment limits; add `-verbose` to
+inspect final managed and autoscaled node-pool VNIC attachments in the real
+registry resource plans without credentials or cloud operations.
+
+### Static Validation
+
 ```
 terraform fmt -recursive
 terraform init -backend=false

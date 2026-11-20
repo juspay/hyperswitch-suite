@@ -117,7 +117,7 @@ locals {
     incoming-envoy = {
       cidr                       = var.incoming_envoy_subnet_cidr
       prohibit_public_ip_on_vnic = true
-      route_table                = "common-local-nat-osn"
+      route_table                = var.incoming_envoy_nat_enabled ? "common-local-nat-osn" : "common-local-osn"
       dns_label                  = "envoyin"
       description                = "Envoy ingress proxy subnet"
     }

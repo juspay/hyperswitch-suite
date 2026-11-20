@@ -14,6 +14,51 @@ Two unrelated jobs in one Terraform state, exactly as on AWS:
    so it provisions in stack phase 3 alongside the app rather than in phase 1
    with the shared database. Same as AWS.
 
+## Optional database backup source
+
+With `create_database = true`, `database_config.source_backup_id` optionally
+forwards a backup OCID to the existing nested `composition/database` module.
+It defaults to `null`: the default create path starts with only the `postgres`
+database; a backup source can carry existing application databases. A supplied
+source creates from that backup in `database_config.subnet_id`, using the same
+owner and address, `module.database[0].oci_psql_db_system.this`. It does not add
+a second database module. With `create_database = false`, no database is created,
+even if a backup source is supplied. Backup sources and warm standby are
+mutually exclusive, enforced by the composition module.
+
+This is a **create-time source**, not an in-place restore, import, or state
+adoption mechanism. The existing database remains tracked at its nested address;
+this change requires no import, move, or removal of state. Changing an existing
+database's subnet requires replacement, which the composition module's hardcoded
+`prevent_destroy = true` will block. Do not remove that protection for a subnet
+cutover. Restore/adoption and application-data cutover require a separately
+approved operational plan; this passthrough does not migrate current data.
+Keep the deployed source `null` and the existing subnet until that cutover is
+approved.
+
+The admin username and external `vault_secret` reference/version are passed
+through unchanged. With an existing external secret, Terraform neither generates
+a password nor retrieves the secret value. `database_name` remains `null`:
+this wrapper does not discover database names contained in a backup.
+
+### Offline regression tests
+
+Using Terraform 1.7+ (mock providers), Python 3, and Bash:
+
+```bash
+terraform init -backend=false
+terraform fmt -check -recursive
+terraform validate
+bash tests/verify-plans.sh
+```
+
+The verifier runs native `terraform test -json -verbose` with mocked OCI and
+random providers, then checks child-resource plans without adding production
+outputs. It covers an omitted backup source, a supplied synthetic backup and
+requested subnet, disabled database creation, and preserved external Vault
+metadata with no password generation or secret retrieval. It makes no OCI calls
+and does not access deployed state.
+
 ## Statement budget: one
 
 The actual grant count is **1 statement per cluster per service account** — the

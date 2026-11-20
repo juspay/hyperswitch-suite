@@ -163,6 +163,10 @@ variable "database_config" {
     global-cluster object on OCI; cross-region DR is `enable_warm_standby` +
     `primary_db_system_id`, which are exposed here under their real names rather
     than under Aurora's.
+
+    `source_backup_id` optionally selects a create-time backup source; null
+    keeps the default create path. It does not restore an existing system in
+    place or import one into state.
   EOT
   type = object({
     subnet_id                   = optional(string)
@@ -170,6 +174,7 @@ variable "database_config" {
     create_nsg                  = optional(bool, true)
     nsg_ids                     = optional(list(string), [])
     display_name                = optional(string)
+    source_backup_id            = optional(string)
     db_version                  = optional(string, "17")
     config_overrides            = optional(map(string), {})
     shape                       = optional(string, "PostgreSQL.VM.Standard.E5.Flex")
