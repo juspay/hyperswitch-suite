@@ -612,6 +612,16 @@ locals {
         desc     = "OKE control-plane channel (12250) - workload-identity token exchange (proxymux)."
       },
       {
+        key      = "osn-out"
+        nsg      = "pods"
+        dir      = "EGRESS"
+        proto    = "6"
+        port_min = 443
+        port_max = 443
+        peer     = { service = "osn" }
+        desc     = "Oracle Services Network (443): KMS vault reads (external-secrets-operator), Object Storage, Email Delivery."
+      },
+      {
         key       = "pmtu-out-vcn"
         nsg       = "pods"
         dir       = "EGRESS"
