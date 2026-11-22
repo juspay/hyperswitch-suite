@@ -16,6 +16,7 @@ whose templates these are ported from.
 |---|---|---|---|
 | [`envoy-proxy/`](./envoy-proxy) | `../modules/composition/envoy-proxy` | `image_id` | `hyperswitch-infra:terraform/oci/live/terragrunt.stack.hcl` → `values.custom_images.envoy` |
 | [`squid-proxy/`](./squid-proxy) | `../modules/composition/squid-proxy` | `image_id` | …→ `values.custom_images.squid` |
+| [`clickhouse/`](./clickhouse) | `../modules/composition/clickhouse` | `server_image_id` / `keeper_image_id` | …→ `values.custom_images.clickhouse` |
 | [`shared/`](./shared) | — | — | provisioner scripts both templates use |
 | [`build-network/`](./build-network) | — | — | disposable VCN the builds run in |
 
