@@ -1,0 +1,13 @@
+[Unit]
+Description=Configure ClickHouse from OCI IMDS user_data before ClickHouse starts
+Before=clickhouse-server.service
+Wants=network-online.target
+After=network-online.target oci-metadata.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/clickhouse-bootstrap.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
