@@ -1,0 +1,26 @@
+# Copy to dev.auto.pkrvars.hcl (gitignored) and fill in real values, or pass
+# equivalent -var flags on the command line.
+#
+# The three values with no defaults are all tenancy-specific and none of them
+# should be copied from another tenancy's docs:
+#   compartment_ocid    the PROD compartment - the image lands here directly
+#                       (plan gate decision 2)
+#   availability_domain `oci iam availability-domain list --profile produser`
+#                       the "Niou:" style prefix is per-tenancy, not per-region
+#   subnet_ocid         run ../build-network/create.sh and use what it prints
+#                       (shared with the kafka build - one build VCN per
+#                       session, destroyed after BOTH images are built)
+
+compartment_ocid    = "ocid1.compartment.oc1..aaaaaaaa5w23zrgwxriontoyibafff5woutblqfkccstxmt6qy4i27zlg3iq"
+availability_domain = "Niou:PHX-AD-1"
+subnet_ocid         = "ocid1.subnet.oc1.phx.REPLACE"
+
+# Everything below has the prod build defaults already set in variables.pkr.hcl
+# (region us-phoenix-1, access_cfg_file_account produser, environment prod,
+# image_name_prefix hyperswitch-clickhouse, clickhouse_version 26.8.39.19).
+# Only override if this build deliberately deviates:
+#
+# region      = "us-phoenix-1"
+# environment = "prod"
+# access_cfg_file_account = "produser"
+# clickhouse_version      = "26.8.39.19"
