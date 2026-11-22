@@ -1,0 +1,5 @@
+*.auto.pkrvars.hcl
+!dev.auto.pkrvars.hcl.example
+packer-manifest.json
+trivy-reports/
+*.log
