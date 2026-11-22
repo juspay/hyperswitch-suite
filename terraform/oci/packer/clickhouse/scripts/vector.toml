@@ -1,0 +1,94 @@
+# Ported from ../envoy-proxy/scripts/vector.toml with the same shape but a
+# different input set - the envoy file's transforms are all about Envoy's
+# access-log JSON (payment-path normalisation, log_to_metric rollups) and none
+# of them apply to a ClickHouse node. What carries over unchanged is the
+# skeleton the whole VM tier shares: host metrics + internal metrics + a
+# prometheus_exporter sink on 9273, every series tagged with the
+# METADATA_* variables that ../../shared/scripts/populate-oci-metadata.sh
+# writes to /etc/default/metadata via oci-metadata.service.
+#
+# Inputs here:
+#   - the clickhouse-server systemd unit via journald (startup/shutdown/error
+#     lines - the service-level view of the node)
+#   - ClickHouse's own server logs under /var/log/clickhouse-server/ (the
+#     query/error logs the deb's <logger> config writes)
+#
+# Divergences from the envoy file, recorded rather than silently made:
+#   - no envoy_prom_metrics scrape source: ClickHouse exposes no prometheus
+#     endpoint on the default port set; its system tables (system.metrics,
+#     system.events) are queryable over 9000 instead of scrapeable over HTTP.
+#   - the Loki sink stays commented out, same reason as there: no reachable
+#     endpoint exists on OCI yet.
+#   - the exporter binds 0.0.0.0:9273 for recipe parity, but ufw does NOT open
+#     9273 in this image (plan W2 step 10 lists exactly 8123/9000/9181 and
+#     nothing has been confirmed scraping a clickhouse node yet). Scrape it
+#     on-box or open both ufw and the NSG when a scraper exists.
+
+[sources.journald]
+type = "journald"
+include_units = ["clickhouse-server"]
+
+[sources.clickhouse_logs]
+type = "file"
+include = [ "/var/log/clickhouse-server/*.log" ]
+read_from = "end"
+max_read_bytes = 10485760
+max_line_bytes = 102400
+
+[api]
+enabled = true
+
+[sources.vector_internal]
+type = "internal_metrics"
+namespace = "vector"
+
+[sources.systems_metrics]
+type = "host_metrics"
+collectors = [
+  "cpu",
+  "disk",
+  "filesystem",
+  "load",
+  "host",
+  "memory",
+  "network"
+]
+namespace = "clickhouse"
+scrape_interval_secs = 10
+
+[transforms.systems_metrics_with_metadata]
+type = "remap"
+inputs = [ "systems_metrics" ]
+source = """
+  .tags.ltversion = get_env_var("METADATA_LT_VERSION") ?? "unknown"
+"""
+
+[transforms.clickhouse_logs_with_metadata]
+type = "remap"
+inputs = [ "journald", "clickhouse_logs" ]
+source = """
+  .asg_name = get_env_var("METADATA_ASG_NAME") ?? "unknown"
+  .instance_id = get_env_var("METADATA_INSTANCE_ID") ?? "unknown"
+  .instance_ip = get_env_var("METADATA_INSTANCE_IP") ?? "unknown"
+  .ltversion = get_env_var("METADATA_LT_VERSION") ?? "unknown"
+  .service = "clickhouse"
+"""
+
+[sinks.prom]
+type = "prometheus_exporter"
+inputs = [
+  "systems_metrics_with_metadata",
+  "vector_internal"
+]
+address = "0.0.0.0:9273"
+flush_period_secs = 10
+
+# TODO(gcp/oci): no confirmed-reachable Loki endpoint yet - see the envoy
+# vector.toml's longer note. Uncomment and fix the endpoint once one exists.
+# [sinks.sink_loki]
+# type = "loki"
+# inputs = ["clickhouse_logs_with_metadata"]
+# endpoint = "http://loki.hyperswitch.internal"
+# encoding.codec = "json"
+# labels.job = "vector/clickhouse-prod"
+# labels.service = "clickhouse"
