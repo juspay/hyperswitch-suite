@@ -163,13 +163,16 @@ resource "aws_api_gateway_deployment" "this" {
   # The resource policy and endpoint config MUST be included: a REST API
   # resource-policy change only takes effect after a new deployment, so
   # hashing resource IDs alone silently misses VPCE/policy repoints.
+  # We hash the input config (not the AWS-assigned resource IDs) so that
+  # in-place edits — method authorization/api_key, integration Lambda URI —
+  # also force a redeploy rather than silently serving stale config.
   triggers = {
     redeployment = sha1(jsonencode([
       aws_api_gateway_rest_api.this.policy,
       var.vpc_endpoint_ids,
-      [for r in aws_api_gateway_resource.this : r.id],
-      [for m in aws_api_gateway_method.this : m.id],
-      [for i in aws_api_gateway_integration.lambda : i.id],
+      var.resources,
+      var.methods,
+      var.lambda_integrations,
     ]))
   }
 
