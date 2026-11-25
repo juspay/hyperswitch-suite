@@ -4,13 +4,13 @@ All notable changes to Hyperswitch will be documented here.
 
 ## Hyperswitch Suite v1.25
 
-### [Hyperswitch App Server v1.130.0](https://github.com/juspay/hyperswitch/releases/tag/v1.130.0)
+### [Hyperswitch App Server v1.131.0](https://github.com/juspay/hyperswitch/releases/tag/v1.131.0)
 
 #### Docker Images
 
-- `v1.130.0` (with AWS SES support): `docker pull docker.juspay.io/juspaydotin/hyperswitch-router:v1.130.0`
+- `v1.131.0` (with AWS SES support): `docker pull docker.juspay.io/juspaydotin/hyperswitch-router:v1.131.0`
 
-- `v1.130.0-standalone` (without AWS SES support): `docker pull docker.juspay.io/juspaydotin/hyperswitch-router:v1.130.0-standalone`
+- `v1.131.0-standalone` (without AWS SES support): `docker pull docker.juspay.io/juspaydotin/hyperswitch-router:v1.131.0-standalone`
 
 #### Security Updates
 
@@ -49,13 +49,13 @@ This version of the Hyperswitch App server is compatible with the following vers
 - WooCommerce Plugin: [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)
 - Card Vault: [v0.9.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.9.0)
 - Encryption Service: [v0.1.14](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.14)
-- Superposition: [v0.120.0](https://github.com/juspay/superposition/releases/tag/v0.120.0)
+- Superposition: [v0.121.0](https://github.com/juspay/superposition/releases/tag/v0.121.0)
 - Hyperswitch Prism: [v0.8.0](https://github.com/juspay/hyperswitch-prism/releases/tag/v0.8.0)
 
 #### Database Migration Changes
 
 ```sql
--- DB Difference between v1.129.0 and v1.130.0
+-- DB Difference between v1.129.0 and v1.131.0
 ALTER TABLE captures ADD COLUMN feature_metadata JSONB;
 ALTER TABLE refund ADD COLUMN feature_metadata JSONB;
 ALTER TABLE payment_intent
@@ -391,7 +391,7 @@ index bb68ab296c..ac0f7fa79a 100644
 
 ```
 
-**Full Changelog:** [v1.129.0...v1.130.0](https://github.com/juspay/hyperswitch/compare/v1.129.0...v1.130.0)
+**Full Changelog:** [v1.129.0...v1.131.0](https://github.com/juspay/hyperswitch/compare/v1.129.0...v1.131.0)
 
 ### [Hyperswitch Control Center v1.40.0 (2026-11-23)](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.40.0)
 
@@ -419,7 +419,7 @@ The upstream release is currently marked **pre-release**. The compatibility vers
 
 This Suite release uses the following versions of the other components:
 
-- App Server: [v1.130.0](https://github.com/juspay/hyperswitch/releases/tag/v1.130.0)
+- App Server: [v1.131.0](https://github.com/juspay/hyperswitch/releases/tag/v1.131.0)
 - Web Client: [v0.136.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.136.0)
 - Card Vault: [v0.9.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.9.0)
 - Encryption Service: [v0.1.14](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.14)
@@ -450,7 +450,7 @@ This Suite release uses the following versions of the other components:
 
 This Suite release uses the following versions of the other components:
 
-- App Server: [v1.130.0](https://github.com/juspay/hyperswitch/releases/tag/v1.130.0)
+- App Server: [v1.131.0](https://github.com/juspay/hyperswitch/releases/tag/v1.131.0)
 - Control Center: [v1.40.0](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.40.0)
 - Card Vault: [v0.9.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.9.0)
 - Encryption Service: [v0.1.14](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.14)
@@ -485,7 +485,7 @@ This Suite release uses the following versions of the other components:
 
 This Suite release uses the following versions of the other components:
 
-- App Server: [v1.130.0](https://github.com/juspay/hyperswitch/releases/tag/v1.130.0)
+- App Server: [v1.131.0](https://github.com/juspay/hyperswitch/releases/tag/v1.131.0)
 - Control Center: [v1.40.0](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.40.0)
 - Web Client: [v0.136.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.136.0)
 - Card Vault: [v0.9.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.9.0)
@@ -513,7 +513,7 @@ Changes below cover the Suite upgrade from `v0.118.0`, including intervening fix
 
 This Suite release uses the following versions of the other components:
 
-- App Server: [v1.130.0](https://github.com/juspay/hyperswitch/releases/tag/v1.130.0)
+- App Server: [v1.131.0](https://github.com/juspay/hyperswitch/releases/tag/v1.131.0)
 - Control Center: [v1.40.0](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.40.0)
 - Web Client: [v0.136.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.136.0)
 - Card Vault: [v0.9.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.9.0)
