@@ -423,7 +423,7 @@ This Suite release uses the following versions of the other components:
 - Web Client: [v0.136.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.136.0)
 - Card Vault: [v0.9.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.9.0)
 - Encryption Service: [v0.1.14](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.14)
-- Superposition: [v0.120.0](https://github.com/juspay/superposition/releases/tag/v0.120.0)
+- Superposition: [v0.121.0](https://github.com/juspay/superposition/releases/tag/v0.121.0)
 - Hyperswitch Prism: [v0.8.0](https://github.com/juspay/hyperswitch-prism/releases/tag/v0.8.0)
 
 **Full Changelog:** [v1.39.0...v1.40.0](https://github.com/juspay/hyperswitch-control-center/compare/v1.39.0...v1.40.0)
@@ -454,7 +454,7 @@ This Suite release uses the following versions of the other components:
 - Control Center: [v1.40.0](https://github.com/juspay/hyperswitch-control-center/releases/tag/v1.40.0)
 - Card Vault: [v0.9.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.9.0)
 - Encryption Service: [v0.1.14](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.14)
-- Superposition: [v0.120.0](https://github.com/juspay/superposition/releases/tag/v0.120.0)
+- Superposition: [v0.120.1](https://github.com/juspay/superposition/releases/tag/v0.120.1)
 - Hyperswitch Prism: [v0.8.0](https://github.com/juspay/hyperswitch-prism/releases/tag/v0.8.0)
 
 **Full Changelog:** [v0.135.0...v0.136.0](https://github.com/juspay/hyperswitch-web/compare/v0.135.0...v0.136.0)
@@ -490,11 +490,11 @@ This Suite release uses the following versions of the other components:
 - Web Client: [v0.136.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.136.0)
 - Card Vault: [v0.9.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.9.0)
 - Encryption Service: [v0.1.14](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.14)
-- Superposition: [v0.120.0](https://github.com/juspay/superposition/releases/tag/v0.120.0)
+- Superposition: [v0.120.1](https://github.com/juspay/superposition/releases/tag/v0.120.1)
 
 **Full Changelog:** [v0.7.0...v0.8.0](https://github.com/juspay/hyperswitch-prism/compare/v0.7.0...v0.8.0)
 
-### [Superposition v0.120.0 (2026-11-19)](https://github.com/juspay/superposition/releases/tag/v0.120.0)
+### [Superposition v0.120.1 (2026-11-23)](https://github.com/juspay/superposition/releases/tag/v0.120.1)
 
 Changes below cover the Suite upgrade from `v0.118.0`, including intervening fixes.
 
@@ -520,7 +520,7 @@ This Suite release uses the following versions of the other components:
 - Encryption Service: [v0.1.14](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.14)
 - Hyperswitch Prism: [v0.8.0](https://github.com/juspay/hyperswitch-prism/releases/tag/v0.8.0)
 
-**Full Changelog:** [v0.118.0...v0.120.0](https://github.com/juspay/superposition/compare/v0.118.0...v0.120.0)
+**Full Changelog:** [v0.118.0...v0.120.1](https://github.com/juspay/superposition/compare/v0.118.0...v0.120.1)
 
 ## Hyperswitch Suite v1.24
 
