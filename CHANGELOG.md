@@ -49,7 +49,7 @@ This version of the Hyperswitch App server is compatible with the following vers
 - WooCommerce Plugin: [v1.6.1](https://github.com/juspay/hyperswitch-woocommerce-plugin/releases/tag/v1.6.1)
 - Card Vault: [v0.9.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.9.0)
 - Encryption Service: [v0.1.14](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.14)
-- Superposition: [v0.121.0](https://github.com/juspay/superposition/releases/tag/v0.121.0)
+- Superposition: [v0.120.1](https://github.com/juspay/superposition/releases/tag/v0.120.1)
 - Hyperswitch Prism: [v0.8.0](https://github.com/juspay/hyperswitch-prism/releases/tag/v0.8.0)
 
 #### Database Migration Changes
@@ -423,7 +423,7 @@ This Suite release uses the following versions of the other components:
 - Web Client: [v0.136.0](https://github.com/juspay/hyperswitch-web/releases/tag/v0.136.0)
 - Card Vault: [v0.9.0](https://github.com/juspay/hyperswitch-card-vault/releases/tag/v0.9.0)
 - Encryption Service: [v0.1.14](https://github.com/juspay/hyperswitch-encryption-service/releases/tag/v0.1.14)
-- Superposition: [v0.121.0](https://github.com/juspay/superposition/releases/tag/v0.121.0)
+- Superposition: [v0.120.1](https://github.com/juspay/superposition/releases/tag/v0.120.1)
 - Hyperswitch Prism: [v0.8.0](https://github.com/juspay/hyperswitch-prism/releases/tag/v0.8.0)
 
 **Full Changelog:** [v1.39.0...v1.40.0](https://github.com/juspay/hyperswitch-control-center/compare/v1.39.0...v1.40.0)
