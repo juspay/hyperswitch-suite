@@ -973,3 +973,24 @@ variable "alb_access_logs_s3" {
     error_message = "S3 logging requires bucket when enabled without create_bucket."
   }
 }
+
+variable "cloudfront_vpc_origin" {
+  description = "Optional shared CloudFront VPC origin for the selected ALB. Uses the ALB listener ports. Managed ingress adds rules from AWS's service-managed group without removing existing public access."
+  type = object({
+    enabled                    = optional(bool, false)
+    name                       = optional(string)
+    origin_protocol_policy     = optional(string, "https-only")
+    manage_security_group_rule = optional(bool, true)
+    timeouts = optional(object({
+      create = optional(string, "15m")
+      update = optional(string, "15m")
+      delete = optional(string, "15m")
+    }), {})
+  })
+  default  = {}
+  nullable = false
+  validation {
+    condition     = contains(["http-only", "https-only", "match-viewer"], var.cloudfront_vpc_origin.origin_protocol_policy)
+    error_message = "cloudfront_vpc_origin.origin_protocol_policy must be http-only, https-only or match-viewer."
+  }
+}

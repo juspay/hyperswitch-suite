@@ -196,3 +196,77 @@
 | <a name="output_ssh_key_retrieval_command"></a> [ssh\_key\_retrieval\_command](#output\_ssh\_key\_retrieval\_command) | Command to retrieve the private SSH key from Parameter Store (only if auto-generated) |
 | <a name="output_target_group_arns"></a> [target\_group\_arns](#output\_target\_group\_arns) | Map of deployment names to target group ARNs |
 <!-- END_TF_DOCS -->
+## Shared CloudFront VPC origin
+
+Enable a private CloudFront connection owned by this Envoy deployment:
+
+```hcl
+cloudfront_vpc_origin = {
+  enabled = true
+  # name = "sandbox-envoy" # optional stable name
+}
+```
+
+The feature is disabled by default. When enabled, the module creates one
+`aws_cloudfront_vpc_origin` targeting its ALB (or `existing_lb_arn` when
+`create_lb = false`). It uses the configured ALB listener ports, HTTPS-only and
+TLS 1.2 by default. `origin_protocol_policy` also accepts `http-only` and
+`match-viewer`; managed ALBs must have the corresponding listeners enabled.
+
+AWS creates `CloudFront-VPCOrigins-Service-SG` for the private interfaces. The
+module discovers that group in `vpc_id` after VPC origin creation and adds
+ALB ingress from it on the required listener port(s). It never edits AWS's
+managed group or changes the ALB's security group attachments. When using an
+external ALB, supply `existing_lb_security_group_id` for ingress management.
+Set `manage_security_group_rule = false` if another unit owns those exact rules.
+Do not manage the same rule in both units.
+
+Outputs:
+
+- `cloudfront_vpc_origin_id`: reference from one or more CloudFront distributions.
+- `cloudfront_vpc_origin_arn`: the shared CloudFront resource ARN.
+- `cloudfront_vpc_origin_service_security_group_id`: AWS's source group ID when
+  this module manages ingress; otherwise null.
+
+The ID/ARN outputs wait for managed ingress rules. A consumer using the generic
+CloudFront wrapper can configure:
+
+```hcl
+distribution = {
+  origin = {
+    envoy = {
+      domain_name = "api.staging.in2.hyperswitch.net"
+      vpc_origin_config = {
+        vpc_origin_id = dependency.envoy.outputs.cloudfront_vpc_origin_id
+      }
+    }
+  }
+  # Keep the existing viewer certificate, behaviors and trusted custom headers.
+}
+```
+
+Do not also configure `custom_origin_config` or create another `vpc_origin` for
+this origin in the CloudFront unit. Keep an origin hostname matching the ALB's
+TLS certificate. This object is a connection to one ALB, not access to the
+entire VPC, and its source group is not a distribution-specific identity.
+
+Prerequisites: the provider must use the ALB's account and Region; `vpc_id`
+must identify that ALB's VPC. AWS requires an attached internet gateway and
+available subnet IPv4 addresses for managed interfaces. The deployment role
+needs CloudFront VPC origin and the required EC2/service-linked-role permissions.
+VPC origins do not support gRPC or Lambda@Edge origin-request/origin-response
+triggers. See [AWS requirements](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-vpc-origins.html).
+
+This feature adds private connectivity and an additive ingress rule. It does
+not remove public ALB ingress, change subnet routes or make an internet-facing
+ALB internal. Migrate all consumers and then remove public rules in their owning
+unit to restrict origin access. WAF and distribution routing remain independent.
+An existing VPC origin can be imported at `aws_cloudfront_vpc_origin.this[0]`;
+otherwise enable this in Envoy before wiring consumer distributions to the output.
+
+For a future ALB replacement, prefer creating a second VPC origin and switching
+consumers before removing the old connection. AWS requires disassociating
+consumers before updating an in-use VPC origin's endpoint.
+
+Run `terraform init -backend=false`, `terraform validate`, and `terraform test`
+from this module. Tests use mocked providers and do not create AWS resources.

@@ -172,3 +172,20 @@ output "access_logs_s3_bucket_arn" {
   description = "ARN of the module-managed ALB access log bucket, or null when not created."
   value       = try(module.alb_access_logs_s3[0].s3_bucket_arn, null)
 }
+
+output "cloudfront_vpc_origin_id" {
+  description = "Shared VPC origin ID, or null when disabled. Waits for managed ALB ingress rules before consumers attach."
+  value       = try(aws_cloudfront_vpc_origin.this[0].id, null)
+  depends_on  = [aws_security_group_rule.lb_ingress_cloudfront_vpc_origin]
+}
+
+output "cloudfront_vpc_origin_arn" {
+  description = "ARN of the shared CloudFront VPC origin, or null when disabled."
+  value       = try(aws_cloudfront_vpc_origin.this[0].arn, null)
+  depends_on  = [aws_security_group_rule.lb_ingress_cloudfront_vpc_origin]
+}
+
+output "cloudfront_vpc_origin_service_security_group_id" {
+  description = "AWS-managed VPC origin source group ID, or null when disabled or ingress is managed externally."
+  value       = try(data.aws_security_group.cloudfront_vpc_origin[0].id, null)
+}
