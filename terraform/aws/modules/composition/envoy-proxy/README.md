@@ -32,6 +32,7 @@
 |------|------|
 | [aws_autoscaling_policy.cpu_target_tracking](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_policy) | resource |
 | [aws_autoscaling_policy.memory_target_tracking](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_policy) | resource |
+| [aws_cloudfront_vpc_origin.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudfront_vpc_origin) | resource |
 | [aws_cloudwatch_log_delivery.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_delivery) | resource |
 | [aws_cloudwatch_log_delivery_destination.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_delivery_destination) | resource |
 | [aws_cloudwatch_log_delivery_source.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_delivery_source) | resource |
@@ -54,6 +55,7 @@
 | [aws_security_group_rule.existing_lb_to_asg_healthcheck](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
 | [aws_security_group_rule.existing_lb_to_asg_traffic](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
 | [aws_security_group_rule.lb_default_egress_to_asg](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
+| [aws_security_group_rule.lb_ingress_cloudfront_vpc_origin](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
 | [aws_ssm_parameter.envoy_private_key](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ssm_parameter) | resource |
 | [aws_wafv2_web_acl_association.envoy_alb](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/wafv2_web_acl_association) | resource |
 | [aws_caller_identity.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
@@ -66,6 +68,7 @@
 | [aws_region.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
 | [aws_region.alb_access_logs_s3](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
 | [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
+| [aws_security_group.cloudfront_vpc_origin](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/security_group) | data source |
 
 ## Inputs
 
@@ -81,6 +84,7 @@
 | <a name="input_alb_https_listener_port"></a> [alb\_https\_listener\_port](#input\_alb\_https\_listener\_port) | Port for ALB HTTPS listener (port that ALB listens on for incoming HTTPS traffic) | `number` | `443` | no |
 | <a name="input_alb_idle_timeout"></a> [alb\_idle\_timeout](#input\_alb\_idle\_timeout) | ALB connection idle timeout in seconds. | `number` | `60` | no |
 | <a name="input_auth_proxy_loadbalancer_dns"></a> [auth\_proxy\_loadbalancer\_dns](#input\_auth\_proxy\_loadbalancer\_dns) | Auth proxy / decision service load balancer DNS (for envoy.yaml templating) | `string` | `""` | no |
+| <a name="input_cloudfront_vpc_origin"></a> [cloudfront\_vpc\_origin](#input\_cloudfront\_vpc\_origin) | Optional shared CloudFront VPC origin for the selected ALB. Uses the ALB listener ports. Managed ingress adds rules from AWS's service-managed group without removing existing public access. | <pre>object({<br/>    enabled                    = optional(bool, false)<br/>    name                       = optional(string)<br/>    origin_protocol_policy     = optional(string, "https-only")<br/>    manage_security_group_rule = optional(bool, true)<br/>    timeouts = optional(object({<br/>      create = optional(string, "15m")<br/>      update = optional(string, "15m")<br/>      delete = optional(string, "15m")<br/>    }), {})<br/>  })</pre> | `{}` | no |
 | <a name="input_config_bucket_arn"></a> [config\_bucket\_arn](#input\_config\_bucket\_arn) | ARN of S3 bucket containing Envoy configuration files (required if create\_config\_bucket=false) | `string` | `""` | no |
 | <a name="input_config_bucket_name"></a> [config\_bucket\_name](#input\_config\_bucket\_name) | Name of S3 bucket containing Envoy configuration files (required if create\_config\_bucket=false) | `string` | `""` | no |
 | <a name="input_config_files_source_path"></a> [config\_files\_source\_path](#input\_config\_files\_source\_path) | Local path to envoy config files to upload to S3 (only used if upload\_config\_to\_s3=true) | `string` | `"./config"` | no |
@@ -169,6 +173,9 @@
 | <a name="output_asg_ids"></a> [asg\_ids](#output\_asg\_ids) | Map of deployment names to Auto Scaling Group IDs |
 | <a name="output_asg_names"></a> [asg\_names](#output\_asg\_names) | Map of deployment names to Auto Scaling Group names |
 | <a name="output_asg_security_group_id"></a> [asg\_security\_group\_id](#output\_asg\_security\_group\_id) | Security group ID for ASG instances |
+| <a name="output_cloudfront_vpc_origin_arn"></a> [cloudfront\_vpc\_origin\_arn](#output\_cloudfront\_vpc\_origin\_arn) | ARN of the shared CloudFront VPC origin, or null when disabled. |
+| <a name="output_cloudfront_vpc_origin_id"></a> [cloudfront\_vpc\_origin\_id](#output\_cloudfront\_vpc\_origin\_id) | Shared VPC origin ID, or null when disabled. Waits for managed ALB ingress rules before consumers attach. |
+| <a name="output_cloudfront_vpc_origin_service_security_group_id"></a> [cloudfront\_vpc\_origin\_service\_security\_group\_id](#output\_cloudfront\_vpc\_origin\_service\_security\_group\_id) | AWS-managed VPC origin source group ID, or null when disabled or ingress is managed externally. |
 | <a name="output_config_bucket_arn"></a> [config\_bucket\_arn](#output\_config\_bucket\_arn) | ARN of the S3 bucket for configuration (created or existing) |
 | <a name="output_config_bucket_created"></a> [config\_bucket\_created](#output\_config\_bucket\_created) | Whether config bucket was created by this module (true) or using existing (false) |
 | <a name="output_config_bucket_name"></a> [config\_bucket\_name](#output\_config\_bucket\_name) | Name of the S3 bucket for configuration (created or existing) |
