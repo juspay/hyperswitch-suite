@@ -23,6 +23,11 @@ output "replica_bucket_arn" {
   value       = try(module.replica_bucket[0].s3_bucket_arn, null)
 }
 
+output "replica_bucket_regional_domain_name" {
+  description = "Region-specific domain name of the replica bucket (null when replication is disabled)"
+  value       = try(module.replica_bucket[0].s3_bucket_bucket_regional_domain_name, null)
+}
+
 output "replication_role_arn" {
   description = "ARN of the forward (source -> replica) replication IAM role (null when replication is disabled)"
   value       = try(aws_iam_role.replication["fwd"].arn, null)
