@@ -32,6 +32,7 @@
 |------|------|
 | [aws_autoscaling_policy.cpu_target_tracking](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_policy) | resource |
 | [aws_autoscaling_policy.memory_target_tracking](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/autoscaling_policy) | resource |
+| [aws_cloudfront_vpc_origin.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudfront_vpc_origin) | resource |
 | [aws_cloudwatch_log_delivery.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_delivery) | resource |
 | [aws_cloudwatch_log_delivery_destination.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_delivery_destination) | resource |
 | [aws_cloudwatch_log_delivery_source.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_delivery_source) | resource |
@@ -54,6 +55,7 @@
 | [aws_security_group_rule.existing_lb_to_asg_healthcheck](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
 | [aws_security_group_rule.existing_lb_to_asg_traffic](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
 | [aws_security_group_rule.lb_default_egress_to_asg](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
+| [aws_security_group_rule.lb_ingress_cloudfront_vpc_origin](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group_rule) | resource |
 | [aws_ssm_parameter.envoy_private_key](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ssm_parameter) | resource |
 | [aws_wafv2_web_acl_association.envoy_alb](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/wafv2_web_acl_association) | resource |
 | [aws_caller_identity.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
@@ -66,6 +68,7 @@
 | [aws_region.alb_access_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
 | [aws_region.alb_access_logs_s3](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
 | [aws_region.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/region) | data source |
+| [aws_security_group.cloudfront_vpc_origin](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/security_group) | data source |
 
 ## Inputs
 
@@ -81,6 +84,7 @@
 | <a name="input_alb_https_listener_port"></a> [alb\_https\_listener\_port](#input\_alb\_https\_listener\_port) | Port for ALB HTTPS listener (port that ALB listens on for incoming HTTPS traffic) | `number` | `443` | no |
 | <a name="input_alb_idle_timeout"></a> [alb\_idle\_timeout](#input\_alb\_idle\_timeout) | ALB connection idle timeout in seconds. | `number` | `60` | no |
 | <a name="input_auth_proxy_loadbalancer_dns"></a> [auth\_proxy\_loadbalancer\_dns](#input\_auth\_proxy\_loadbalancer\_dns) | Auth proxy / decision service load balancer DNS (for envoy.yaml templating) | `string` | `""` | no |
+| <a name="input_cloudfront_vpc_origin"></a> [cloudfront\_vpc\_origin](#input\_cloudfront\_vpc\_origin) | Optional shared CloudFront VPC origin for the selected ALB. Uses the ALB listener ports. Managed ingress adds rules from AWS's service-managed group without removing existing public access. | <pre>object({<br/>    enabled                    = optional(bool, false)<br/>    name                       = optional(string)<br/>    origin_protocol_policy     = optional(string, "https-only")<br/>    manage_security_group_rule = optional(bool, true)<br/>    timeouts = optional(object({<br/>      create = optional(string, "15m")<br/>      update = optional(string, "15m")<br/>      delete = optional(string, "15m")<br/>    }), {})<br/>  })</pre> | `{}` | no |
 | <a name="input_config_bucket_arn"></a> [config\_bucket\_arn](#input\_config\_bucket\_arn) | ARN of S3 bucket containing Envoy configuration files (required if create\_config\_bucket=false) | `string` | `""` | no |
 | <a name="input_config_bucket_name"></a> [config\_bucket\_name](#input\_config\_bucket\_name) | Name of S3 bucket containing Envoy configuration files (required if create\_config\_bucket=false) | `string` | `""` | no |
 | <a name="input_config_files_source_path"></a> [config\_files\_source\_path](#input\_config\_files\_source\_path) | Local path to envoy config files to upload to S3 (only used if upload\_config\_to\_s3=true) | `string` | `"./config"` | no |
@@ -169,6 +173,9 @@
 | <a name="output_asg_ids"></a> [asg\_ids](#output\_asg\_ids) | Map of deployment names to Auto Scaling Group IDs |
 | <a name="output_asg_names"></a> [asg\_names](#output\_asg\_names) | Map of deployment names to Auto Scaling Group names |
 | <a name="output_asg_security_group_id"></a> [asg\_security\_group\_id](#output\_asg\_security\_group\_id) | Security group ID for ASG instances |
+| <a name="output_cloudfront_vpc_origin_arn"></a> [cloudfront\_vpc\_origin\_arn](#output\_cloudfront\_vpc\_origin\_arn) | ARN of the shared CloudFront VPC origin, or null when disabled. |
+| <a name="output_cloudfront_vpc_origin_id"></a> [cloudfront\_vpc\_origin\_id](#output\_cloudfront\_vpc\_origin\_id) | Shared VPC origin ID, or null when disabled. Waits for managed ALB ingress rules before consumers attach. |
+| <a name="output_cloudfront_vpc_origin_service_security_group_id"></a> [cloudfront\_vpc\_origin\_service\_security\_group\_id](#output\_cloudfront\_vpc\_origin\_service\_security\_group\_id) | AWS-managed VPC origin source group ID, or null when disabled or ingress is managed externally. |
 | <a name="output_config_bucket_arn"></a> [config\_bucket\_arn](#output\_config\_bucket\_arn) | ARN of the S3 bucket for configuration (created or existing) |
 | <a name="output_config_bucket_created"></a> [config\_bucket\_created](#output\_config\_bucket\_created) | Whether config bucket was created by this module (true) or using existing (false) |
 | <a name="output_config_bucket_name"></a> [config\_bucket\_name](#output\_config\_bucket\_name) | Name of the S3 bucket for configuration (created or existing) |
@@ -196,3 +203,77 @@
 | <a name="output_ssh_key_retrieval_command"></a> [ssh\_key\_retrieval\_command](#output\_ssh\_key\_retrieval\_command) | Command to retrieve the private SSH key from Parameter Store (only if auto-generated) |
 | <a name="output_target_group_arns"></a> [target\_group\_arns](#output\_target\_group\_arns) | Map of deployment names to target group ARNs |
 <!-- END_TF_DOCS -->
+## Shared CloudFront VPC origin
+
+Enable a private CloudFront connection owned by this Envoy deployment:
+
+```hcl
+cloudfront_vpc_origin = {
+  enabled = true
+  # name = "sandbox-envoy" # optional stable name
+}
+```
+
+The feature is disabled by default. When enabled, the module creates one
+`aws_cloudfront_vpc_origin` targeting its ALB (or `existing_lb_arn` when
+`create_lb = false`). It uses the configured ALB listener ports, HTTPS-only and
+TLS 1.2 by default. `origin_protocol_policy` also accepts `http-only` and
+`match-viewer`; managed ALBs must have the corresponding listeners enabled.
+
+AWS creates `CloudFront-VPCOrigins-Service-SG` for the private interfaces. The
+module discovers that group in `vpc_id` after VPC origin creation and adds
+ALB ingress from it on the required listener port(s). It never edits AWS's
+managed group or changes the ALB's security group attachments. When using an
+external ALB, supply `existing_lb_security_group_id` for ingress management.
+Set `manage_security_group_rule = false` if another unit owns those exact rules.
+Do not manage the same rule in both units.
+
+Outputs:
+
+- `cloudfront_vpc_origin_id`: reference from one or more CloudFront distributions.
+- `cloudfront_vpc_origin_arn`: the shared CloudFront resource ARN.
+- `cloudfront_vpc_origin_service_security_group_id`: AWS's source group ID when
+  this module manages ingress; otherwise null.
+
+The ID/ARN outputs wait for managed ingress rules. A consumer using the generic
+CloudFront wrapper can configure:
+
+```hcl
+distribution = {
+  origin = {
+    envoy = {
+      domain_name = "api.staging.in2.hyperswitch.net"
+      vpc_origin_config = {
+        vpc_origin_id = dependency.envoy.outputs.cloudfront_vpc_origin_id
+      }
+    }
+  }
+  # Keep the existing viewer certificate, behaviors and trusted custom headers.
+}
+```
+
+Do not also configure `custom_origin_config` or create another `vpc_origin` for
+this origin in the CloudFront unit. Keep an origin hostname matching the ALB's
+TLS certificate. This object is a connection to one ALB, not access to the
+entire VPC, and its source group is not a distribution-specific identity.
+
+Prerequisites: the provider must use the ALB's account and Region; `vpc_id`
+must identify that ALB's VPC. AWS requires an attached internet gateway and
+available subnet IPv4 addresses for managed interfaces. The deployment role
+needs CloudFront VPC origin and the required EC2/service-linked-role permissions.
+VPC origins do not support gRPC or Lambda@Edge origin-request/origin-response
+triggers. See [AWS requirements](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-vpc-origins.html).
+
+This feature adds private connectivity and an additive ingress rule. It does
+not remove public ALB ingress, change subnet routes or make an internet-facing
+ALB internal. Migrate all consumers and then remove public rules in their owning
+unit to restrict origin access. WAF and distribution routing remain independent.
+An existing VPC origin can be imported at `aws_cloudfront_vpc_origin.this[0]`;
+otherwise enable this in Envoy before wiring consumer distributions to the output.
+
+For a future ALB replacement, prefer creating a second VPC origin and switching
+consumers before removing the old connection. AWS requires disassociating
+consumers before updating an in-use VPC origin's endpoint.
+
+Run `terraform init -backend=false`, `terraform validate`, and `terraform test`
+from this module. Tests use mocked providers and do not create AWS resources.
