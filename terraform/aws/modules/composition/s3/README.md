@@ -146,6 +146,7 @@ module "payment_files_mirrored" {
 | <a name="output_bidirectional_replication_enabled"></a> [bidirectional\_replication\_enabled](#output\_bidirectional\_replication\_enabled) | Whether two-way (replica -> source) replication is configured |
 | <a name="output_replica_bucket_arn"></a> [replica\_bucket\_arn](#output\_replica\_bucket\_arn) | ARN of the replica bucket (null when replication is disabled) |
 | <a name="output_replica_bucket_id"></a> [replica\_bucket\_id](#output\_replica\_bucket\_id) | Name/ID of the replica bucket (null when replication is disabled) |
+| <a name="output_replica_bucket_regional_domain_name"></a> [replica\_bucket\_regional\_domain\_name](#output\_replica\_bucket\_regional\_domain\_name) | Region-specific domain name of the replica bucket (null when replication is disabled) |
 | <a name="output_replication_enabled"></a> [replication\_enabled](#output\_replication\_enabled) | Whether cross-region replication is configured |
 | <a name="output_replication_role_arn"></a> [replication\_role\_arn](#output\_replication\_role\_arn) | ARN of the forward (source -> replica) replication IAM role (null when replication is disabled) |
 | <a name="output_replication_role_arns"></a> [replication\_role\_arns](#output\_replication\_role\_arns) | Map of replication direction (fwd/rev) to IAM role ARN for all active directions |
